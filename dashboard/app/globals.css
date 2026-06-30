@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  min-height: 100%;
+  background: #08111f;
+  color: white;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a, button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card {
+  @apply rounded-3xl border border-white/10 bg-extinction-card/80 p-6 shadow-2xl;
+}
+
+.input {
+  @apply w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none;
+}
+
+.btn {
+  @apply rounded-2xl px-5 py-3 font-bold;
+}
+
+.btn-primary {
+  @apply bg-extinction-violet text-white;
+}

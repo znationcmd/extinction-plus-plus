@@ -1,0 +1,51 @@
+{
+  "guilds": {},
+  "ownerConfigs": {},
+  "users": {},
+  "events": [],
+  "pendingWhitelist": [],
+  "shopPurchases": [],
+  "shop": [],
+  "shopCategories": [],
+  "deliveries": [],
+  "battlepass": {
+    "levels": []
+  },
+  "quests": [],
+  "rp": {
+    "jobs": [],
+    "licenses": [],
+    "fines": [],
+    "warrants": [],
+    "companies": [],
+    "properties": [],
+    "salaries": []
+  },
+  "interpol": [],
+  "alarms": [],
+  "economy": {
+    "currencies": [],
+    "transactions": []
+  },
+  "bank": {
+    "accounts": []
+  },
+  "tickets": [],
+  "leaderboard": [],
+  "stats": {
+    "players": 0,
+    "shops": 0,
+    "kills": 0,
+    "orders": 0
+  },
+  "coupons": [],
+  "promotions": [],
+  "plugins": [],
+  "aiAssistant": {
+    "enabled": false,
+    "knowledge": []
+  },
+  "nitradoServers": [],
+  "backups": [],
+  "notifications": []
+}
