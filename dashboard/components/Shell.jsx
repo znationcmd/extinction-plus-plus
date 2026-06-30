@@ -63,7 +63,7 @@ export default function Shell({ children }) {
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
         <Link href="/" prefetch={false} className="mb-8 block">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
-          <h1 className="text-2xl font-black text-red-500">EXTINCTION++ RSS</h1>
+          <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
 
@@ -86,7 +86,7 @@ export default function Shell({ children }) {
         <Link href="/" prefetch={false} className="flex items-center gap-3">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="h-12 w-12 rounded-xl object-cover" />
           <div>
-            <p className="text-xl font-black text-red-500">Extinction++ RSS</p>
+            <p className="text-xl font-black text-purple-400">Extinction++ RSS</p>
             <p className="text-sm text-white/50">Real Survival System</p>
           </div>
         </Link>
