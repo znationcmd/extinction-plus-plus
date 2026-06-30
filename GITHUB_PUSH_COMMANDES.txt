@@ -1,28 +1,16 @@
-COMMANDES POUR ENVOYER SUR GITHUB
+COMMANDES POUR POUSSER SUR GITHUB
 
-Ce dossier bot contient déjà un dépôt Git initialisé avec le remote:
-https://github.com/znationcmd/extinction-plus-plus.git
+1) Ouvre CMD dans ce dossier :
+cd C:\Users\utilisateur\Downloads\extinction-plus-plus-rss-github-ready-complet\bot
 
-Ouvre CMD ici:
-cd C:\Users\utilisateur\Downloads\extinction-plus-plus-rss-github-ready\bot
-
-Puis:
+2) Vérifie :
 git status
+
+3) Envoie sur GitHub :
 git push -u origin main
 
-Si GitHub refuse parce que le dépôt distant a déjà un historique différent:
+Si GitHub refuse car l'historique distant est différent :
 git push -u origin main --force
 
-Attention: --force remplace le contenu GitHub par ce dossier.
-
-Railway:
-Root Directory: bot
-Build Command: npm run build
-Start Command: npm start
-
-Variables Railway:
-DISCORD_TOKEN
-CLIENT_ID
-OWNER_ID
-NITRADO_TOKEN
-CLIENT_SECRET (si OAuth dashboard)
+Remote configuré :
+https://github.com/znationcmd/extinction-plus-plus.git
