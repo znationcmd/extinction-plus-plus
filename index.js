@@ -19,6 +19,7 @@ const config = require('./config');
 const { getGuildTheme, hexToInt } = require('./theme-helper');
 const nitradoApi = require('./shared/nitrado-api');
 const rconTools = require('./shared/rcon-tools');
+const secureStore = require('./shared/secure-store');
 
 function isHttpUrl(value) {
   return typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'));
@@ -28,8 +29,9 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const dbPath = path.resolve(__dirname, config.DATABASE_PATH || '../shared/database.json');
 
 function loadDb() {
-  if (!fs.existsSync(dbPath)) return { guilds:{}, users:{}, events:[], pendingWhitelist:[], shopPurchases:[], battlepass:{levels:[]}, quests:[], deliveries:[], interpol:[], alarms:[], rp:{jobs:[]}, shop:[] };
-  return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const base = { guilds:{}, users:{}, events:[], pendingWhitelist:[], shopPurchases:[], battlepass:{levels:[]}, quests:[], deliveries:[], interpol:[], alarms:[], rp:{jobs:[]}, shop:[], nitradoAccounts:{}, connectedServers:[], saasAudit:[] };
+  if (!fs.existsSync(dbPath)) return secureStore.ensureSaasDb(base);
+  return secureStore.ensureSaasDb({ ...base, ...JSON.parse(fs.readFileSync(dbPath, 'utf8')) });
 }
 function saveDb(db) {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -52,6 +54,20 @@ function addEvent(db, guildId, event) {
   db.events = db.events || [];
   db.events.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`, guildId, createdAt:new Date().toISOString(), ...event });
   if (db.events.length > 2000) db.events = db.events.slice(-2000);
+}
+
+function getGuildNitrado(db, guildId) {
+  const token = secureStore.getGuildToken(db, guildId);
+  return token ? nitradoApi.withToken(token) : nitradoApi;
+}
+
+function findGuildServer(cfg, query) {
+  const q = String(query || '').toLowerCase();
+  return (cfg.servers || []).find(s =>
+    String(s.id).toLowerCase() === q ||
+    String(s.name).toLowerCase() === q ||
+    String(s.nitradoId || s.nitradoServiceId || '').toLowerCase() === q
+  );
 }
 async function sendLog(interaction, content) {
   const db = loadDb();
@@ -289,41 +305,96 @@ client.on('interactionCreate', async interaction => {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral:true, content:'❌ Admin uniquement.' });
       await interaction.deferReply({ ephemeral:true });
       const sub = interaction.options.getSubcommand();
+      const cfg = getGuild(db, interaction.guildId, interaction.guild.name);
+
+      if (sub === 'connect') {
+        const token = interaction.options.getString('token');
+        const api = nitradoApi.withToken(token);
+        const data = await api.listServices();
+        const services = nitradoApi.servicesSummary(data);
+        secureStore.setGuildToken(db, interaction.guildId, token, {
+          guildName: interaction.guild.name,
+          ownerId: interaction.guild.ownerId || '',
+          serviceCount: services.length
+        });
+        saveDb(db);
+        return interaction.editReply(`✅ Compte Nitrado connecté pour **${interaction.guild.name}**. Services trouvés : **${services.length}**.
+Le token est chiffré dans la base.`);
+      }
+
+      if (sub === 'disconnect') {
+        secureStore.removeGuildToken(db, interaction.guildId);
+        saveDb(db);
+        return interaction.editReply('✅ Token Nitrado supprimé pour ce Discord.');
+      }
+
+      const account = db.nitradoAccounts?.[String(interaction.guildId)];
+      const api = getGuildNitrado(db, interaction.guildId);
+
+      if (sub === 'status') {
+        return interaction.editReply(account
+          ? `✅ Nitrado connecté pour ce Discord : **${account.tokenPreview}** — mis à jour le ${account.updatedAt}`
+          : '❌ Aucun token Nitrado connecté pour ce Discord. Utilise `/nitrado connect token:...`.');
+      }
 
       if (sub === 'test') {
-        const data = await nitradoApi.listServices();
+        const data = await api.listServices();
         const services = nitradoApi.servicesSummary(data);
-        return interaction.editReply(`✅ Connexion Nitrado OK. Services trouvés : ${services.length}`);
+        return interaction.editReply(`✅ Connexion Nitrado OK pour **${interaction.guild.name}**. Services trouvés : ${services.length}`);
       }
 
       if (sub === 'services') {
-        const data = await nitradoApi.listServices();
+        const data = await api.listServices();
         const services = nitradoApi.servicesSummary(data);
         if (!services.length) return interaction.editReply('Aucun service Nitrado trouvé avec ce token.');
         return interaction.editReply(services.slice(0, 20).map(s => `• **${s.id}** — ${s.name} — ${s.address || 'adresse inconnue'} — ${s.status}`).join('\n'));
       }
 
+      if (sub === 'link-server') {
+        const serviceId = interaction.options.getString('service_id');
+        const name = interaction.options.getString('nom');
+        const game = interaction.options.getString('jeu') || 'dayz_pc';
+        const map = interaction.options.getString('map') || '';
+        const whitelistPath = interaction.options.getString('whitelist_path') || '';
+        const server = {
+          id:`${Date.now()}_${Math.random().toString(36).slice(2,6)}`,
+          guildId: interaction.guildId,
+          game, name, map, provider:'nitrado',
+          nitradoId: serviceId, nitradoServiceId: serviceId,
+          whitelistPath, whitelistEnabled: !!whitelistPath, shopEnabled:true, battlepassEnabled:true,
+          createdAt:new Date().toISOString()
+        };
+        cfg.servers = cfg.servers || [];
+        cfg.servers.push(server);
+        db.connectedServers = db.connectedServers || [];
+        db.connectedServers.push(server);
+        saveDb(db);
+        return interaction.editReply(`✅ Serveur Nitrado lié : **${name}**
+Service ID: **${serviceId}**
+Whitelist path: **${whitelistPath || 'non configuré'}**`);
+      }
+
       if (sub === 'info') {
         const id = interaction.options.getString('service_id');
-        const data = await nitradoApi.getGameServer(id);
+        const data = await api.getGameServer(id);
         return interaction.editReply('```json\n' + JSON.stringify(data, null, 2).slice(0, 1800) + '\n```');
       }
 
       if (sub === 'fileserver') {
         const id = interaction.options.getString('service_id');
-        const data = await nitradoApi.getFileServer(id);
+        const data = await api.getFileServer(id);
         return interaction.editReply('```json\n' + JSON.stringify(data, null, 2).slice(0, 1800) + '\n```');
       }
 
       if (sub === 'restart') {
         const id = interaction.options.getString('service_id');
-        await nitradoApi.restart(id);
+        await api.restart(id);
         return interaction.editReply(`✅ Redémarrage demandé pour le service Nitrado **${id}**.`);
       }
 
       if (sub === 'raw') {
         const endpoint = interaction.options.getString('endpoint');
-        const data = await nitradoApi.request(endpoint);
+        const data = await api.request(endpoint);
         return interaction.editReply('```json\n' + JSON.stringify(data, null, 2).slice(0, 1800) + '\n```');
       }
     }
