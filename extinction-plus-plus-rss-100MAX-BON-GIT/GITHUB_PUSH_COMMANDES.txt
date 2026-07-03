@@ -1,0 +1,16 @@
+COMMANDES POUR POUSSER SUR GITHUB
+
+1) Ouvre CMD dans ce dossier :
+cd C:\Users\utilisateur\Downloads\extinction-plus-plus-rss-github-ready-complet\bot
+
+2) Vérifie :
+git status
+
+3) Envoie sur GitHub :
+git push -u origin main
+
+Si GitHub refuse car l'historique distant est différent :
+git push -u origin main --force
+
+Remote configuré :
+https://github.com/znationcmd/extinction-plus-plus.git

@@ -1,0 +1,3 @@
+import Shell from '../../../components/Shell';
+import { readDb, GAME_LABELS } from '../../../lib/db';
+export default function Page({params}){ const db=readDb(); const g=db.guilds?.[params.id]; if(!g)return <Shell><div className="card">Discord introuvable</div></Shell>; return <Shell><h2 className="mb-6 text-4xl font-black">{g.name || `Discord ${params.id}`}</h2><div className="grid gap-4 md:grid-cols-2">{(g.servers||[]).map(s=><div className="card" key={s.id}><h3 className="text-2xl font-black">{s.name}</h3><p>{GAME_LABELS[s.game]||s.game}</p><p>Map : {s.map}</p><p>Status : {s.enabled?'🟢 actif':'🔴 désactivé'}</p></div>)}</div></Shell> }

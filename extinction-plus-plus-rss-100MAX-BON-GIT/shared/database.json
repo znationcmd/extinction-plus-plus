@@ -1,0 +1,388 @@
+{
+  "guilds": {
+    "1513783303285637181": {
+      "id": "1513783303285637181",
+      "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℙ𝕍𝔼 𝕏𝕓𝕠𝕩 𝕡𝕔 ™🧟🔞",
+      "icon": "https://cdn.discordapp.com/icons/1513783303285637181/9f8782df258b6a43040492e80fb422bf.webp",
+      "servers": [
+        {
+          "id": "1782598868886",
+          "game": "dayz_pc",
+          "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℙ𝕍𝔼 𝕏𝕓𝕠𝕩 𝕡𝕔 ™🧟🔞",
+          "map": "lux",
+          "active": true,
+          "createdAt": "2026-06-27T22:21:08.886Z",
+          "enabled": true
+        },
+        {
+          "id": "1782600234929",
+          "game": "dayz_pc",
+          "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℙ𝕍𝔼 𝕏𝕓𝕠𝕩 𝕡𝕔 ™🧟🔞",
+          "map": "namalsk",
+          "active": true,
+          "createdAt": "2026-06-27T22:43:54.929Z",
+          "enabled": true
+        },
+        {
+          "id": "1782600368609",
+          "game": "dayz_xbox",
+          "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℙ𝕍𝔼 𝕏𝕓𝕠𝕩 𝕡𝕔 ™🧟🔞",
+          "map": "chernarus",
+          "active": true,
+          "createdAt": "2026-06-27T22:46:08.609Z",
+          "enabled": true
+        },
+        {
+          "id": "1782600388947",
+          "game": "dayz_xbox",
+          "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℙ𝕍𝔼 𝕏𝕓𝕠𝕩 𝕡𝕔 ™🧟🔞",
+          "map": "livonia",
+          "active": true,
+          "createdAt": "2026-06-27T22:46:28.947Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520552262361940018",
+        "whitelist": "1520552263540670604",
+        "logs": "1520552265486958643",
+        "quests": "1520552266510106824"
+      },
+      "roles": {
+        "whitelist": "1520552267420274940"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1389518899107856405": {
+      "id": "1389518899107856405",
+      "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℝℙ ℙ𝕍ℙ𝕍𝔼 ℙ𝕤𝟝 ™🧟🔞",
+      "icon": "https://cdn.discordapp.com/icons/1389518899107856405/cd963cbd582d695a2b55afdbfd70ca06.webp",
+      "servers": [
+        {
+          "id": "1782598780440",
+          "game": "dayz_ps",
+          "name": "🧟𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 ℝℙ ℙ𝕍ℙ𝕍𝔼 ℙ𝕤𝟝 ™🧟🔞",
+          "map": "sakhal",
+          "active": true,
+          "createdAt": "2026-06-27T22:19:40.440Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520552419275046942",
+        "whitelist": "1520552420566892634",
+        "logs": "1520552421540233459",
+        "quests": "1520552428657967204"
+      },
+      "roles": {
+        "whitelist": "1520552429865664532"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1413520544657313904": {
+      "id": "1413520544657313904",
+      "name": "𓂀𝕒𝕣𝕜 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 𝕡𝕧𝕖 𝕔𝕣𝕠𝕤𝕤 ℙ𝕝𝕒𝕪𓂀",
+      "icon": "https://cdn.discordapp.com/icons/1413520544657313904/80808687dcfc4212213a9288774373f4.webp",
+      "servers": [
+        {
+          "id": "1782599014819",
+          "game": "ark PlayStation",
+          "name": "𓂀𝕒𝕣𝕜 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 𝕡𝕧𝕖 𝕔𝕣𝕠𝕤𝕤 ℙ𝕝𝕒𝕪𓂀",
+          "map": "fjordur",
+          "active": true,
+          "createdAt": "2026-06-27T22:23:34.819Z",
+          "enabled": true
+        },
+        {
+          "id": "1782600583462",
+          "game": "ark",
+          "name": "𓂀𝕒𝕣𝕜 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 𝕡𝕧𝕖 𝕔𝕣𝕠𝕤𝕤 ℙ𝕝𝕒𝕪𓂀",
+          "map": "astraeos",
+          "active": true,
+          "createdAt": "2026-06-27T22:49:43.462Z",
+          "enabled": true
+        },
+        {
+          "id": "1782600603897",
+          "game": "ark",
+          "name": "𓂀𝕒𝕣𝕜 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟 𝕡𝕧𝕖 𝕔𝕣𝕠𝕤𝕤 ℙ𝕝𝕒𝕪𓂀",
+          "map": "amissa",
+          "active": true,
+          "createdAt": "2026-06-27T22:50:03.897Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520552616046759976",
+        "whitelist": "1520552617573482556",
+        "logs": "1520552618965991476",
+        "quests": "1520552620702302249"
+      },
+      "roles": {
+        "whitelist": "1520552621968982097"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1404209928964538521": {
+      "id": "1404209928964538521",
+      "name": "𝙲̷𝙼̷𝙳̷ 𝙲̷𝙾̷𝙳̷𝙰̷𝙶̷𝙴̷ 𝙼̷𝙰̷𝙿̷𝙿̷𝙸̷𝙽̷𝙶̷ 𝚅̷_𝙱̷𝙻̷𝙰̷𝚃̷𝙰̷𝚃̷𝙰̷_𝟸̷𝙰̷",
+      "icon": "https://cdn.discordapp.com/icons/1404209928964538521/3b2531f2f337a867da49479aba5fd7d4.webp",
+      "servers": [],
+      "channels": {
+        "panel": "1520552755314425876",
+        "whitelist": "1520552756321063093",
+        "logs": "1520552757403058196",
+        "quests": "1520552758401437768"
+      },
+      "roles": {
+        "whitelist": "1520552759814783057"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1484215341562200167": {
+      "id": "1484215341562200167",
+      "name": "꧁•𝕡𝕒𝕝𝕨𝕠𝕣𝕕 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟•꧂",
+      "icon": "https://cdn.discordapp.com/icons/1484215341562200167/de8af0ab3fee545ccd51878845a26c9e.webp",
+      "servers": [
+        {
+          "id": "1782599196515",
+          "game": "palworld",
+          "name": "꧁•𝕡𝕒𝕝𝕨𝕠𝕣𝕕 𝕧𝕒𝕝𝕙𝕒𝕝𝕝𝕒 𝕖𝕩𝕥𝕚𝕟𝕔𝕥𝕚𝕠𝕟•꧂",
+          "map": "officiel",
+          "active": true,
+          "createdAt": "2026-06-27T22:26:36.515Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520552870318047406",
+        "whitelist": "1520552872222130396",
+        "logs": "1520552873459454102",
+        "quests": "1520552874495447180"
+      },
+      "roles": {
+        "whitelist": "1520552877800685659"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1498289433076695060": {
+      "id": "1498289433076695060",
+      "name": "꧁•valhalla team conan •꧂",
+      "icon": "https://cdn.discordapp.com/icons/1498289433076695060/00b53c66e6ca19dae6de2a9aac3f8196.webp",
+      "servers": [
+        {
+          "id": "1782599367048",
+          "game": "conan PlayStation",
+          "name": "꧁•valhalla team conan •꧂",
+          "map": "exiled lands",
+          "active": true,
+          "createdAt": "2026-06-27T22:29:27.048Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520553079773204714",
+        "whitelist": "1520553081350131855",
+        "logs": "1520553082801361036",
+        "quests": "1520553083820708062"
+      },
+      "roles": {
+        "whitelist": "1520553084802302037"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    },
+    "1494718201601462443": {
+      "id": "1494718201601462443",
+      "name": "꧁•valhalla arma reforger•꧂",
+      "icon": "https://cdn.discordapp.com/icons/1494718201601462443/db2d3a443beecebe2776276bc8daa87d.webp",
+      "servers": [
+        {
+          "id": "1782599259895",
+          "game": "arma",
+          "name": "꧁•valhalla arma reforger•꧂",
+          "map": "everon",
+          "active": true,
+          "createdAt": "2026-06-27T22:27:39.895Z",
+          "enabled": true
+        }
+      ],
+      "channels": {
+        "panel": "1520553006813413407",
+        "whitelist": "1520553007882698944",
+        "logs": "1520553008574763020",
+        "quests": "1520553009757556908"
+      },
+      "roles": {
+        "whitelist": "1520553010957389904"
+      },
+      "shop": [],
+      "modules": {
+        "whitelist": true,
+        "shop": true,
+        "killfeed": true,
+        "battlepass": true,
+        "quests": true
+      },
+      "theme": {
+        "serverName": "Extinction++ RSS",
+        "logoUrl": "/extinction-logo.png",
+        "bannerUrl": "/extinction-banner.png",
+        "primaryColor": "#b91c1c",
+        "secondaryColor": "#ef4444",
+        "buttonColor": "#b91c1c",
+        "embedColor": "#ef4444",
+        "backgroundColor": "#08111f"
+      }
+    }
+  },
+  "ownerConfigs": {},
+  "users": {},
+  "events": [],
+  "pendingWhitelist": [],
+  "shopPurchases": [],
+  "shop": [],
+  "shopCategories": [],
+  "deliveries": [],
+  "battlepass": {
+    "levels": []
+  },
+  "quests": {},
+  "rp": {
+    "jobs": [],
+    "licenses": [],
+    "fines": [],
+    "warrants": [],
+    "companies": [],
+    "properties": [],
+    "salaries": []
+  },
+  "interpol": [],
+  "alarms": [],
+  "economy": {
+    "currencies": [],
+    "transactions": []
+  },
+  "bank": {
+    "accounts": []
+  },
+  "tickets": [],
+  "leaderboard": [],
+  "stats": {
+    "players": 0,
+    "shops": 0,
+    "kills": 0,
+    "orders": 0
+  },
+  "coupons": [],
+  "promotions": [],
+  "plugins": [],
+  "aiAssistant": {
+    "enabled": false,
+    "knowledge": []
+  },
+  "nitradoServers": [],
+  "backups": [],
+  "notifications": []
+}

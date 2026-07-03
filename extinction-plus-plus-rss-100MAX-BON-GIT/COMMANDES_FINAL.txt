@@ -1,0 +1,17 @@
+COMMANDES WINDOWS
+
+Depuis le dossier bot :
+
+git add -A
+git commit -m "Extinction++ RSS final parfait"
+git push
+
+Si refus fetch first :
+git fetch origin
+git reset --hard HEAD
+git push --force origin main
+
+Railway Console :
+npm run deploy
+npm run check-env
+npm run doctor

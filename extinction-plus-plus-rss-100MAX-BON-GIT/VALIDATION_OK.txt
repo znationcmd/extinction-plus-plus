@@ -1,0 +1,1 @@
+Validation OK : JS syntax OK + JSON OK + structure OK.

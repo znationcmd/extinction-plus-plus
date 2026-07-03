@@ -1,0 +1,38 @@
+EXTINCTION++ RSS - VERSION AUTO RAILWAY
+
+Tu n'as rien à remplir dans les fichiers du code.
+
+Tu dois seulement remplir Railway > Variables :
+
+OBLIGATOIRE :
+DISCORD_TOKEN = ton token Discord
+TOKEN = le même token Discord
+CLIENT_ID = Application ID Discord
+
+CONSEILLÉ :
+GUILD_ID = ID de ton serveur Discord
+DASHBOARD_URL = ton lien Railway dashboard
+SHOP_URL = ton lien Railway + /shop
+
+OPTIONNEL :
+NITRADO_TOKEN = token Nitrado
+CLIENT_SECRET = client secret Discord si OAuth
+OWNER_ID = ton ID Discord
+ADMIN_ROLE_ID = rôle admin
+
+Railway Settings :
+Root Directory : bot
+Build Command : npm run build
+Start Command : npm run start
+
+Pour vérifier les variables dans Railway Console :
+npm run check-env
+
+Pour activer les commandes Discord :
+npm run deploy
+
+Commandes Git depuis le dossier bot :
+git status
+git add -A
+git commit -m "Extinction++ RSS auto Railway"
+git push
