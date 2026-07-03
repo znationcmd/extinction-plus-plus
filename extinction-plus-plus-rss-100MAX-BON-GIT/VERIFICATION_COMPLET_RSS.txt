@@ -1,0 +1,27 @@
+VERIFICATION EXTINCTION++ RSS
+
+Validé dans ce ZIP :
+- Bot Discord : syntaxe JS vérifiée.
+- Dashboard Next.js : pages présentes PC / téléphone / console.
+- Images Extinction++ RSS intégrées : public/extinction-logo.png et public/extinction-banner.png.
+- Nitrado réel : /nitrado test, services, info, fileserver, restart, raw.
+- RCON réel : /rcon test et /rcon cmd, compatible Nitrado/GPortal si RCON est activé chez l’hébergeur.
+- Whitelist : panneau bouton + modal + demandes.
+- Shop : create, list, buy, livraisons, blueprint ARK.
+- Banque : /bank solde, /bank pay, /bank add + dashboard Économie.
+- RP : dashboard RP jobs/licences/amendes/mandats/entreprises/propriétés/salaires.
+- Killfeed : kill/login/logout + dashboard.
+- INTERPOL : signalements + dashboard.
+- IA : /ia question + page dashboard /ai pour expliquer aux utilisateurs.
+
+À remplir avant lancement :
+- DISCORD_TOKEN
+- CLIENT_ID
+- NITRADO_TOKEN si tu veux Nitrado
+- RCON host/port/password par serveur si tu veux RCON/GPortal
+
+Commandes :
+- npm install
+- node deploy-commands.js
+- node index.js
+- dashboard : cd dashboard && npm install && npm run dev

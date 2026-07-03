@@ -1,0 +1,29 @@
+EXTINCTION++ RSS - CE QU'IL RESTE À REMPLIR
+
+Déjà intégré :
+✅ Logo dans dashboard/public/
+✅ Fichiers DayZ dans shared/imports/dayz/
+✅ Fichiers ARK dans shared/imports/ark/
+✅ Serveur ARK Amissa : 23.106.238.6:5070 / RCON 11070
+✅ Serveur ARK Astraeos : 85.190.128.74:5100 / RCON 11100
+
+À remplir dans bot/config.js :
+1) DISCORD_TOKEN
+2) CLIENT_ID
+3) OWNER_ID
+
+ARK :
+Le mot de passe RCON a été repris depuis GameUserSettings.ini.
+Si tu as changé le mot de passe admin sur Nitrado, remplace-le dans bot/config.js :
+ARK_SERVERS -> amissa/password
+ARK_SERVERS -> astraeos/password
+
+Important sécurité :
+Ton ServerAdminPassword était dans le fichier envoyé.
+Après test, change-le sur Nitrado et remplace-le dans bot/config.js.
+
+Lancement :
+1) Double-clique start-bot.bat
+2) Double-clique start-dashboard.bat
+3) Va sur http://localhost:3000
+4) Dans Discord : /setup

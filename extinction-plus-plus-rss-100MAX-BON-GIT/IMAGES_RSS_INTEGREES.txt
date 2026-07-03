@@ -1,0 +1,20 @@
+Images Extinction++ RSS intégrées.
+
+Fichiers ajoutés/remplacés :
+- bot/dashboard/public/extinction-logo.png
+- bot/dashboard/public/extinction-banner.png
+- bot/dashboard/public/favicon.png
+- bot/dashboard/public/logo-rss.png
+- bot/dashboard/public/pub-site-internet.png
+- bot/dashboard/public/pub-bot.png
+- bot/dashboard/public/hero-rss.png
+- bot/dashboard/public/og-image.png
+
+Références modifiées :
+- bot/dashboard/app/layout.jsx : favicon + OpenGraph
+- bot/dashboard/app/page.jsx : affichage du logo + affiche sur l'accueil
+- bot/dashboard/components/Shell.jsx : logo sidebar/mobile conservé vers /extinction-logo.png
+
+À faire après push :
+- Railway : redeploy
+- Si l'ancienne image reste affichée : vider le cache navigateur ou ajouter ?v=2 à l'URL.

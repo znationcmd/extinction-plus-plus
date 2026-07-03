@@ -1,0 +1,21 @@
+COMMANDES GIT
+
+Le dépôt Git est dans le dossier bot.
+
+CMD :
+cd "%USERPROFILE%\Downloads\extinction-plus-plus-shoplink-fix\bot"
+
+Puis :
+git status
+git add -A
+git commit -m "Extinction++ RSS fusion sans faute"
+git push
+
+RAILWAY :
+Root Directory : bot
+Build Command : npm run build
+Start Command : npm run start
+
+COMMANDES DISCORD :
+Dans Railway Console :
+npm run deploy

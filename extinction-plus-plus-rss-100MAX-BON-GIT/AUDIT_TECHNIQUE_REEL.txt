@@ -1,0 +1,10 @@
+
+Mise à jour 100%-MAX:
+- Base JSON rendue plus robuste (écriture atomique + normalisation).
+- Ajout endpoints /api/production-check, /api/steam-link, /api/audit-logs.
+- Ajout helper PostgreSQL Railway (/lib/postgres.js) avec test DATABASE_URL.
+- Ajout guard session/guild pour sécuriser progressivement les routes sensibles.
+- Ajout dépendance pg dans le dashboard.
+- Vérification syntaxe Node effectuée sur app/api et lib.
+
+Important: un vrai 100% production nécessite encore tests réels avec tokens Discord, OAuth2, Nitrado, OpenAI et Railway.

@@ -1,0 +1,36 @@
+EXTINCTION++ RSS - TESTS EFFECTUES
+
+✅ Syntaxe Node vérifiée :
+- bot/index.js
+- bot/deploy-commands.js
+- bot/server.js
+- bot/shared/nitrado-api.js
+- bot/shared/rcon-tools.js
+- bot/scripts/check-env.js
+
+✅ npm install testé dans bot
+✅ scripts/doctor.js testé : projet complet OK
+✅ dashboard npm install testé
+✅ dashboard démarré en dev : http://localhost:3000 répond HTTP 200
+✅ images dashboard présentes : extinction-logo.png / extinction-banner.png
+✅ start-dashboard.bat corrigé : pointe bien vers bot\dashboard
+✅ start-all.bat ajouté : lance bot + dashboard sur PC
+✅ server.js corrigé : lit aussi bot/config.js pour DISCORD_TOKEN, pas seulement les variables env
+✅ /quete ajouté aux commandes Discord
+✅ /rcon test corrigé : ARK utilise ListPlayers, autres serveurs utilisent players
+
+NON TESTABLE ICI SANS TES ACCES REELS :
+- connexion Discord réelle : nécessite DISCORD_TOKEN + CLIENT_ID valides
+- connexion Nitrado réelle : nécessite NITRADO_TOKEN valide
+- RCON réel : nécessite serveur allumé + RCON activé + host/port/password corrects
+- GPortal réel : nécessite RCON activé dans GPortal et les identifiants RCON
+
+COMMANDES DE TEST APRES CONFIG :
+1) node scripts/check-env.js
+2) node deploy-commands.js
+3) node index.js
+4) Dans Discord : /setup
+5) /nitrado test
+6) /nitrado services
+7) /serveur ajouter ... rcon_host ... rcon_port ... rcon_password ...
+8) /rcon test serveur:<nom ou id>
