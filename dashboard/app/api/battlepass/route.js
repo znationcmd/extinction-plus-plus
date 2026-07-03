@@ -1,9 +1,3 @@
 import { readDb, writeDb } from '../../../lib/db';
-function id(){ return `${Date.now()}_${Math.random().toString(36).slice(2,7)}`; }
-function ensure(db){ db.battlepass = db.battlepass || { season: 1, levels: [], players: {}, claims: [] }; db.battlepass.players = db.battlepass.players || {}; db.battlepass.claims = db.battlepass.claims || []; db.battlepass.levels = db.battlepass.levels || []; return db.battlepass; }
-export async function GET(req){ const bp=ensure(readDb()); const userId=new URL(req.url).searchParams.get('userId'); return Response.json(userId ? { ok:true, player: bp.players[userId] || { xp:0, level:0 }, levels: bp.levels } : { ok:true, battlepass: bp }); }
-export async function POST(req){ const body=await req.json().catch(()=>({})); const db=readDb(); const bp=ensure(db); const action=body.action || 'save';
-  if(action==='addLevel'){ const lvl={ id:body.id||id(), level:Number(body.level||bp.levels.length+1), xpRequired:Number(body.xpRequired||0), freeReward:body.freeReward||'', premiumReward:body.premiumReward||'', createdAt:new Date().toISOString()}; bp.levels=bp.levels.filter(x=>Number(x.level)!==lvl.level); bp.levels.push(lvl); bp.levels.sort((a,b)=>a.level-b.level); writeDb(db); return Response.json({ok:true, level:lvl}); }
-  if(action==='addXp'){ const userId=String(body.userId||''); if(!userId) return Response.json({ok:false,error:'userId manquant'},{status:400}); const p=bp.players[userId]||{xp:0,level:0,premium:false}; p.xp+=Number(body.xp||0); p.level=bp.levels.filter(l=>p.xp>=Number(l.xpRequired||0)).length; bp.players[userId]=p; writeDb(db); return Response.json({ok:true, player:p}); }
-  if(action==='claim'){ const claim={ id:id(), userId:body.userId, level:Number(body.level), premium:Boolean(body.premium), createdAt:new Date().toISOString()}; bp.claims.push(claim); writeDb(db); return Response.json({ok:true, claim}); }
-  db.battlepass={...bp,...body}; writeDb(db); return Response.json({ok:true,battlepass:db.battlepass}); }
+export async function GET(){ return Response.json(readDb().battlepass || {}); }
+export async function POST(req){ const body=await req.json(); const db=readDb(); db.battlepass=body; writeDb(db); return Response.json({ok:true}); }

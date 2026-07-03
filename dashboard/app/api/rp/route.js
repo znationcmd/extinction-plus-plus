@@ -1,5 +1,28 @@
 import { readDb, writeDb } from '../../../lib/db';
-function id(){ return `${Date.now()}_${Math.random().toString(36).slice(2,7)}`; }
-function ensure(db){ db.rp=db.rp||{}; for(const k of ['jobs','licenses','fines','warrants','companies','properties','salaries']) db.rp[k]=db.rp[k]||[]; return db.rp; }
-export async function GET(){ return Response.json({ok:true,rp:ensure(readDb())}); }
-export async function POST(req){ const body=await req.json().catch(()=>({})); const db=readDb(); const rp=ensure(db); const type=body.type||'job'; const map={job:'jobs',license:'licenses',fine:'fines',warrant:'warrants',company:'companies',property:'properties',salary:'salaries'}; const col=map[type]; if(!col) return Response.json({ok:false,error:'type RP inconnu'},{status:400}); const item={id:body.id||id(), guildId:body.guildId||'global', serverId:body.serverId||'', name:body.name||body.nom||type, playerId:body.playerId||'', amount:Number(body.amount||body.salary||0), permissions:body.permissions||[], status:body.status||'active', ...body, createdAt:body.createdAt||new Date().toISOString(), updatedAt:new Date().toISOString()}; rp[col].push(item); writeDb(db); return Response.json({ok:true,type,item,rp}); }
+
+export async function GET() {
+  return Response.json(readDb().rp || {});
+}
+
+export async function POST(req) {
+  const body = await req.json();
+  const db = readDb();
+  db.rp = db.rp || { jobs: [], licenses: [], fines: [], warrants: [], companies: [], properties: [], salaries: [] };
+
+  if (body.type === 'job') {
+    const job = {
+      id: body.id || String(Date.now()),
+      serverId: body.serverId || '',
+      name: body.name || 'Métier',
+      salary: body.salary || 0,
+      permissions: body.permissions || [],
+      createdAt: new Date().toISOString()
+    };
+    db.rp.jobs.push(job);
+    writeDb(db);
+    return Response.json({ ok: true, job });
+  }
+
+  writeDb(db);
+  return Response.json({ ok: true, rp: db.rp });
+}

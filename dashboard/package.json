@@ -4,8 +4,7 @@
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -H 0.0.0.0",
-    "production-check": "next build && next start"
+    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}"
   },
   "dependencies": {
     "next": "^15.1.6",
@@ -17,6 +16,5 @@
     "lucide-react": "^0.468.0",
     "pg": "^8.13.1"
   },
-  "description": "Extinction++ RSS Dashboard",
-  "start": "next start -H 0.0.0.0"
+  "description": "Extinction++ RSS Dashboard"
 }

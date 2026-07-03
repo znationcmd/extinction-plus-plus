@@ -5,15 +5,6 @@ function getSecret() {
   return crypto.createHash('sha256').update(String(raw)).digest();
 }
 
-export function encrypt(value) {
-  if (!value) return '';
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', getSecret(), iv);
-  const encrypted = Buffer.concat([cipher.update(String(value), 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return `v1:${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
-}
-
 export function decrypt(value) {
   if (!value) return '';
   if (!String(value).startsWith('v1:')) return value;
@@ -26,7 +17,6 @@ export function decrypt(value) {
 export function maskSecret(value) {
   if (!value) return 'non configuré';
   const s = String(value);
-  if (s.startsWith('v1:')) return 'chiffré';
   if (s.length <= 10) return `${s.slice(0, 2)}••••`;
   return `${s.slice(0, 6)}••••${s.slice(-4)}`;
 }
