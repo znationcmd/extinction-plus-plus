@@ -8,7 +8,8 @@
     "build": "cd dashboard && npm install && npm run build",
     "bot": "node index.js",
     "check-env": "node scripts/check-env.js",
-    "doctor": "node scripts/doctor.js"
+    "doctor": "node scripts/doctor.js",
+    "audit": "node scripts/audit-project.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",

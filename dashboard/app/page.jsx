@@ -13,25 +13,32 @@ export default function Home() {
   return (
     <Shell>
       <div className="card mb-5 overflow-hidden">
-        <img src="/extinction-banner.png" alt="Extinction++ RSS" className="mb-5 h-48 w-full rounded-3xl object-cover sm:h-72" />
-        <h2 className="text-4xl font-black text-red-500 sm:text-5xl">Dashboard Extinction++ RSS</h2>
+        <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
+          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
+            <img src="/extinction-logo.png" alt="Logo Extinction++ RSS" className="mx-auto max-h-72 w-full rounded-3xl object-contain" />
+          </div>
+          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
+            <img src="/extinction-banner.png" alt="Présentation Extinction++ RSS" className="mx-auto max-h-[760px] w-full rounded-3xl object-contain" />
+          </div>
+        </div>
+        <h2 className="mt-6 text-4xl font-black text-purple-400 sm:text-5xl">Dashboard Extinction++ RSS</h2>
         <p className="mt-2 text-white/70">Real Survival System — PC, console et téléphone.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Link href="/owner-config" prefetch={false} className="card block active:bg-red-900">
+        <Link href="/owner-config" prefetch={false} className="card block active:bg-purple-900">
           <p>Configs propriétaires</p>
           <p className="text-4xl font-black">{ownerConfigs}</p>
         </Link>
-        <Link href="/servers" prefetch={false} className="card block active:bg-red-900">
+        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
           <p>Discords</p>
           <p className="text-4xl font-black">{guildCount}</p>
         </Link>
-        <Link href="/servers" prefetch={false} className="card block active:bg-red-900">
+        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
           <p>Serveurs</p>
           <p className="text-4xl font-black">{servers}</p>
         </Link>
-        <Link href="/killfeed" prefetch={false} className="card block active:bg-red-900">
+        <Link href="/killfeed" prefetch={false} className="card block active:bg-purple-900">
           <p>Événements</p>
           <p className="text-4xl font-black">{(db.events || []).length}</p>
         </Link>
