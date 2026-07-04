@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
-import { ensureTables, getPool, normalizeWhitelist } from '../../../lib/pgdb';
+import { readDb, writeDb } from '../../../lib/jsonDb';
 
 export async function GET() {
   try {
-    await ensureTables();
-    const res = await fetch(`${process.env.DASHBOARD_URL}/api/whitelist`, { cache: 'no-store' });
-    const data = await res.json();
-    return data.requests || [];
-    return NextResponse.json({ success: true, requests:
+    const db = await readDb();
+    return NextResponse.json({
+      success: true,
+      requests: db.whitelist_requests || [],
+      servers: db.servers || []
+    });
   } catch (error) {
     console.error('GET /api/whitelist', error);
-    return NextResponse.json({ success: false, error: error.message, requests: [] }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message, requests: [], servers: [] },
+      { status: 500 }
+    );
   }
 }
