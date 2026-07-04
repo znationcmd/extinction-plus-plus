@@ -1,27 +1,19 @@
 import Shell from '../../components/Shell';
+import { ensureTables, getPool, normalizeWhitelist } from '../../lib/pgdb';
 
-async function getWhitelistData() {
+async function getWhitelistRequests() {
   try {
-    const baseUrl = process.env.DASHBOARD_URL || 'http://localhost:3000';
-
-    const res = await fetch(${baseUrl}/api/whitelist, {
-      cache: 'no-store',
-    });
-
-    const data = await res.json();
-
-    return {
-      requests: data.requests || [],
-      servers: data.servers || [],
-    };
+    await ensureTables();
+    const result = await getPool().query('SELECT * FROM whitelist_requests ORDER BY created_at DESC');
+    return result.rows.map(normalizeWhitelist);
   } catch (error) {
-    console.error('Whitelist page error:', error);
-    return { requests: [], servers: [] };
+    console.error(error);
+    return [];
   }
 }
 
 export default async function WhitelistPage() {
-  const { requests, servers } = await getWhitelistData();
+  const requests = await getWhitelistRequests();
 
   return (
     <Shell>
@@ -29,34 +21,25 @@ export default async function WhitelistPage() {
 
       <div className="grid gap-5">
         <div className="card">
-          <h3 className="mb-3 text-2xl font-black">Serveurs whitelist configurés</h3>
-          {!servers.length && <p className="text-white/60">Aucun serveur whitelist configuré.</p>}
-          <div className="grid gap-3">
-            {servers.map((s, i) => (
-              <div key={s.id || i} className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <p className="font-bold">{s.name || s.server_name || 'Serveur sans nom'}</p>
-                <p>Map : {s.map || 'inconnue'}</p>
-                <p>Plateforme : {s.platform || s.plateforme || s.game || 'inconnue'}</p>
-                <p>ID Nitrado : {s.nitradoServiceId || s.nitrado_service_id || s.service_id || 'non renseigné'}</p>
-              </div>
-            ))}
-          </div>
+          <h3 className="mb-3 text-2xl font-black">Panneau whitelist</h3>
+          <p className="text-white/70">Crée un panneau depuis Discord avec :</p>
+          <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/whitelist-panel serveur: sakhal map: sakhal salon: #whitelist-demandes</div>
         </div>
 
         <div className="card">
-          <h3 className="mb-4 text-2xl font-black">Demandes whitelist</h3>
-          {!requests.length && <p className="text-white/60">Aucune demande whitelist.</p>}
+          <h3 className="mb-4 text-2xl font-black">Demandes en attente</h3>
+          {!requests.length && <p className="text-white/60">Aucune demande whitelist en base PostgreSQL.</p>}
           <div className="grid gap-3">
-            {requests.map((r, i) => (
-              <div key={r.id || i} className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <p className="font-bold">Discord : {r.guildId || r.guild_id || 'inconnu'}</p>
-                <p>Joueur Discord : {r.userId || r.user_id || r.discord_id || 'inconnu'}</p>
-                <p>Serveur : {r.server || r.server_name || r.server_id || 'inconnu'}</p>
-                <p>Map : {r.map || 'inconnue'}</p>
-                <p>Plateforme : {r.plateforme || r.platform || 'inconnue'}</p>
-                <p>Pseudo / ID : {r.pseudo || r.steam_id || r.uid || 'non renseigné'}</p>
-                <p>Status : {r.status || 'pending'}</p>
-                <p className="text-white/50">Date : {String(r.createdAt || r.created_at || '')}</p>
+            {requests.map((r) => (
+              <div key={r.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <p className="font-bold">Discord : {r.guildId}</p>
+                <p>Joueur Discord : {r.userId}</p>
+                <p>Serveur : {r.server}</p>
+                <p>Map : {r.map}</p>
+                <p>Plateforme : {r.plateforme || r.platform}</p>
+                <p>Pseudo / ID : {r.pseudo}</p>
+                <p>Status : {r.status}</p>
+                <p className="text-white/50">Date : {String(r.createdAt || '')}</p>
               </div>
             ))}
           </div>
