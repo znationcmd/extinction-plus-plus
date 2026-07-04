@@ -1,57 +1,66 @@
-import Link from 'next/link';
-import Shell, { links } from '../components/Shell';
-import { readDb } from '../lib/db';
+import Shell from '../../components/Shell';
 
-export default function Home() {
-  const db = readDb();
-  const ownerConfigs = Object.keys(db.ownerConfigs || {}).length;
-  const guildCount = Object.keys(db.guilds || {}).length;
-  const guildServers = Object.values(db.guilds || {}).reduce((a, g) => a + (g.servers || []).length, 0);
-  const ownerServers = Object.values(db.ownerConfigs || {}).reduce((a, cfg) => a + (cfg.servers || []).length, 0);
-  const servers = guildServers + ownerServers + (db.servers || []).length;
+async function getWhitelistData() {
+  try {
+    const baseUrl = process.env.DASHBOARD_URL || 'http://localhost:3000';
+
+    const res = await fetch(${baseUrl}/api/whitelist, {
+      cache: 'no-store',
+    });
+
+    const data = await res.json();
+
+    return {
+      requests: data.requests || [],
+      servers: data.servers || [],
+    };
+  } catch (error) {
+    console.error('Whitelist page error:', error);
+    return { requests: [], servers: [] };
+  }
+}
+
+export default async function WhitelistPage() {
+  const { requests, servers } = await getWhitelistData();
 
   return (
     <Shell>
-      <div className="card mb-5 overflow-hidden">
-        <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
-          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
-            <img src="/extinction-logo.png" alt="Logo Extinction++ RSS" className="mx-auto max-h-72 w-full rounded-3xl object-contain" />
-          </div>
-          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
-            <img src="/extinction-banner.png" alt="Présentation Extinction++ RSS" className="mx-auto max-h-[760px] w-full rounded-3xl object-contain" />
+      <h2 className="mb-6 text-4xl font-black">Whitelist</h2>
+
+      <div className="grid gap-5">
+        <div className="card">
+          <h3 className="mb-3 text-2xl font-black">Serveurs whitelist configurés</h3>
+          {!servers.length && <p className="text-white/60">Aucun serveur whitelist configuré.</p>}
+          <div className="grid gap-3">
+            {servers.map((s, i) => (
+              <div key={s.id || i} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <p className="font-bold">{s.name || s.server_name || 'Serveur sans nom'}</p>
+                <p>Map : {s.map || 'inconnue'}</p>
+                <p>Plateforme : {s.platform || s.plateforme || s.game || 'inconnue'}</p>
+                <p>ID Nitrado : {s.nitradoServiceId || s.nitrado_service_id || s.service_id || 'non renseigné'}</p>
+              </div>
+            ))}
           </div>
         </div>
-        <h2 className="mt-6 text-4xl font-black text-purple-400 sm:text-5xl">Dashboard Extinction++ RSS</h2>
-        <p className="mt-2 text-white/70">Real Survival System — PC, console et téléphone.</p>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <Link href="/owner-config" prefetch={false} className="card block active:bg-purple-900">
-          <p>Configs propriétaires</p>
-          <p className="text-4xl font-black">{ownerConfigs}</p>
-        </Link>
-        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
-          <p>Discords</p>
-          <p className="text-4xl font-black">{guildCount}</p>
-        </Link>
-        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
-          <p>Serveurs</p>
-          <p className="text-4xl font-black">{servers}</p>
-        </Link>
-        <Link href="/killfeed" prefetch={false} className="card block active:bg-purple-900">
-          <p>Événements</p>
-          <p className="text-4xl font-black">{(db.events || []).length}</p>
-        </Link>
-      </div>
-
-      <h3 className="mt-8 mb-4 text-3xl font-black">Modules</h3>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {links.filter(([href]) => href !== '/').map(([href, label, Icon]) => (
-          <Link key={href} href={href} prefetch={false} className="flex min-h-[120px] flex-col items-center justify-center rounded-3xl bg-white/10 p-5 text-center hover:bg-white/15 active:bg-red-600">
-            <Icon size={34} />
-            <span className="mt-3 text-lg font-bold">{label}</span>
-          </Link>
-        ))}
+        <div className="card">
+          <h3 className="mb-4 text-2xl font-black">Demandes whitelist</h3>
+          {!requests.length && <p className="text-white/60">Aucune demande whitelist.</p>}
+          <div className="grid gap-3">
+            {requests.map((r, i) => (
+              <div key={r.id || i} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <p className="font-bold">Discord : {r.guildId || r.guild_id || 'inconnu'}</p>
+                <p>Joueur Discord : {r.userId || r.user_id || r.discord_id || 'inconnu'}</p>
+                <p>Serveur : {r.server || r.server_name || r.server_id || 'inconnu'}</p>
+                <p>Map : {r.map || 'inconnue'}</p>
+                <p>Plateforme : {r.plateforme || r.platform || 'inconnue'}</p>
+                <p>Pseudo / ID : {r.pseudo || r.steam_id || r.uid || 'non renseigné'}</p>
+                <p>Status : {r.status || 'pending'}</p>
+                <p className="text-white/50">Date : {String(r.createdAt || r.created_at || '')}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </Shell>
   );
