@@ -5,23 +5,17 @@ export async function GET() {
   try {
     const db = await readDb();
 
-    const requests = db.pendingWhitelist || db.whitelist_requests || [];
-
-    const servers = [
-      ...(db.connectedServers || []),
-      ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
-    ];
-
     return NextResponse.json({
       success: true,
-      requests,
-      servers
+      requests: db.pendingWhitelist || [],
+      servers: db.connectedServers || []
     });
   } catch (error) {
-    console.error('GET /api/whitelist', error);
-    return NextResponse.json(
-      { success: false, error: error.message, requests: [], servers: [] },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      requests: [],
+      servers: []
+    }, { status: 500 });
   }
 }
