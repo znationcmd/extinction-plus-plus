@@ -1,36 +1,26 @@
 import { NextResponse } from 'next/server';
-import { readDb } from '../../../lib/db';
+import { readDb } from '../../../lib/jsonDb';
 
 export async function GET() {
   try {
-    const db = readDb();
+    const db = await readDb();
 
-    const ownerServers = Object.values(db.ownerConfigs || {})
-      .flatMap(cfg => cfg.servers || []);
-
-    const guildServers = Object.values(db.guilds || {})
-      .flatMap(g => g.servers || []);
+    const requests = db.pendingWhitelist || db.whitelist_requests || [];
 
     const servers = [
-      ...(db.servers || []),
-      ...ownerServers,
-      ...guildServers,
-    ];
-
-    const requests = [
-      ...(db.whitelist_requests || []),
-      ...(db.pendingWhitelist || []),
+      ...(db.connectedServers || []),
+      ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
     ];
 
     return NextResponse.json({
       success: true,
-      servers,
       requests,
+      servers
     });
   } catch (error) {
     console.error('GET /api/whitelist', error);
     return NextResponse.json(
-      { success: false, error: error.message, servers: [], requests: [] },
+      { success: false, error: error.message, requests: [], servers: [] },
       { status: 500 }
     );
   }
