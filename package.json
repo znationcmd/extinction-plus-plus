@@ -3,12 +3,14 @@
   "version": "7.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node index.js",
     "deploy": "node deploy-commands.js",
-    "build": "cd dashboard && npm run build",
+    "build": "node --check index.js",
     "bot": "node index.js",
     "check-env": "node scripts/check-env.js",
-    "doctor": "node scripts/doctor.js"
+    "doctor": "node scripts/doctor.js",
+    "build:dashboard": "cd dashboard && npm run build",
+    "start:all": "node server.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
