@@ -27,6 +27,10 @@ function run(name, args, cwd, env) {
   child.on('exit', (code, signal) => {
     children.delete(child);
     console.log(`[${name}] exited with code ${code}, signal ${signal}`);
+    if (!stopping && name === 'dashboard' && config.DISCORD_TOKEN) {
+      console.error('[dashboard] stopped; Discord bot remains running.');
+      return;
+    }
     if (!stopping) shutdown(code || 1);
   });
   child.on('close', () => {
