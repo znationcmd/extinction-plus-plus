@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/.next
+.env
+.env.*
+**/.env
+**/.env.*
+*.patch
+*.zip
+extinction-plus-plus-rss-100MAX-BON-GIT
