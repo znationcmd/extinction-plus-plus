@@ -42,7 +42,7 @@ const databasePath = path.resolve(__dirname, config.DATABASE_PATH);
 const env = { ...process.env, DATABASE_PATH: databasePath, BOT_DATABASE_PATH: databasePath };
 
 console.log(`Starting Extinction++ RSS on port ${port}`);
-run('dashboard', [path.join(dashboardDir, 'node_modules/next/dist/bin/next'),
+run('dashboard', [require.resolve('next/dist/bin/next', { paths: [dashboardDir, __dirname] }),
   'start', '-H', '0.0.0.0', '-p', String(port)], dashboardDir, env);
 
 if (config.DISCORD_TOKEN) {
