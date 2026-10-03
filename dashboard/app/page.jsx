@@ -1,49 +1,57 @@
-import Shell from '../../components/Shell';
-import { ensureTables, getPool, normalizeWhitelist } from '../../lib/pgdb';
+import Link from 'next/link';
+import Shell, { links } from '../components/Shell';
+import { readDb } from '../lib/db';
 
-async function getWhitelistRequests() {
-  try {
-    await ensureTables();
-    const result = await getPool().query('SELECT * FROM whitelist_requests ORDER BY created_at DESC');
-    return result.rows.map(normalizeWhitelist);
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-export default async function WhitelistPage() {
-  const requests = await getWhitelistRequests();
+export default function Home() {
+  const db = readDb();
+  const ownerConfigs = Object.keys(db.ownerConfigs || {}).length;
+  const guildCount = Object.keys(db.guilds || {}).length;
+  const guildServers = Object.values(db.guilds || {}).reduce((a, g) => a + (g.servers || []).length, 0);
+  const ownerServers = Object.values(db.ownerConfigs || {}).reduce((a, cfg) => a + (cfg.servers || []).length, 0);
+  const servers = guildServers + ownerServers + (db.servers || []).length + (db.connectedServers || []).length;
 
   return (
     <Shell>
-      <h2 className="mb-6 text-4xl font-black">Whitelist</h2>
-
-      <div className="grid gap-5">
-        <div className="card">
-          <h3 className="mb-3 text-2xl font-black">Panneau whitelist</h3>
-          <p className="text-white/70">Crée un panneau depuis Discord avec :</p>
-          <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/whitelist-panel serveur: sakhal map: sakhal salon: #whitelist-demandes</div>
-        </div>
-
-        <div className="card">
-          <h3 className="mb-4 text-2xl font-black">Demandes en attente</h3>
-          {!requests.length && <p className="text-white/60">Aucune demande whitelist en base PostgreSQL.</p>}
-          <div className="grid gap-3">
-            {requests.map((r) => (
-              <div key={r.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <p className="font-bold">Discord : {r.guildId}</p>
-                <p>Joueur Discord : {r.userId}</p>
-                <p>Serveur : {r.server}</p>
-                <p>Map : {r.map}</p>
-                <p>Plateforme : {r.plateforme || r.platform}</p>
-                <p>Pseudo / ID : {r.pseudo}</p>
-                <p>Status : {r.status}</p>
-                <p className="text-white/50">Date : {String(r.createdAt || '')}</p>
-              </div>
-            ))}
+      <div className="card mb-5 overflow-hidden">
+        <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
+          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
+            <img src="/extinction-logo.png" alt="Logo Extinction++ RSS" className="mx-auto max-h-72 w-full rounded-3xl object-contain" />
+          </div>
+          <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
+            <img src="/extinction-banner.png" alt="Présentation Extinction++ RSS" className="mx-auto max-h-[760px] w-full rounded-3xl object-contain" />
           </div>
         </div>
+        <h2 className="mt-6 text-4xl font-black text-purple-400 sm:text-5xl">Dashboard Extinction++ RSS</h2>
+        <p className="mt-2 text-white/70">Real Survival System — PC, console et téléphone.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-4">
+        <Link href="/owner-config" prefetch={false} className="card block active:bg-purple-900">
+          <p>Configs propriétaires</p>
+          <p className="text-4xl font-black">{ownerConfigs}</p>
+        </Link>
+        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
+          <p>Discords</p>
+          <p className="text-4xl font-black">{guildCount}</p>
+        </Link>
+        <Link href="/servers" prefetch={false} className="card block active:bg-purple-900">
+          <p>Serveurs</p>
+          <p className="text-4xl font-black">{servers}</p>
+        </Link>
+        <Link href="/killfeed" prefetch={false} className="card block active:bg-purple-900">
+          <p>Événements</p>
+          <p className="text-4xl font-black">{(db.events || []).length}</p>
+        </Link>
+      </div>
+
+      <h3 className="mt-8 mb-4 text-3xl font-black">Modules</h3>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {links.filter(([href]) => href !== '/').map(([href, label, Icon]) => (
+          <Link key={href} href={href} prefetch={false} className="flex min-h-[120px] flex-col items-center justify-center rounded-3xl bg-white/10 p-5 text-center hover:bg-white/15 active:bg-red-600">
+            <Icon size={34} />
+            <span className="mt-3 text-lg font-bold">{label}</span>
+          </Link>
+        ))}
       </div>
     </Shell>
   );

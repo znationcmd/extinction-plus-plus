@@ -5,6 +5,9 @@ export function dbPath() {
   if (process.env.BOT_DATABASE_PATH) {
     return path.resolve(process.cwd(), process.env.BOT_DATABASE_PATH);
   }
+  if (process.env.DATABASE_PATH) {
+    return path.resolve(process.cwd(), '..', process.env.DATABASE_PATH);
+  }
   return path.resolve(process.cwd(), '..', 'shared', 'database.json');
 }
 

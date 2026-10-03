@@ -1,15 +1,16 @@
 import Shell from '../../components/Shell';
-import { ensureTables, getPool, normalizeServer } from '../../lib/pgdb';
+import { readDb } from '../../lib/db';
 
-async function getServers() {
-  try {
-    await ensureTables();
-    const result = await getPool().query('SELECT * FROM servers ORDER BY created_at DESC');
-    return result.rows.map(normalizeServer);
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
+function getServers() {
+  const db = readDb();
+  const servers = [
+    ...(db.connectedServers || []),
+    ...(db.servers || []),
+    ...Object.entries(db.guilds || {}).flatMap(([guildId, g]) =>
+      (g.servers || []).map(s => ({ ...s, guildId: s.guildId || guildId }))),
+    ...Object.values(db.ownerConfigs || {}).flatMap(cfg => cfg.servers || [])
+  ];
+  return [...new Map(servers.map(s => [s.id, s])).values()];
 }
 
 export default async function Servers() {
@@ -21,7 +22,7 @@ export default async function Servers() {
 
       <div className="card mb-6">
         <h3 className="text-2xl font-black">Serveurs ajoutés depuis Discord</h3>
-        <p className="mt-2 text-white/70">Les serveurs créés avec <b>/serveur ajouter</b> sont maintenant lus depuis PostgreSQL.</p>
+        <p className="mt-2 text-white/70">Les serveurs créés avec <b>/serveur ajouter</b> apparaissent ici avec les serveurs configurés dans le dashboard.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -36,7 +37,7 @@ export default async function Servers() {
             <p>Discord : {s.guildId || '—'}</p>
           </div>
         ))}
-        {!servers.length && <div className="card md:col-span-2 xl:col-span-3">Aucun serveur en base PostgreSQL. Ajoute-en un avec /serveur ajouter après ce patch.</div>}
+        {!servers.length && <div className="card md:col-span-2 xl:col-span-3">Aucun serveur configuré. Ajoute-en un avec /serveur ajouter.</div>}
       </div>
     </Shell>
   );

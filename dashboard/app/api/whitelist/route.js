@@ -8,7 +8,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       requests: db.pendingWhitelist || [],
-      servers: db.connectedServers || []
+      servers: [
+        ...(db.connectedServers || []),
+        ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
+      ]
     });
   } catch (error) {
     return NextResponse.json({
