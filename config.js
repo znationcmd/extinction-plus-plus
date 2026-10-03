@@ -4,7 +4,7 @@ module.exports = {
   GUILD_ID: process.env.GUILD_ID || "",
   OWNER_ID: process.env.OWNER_ID || "",
 
-  DATABASE_PATH: process.env.DATABASE_PATH || "./shared/database.json",
+  DATABASE_PATH: process.env.BOT_DATABASE_PATH || process.env.DATABASE_PATH || "./shared/database.json",
 
   DASHBOARD_URL: process.env.DASHBOARD_URL || (
     process.env.RAILWAY_PUBLIC_DOMAIN

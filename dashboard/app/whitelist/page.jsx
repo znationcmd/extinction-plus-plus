@@ -1,26 +1,15 @@
 import Shell from '../../components/Shell';
+import { readDb } from '../../lib/db';
 
-async function getWhitelistData() {
-  try {
-    const baseUrl = process.env.DASHBOARD_URL || 'http://localhost:3000';
-
-    const res = await fetch(`${baseUrl}/api/whitelist`, {
-      cache: 'no-store',
-    });
-
-    const data = await res.json();
-
-    return {
-      requests: data.requests || [],
-      servers: data.servers || [],
-    };
-  } catch (error) {
-    console.error('Whitelist page error:', error);
-    return {
-      requests: [],
-      servers: [],
-    };
-  }
+function getWhitelistData() {
+  const db = readDb();
+  return {
+    requests: db.pendingWhitelist || [],
+    servers: [
+      ...(db.connectedServers || []),
+      ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
+    ]
+  };
 }
 
 export default async function WhitelistPage() {
