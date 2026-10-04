@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
+export default async function Page() {
+  const db = (await readDb());
   const items = Array.isArray(db.tickets) ? db.tickets : [];
 
   return (
@@ -35,6 +36,6 @@ export default function Page() {
           </div>
         )}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/tickets" fields={[{"name": "subject", "label": "Objet"}, {"name": "userId", "label": "Joueur"}, {"name": "message", "label": "Message"}, {"name": "status", "label": "Statut", "options": {"open": "Ouvert", "closed": "Fermé"}}]} /></Shell>
   );
 }

@@ -1,8 +1,10 @@
+import ServerActions from '../../components/ServerActions';
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-function getServers() {
-  const db = readDb();
+async function getServers() {
+  const db = (await readDb());
   const servers = [
     ...(db.connectedServers || []),
     ...(db.servers || []),
@@ -39,6 +41,6 @@ export default async function Servers() {
         ))}
         {!servers.length && <div className="card md:col-span-2 xl:col-span-3">Aucun serveur configuré. Ajoute-en un avec /serveur ajouter.</div>}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/servers" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu", "required": true}, {"name": "platform", "label": "Plateforme"}, {"name": "map", "label": "Carte"}, {"name": "nitradoId", "label": "ID Nitrado"}, {"name": "ip", "label": "Adresse"}, {"name": "port", "label": "Port du jeu"}, {"name": "rconHost", "label": "Adresse RCON"}, {"name": "rconPort", "label": "Port RCON", "type": "integer"}, {"name": "rconPassword", "label": "Mot de passe RCON", "type": "password"}, {"name": "rconProtocol", "label": "Protocole RCON", "options": {"source": "Source (ARK / Palworld / Conan)", "battleye": "BattlEye (DayZ PC / Arma)"}}, {"name": "enabled", "label": "Activé", "type": "boolean"}]} readKey="servers" /><ServerActions /></Shell>
   );
 }

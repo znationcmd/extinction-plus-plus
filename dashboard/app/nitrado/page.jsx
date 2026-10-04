@@ -1,8 +1,9 @@
+import ServerActions from '../../components/ServerActions';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
+export default async function Page() {
+  const db = (await readDb());
   const accounts = Object.values(db.nitradoAccounts || {});
   const guilds = Object.values(db.guilds || {});
   const connectedServers = Array.isArray(db.connectedServers) ? db.connectedServers : [];
@@ -57,6 +58,6 @@ export default function Page() {
         ))}
         {!connectedServers.length && <div className="card md:col-span-2 xl:col-span-3">Aucun serveur Nitrado lié.</div>}
       </div>
-    </Shell>
+    <ServerActions /></Shell>
   );
 }

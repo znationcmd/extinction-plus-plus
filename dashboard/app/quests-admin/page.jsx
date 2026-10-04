@@ -1,8 +1,10 @@
+import ReviewPanel from '../../components/ReviewPanel';
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function QuestsAdminPage() {
-  const db = readDb();
+export default async function QuestsAdminPage() {
+  const db = (await readDb());
   const quests = Array.isArray(db.quests) ? db.quests : [];
 
   return (
@@ -22,6 +24,6 @@ export default function QuestsAdminPage() {
         ))}
         {!quests.length && <div className="card md:col-span-3">Aucune quête configurée.</div>}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/quests" fields={[{"name": "title", "label": "Titre", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur"}, {"name": "objective", "label": "Objectif"}, {"name": "reward", "label": "Récompense banque", "type": "integer"}, {"name": "xp", "label": "XP", "type": "integer"}, {"name": "type", "label": "Fréquence"}, {"name": "enabled", "label": "Activée", "type": "boolean"}]} /><ReviewPanel endpoint="/api/quest-proofs" idKey="proofId" title="Valider les preuves et attribuer les récompenses" /></Shell>
   );
 }

@@ -1,11 +1,12 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
-import { readDb } from '../../lib/db';
+import { publicShop } from '../../lib/public-shop';
+import {activeGuild} from '../../lib/dashboard-auth';
 
-export default function Shop() {
-  const db = readDb();
-  const guildShop = Object.values(db.guilds || {}).flatMap(g => (g.shop || []).map(i => ({...i, guild: g.name || g.id})));
-  const globalShop = db.shop || [];
-  const shops = [...guildShop, ...globalShop];
+export default async function Shop({searchParams}) {
+  const query=await searchParams;let admin=false,id=query.guildId;
+  try{const active=await activeGuild();if(!id)id=active;admin=active===id;}catch{}
+  const shops=await publicShop(id);
 
   return (
     <Shell>
@@ -27,6 +28,6 @@ export default function Shop() {
         ))}
         {!shops.length && <div className="card md:col-span-2 xl:col-span-3">Aucun item. Utilise /shop create.</div>}
       </div>
-    </Shell>
+    {admin&&<ModuleEditor endpoint="/api/shop" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "server", "label": "Nom du serveur"}, {"name": "map", "label": "Carte"}, {"name": "price", "label": "Prix banque", "type": "integer"}, {"name": "category", "label": "Catégorie"}, {"name": "blueprint", "label": "Blueprint ou ID ARK"}, {"name": "hidden", "label": "Masqué", "type": "boolean"}]} />}</Shell>
   );
 }

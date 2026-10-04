@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
+export default async function Page() {
+  const db = (await readDb());
   const items = Array.isArray(db.plugins) ? db.plugins : [];
 
   return (
@@ -35,6 +36,6 @@ export default function Page() {
           </div>
         )}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/plugins" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "url", "label": "Lien du plugin"}]} /></Shell>
   );
 }

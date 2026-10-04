@@ -1,8 +1,9 @@
+import ReviewPanel from '../../components/ReviewPanel';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-function getWhitelistData() {
-  const db = readDb();
+async function getWhitelistData() {
+  const db = (await readDb());
   return {
     requests: db.pendingWhitelist || [],
     servers: [
@@ -109,6 +110,6 @@ export default async function WhitelistPage() {
           </div>
         </div>
       </div>
-    </Shell>
+    <ReviewPanel endpoint="/api/whitelist" readKey="requests" idKey="requestId" title="Validation du rôle Discord" /></Shell>
   );
 }

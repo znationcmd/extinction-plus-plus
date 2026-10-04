@@ -4,6 +4,7 @@ import PwaProvider from '../components/PwaProvider';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
+  metadataBase: new URL(process.env.DASHBOARD_URL || 'http://localhost:3000'),
   title: 'Extinction++ RSS',
   description: 'Dashboard Extinction++ RSS',
   manifest: '/manifest.webmanifest',

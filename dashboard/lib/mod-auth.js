@@ -1,14 +1,15 @@
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import store from './dayz-mod-store.cjs';
+import secure from './secure-store.cjs';
 
 export function origin() {
   const url = new URL(process.env.DASHBOARD_URL || process.env.PUBLIC_URL || 'http://localhost:3000');
   return url.origin;
 }
 function key() {
-  const value = process.env.SESSION_SECRET;
-  if (!value || value.length < 32 || /change[_ -]?me|change-moi|change_this/i.test(value)) throw new Error('SESSION_SECRET doit être un secret aléatoire de 32 caractères minimum.');
+  const value = secure.configuredSecrets().find(secure.validSecret);
+  if (!value || value.length < 32 || /change[_ -]?me|change-moi|change_this/i.test(value)) throw new Error('SESSION_SECRET ou ENCRYPTION_KEY doit être un secret aléatoire de 32 caractères minimum.');
   return crypto.createHash('sha256').update(value).digest();
 }
 export function seal(value) {
@@ -55,6 +56,6 @@ export function sameOrigin(req) {
   if (req.headers.get('origin') !== origin()) throw Object.assign(new Error('Origine refusée.'), { status: 403 });
 }
 export function failure(e) {
-  const status = e.status || 400;
-  return Response.json({ error: status >= 500 ? 'Erreur du service de mise à jour.' : e.message }, { status, headers: { 'Cache-Control': 'no-store' } });
+  const status = e.status || (e.name==='SyntaxError'?400: /connect|timeout|database|postgres|stockage/i.test(e.message||'')?503:400);
+  return Response.json({ error: status >= 500 ? 'Service temporairement indisponible. Vérifie le stockage et les accès.' : e.message }, { status, headers: { 'Cache-Control': 'no-store' } });
 }

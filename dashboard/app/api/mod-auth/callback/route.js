@@ -14,7 +14,7 @@ export async function GET(req) {
     const token = await reply.json();
     const user = await discord('/users/@me', token.access_token);
     const lifetime = Math.min(Number(token.expires_in), 3600);
-    const res = NextResponse.redirect(`${origin()}/dayz-mods`);
+    const res = NextResponse.redirect(`${origin()}/select-discord`);
     res.cookies.set('extinction_mod_session', seal({ token:token.access_token, userId:user.id, name:user.username, expires:Date.now()+lifetime*1000 }), { ...cookieOptions, maxAge:lifetime });
     return res;
   } catch(e) { return failure(e); }

@@ -1,8 +1,8 @@
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function StatsPage() {
-  const db = readDb();
+export default async function StatsPage() {
+  const db = (await readDb());
   const ownerServers = Object.values(db.ownerConfigs || {}).reduce((a, cfg) => a + (cfg.servers || []).length, 0);
   const guildServers = Object.values(db.guilds || {}).reduce((a, g) => a + (g.servers || []).length, 0);
 

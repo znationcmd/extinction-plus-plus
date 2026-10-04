@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 
 const platforms = ['PC', 'Xbox', 'PlayStation'];
-const games = ['DayZ', 'ARK Survival Ascended', 'ARK Survival Evolved', 'Palworld', 'Arma Reforger', 'Conan Exiles'];
+const games = ['dayz_pc','dayz_ps','dayz_xbox','ark','palworld','arma','conan','7dtd','aniimo'];
 const maps = ['Chernarus', 'Livonia', 'Sakhal', 'Namalsk', 'Lux', 'Deer Isle', 'Banov', 'Esseker', 'Melkart', 'Alteria', 'Autre'];
 
 function blankServer() {
   return {
     id: '',
     name: '',
-    game: 'DayZ',
+    game: 'dayz_pc',
     platform: 'PC',
     map: 'Chernarus',
     nitradoId: '',
@@ -25,19 +25,21 @@ function blankServer() {
 }
 
 export default function OwnerConfigPage() {
-  const [guildId, setGuildId] = useState('default');
+  const [guildId, setGuildId] = useState('');
   const [nitradoToken, setNitradoToken] = useState('');
   const [servers, setServers] = useState([blankServer()]);
   const [saved, setSaved] = useState('');
 
   async function loadConfig(id = guildId) {
-    const res = await fetch(`/api/owner-config?guildId=${encodeURIComponent(id)}`);
+    const res = await fetch('/api/owner-config');
     const data = await res.json();
-    setNitradoToken(data.nitradoToken || '');
+    if(!res.ok){setSaved(data.error||'Chargement impossible.');return;}
+    setGuildId(data.guildId);
+    setNitradoToken('');
     setServers(data.servers?.length ? data.servers : [blankServer()]);
   }
 
-  useEffect(() => { loadConfig('default'); }, []);
+  useEffect(() => { loadConfig(); }, []);
 
   function updateServer(index, field, value) {
     setServers(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
@@ -66,9 +68,9 @@ export default function OwnerConfigPage() {
 
     if (res.ok) {
       setSaved('✅ Configuration enregistrée.');
-      setServers(normalized);
+      const data=await res.json();setServers(data.servers);setNitradoToken('');
     } else {
-      setSaved('❌ Erreur sauvegarde.');
+      const data=await res.json();setSaved(data.error||'Erreur sauvegarde.');
     }
   }
 
@@ -88,7 +90,7 @@ export default function OwnerConfigPage() {
       <div className="card mb-6 space-y-4">
         <label className="block">
           <span className="mb-2 block font-bold">ID Discord / Guild ID</span>
-          <input className="input" value={guildId} onChange={e => setGuildId(e.target.value)} onBlur={() => loadConfig(guildId)} placeholder="ID du Discord du propriétaire" />
+          <input className="input" value={guildId} readOnly placeholder="ID du Discord du propriétaire" />
         </label>
 
         <label className="block">

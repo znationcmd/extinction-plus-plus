@@ -1,0 +1,2 @@
+'use client';
+export default function Error({reset}){return <main className="p-8 space-y-5"><h1 className="text-2xl font-black">Chargement impossible</h1><p>Vérifie ta connexion Discord, le Discord sélectionné et le stockage du bot.</p><button className="btn btn-primary" onClick={()=>reset()}>Réessayer</button><a className="block" href="/select-discord">Choisir mon Discord</a><a className="block" href="/api/mod-auth/login">Me reconnecter</a></main>}

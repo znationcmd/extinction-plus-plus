@@ -2,8 +2,8 @@ import Link from 'next/link';
 import Shell, { links } from '../components/Shell';
 import { readDb } from '../lib/db';
 
-export default function Home() {
-  const db = readDb();
+export default async function Home() {
+  const db = (await readDb());
   const ownerConfigs = Object.keys(db.ownerConfigs || {}).length;
   const guildCount = Object.keys(db.guilds || {}).length;
   const guildServers = Object.values(db.guilds || {}).reduce((a, g) => a + (g.servers || []).length, 0);

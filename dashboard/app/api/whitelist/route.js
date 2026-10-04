@@ -1,7 +1,8 @@
+import { guarded } from '../../../lib/dashboard-auth';
 import { NextResponse } from 'next/server';
 import { readDb } from '../../../lib/db';
 
-export async function GET() {
+async function handleGET() {
   try {
     const db = await readDb();
 
@@ -22,3 +23,10 @@ export async function GET() {
     }, { status: 500 });
   }
 }
+
+export const GET=guarded(handleGET);
+
+import {activeGuild} from '../../../lib/dashboard-auth';
+import {session} from '../../../lib/mod-auth';
+import jobs from '../../../lib/bot-jobs.cjs';
+export const POST=guarded(async req=>{const {requestId,decision}=await req.json();if(!['approve','reject'].includes(decision))throw new Error('Décision invalide.');const id=await activeGuild(),db=await readDb();if(!(db.pendingWhitelist||[]).some(r=>r.id===requestId))throw new Error('Demande introuvable.');const jobId=await jobs.enqueue(id,(await session()).userId,'whitelist',{requestId,decision});return Response.json({ok:true,jobId,message:'Validation en attente du bot.'},{status:202});});

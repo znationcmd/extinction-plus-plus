@@ -27,6 +27,7 @@ import {
 export const links = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
+  ['/maps', 'Cartes interactives', Map],
   ['/install', 'Installer l’application', Home],
   ['/nitrado', 'Nitrado', Cloud],
   ['/dayz-mods', 'Mods DayZ PC', PackageCheck],
@@ -50,6 +51,7 @@ export const links = [
   ['/ai', 'IA', Brain],
   ['/customization', 'Personnalisation', Palette],
   ['/settings', 'Paramètres', Settings],
+  ['/select-discord', 'Changer de Discord', KeyRound],
 ];
 
 const bottomLinks = [

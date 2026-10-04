@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function BattlePassPage() {
-  const db = readDb();
+export default async function BattlePassPage() {
+  const db = (await readDb());
   const bp = db.battlepass || {};
   const levels = bp.levels || [];
 
@@ -24,6 +25,6 @@ export default function BattlePassPage() {
         ))}
         {!levels.length && <div className="card md:col-span-3">Aucun niveau configuré.</div>}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/battlepass" title="Configurer les niveaux" fields={[{name:"level",label:"Niveau",type:"integer",required:true},{name:"xp",label:"XP requis",type:"integer",required:true},{name:"reward",label:"Récompense banque",type:"integer"},{name:"premium",label:"Premium (validation manuelle)",type:"boolean"}]} /></Shell>
   );
 }
