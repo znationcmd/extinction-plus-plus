@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Shell, { links } from '../components/Shell';
-import { readDb } from '../lib/db';
+import { readPageDb as readDb } from '../lib/db';
 
 export default async function Home() {
   const db = (await readDb());

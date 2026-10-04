@@ -1,5 +1,5 @@
 import Shell from '../../components/Shell';
-import { readDb } from '../../lib/db';
+import { readPageDb as readDb } from '../../lib/db';
 
 export default async function Killfeed() {
   const db = (await readDb());

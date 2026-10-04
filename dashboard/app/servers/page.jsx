@@ -2,7 +2,7 @@ import ServerActions from '../../components/ServerActions';
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import hosting from '../../lib/hosting.cjs';
-import { readDb } from '../../lib/db';
+import { readPageDb as readDb } from '../../lib/db';
 
 async function getServers() {
   const db = (await readDb());

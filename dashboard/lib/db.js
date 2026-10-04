@@ -1,6 +1,6 @@
 import appStore from './app-store.cjs';
 import tenant from './tenant.cjs';
-import { activeGuild } from './dashboard-auth';
+import { activeGuild, requirePage } from './dashboard-auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -55,6 +55,10 @@ export async function readDb() {
   const scoped = tenant.view(raw,id);
   originals.set(scoped,{raw,id});
   return scoped;
+}
+export async function readPageDb() {
+  await requirePage();
+  return readDb();
 }
 export async function writeDb(db) {
   const saved=originals.get(db);

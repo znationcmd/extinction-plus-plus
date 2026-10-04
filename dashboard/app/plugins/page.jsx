@@ -1,6 +1,6 @@
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
-import { readDb } from '../../lib/db';
+import { readPageDb as readDb } from '../../lib/db';
 
 export default async function Page() {
   const db = (await readDb());

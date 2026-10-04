@@ -1,6 +1,6 @@
 import BankCredit from '../../components/BankCredit';
 import Shell from '../../components/Shell';
-import { readDb } from '../../lib/db';
+import { readPageDb as readDb } from '../../lib/db';
 
 export default async function EconomyPage() {
   const db = (await readDb());

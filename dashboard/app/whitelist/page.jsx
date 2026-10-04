@@ -1,6 +1,6 @@
 import ReviewPanel from '../../components/ReviewPanel';
 import Shell from '../../components/Shell';
-import { readDb } from '../../lib/db';
+import { readPageDb as readDb } from '../../lib/db';
 
 async function getWhitelistData() {
   const db = (await readDb());
