@@ -1,2 +1,10 @@
-import {nested} from '../../../lib/nested-route';
-export const {GET,POST,PATCH,DELETE}=nested('battlepass',['levels'],{level:'integer',xp:'integer',reward:'integer',premium:'boolean'});
+import {guarded} from '../../../lib/dashboard-auth';
+import {readDb,writeDb} from '../../../lib/db';
+import battlepass from '../../../lib/battlepass.cjs';
+export const GET=guarded(async req=>{const bp=(await readDb()).battlepass||{levels:[]};const q=new URL(req.url).searchParams;
+ if(q.get('collection')==='seasons')return Response.json(bp.seasons||[]);
+ const season=q.get('seasonId');if(season&&!bp.seasons?.some(s=>s.id===season))throw new Error('Saison introuvable.');
+ return Response.json(season?bp.seasons.find(s=>s.id===season).levels:bp.levels||[]);
+});
+const mutate=guarded(async req=>{const body=await req.json(),db=await readDb();body.seasonId??=new URL(req.url).searchParams.get("seasonId")||undefined;db.battlepass||={levels:[]};battlepass.mutate(db.battlepass,body,req.method);await writeDb(db);return Response.json({ok:true});});
+export const POST=mutate,PATCH=mutate,DELETE=mutate;

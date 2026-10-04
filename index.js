@@ -1,3 +1,4 @@
+const battlepass = require('./dashboard/lib/battlepass.cjs');
 const fs = require('fs');
 const path = require('path');
 const { Rcon } = require('rcon-client');
@@ -648,9 +649,11 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
     }
 
     if (interaction.commandName === 'battlepass') {
-      const bp=db.battlepasses?.[interaction.guildId]||{levels:[]};
-      const progress=db.guilds?.[interaction.guildId]?.progress?.[interaction.user.id]||{xp:0};
-      return interaction.reply({ephemeral:true,content:`🎖️ ${bp.name||'Battle Pass'} — ${progress.xp} XP\n${bp.levels.length?bp.levels.map(l=>`Niveau ${l.level} : ${l.xp} XP — ${l.reward||0} banque`).join('\n').slice(0,1700):'Aucun niveau configuré.'}`});
+      const bp=battlepass.config(db,interaction.guildId),season=battlepass.active(bp);
+      if(bp.seasons?.length&&!season)return interaction.reply({ephemeral:true,content:'🎖️ Aucune saison active. Les saisons précédentes sont conservées.'});
+      const progress=battlepass.progress(db,interaction.guildId,interaction.user.id,season),levels=season?.levels||bp.levels||[];
+      const dates=season?`\nDu ${new Date(season.startsAt).toLocaleString('fr-FR',{timeZone:'Europe/Paris'})} au ${new Date(season.endsAt).toLocaleString('fr-FR',{timeZone:'Europe/Paris'})}`:'';
+      return interaction.reply({ephemeral:true,content:`🎖️ ${season?.name||bp.name||'Battle Pass historique'} — ${progress.xp} XP${dates}\n${levels.length?levels.map(l=>`Niveau ${l.level} : ${l.xp} XP — ${l.reward||0} banque${l.premium?' (premium : validation manuelle)':progress.claimed?.includes(l.id)?' ✅':''}`).join('\n').slice(0,1600):'Aucun niveau configuré.'}`});
     }
     if (interaction.commandName === 'quete') {
       const quests=(db.quests||[]).filter(q=>q.guildId===interaction.guildId&&q.enabled!==false);
