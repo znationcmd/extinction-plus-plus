@@ -218,7 +218,7 @@ function startWorker({client,loadDb}) {
       const result=await lock.query('SELECT pg_try_advisory_lock(221100,1701) AS locked');
       if(!result.rows[0].locked) return;
       // One downloader globally: no concurrent SteamCMD sessions on the same account.
-      const db=loadDb();
+      const db=await loadDb();
       const servers=[...(db.connectedServers||[]),...Object.entries(db.guilds||{}).flatMap(([guildId,g])=>(g.servers||[]).map(s=>({...s,guildId})))];
       const seen=new Set();
       for(const s of servers) {
@@ -273,7 +273,7 @@ function startWorker({client,loadDb}) {
       busy=false;
     }
   }
-  const secret=process.env.SECRET_KEY||process.env.SESSION_SECRET||process.env.ENCRYPTION_SECRET;
+  const secret=require('./secure-store').configuredSecrets().find(require('./secure-store').validSecret);
   if(!secret || secret.length<32 || /change[_ -]?me|change-moi|change_this/i.test(secret)) {console.error('Mods DayZ : secret de chiffrement réel requis.');return;}
   tick(); setInterval(tick,15000).unref();
 }

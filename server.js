@@ -1,5 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const http = require('http');
 const config = require('./config');
 
 const children = new Set();
@@ -18,7 +20,7 @@ function shutdown(code) {
 }
 
 function run(name, args, cwd, env) {
-  const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', env });
+  const child = spawn(process.execPath, args, { cwd, stdio: ['inherit','inherit','inherit','ipc'], env });
   children.add(child);
   child.on('error', error => {
     console.error(`[${name}] failed to start: ${error.message}`);
@@ -46,11 +48,25 @@ const databasePath = path.resolve(__dirname, config.DATABASE_PATH);
 const env = { ...process.env, DATABASE_PATH: databasePath, BOT_DATABASE_PATH: databasePath };
 
 console.log(`Starting Extinction++ RSS on port ${port}`);
-run('dashboard', [require.resolve('next/dist/bin/next', { paths: [dashboardDir, __dirname] }),
-  'start', '-H', '0.0.0.0', '-p', String(port)], dashboardDir, env);
+let discordReady=false;
+const hasDashboardBuild=fs.existsSync(path.join(dashboardDir,'.next','BUILD_ID'));
+if(hasDashboardBuild) {
+  run('dashboard',[require.resolve('next/dist/bin/next',{paths:[dashboardDir,__dirname]}),'start','-H','0.0.0.0','-p',String(port)],dashboardDir,env);
+} else {
+  // Separate Railway services do not ship a Next production build on the bot.
+  const health=http.createServer((req,res)=>{
+    if(req.url==='/health') {res.writeHead(discordReady?200:503,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({discordConnected:discordReady,dashboard:'separate',uptime:Math.floor(process.uptime())}));return;}
+    if(req.url==='/' && /^https:\/\//.test(config.DASHBOARD_URL)) {res.writeHead(302,{Location:config.DASHBOARD_URL});res.end();return;}
+    res.writeHead(404,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Utilise le service Dashboard.'}));
+  }).listen(Number(port),'0.0.0.0');
+  process.on('SIGTERM',()=>health.close());process.on('SIGINT',()=>health.close());
+}
+
 
 if (config.DISCORD_TOKEN) {
-  run('bot', [path.join(__dirname, 'index.js')], __dirname, env);
+  const bot=run('bot',[path.join(__dirname,'index.js')],__dirname,env);
+  bot.on('message',m=>{if(m.type==='discordReady')discordReady=!!m.ready;});
+  bot.on('exit',()=>{discordReady=false;});
 } else {
   console.log('DISCORD_TOKEN missing in env/config.js: dashboard only mode.');
 }

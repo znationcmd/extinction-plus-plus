@@ -1,8 +1,9 @@
+import BankCredit from '../../components/BankCredit';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function EconomyPage() {
-  const db = readDb();
+export default async function EconomyPage() {
+  const db = (await readDb());
   const transactions = db.economy?.transactions || [];
   const accounts = db.bank?.accounts || [];
 
@@ -21,6 +22,6 @@ export default function EconomyPage() {
           {!transactions.length && <p>Aucune transaction.</p>}
         </div>
       </div>
-    </Shell>
+    <BankCredit /></Shell>
   );
 }

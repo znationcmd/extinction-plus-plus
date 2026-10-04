@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
+export default async function Page() {
+  const db = (await readDb());
   const items = Array.isArray(db.deliveries) ? db.deliveries : [];
 
   return (
@@ -37,6 +38,6 @@ export default function Page() {
           </div>
         )}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/deliveries" fields={[{"name": "itemName", "label": "Objet"}, {"name": "userId", "label": "ID joueur"}, {"name": "serverId", "label": "Serveur"}, {"name": "status", "label": "Statut", "options": {"awaiting_staff": "À traiter", "delivered": "Livré par le staff", "cancelled": "Annulé"}}]} /></Shell>
   );
 }

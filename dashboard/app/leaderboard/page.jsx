@@ -1,9 +1,10 @@
+import board from '../../lib/leaderboard.cjs';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
-  const items = Array.isArray(db.leaderboard) ? db.leaderboard : [];
+export default async function Page() {
+  const db = (await readDb());
+  const items = board.leaderboard(db);
 
   return (
     <Shell>

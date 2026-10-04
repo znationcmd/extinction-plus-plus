@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Page() {
-  const db = readDb();
+export default async function Page() {
+  const db = (await readDb());
   const items = Array.isArray(db.interpol) ? db.interpol : [];
 
   return (
@@ -36,6 +37,6 @@ export default function Page() {
           </div>
         )}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/interpol" fields={[{"name": "player", "label": "Joueur"}, {"name": "reason", "label": "Motif"}, {"name": "status", "label": "Statut", "options": {"pending": "À examiner", "resolved": "Résolu", "dismissed": "Classé"}}]} /></Shell>
   );
 }

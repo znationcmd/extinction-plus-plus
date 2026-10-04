@@ -8,7 +8,9 @@ const games = [
   { name: 'ARK Crossplay', value: 'ark' },
   { name: 'Palworld', value: 'palworld' },
   { name: 'Arma Reforger Crossplay', value: 'arma' },
-  { name: 'Conan Exiles', value: 'conan' }
+  { name: 'Conan Exiles', value: 'conan' },
+  { name: '7 Days to Die', value: '7dtd' },
+  { name: 'Aniimo (communauté / carte)', value: 'aniimo' }
 ];
 
 const commands = [
@@ -70,7 +72,8 @@ const commands = [
       .addStringOption(o => o.setName('provider').setDescription('Hébergeur').setRequired(false)
         .addChoices({ name:'Nitrado', value:'nitrado' }, { name:'GPortal', value:'gportal' }, { name:'Autre', value:'other' }))
       .addStringOption(o => o.setName('rcon_host').setDescription('IP/host RCON').setRequired(false))
-      .addIntegerOption(o => o.setName('rcon_port').setDescription('Port RCON').setRequired(false))
+      .addIntegerOption(o => o.setName('rcon_port').setDescription('Port RCON').setMinValue(1).setMaxValue(65535).setRequired(false))
+      .addStringOption(o => o.setName('rcon_protocol').setDescription('Protocole du port RCON').addChoices({name:'Source',value:'source'},{name:'BattlEye',value:'battleye'}).setRequired(false))
       .addStringOption(o => o.setName('rcon_password').setDescription('Mot de passe RCON').setRequired(false))
       .addStringOption(o => o.setName('image').setDescription('URL image').setRequired(false)))
     .addSubcommand(s => s.setName('liste').setDescription('Liste des serveurs')),
@@ -103,7 +106,7 @@ const commands = [
       .addStringOption(o => o.setName('map').setDescription('Map').setRequired(true))
       .addStringOption(o => o.setName('name').setDescription('Nom item').setRequired(true))
       .addStringOption(o => o.setName('category').setDescription('Catégorie').setRequired(true))
-      .addIntegerOption(o => o.setName('price').setDescription('Prix').setRequired(true))
+      .addIntegerOption(o => o.setName('price').setDescription('Prix').setMinValue(0).setRequired(true))
       .addStringOption(o => o.setName('type').setDescription('Type').setRequired(false)
         .addChoices(
           { name: 'Item', value: 'item' },
@@ -158,11 +161,11 @@ const commands = [
     .addSubcommand(s => s.setName('solde').setDescription('Voir ton solde banque'))
     .addSubcommand(s => s.setName('pay').setDescription('Payer un joueur')
       .addUserOption(o => o.setName('joueur').setDescription('Joueur à payer').setRequired(true))
-      .addIntegerOption(o => o.setName('montant').setDescription('Montant').setRequired(true))
+      .addIntegerOption(o => o.setName('montant').setDescription('Montant').setMinValue(1).setRequired(true))
       .addStringOption(o => o.setName('raison').setDescription('Raison').setRequired(false)))
     .addSubcommand(s => s.setName('add').setDescription('Ajouter argent banque admin')
       .addUserOption(o => o.setName('joueur').setDescription('Joueur').setRequired(true))
-      .addIntegerOption(o => o.setName('montant').setDescription('Montant').setRequired(true))
+      .addIntegerOption(o => o.setName('montant').setDescription('Montant').setMinValue(1).setRequired(true))
       .addStringOption(o => o.setName('raison').setDescription('Raison').setRequired(false))),
 
   new SlashCommandBuilder()
@@ -197,6 +200,7 @@ const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);
     await rest.put(Routes.applicationCommands(config.CLIENT_ID), { body: commands.map(c => c.toJSON()) });
     console.log('✅ Commandes globales enregistrées.');
   } catch (error) {
-    console.error('❌ Erreur deploy:', error);
+    console.error('❌ Déploiement des commandes refusé. Vérifie les identifiants et les permissions Discord.');
+    process.exitCode=1;
   }
 })();

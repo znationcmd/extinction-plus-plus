@@ -1,49 +1,7 @@
-import { readDb, writeDb } from '../../../lib/db';
-
-function emptyConfig(guildId = 'default') {
-  return {
-    guildId,
-    nitradoToken: '',
-    servers: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-}
-
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const guildId = searchParams.get('guildId') || 'default';
-  const db = readDb();
-  db.ownerConfigs = db.ownerConfigs || {};
-  return Response.json(db.ownerConfigs[guildId] || emptyConfig(guildId));
-}
-
-export async function POST(req) {
-  const body = await req.json();
-  const guildId = body.guildId || 'default';
-  const db = readDb();
-  db.ownerConfigs = db.ownerConfigs || {};
-  const previous = db.ownerConfigs[guildId] || emptyConfig(guildId);
-
-  const config = {
-    ...previous,
-    guildId,
-    nitradoToken: body.nitradoToken || previous.nitradoToken || '',
-    servers: Array.isArray(body.servers) ? body.servers : previous.servers || [],
-    updatedAt: new Date().toISOString()
-  };
-
-  db.ownerConfigs[guildId] = config;
-  db.servers = db.servers || [];
-
-  for (const s of config.servers) {
-    const id = s.id || `${guildId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const serverRecord = { ...s, id, guildId, ownerManaged: true, updatedAt: new Date().toISOString() };
-    const idx = db.servers.findIndex(x => x.id === id);
-    if (idx >= 0) db.servers[idx] = { ...db.servers[idx], ...serverRecord };
-    else db.servers.push(serverRecord);
-  }
-
-  writeDb(db);
-  return Response.json({ ok: true, config });
-}
+import {readDb,writeDb} from '../../../lib/db';
+import {activeGuild,guarded} from '../../../lib/dashboard-auth';
+import {authorize} from '../../../lib/mod-auth';
+import {encrypt,maskSecret} from '../../../lib/secure';
+import {allServers,publicServer,validateServer,saveServers} from '../../../lib/servers';
+export const GET=guarded(async()=>{const db=await readDb(),id=await activeGuild();return Response.json({guildId:id,servers:allServers(db,id).map(publicServer),nitradoConnected:!!db.nitradoAccounts[id]?.tokenEncrypted});});
+export const POST=guarded(async req=>{const body=await req.json(),id=await activeGuild();await authorize(id,true);const db=await readDb();if(!Array.isArray(body.servers)||body.servers.length>100)throw new Error('Liste de 100 serveurs maximum requise.');const previous=allServers(db,id);const servers=body.servers.map(s=>validateServer(s,previous.find(p=>p.id===s.id)||{},id));if(body.nitradoToken){if(typeof body.nitradoToken!=='string'||body.nitradoToken.length>4000)throw new Error('Token invalide.');const reply=await fetch('https://api.nitrado.net/services',{headers:{Authorization:`Bearer ${body.nitradoToken}`},signal:AbortSignal.timeout(15000)});if(!reply.ok)throw new Error('Nitrado a refusé le token.');db.nitradoAccounts[id]={guildId:id,tokenEncrypted:encrypt(body.nitradoToken),tokenPreview:maskSecret(body.nitradoToken),updatedAt:new Date().toISOString()};}saveServers(db,id,servers);db.ownerConfigs[id]={guildId:id,servers:servers.map(publicServer),updatedAt:new Date().toISOString()};await writeDb(db);return Response.json({ok:true,servers:servers.map(publicServer)});});

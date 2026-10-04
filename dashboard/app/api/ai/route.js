@@ -1,3 +1,4 @@
+import { guarded } from '../../../lib/dashboard-auth';
 function localAiAnswer(message) {
   const q = String(message || '').toLowerCase();
   if (q.includes('nitrado')) return 'Nitrado : configure ton token dans le dashboard, teste la connexion, puis lie ton service ID au serveur Discord.';
@@ -9,8 +10,9 @@ function localAiAnswer(message) {
   return 'Je peux aider sur Nitrado, RCON, whitelist, shop, économie, RP, INTERPOL, killfeed, Battle Pass et dashboard.';
 }
 
-export async function POST(req) {
-  const { message, system } = await req.json();
+async function handlePOST(req) {
+  const { message } = await req.json();
+  if(typeof message!=='string'||!message.trim()||message.length>4000)throw new Error('Question de 4000 caractères maximum requise.');
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
@@ -28,7 +30,7 @@ export async function POST(req) {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: system || 'Tu es l’assistant IA du dashboard Extinction++ RSS. Réponds en français, simplement, pour aider à configurer DayZ, Nitrado, Discord, RP, Interpol, whitelist, shop et Battle Pass.' },
+          { role: 'system', content: 'Tu es l’assistant IA du dashboard Extinction++ RSS. Réponds en français, simplement, pour aider à configurer DayZ, Nitrado, Discord, RP, Interpol, whitelist, shop et Battle Pass.' },
           { role: 'user', content: String(message || '') }
         ],
         temperature: 0.3
@@ -46,3 +48,5 @@ export async function POST(req) {
     return Response.json({ answer: localAiAnswer(message), mode: 'fallback', error: String(e?.message || e) }, { status: 200 });
   }
 }
+
+export const POST=guarded(handlePOST);

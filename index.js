@@ -28,15 +28,13 @@ function isHttpUrl(value) {
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const dbPath = path.resolve(__dirname, config.DATABASE_PATH || '../shared/database.json');
 
-function loadDb() {
+const appStore = require('./dashboard/lib/app-store.cjs');
+process.env.APP_STORE_SEED = 'bot';
+async function loadDb() {
   const base = { guilds:{}, users:{}, events:[], pendingWhitelist:[], shopPurchases:[], battlepass:{levels:[]}, quests:[], deliveries:[], interpol:[], alarms:[], rp:{jobs:[]}, shop:[], nitradoAccounts:{}, connectedServers:[], saasAudit:[] };
-  if (!fs.existsSync(dbPath)) return secureStore.ensureSaasDb(base);
-  return secureStore.ensureSaasDb({ ...base, ...JSON.parse(fs.readFileSync(dbPath, 'utf8')) });
+  return secureStore.ensureSaasDb(await appStore.read(dbPath,base));
 }
-function saveDb(db) {
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf8');
-}
+async function saveDb(db) { await appStore.write(dbPath,db); }
 function getGuild(db, guildId, guildName='') {
   db.guilds = db.guilds || {};
   db.guilds[guildId] = db.guilds[guildId] || { id:guildId, name:guildName, channels:{}, roles:{}, servers:[], shop:[], theme:{} };
@@ -58,7 +56,8 @@ function addEvent(db, guildId, event) {
 
 function getGuildNitrado(db, guildId) {
   const token = secureStore.getGuildToken(db, guildId);
-  return token ? nitradoApi.withToken(token) : nitradoApi;
+  if(!token)throw new Error('Connecte le compte Nitrado de ce Discord avec /nitrado connect.');
+  return nitradoApi.withToken(token);
 }
 
 function findGuildServer(cfg, query) {
@@ -70,7 +69,7 @@ function findGuildServer(cfg, query) {
   );
 }
 async function sendLog(interaction, content) {
-  const db = loadDb();
+  const db = await loadDb();
   const cfg = getGuild(db, interaction.guildId, interaction.guild?.name);
   const id = cfg.channels?.logs;
   if (!id) return;
@@ -78,7 +77,7 @@ async function sendLog(interaction, content) {
   if (ch) await ch.send(content).catch(()=>null);
 }
 async function setupGuild(guild) {
-  const db = loadDb();
+  const db = await loadDb();
   const cfg = getGuild(db, guild.id, guild.name);
 
   let category = await guild.channels.create({ name:'EXTINCTION BOT', type:ChannelType.GuildCategory });
@@ -91,7 +90,7 @@ async function setupGuild(guild) {
   cfg.channels = { panel:panel.id, whitelist:whitelist.id, logs:logs.id, quests:quests.id };
   cfg.roles = cfg.roles || {};
   if (role) cfg.roles.whitelist = role.id;
-  saveDb(db);
+  await saveDb(db);
 
   const theme = getGuildTheme(db, guild.id);
   const embed = new EmbedBuilder()
@@ -111,25 +110,12 @@ async function setupGuild(guild) {
   });
   return { panel, whitelist, logs, quests };
 }
-function findArkServerByShopServer(serverName) {
-  const key = Object.keys(config.ARK_SERVERS || {}).find(k => {
-    const s = config.ARK_SERVERS[k];
-    return String(s.name).toLowerCase().includes(String(serverName).toLowerCase()) || String(k).toLowerCase() === String(serverName).toLowerCase();
-  });
-  return key ? config.ARK_SERVERS[key] : null;
-}
 async function giveArkItem(server, playerId, blueprint, qty=1) {
-  if (!server) throw new Error('Serveur ARK introuvable');
-  if (!blueprint) throw new Error('Blueprint manquant');
-  const rcon = await Rcon.connect({ host: server.host, port: Number(server.rconPort), password: server.password });
-  try {
-    const cmd = blueprint.startsWith('Blueprint')
-      ? `GiveItemToPlayer ${playerId} "${blueprint}" ${qty} 0 0`
-      : `GiveItemNumToPlayer ${playerId} ${blueprint} ${qty} 0 0`;
-    return await rcon.send(cmd);
-  } finally {
-    rcon.end();
-  }
+  if(!server || server.game!=='ark')throw new Error('Serveur ARK de ce Discord introuvable.');
+  if(!/^\d{1,20}$/.test(String(playerId)))throw new Error('Player ID ARK numérique requis.');
+  if(!/^\d+$/.test(blueprint) && !/^Blueprint'[A-Za-z0-9_/.]+'$/.test(blueprint))throw new Error('Blueprint ARK invalide.');
+  const command=blueprint.startsWith('Blueprint')?`GiveItemToPlayer ${playerId} "${blueprint}" ${qty} 0 0`:`GiveItemNumToPlayer ${playerId} ${blueprint} ${qty} 0 0`;
+  return rconTools.send(server,command);
 }
 
 
@@ -190,12 +176,18 @@ async function aiAnswer(message) {
 
 client.once('clientReady', () => {
   console.log(`✅ Bot connecté : ${client.user.tag}`);
+  if(process.send)process.send({type:'discordReady',ready:true});
   require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
+  require('./shared/bot-job-worker').start({client,loadDb,saveDb});
 });
+
+client.on('shardDisconnect',()=>{if(process.send)process.send({type:'discordReady',ready:false});});
+client.on('shardResume',()=>{if(process.send)process.send({type:'discordReady',ready:true});});
 
 client.on('interactionCreate', async interaction => {
   try {
-    const db = loadDb();
+    if(interaction.isChatInputCommand()){await interaction.deferReply({ephemeral:true});interaction.reply=async options=>{if(typeof options==='string')return interaction.editReply(options);const {ephemeral,flags,...rest}=options;return interaction.editReply(rest);};}
+    const db = await loadDb();
 
     if (interaction.isButton()) {
       if (interaction.customId === 'panel_shop') return interaction.reply({ ephemeral:true, content:'Utilise `/shop list` pour voir le shop.' });
@@ -220,7 +212,7 @@ client.on('interactionCreate', async interaction => {
         const cfg = getGuild(db, interaction.guildId, interaction.guild.name);
         db.pendingWhitelist = db.pendingWhitelist || [];
         db.pendingWhitelist.push({ id:`${Date.now()}_${interaction.user.id}`, guildId:interaction.guildId, userId:interaction.user.id, server, map, plateforme, pseudo, createdAt:new Date().toISOString() });
-        saveDb(db);
+        await saveDb(db);
         const ch = cfg.channels?.whitelist ? await interaction.guild.channels.fetch(cfg.channels.whitelist).catch(()=>null) : null;
         if (ch) await ch.send(`🛡️ **Demande whitelist**\nJoueur: <@${interaction.user.id}>\nServeur: **${server}**\nMap: **${map}**\nPlateforme: **${plateforme}**\nPseudo: **${pseudo}**`);
         return interaction.reply({ ephemeral:true, content:'✅ Demande envoyée.' });
@@ -232,9 +224,9 @@ client.on('interactionCreate', async interaction => {
 
 
     if (interaction.commandName === 'shoplink') {
-      const db = loadDb();
+      const db = await loadDb();
       const theme = getGuildTheme(db, interaction.guildId);
-      const url = config.SHOP_URL || 'http://localhost:3000/shop';
+      const url=new URL(config.SHOP_URL||'http://localhost:3000/shop');url.searchParams.set('guildId',interaction.guildId);
 
       const embed = new EmbedBuilder()
         .setTitle('🛒 Shop Extinction++ RSS')
@@ -247,7 +239,7 @@ client.on('interactionCreate', async interaction => {
         new ButtonBuilder()
           .setLabel('🛒 Ouvrir le Shop')
           .setStyle(ButtonStyle.Link)
-          .setURL(url)
+          .setURL(String(url))
       );
 
       return interaction.reply({
@@ -259,7 +251,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'dashboard') {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral: true, content: "❌ Vous n'avez pas l'autorisation d'accéder au Dashboard." });
-      const db = loadDb();
+      const db = await loadDb();
       const theme = getGuildTheme(db, interaction.guildId);
       const url = config.DASHBOARD_URL || 'http://localhost:3000';
 
@@ -274,7 +266,7 @@ client.on('interactionCreate', async interaction => {
         new ButtonBuilder()
           .setLabel('🌐 Ouvrir Dashboard')
           .setStyle(ButtonStyle.Link)
-          .setURL(url)
+          .setURL(String(url))
       );
 
       return interaction.reply({
@@ -286,7 +278,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'setup') {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral:true, content:'❌ Admin uniquement.' });
-      await interaction.deferReply({ ephemeral:true });
+      if(!interaction.deferred)await interaction.deferReply({ ephemeral:true });
       const r = await setupGuild(interaction.guild);
       return interaction.editReply(`✅ Discord configuré.\nPanel: ${r.panel}\nWhitelist: ${r.whitelist}\nLogs: ${r.logs}\nQuêtes: ${r.quests}`);
     }
@@ -304,7 +296,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.commandName === 'nitrado') {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral:true, content:'❌ Admin uniquement.' });
-      await interaction.deferReply({ ephemeral:true });
+      if(!interaction.deferred)await interaction.deferReply({ ephemeral:true });
       const sub = interaction.options.getSubcommand();
       const cfg = getGuild(db, interaction.guildId, interaction.guild.name);
 
@@ -318,14 +310,14 @@ client.on('interactionCreate', async interaction => {
           ownerId: interaction.guild.ownerId || '',
           serviceCount: services.length
         });
-        saveDb(db);
+        await saveDb(db);
         return interaction.editReply(`✅ Compte Nitrado connecté pour **${interaction.guild.name}**. Services trouvés : **${services.length}**.
 Le token est chiffré dans la base.`);
       }
 
       if (sub === 'disconnect') {
         secureStore.removeGuildToken(db, interaction.guildId);
-        saveDb(db);
+        await saveDb(db);
         return interaction.editReply('✅ Token Nitrado supprimé pour ce Discord.');
       }
 
@@ -369,7 +361,7 @@ Le token est chiffré dans la base.`);
         cfg.servers.push(server);
         db.connectedServers = db.connectedServers || [];
         db.connectedServers.push(server);
-        saveDb(db);
+        await saveDb(db);
         return interaction.editReply(`✅ Serveur Nitrado lié : **${name}**
 Service ID: **${serviceId}**
 Whitelist path: **${whitelistPath || 'non configuré'}**`);
@@ -402,7 +394,7 @@ Whitelist path: **${whitelistPath || 'non configuré'}**`);
 
     if (interaction.commandName === 'rcon') {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral:true, content:'❌ Admin uniquement.' });
-      await interaction.deferReply({ ephemeral:true });
+      if(!interaction.deferred)await interaction.deferReply({ ephemeral:true });
       const sub = interaction.options.getSubcommand();
       const query = interaction.options.getString('serveur');
       const server = rconTools.findServer(db, interaction.guildId, query);
@@ -410,14 +402,13 @@ Whitelist path: **${whitelistPath || 'non configuré'}**`);
       let commande = interaction.options.getString('commande');
       if (sub === 'test') {
         const game = String(server.game || '').toLowerCase();
-        commande = game === 'ark' ? 'ListPlayers' : 'players';
+        commande = game === 'ark' ? 'ListPlayers' : game === 'palworld' ? 'ShowPlayers' : game === 'conan' ? 'listplayers' : 'players';
       }
       const response = await rconTools.send(server, commande);
       return interaction.editReply(`✅ RCON OK sur **${server.name}**\nCommande: \`${commande}\`\n\`\`\`\n${String(response || 'OK').slice(0,1800)}\n\`\`\``);
     }
 
     const quickLinks = {
-      battlepass: ['/battlepass-admin', '🎟️ Ouvrir le Battle Pass', 'Battle Pass Extinction++ RSS'],
       quetes: ['/quests-admin', '🎯 Ouvrir les Quêtes', 'Quêtes Extinction++ RSS'],
       rp: ['/rp', '🎭 Ouvrir le RP', 'Système RP Extinction++ RSS'],
       stats: ['/stats', '📊 Ouvrir les Stats', 'Statistiques Extinction++ RSS'],
@@ -439,7 +430,7 @@ Whitelist path: **${whitelistPath || 'non configuré'}**`);
       const account = getBankAccount(db, interaction.guildId, interaction.user.id);
 
       if (sub === 'solde') {
-        saveDb(db);
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`🏦 Banque RSS
 Cash: **${account.cash || 0}**
 Banque: **${account.bank || 0}**` });
@@ -450,10 +441,11 @@ Banque: **${account.bank || 0}**` });
         const target = interaction.options.getUser('joueur');
         const amount = interaction.options.getInteger('montant');
         const reason = interaction.options.getString('raison') || 'Ajout admin';
+        if(!Number.isSafeInteger(amount)||amount<=0)return interaction.reply({ephemeral:true,content:'❌ Montant positif requis.'});
         const targetAccount = getBankAccount(db, interaction.guildId, target.id);
         targetAccount.bank = (targetAccount.bank || 0) + amount;
         addBankTransaction(db, { guildId: interaction.guildId, type:'admin_add', from: interaction.user.id, to: target.id, amount, reason });
-        saveDb(db);
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`✅ ${amount} ajouté à la banque de ${target}.` });
       }
 
@@ -468,7 +460,7 @@ Banque: **${account.bank || 0}**` });
         account.bank -= amount;
         targetAccount.bank = (targetAccount.bank || 0) + amount;
         addBankTransaction(db, { guildId: interaction.guildId, type:'player_pay', from: interaction.user.id, to: target.id, amount, reason });
-        saveDb(db);
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`✅ Tu as payé **${amount}** à ${target}.` });
       }
     }
@@ -479,7 +471,7 @@ Banque: **${account.bank || 0}**` });
         return interaction.reply({ ephemeral:true, content:'🤖 IA RSS : utilise `/ia question message:...` pour demander de l’aide sur Nitrado, RCON, whitelist, shop, banque, RP, INTERPOL ou dashboard.' });
       }
       const msg = interaction.options.getString('message');
-      await interaction.deferReply({ ephemeral:true });
+      if(!interaction.deferred)await interaction.deferReply({ ephemeral:true });
       const answer = await aiAnswer(msg);
       return interaction.editReply(`🤖 **Assistant Extinction++ RSS**
 ${answer}`);
@@ -488,7 +480,7 @@ ${answer}`);
     if (interaction.commandName === 'interpol') {
       const sub = interaction.options.getSubcommand();
       if (sub === 'signaler') {
-        const db = loadDb();
+        const db = await loadDb();
         db.interpol = db.interpol || [];
         const report = {
           id: `${Date.now()}_${interaction.user.id}`,
@@ -500,14 +492,14 @@ ${answer}`);
           createdAt: new Date().toISOString()
         };
         db.interpol.push(report);
-        saveDb(db);
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`🚓 Signalement Interpol enregistré pour **${report.player}**.` });
       }
     }
 
     if (interaction.commandName === 'alarme') {
       if (!isAdmin(interaction)) return interaction.reply({ ephemeral:true, content:'❌ Admin uniquement.' });
-      const db = loadDb();
+      const db = await loadDb();
       db.alarms = db.alarms || [];
       const alarm = {
         id: `${Date.now()}`,
@@ -522,7 +514,7 @@ ${answer}`);
         createdAt: new Date().toISOString()
       };
       db.alarms.push(alarm);
-      saveDb(db);
+      await saveDb(db);
       return interaction.reply({ ephemeral:true, content:`🚨 Alarme créée : **${alarm.name}**.` });
     }
 
@@ -542,9 +534,10 @@ ${answer}`);
         const rconHost = interaction.options.getString('rcon_host') || ip || '';
         const rconPort = interaction.options.getInteger('rcon_port') || 0;
         const rconPassword = interaction.options.getString('rcon_password') || '';
+        const rconProtocol=interaction.options.getString('rcon_protocol')||'';
         const image = interaction.options.getString('image') || '';
-        cfg.servers.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,6)}`, game, name, map, platform, provider, nitradoId, nitradoServiceId:nitradoId, ip, port, rconHost, rconPort, rconPassword, image, enabled:true, createdAt:new Date().toISOString() });
-        saveDb(db);
+        cfg.servers.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,6)}`, game, name, map, platform, provider, nitradoId, nitradoServiceId:nitradoId, ip, port, rconHost, rconPort, rconProtocol, rconPassword:secureStore.encrypt(rconPassword), image, enabled:true, createdAt:new Date().toISOString() });
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`✅ Serveur ajouté : **${name}** — ${game} — ${map}
 Hébergeur: **${provider}**
 Nitrado ID: **${nitradoId || 'non'}**
@@ -587,7 +580,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           createdAt:new Date().toISOString()
         };
         cfg.shop.push(item);
-        saveDb(db);
+        await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`✅ Item créé : **${item.name}**\nID: **${item.id}**` });
       }
       if (sub === 'list') {
@@ -606,26 +599,35 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const item = (cfg.shop || []).find(i=>i.id===id);
         if (!item) return interaction.reply({ ephemeral:true, content:'❌ Item introuvable.' });
 
-        db.shopPurchases = db.shopPurchases || [];
-        db.shopPurchases.push({ id:`${Date.now()}_${interaction.user.id}`, guildId:interaction.guildId, userId:interaction.user.id, itemId:id, itemName:item.name, game:item.game, server:item.server, map:item.map, x, z, status:'pending_restart', createdAt:new Date().toISOString() });
-        db.deliveries = db.deliveries || [];
-        db.deliveries.push({ id:`${Date.now()}_${interaction.user.id}`, guildId:interaction.guildId, userId:interaction.user.id, itemId:id, itemName:item.name, serverId:item.server, map:item.map, x, z, status:'pending_restart', createdAt:new Date().toISOString() });
-
-        if (item.game === 'ark' && item.blueprint && playerId) {
-          const arkServer = findArkServerByShopServer(item.server);
-          await giveArkItem(arkServer, playerId, item.blueprint, 1);
-          db.shopPurchases[db.shopPurchases.length-1].status = 'delivered';
-          saveDb(db);
-          return interaction.reply({ ephemeral:true, content:`✅ Achat livré automatiquement ARK : **${item.name}**.` });
+        if(item.hidden || item.enabled===false)return interaction.reply({ephemeral:true,content:'❌ Article indisponible.'});
+        if(!Number.isSafeInteger(item.price)||item.price<0)throw new Error('Prix invalide.');
+        const account=getBankAccount(db,interaction.guildId,interaction.user.id);
+        if(account.bank<item.price)return interaction.reply({ephemeral:true,content:'❌ Solde banque insuffisant.'});
+        const idOrder=require('node:crypto').randomUUID();
+        const purchase={id:idOrder,guildId:interaction.guildId,userId:interaction.user.id,itemId:id,itemName:item.name,game:item.game,server:item.server,map:item.map,x,z,price:item.price,status:'awaiting_staff',createdAt:new Date().toISOString()};
+        const delivery={...purchase,serverId:item.server};
+        const automatic=item.game==='ark'&&!!item.blueprint&&!!playerId;
+        let arkServer;
+        if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
+        account.bank-=item.price;
+        addBankTransaction(db,{guildId:interaction.guildId,userId:interaction.user.id,to:interaction.user.id,amount:-item.price,type:'shop_purchase',reason:item.name,orderId:idOrder});
+        (db.shopPurchases||=[]).push(purchase);(db.deliveries||=[]).push(delivery);
+        await saveDb(db);
+        if(automatic){
+          let response,error;
+          try{response=await giveArkItem(arkServer,playerId,item.blueprint,1);}catch(e){error=e;}
+          const current=await loadDb();
+          for(const list of [current.shopPurchases,current.deliveries]){const row=list.find(r=>r.id===idOrder);row.status=error?'delivery_uncertain':'rcon_acknowledged';}
+          await saveDb(current);
+          return interaction.reply({ephemeral:true,content:error?`⚠️ Commande ${idOrder} : livraison à vérifier par le staff avant toute nouvelle tentative. Paiement conservé pour éviter une double livraison.`:`✅ Banque débitée. Commande ARK acquittée pour **${item.name}**. Vérifie l’inventaire en jeu.`});
         }
-
-        saveDb(db);
-        await sendLog(interaction, `🛒 Achat shop\nJoueur: <@${interaction.user.id}>\nItem: **${item.name}**\nServeur: **${item.server}**\nMap: **${item.map}**\nCoordonnées: ${x || '?'} / ${z || '?'}`);
-        return interaction.reply({ ephemeral:true, content:`✅ Achat enregistré : **${item.name}**.` });
+        await sendLog(interaction,`🛒 Commande ${idOrder} — <@${interaction.user.id}> — ${item.name} — livraison manuelle sur ${item.server}`);
+        return interaction.reply({ephemeral:true,content:`✅ Achat enregistré et banque débitée : **${item.name}**. Livraison par le staff en attente. Référence : ${idOrder}`});
       }
     }
 
     if (interaction.commandName === 'event') {
+      if(!isAdmin(interaction))return interaction.reply({ephemeral:true,content:'❌ Admin uniquement.'});
       const sub = interaction.options.getSubcommand();
       const game = interaction.options.getString('jeu');
       const server = interaction.options.getString('serveur');
@@ -635,25 +637,30 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const weapon = interaction.options.getString('weapon') || 'arme inconnue';
         const distance = interaction.options.getInteger('distance');
         addEvent(db, interaction.guildId, { type:'kill', game, server, killer, victim, weapon, distance });
-        saveDb(db);
+        await saveDb(db);
         await sendLog(interaction, `☠️ **Kill Feed** — ${server}\n**${killer}** → **${victim}** avec **${weapon}**${distance ? ` à ${distance}m` : ''}`);
         return interaction.reply({ ephemeral:true, content:'✅ Kill ajouté.' });
       }
       const pseudo = interaction.options.getString('player') || interaction.options.getString('pseudo');
       addEvent(db, interaction.guildId, { type:sub, game, server, player:pseudo });
-      saveDb(db);
+      await saveDb(db);
       return interaction.reply({ ephemeral:true, content:`✅ ${sub} enregistré.` });
     }
 
     if (interaction.commandName === 'battlepass') {
-      return interaction.reply({ ephemeral:true, content:'🎖️ Battle Pass V7 : bientôt modifiable depuis le Dashboard.' });
+      const bp=db.battlepasses?.[interaction.guildId]||{levels:[]};
+      const progress=db.guilds?.[interaction.guildId]?.progress?.[interaction.user.id]||{xp:0};
+      return interaction.reply({ephemeral:true,content:`🎖️ ${bp.name||'Battle Pass'} — ${progress.xp} XP\n${bp.levels.length?bp.levels.map(l=>`Niveau ${l.level} : ${l.xp} XP — ${l.reward||0} banque`).join('\n').slice(0,1700):'Aucun niveau configuré.'}`});
     }
-
     if (interaction.commandName === 'quete') {
-      const sub = interaction.options.getSubcommand();
-      if (sub === 'liste') return interaction.reply({ ephemeral:true, content:'📋 Quêtes V7 : bientôt modifiables depuis le Dashboard.' });
-      return interaction.reply({ ephemeral:true, content:'✅ Preuve reçue.' });
+      const quests=(db.quests||[]).filter(q=>q.guildId===interaction.guildId&&q.enabled!==false);
+      if(interaction.options.getSubcommand()==='liste')return interaction.reply({ephemeral:true,content:quests.length?quests.map(q=>`**${q.title}** — ${q.objective} — ID : ${q.id}`).join('\n').slice(0,1900):'Aucune quête active.'});
+      const questId=interaction.options.getString('id'),photo=interaction.options.getAttachment('photo');
+      if(!quests.some(q=>q.id===questId)||!photo)return interaction.reply({ephemeral:true,content:'❌ ID de quête active et photo de preuve requis.'});
+      (db.questProofs||=[]).push({id:require('node:crypto').randomUUID(),guildId:interaction.guildId,userId:interaction.user.id,questId,photo:photo.url,status:'pending',createdAt:new Date().toISOString()});
+      await saveDb(db);return interaction.reply({ephemeral:true,content:'✅ Preuve enregistrée pour validation par le staff.'});
     }
+    return interaction.reply({ephemeral:true,content:'Cette commande n’est pas reconnue. Mets les commandes Discord à jour.'});
 
   } catch (e) {
     console.error(e);

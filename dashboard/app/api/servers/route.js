@@ -1,60 +1,6 @@
-import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '../../../lib/db';
-
-export async function GET() {
-  try {
-    const db = await readDb();
-
-    const servers = [
-      ...(db.connectedServers || []),
-      ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
-    ];
-
-    return NextResponse.json({
-      success: true,
-      servers
-    });
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-      servers: []
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const db = await readDb();
-
-    const server = {
-      id: body.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      name: body.name || body.nom || 'Serveur sans nom',
-      game: body.game || body.jeu || 'dayz',
-      map: body.map || '',
-      platform: body.platform || body.plateforme || '',
-      ip: body.ip || '',
-      port: body.port || '',
-      nitradoId: body.nitradoId || body.service_id || '',
-      whitelistEnabled: body.whitelistEnabled ?? true,
-      shopEnabled: body.shopEnabled ?? true,
-      createdAt: new Date().toISOString()
-    };
-
-    db.connectedServers = db.connectedServers || [];
-    db.connectedServers.push(server);
-
-    await writeDb(db);
-
-    return NextResponse.json({
-      success: true,
-      server
-    });
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error.message
-    }, { status: 500 });
-  }
-}
+import {readDb,writeDb} from '../../../lib/db';
+import {activeGuild,guarded} from '../../../lib/dashboard-auth';
+import {allServers,publicServer,validateServer,saveServers} from '../../../lib/servers';
+export const GET=guarded(async()=>{const db=await readDb(),id=await activeGuild();return Response.json({success:true,servers:allServers(db,id).map(publicServer)});});
+async function mutate(req){const body=await req.json(),db=await readDb(),id=await activeGuild(),servers=allServers(db,id);const idx=servers.findIndex(s=>s.id===body.id);if(req.method!=='POST'&&idx<0)throw Object.assign(new Error('Serveur introuvable.'),{status:404});let server;if(req.method==='DELETE')servers.splice(idx,1);else {server=validateServer(body,req.method==='PATCH'?servers[idx]:{},id);if(req.method==='PATCH')servers[idx]=server;else servers.push(server);}saveServers(db,id,servers);await writeDb(db);return Response.json({ok:true,server:server&&publicServer(server)});}
+export const POST=guarded(mutate),PATCH=guarded(mutate),DELETE=guarded(mutate);

@@ -1,3 +1,6 @@
+import appStore from './app-store.cjs';
+import tenant from './tenant.cjs';
+import { activeGuild } from './dashboard-auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -45,32 +48,18 @@ function defaultDb() {
   };
 }
 
-export function readDb() {
-  const p = dbPath();
-  const base = defaultDb();
-  if (!fs.existsSync(p)) return base;
-
-  try {
-    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
-    return {
-      ...base,
-      ...parsed,
-      rp: { ...base.rp, ...(parsed.rp || {}) },
-      economy: { ...base.economy, ...(parsed.economy || {}) },
-      bank: { ...base.bank, ...(parsed.bank || {}) },
-      stats: { ...base.stats, ...(parsed.stats || {}) },
-      battlepass: { ...base.battlepass, ...(parsed.battlepass || {}) },
-      aiAssistant: { ...base.aiAssistant, ...(parsed.aiAssistant || {}) }
-    };
-  } catch {
-    return base;
-  }
+const originals = new WeakMap();
+export async function readDb() {
+  const id = await activeGuild();
+  const raw = await appStore.read(dbPath(), defaultDb());
+  const scoped = tenant.view(raw,id);
+  originals.set(scoped,{raw,id});
+  return scoped;
 }
-
-export function writeDb(db) {
-  const p = dbPath();
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  fs.writeFileSync(p, JSON.stringify(db, null, 2), 'utf8');
+export async function writeDb(db) {
+  const saved=originals.get(db);
+  if(!saved) throw new Error('Lecture du stockage requise.');
+  await appStore.write(dbPath(),tenant.apply(saved.raw,db,saved.id));
 }
 
 export const GAME_LABELS = {
@@ -80,5 +69,7 @@ export const GAME_LABELS = {
   ark: 'ARK Crossplay',
   palworld: 'Palworld',
   arma: 'Arma Reforger',
-  conan: 'Conan Exiles'
+  conan: 'Conan Exiles',
+  '7dtd':'7 Days to Die',
+  aniimo:'Aniimo'
 };

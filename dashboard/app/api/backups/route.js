@@ -1,20 +1,8 @@
-import { readDb, writeDb } from '../../../lib/db';
-
-export async function GET() {
-  const db = readDb();
-  return Response.json(db.backups || []);
-}
-
-export async function POST(req) {
-  const body = await req.json();
-  const db = readDb();
-  db.backups = db.backups || [];
-  const item = {
-    id: body.id || String(Date.now()),
-    ...body,
-    createdAt: body.createdAt || new Date().toISOString()
-  };
-  db.backups.push(item);
-  writeDb(db);
-  return Response.json({ ok: true, item });
-}
+import crypto from 'crypto';
+import {guarded,activeGuild} from '../../../lib/dashboard-auth';
+import {authorize} from '../../../lib/mod-auth';
+import {readDb,writeDb} from '../../../lib/db';
+export const GET=guarded(async()=>Response.json(((await readDb()).backups||[]).map(({snapshot,...metadata})=>metadata)));
+export const POST=guarded(async()=>{const id=await activeGuild();await authorize(id,true);const db=await readDb();const {backups,...snapshot}=structuredClone(db);const backup={id:crypto.randomUUID(),guildId:id,createdAt:new Date().toISOString(),snapshot};(db.backups||=[]).push(backup);db.backups=db.backups.slice(-20);await writeDb(db);return Response.json({ok:true,id:backup.id});});
+export const PATCH=guarded(async req=>{const {id:backupId}=await req.json(),id=await activeGuild();await authorize(id,true);const db=await readDb(),backup=db.backups.find(b=>b.id===backupId);if(!backup?.snapshot)throw new Error('Sauvegarde introuvable.');Object.assign(db,structuredClone(backup.snapshot));await writeDb(db);return Response.json({ok:true});});
+export const DELETE=guarded(async req=>{const {id:backupId}=await req.json(),id=await activeGuild();await authorize(id,true);const db=await readDb();db.backups=db.backups.filter(b=>b.id!==backupId);await writeDb(db);return Response.json({ok:true});});

@@ -1,8 +1,9 @@
+import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function RpPage() {
-  const db = readDb();
+export default async function RpPage() {
+  const db = (await readDb());
   const rp = db.rp || {};
   const jobs = rp.jobs || [];
 
@@ -25,6 +26,6 @@ export default function RpPage() {
         ))}
         {!jobs.length && <div className="card md:col-span-3">Aucun métier RP configuré.</div>}
       </div>
-    </Shell>
+    <ModuleEditor endpoint="/api/rp?collection=jobs" listKey="jobs" title="Métiers" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=licenses" listKey="licenses" title="Licences" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=fines" listKey="fines" title="Amendes" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=warrants" listKey="warrants" title="Mandats" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=companies" listKey="companies" title="Entreprises" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=properties" listKey="properties" title="Propriétés" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /><ModuleEditor endpoint="/api/rp?collection=salaries" listKey="salaries" title="Salaires" fields={[{name:"name",label:"Nom",required:true},{name:"userId",label:"ID joueur"},{name:"serverId",label:"Serveur"},{name:"salary",label:"Salaire",type:"integer"},{name:"amount",label:"Montant",type:"integer"},{name:"reason",label:"Motif"}]} /></Shell>
   );
 }

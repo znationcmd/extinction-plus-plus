@@ -1,20 +1,4 @@
-import { readDb, writeDb } from '../../../lib/db';
-
-export async function GET() {
-  const db = readDb();
-  return Response.json(db.leaderboard || []);
-}
-
-export async function POST(req) {
-  const body = await req.json();
-  const db = readDb();
-  db.leaderboard = db.leaderboard || [];
-  const item = {
-    id: body.id || String(Date.now()),
-    ...body,
-    createdAt: body.createdAt || new Date().toISOString()
-  };
-  db.leaderboard.push(item);
-  writeDb(db);
-  return Response.json({ ok: true, item });
-}
+import {guarded} from '../../../lib/dashboard-auth';
+import {readDb} from '../../../lib/db';
+import board from '../../../lib/leaderboard.cjs';
+export const GET=guarded(async()=>Response.json(board.leaderboard(await readDb())));

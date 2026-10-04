@@ -1,8 +1,8 @@
 import Shell from '../../components/Shell';
 import { readDb } from '../../lib/db';
 
-export default function Killfeed() {
-  const db = readDb();
+export default async function Killfeed() {
+  const db = (await readDb());
   const events = (db.events || []).slice(-150).reverse();
 
   return (
