@@ -4,7 +4,7 @@ export const config={runtime:'nodejs',matcher:['/((?!_next/static|_next/image|fa
 export function middleware(req) {
   const path=req.nextUrl.pathname;
   const readOnly=req.method==='GET'||req.method==='HEAD';
-  if(readOnly && (path==='/public'||path==='/groups'||path==='/api/public/maps'))return NextResponse.next();
+  if(readOnly && (path==='/public'||path==='/groups'||path==='/api/public/maps'||path.startsWith('/api/public/map-images/')))return NextResponse.next();
   if(['/login','/install','/offline.html','/shop'].includes(path) || path.startsWith('/api/mod-auth/'))return NextResponse.next();
   if(!unseal(req.cookies.get('extinction_mod_session')?.value)) {
     if(path==='/' && readOnly)return NextResponse.redirect(new URL('/public',req.url));

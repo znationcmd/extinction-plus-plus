@@ -128,12 +128,14 @@ Les terrains publiés sur `/public` sont accessibles à tous. Les marqueurs de
 groupe sont stockés séparément dans PostgreSQL et visibles uniquement aux membres.
 L'auteur d'un marqueur et le créateur du groupe peuvent le modifier ou le supprimer.
 Les marqueurs sont actualisés toutes les 15 secondes ; il ne s'agit pas d'un suivi
-automatique des joueurs. Les fonds de cartes doivent encore être configurés et
-publiés par un administrateur. Limites : 50 groupes par créateur, 100 membres et
+automatique des joueurs. Les fonds du catalogue sont déjà publics. Les fonds personnalisés doivent être
+configurés et publiés par un administrateur. Limites : 50 groupes par créateur, 100 membres et
 1000 marqueurs par groupe.
 
 ## Catalogue de terrains publics
 
-60 fonds intégrés : 33 DayZ (3 officiels + 30 mods), 17 variantes ARK (ASE/ASA et royaumes de Fjordur), Everon et Arland, Terres de l’Exil (fond 2018), Palworld, 5 cartes de biomes/routes 7 Days to Die, Breezy Plains pour Aniimo. Tous sont accessibles sans compte sur /public et utilisables pour les marqueurs privés des groupes.
+65 fonds intégrés : 33 DayZ (3 officiels + 30 mods), 18 variantes ARK (ASE/ASA, Astraeos et royaumes de Fjordur), Everon, Arland et Kolguyev, Terres de l’Exil (fond 2018 conservé et nouveau fond TH.GL), Isle of Siptah, Savage Wilds (mod), Palworld, 5 cartes de biomes/routes 7 Days to Die, Breezy Plains pour Aniimo. Tous sont accessibles sans compte sur /public et utilisables pour les marqueurs privés des groupes.
 
-Les fonds sont chargés directement depuis les sources indiquées sous chaque carte ; leur disponibilité dépend de ces hébergeurs. Les versions sont des instantanés : aucune promesse de synchronisation avec les mises à jour des jeux. Les coordonnées sont visuelles en pourcentage (origine en haut à gauche), pas des coordonnées de téléportation validées. Les fonds Conan et certains ARK sont anciens ; Siptah, Kolguyev, autres extensions et mods restent à importer avec une image compatible. Les mondes 7 Days to Die générés pour un serveur ne sont pas les mondes prégénérés du catalogue. Aucune liste finie ne peut couvrir tous les mods et mondes générés. Les attributions et filigranes des sources sont conservés.
+Les fonds sont chargés directement depuis les sources indiquées sous chaque carte ; leur disponibilité dépend de ces hébergeurs. Les versions sont des instantanés : aucune promesse de synchronisation avec les mises à jour des jeux. Les coordonnées sont visuelles en pourcentage (origine en haut à gauche), pas des coordonnées de téléportation validées. Les fonds Conan et certains ARK sont anciens ; d’autres extensions et mods restent à importer avec une image compatible. Les mondes 7 Days to Die générés pour un serveur ne sont pas les mondes prégénérés du catalogue. Aucune liste finie ne peut couvrir tous les mods et mondes générés. Les attributions et filigranes des sources sont conservés.
+
+Les trois nouveaux fonds (Kolguyev, Isle of Siptah, Terres de l’Exil TH.GL) ont des identifiants distincts : les marqueurs placés sur les anciens fonds gardent leur cadrage. Astraeos et Savage Wilds sont servis par une route publique dédiée : deux sources fixes autorisées, téléchargement limité à 16 Mio, délai de 20 s, cache mémoire et navigateur. Le profil ICC de Savage Wilds avec CRC invalide est retiré sans modifier les données de pixels. Aucun URL arbitraire n’est accepté par cette route.
