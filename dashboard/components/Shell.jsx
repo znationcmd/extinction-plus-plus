@@ -28,6 +28,8 @@ export const links = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
   ['/nitrado', 'Nitrado', Cloud],
+  ['/dayz-mods', 'Mods DayZ PC', PackageCheck],
+  ['/file-validator', 'Valider JSON / XML', ClipboardList],
   ['/owner-config', 'Config propriétaires', KeyRound],
   ['/whitelist', 'Whitelist', Shield],
   ['/shop', 'Shop', ShoppingCart],

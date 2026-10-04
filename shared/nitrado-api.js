@@ -15,7 +15,8 @@ async function request(endpoint, options = {}) {
       'Content-Type': 'application/json',
       ...(options.headers || {})
     },
-    body: options.body ? JSON.stringify(options.body) : undefined
+    body: options.body ? JSON.stringify(options.body) : undefined,
+    signal: options.signal || AbortSignal.timeout(30000)
   });
   const text = await res.text();
   let data;
