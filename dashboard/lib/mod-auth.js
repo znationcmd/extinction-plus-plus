@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
-import store from '../../shared/dayz-mod-store';
+import store from './dayz-mod-store.cjs';
 
 export function origin() {
   const url = new URL(process.env.DASHBOARD_URL || process.env.PUBLIC_URL || 'http://localhost:3000');
