@@ -67,4 +67,4 @@ async function write(file,value) {
     snapshots.set(value,structuredClone(value));
   }
 }
-module.exports={read,write,merge,identity};
+module.exports={read,write,merge,identity,ready};

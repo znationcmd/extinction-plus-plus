@@ -1,5 +1,6 @@
 import { guarded } from '../../../lib/dashboard-auth';
 import { NextResponse } from 'next/server';
+import {publicServer} from '../../../lib/servers';
 import { readDb } from '../../../lib/db';
 
 async function handleGET() {
@@ -12,7 +13,7 @@ async function handleGET() {
       servers: [
         ...(db.connectedServers || []),
         ...Object.values(db.guilds || {}).flatMap(g => g.servers || [])
-      ]
+      ].map(publicServer)
     });
   } catch (error) {
     return NextResponse.json({

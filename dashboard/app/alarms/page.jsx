@@ -11,7 +11,7 @@ export default async function Page() {
       <h2 className="mb-6 text-4xl font-black">Alarmes de base</h2>
 
       <div className="card mb-6">
-        <p className="text-white/70">Zones cercle, joueurs autorisés, alertes Discord et historique.</p>
+        <p className="text-white/70">Alertes Discord à l’entrée d’un joueur non autorisé dans une zone. Active les logs automatiques dans Serveurs. La détection dépend des positions présentes dans les logs DayZ.</p>
         <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/alarme creer serveur: Sakhal nom: Base x: 5000 z: 5000 rayon: 100</div>
       </div>
 
@@ -38,6 +38,6 @@ export default async function Page() {
           </div>
         )}
       </div>
-    <ModuleEditor endpoint="/api/alarms" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "x", "label": "Position X", "type": "number"}, {"name": "z", "label": "Position Z", "type": "number"}, {"name": "radius", "label": "Rayon", "type": "number"}]} /></Shell>
+    <ModuleEditor endpoint="/api/alarms" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name":"autoBan","label":"Ajouter les intrus au fichier ban.txt configuré (chargement par le jeu requis)","type":"boolean"},{"name":"allowed","label":"Joueurs autorisés (UID ou pseudos, séparés par des virgules)","type":"strings"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "x", "label": "Position X", "type": "number"}, {"name": "z", "label": "Position Z", "type": "number"}, {"name": "radius", "label": "Rayon", "type": "number"}]} /></Shell>
   );
 }

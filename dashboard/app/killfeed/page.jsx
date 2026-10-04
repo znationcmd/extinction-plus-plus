@@ -9,7 +9,7 @@ export default async function Killfeed() {
     <Shell>
       <h2 className="mb-6 text-4xl font-black">Killfeed</h2>
       <div className="card mb-6">
-        <p className="text-white/70">Kills, connexions, déconnexions, morts IA/zombie/animal, arme et distance.</p>
+        <p className="text-white/70">Les événements DayZ sont importés automatiquement après activation des logs dans Serveurs. Les événements manuels restent disponibles.</p>
         <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/event kill jeu: DayZ serveur: Sakhal killer: joueur1 victim: joueur2 weapon: M4 distance: 300</div>
       </div>
       <div className="card space-y-3">
@@ -17,7 +17,7 @@ export default async function Killfeed() {
           <div key={e.id || `${e.type}-${e.createdAt}`} className="rounded-2xl bg-black/30 p-4">
             <p className="font-bold">{e.type === 'kill' ? `☠️ ${e.killer} → ${e.victim}` : `${e.type || 'event'} ${e.player || ''}`}</p>
             <p className="text-white/70">{e.weapon || ''} {e.distance ? `— ${e.distance}m` : ''}</p>
-            <p className="text-white/50">{e.game || ''} {e.server || ''} {e.createdAt || ''}</p>
+            <p className="text-white/50">{e.game || ''} {e.server || ''} {e.createdAt || ''} {['dayz_adm','game_bridge'].includes(e.source)?'• Événement du jeu':'• Saisie manuelle'}</p>
           </div>
         ))}
         {!events.length && <p>Aucun événement.</p>}

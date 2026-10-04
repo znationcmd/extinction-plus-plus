@@ -3,6 +3,7 @@ import { unseal, origin } from './lib/mod-auth';
 export const config={runtime:'nodejs',matcher:['/((?!_next/static|_next/image|favicon|app-icons|.*\\.(?:png|jpg|jpeg|svg|ico|webp|js|webmanifest)$).*)']};
 export function middleware(req) {
   const path=req.nextUrl.pathname;
+  if(path==='/api/game-bridge'&&req.method==='POST')return NextResponse.next(); // The handler requires a server HMAC signature.
   const readOnly=req.method==='GET'||req.method==='HEAD';
   if(readOnly && (path==='/public'||path==='/help'||path==='/groups'||path==='/api/public/maps'||path.startsWith('/api/public/map-images/')))return NextResponse.next();
   if(['/login','/install','/offline.html','/shop'].includes(path) || path.startsWith('/api/mod-auth/'))return NextResponse.next();

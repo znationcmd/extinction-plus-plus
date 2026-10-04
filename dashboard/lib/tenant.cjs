@@ -1,4 +1,4 @@
-const scopedArrays=['maps','mapPins','events','pendingWhitelist','shopPurchases','shop','deliveries','quests','questProofs','interpol','alarms','tickets','leaderboard','coupons','promotions','plugins','nitradoServers','connectedServers','saasAudit','backups','notifications','servers'];
+const scopedArrays=['bounties','factions','playerLinks','eventRules','scheduledTasks','gameActions','livePlayers','liveAlerts','maps','mapPins','events','pendingWhitelist','shopPurchases','shop','deliveries','quests','questProofs','interpol','alarms','tickets','leaderboard','coupons','promotions','plugins','nitradoServers','connectedServers','saasAudit','backups','notifications','servers'];
 // Earlier bot versions stored empty collections as {} or records keyed by ID.
 // Keep explicit guildId isolation; never infer membership from a dictionary key.
 function rows(value,key) {

@@ -14,6 +14,7 @@ const games = [
 ];
 
 const commands = [
+  ...require('./shared/community-commands').commands(),
   new SlashCommandBuilder().setName('shoplink').setDescription('Ouvrir le Shop public Extinction++ RSS'),
   new SlashCommandBuilder().setName('dashboard').setDescription('Obtenir le lien du Dashboard Extinction++ RSS'),
   new SlashCommandBuilder().setName('battlepass').setDescription('Ouvrir le Battle Pass Extinction++ RSS'),

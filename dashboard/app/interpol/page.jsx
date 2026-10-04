@@ -1,3 +1,4 @@
+import ModerationNetwork from '../../components/ModerationNetwork';
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readPageDb as readDb } from '../../lib/db';
@@ -37,6 +38,6 @@ export default async function Page() {
           </div>
         )}
       </div>
-    <ModuleEditor endpoint="/api/interpol" fields={[{"name": "player", "label": "Joueur"}, {"name": "reason", "label": "Motif"}, {"name": "status", "label": "Statut", "options": {"pending": "À examiner", "resolved": "Résolu", "dismissed": "Classé"}}]} /></Shell>
+    <ModuleEditor endpoint="/api/interpol" fields={[{"name": "player", "label": "Joueur"}, {"name": "reason", "label": "Motif"}, {"name": "status", "label": "Statut", "options": {"pending": "À examiner", "resolved": "Résolu", "dismissed": "Classé"}}]} /><ModerationNetwork/></Shell>
   );
 }

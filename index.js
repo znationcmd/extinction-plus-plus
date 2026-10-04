@@ -143,10 +143,12 @@ async function aiAnswer(message) {
 }
 
 client.once('clientReady', () => {
+  require('./shared/community-commands').register(client).then(()=>console.log('Commandes primes, factions, profil et tickets enregistrées.')).catch(()=>console.error('Commandes communautaires : enregistrement Discord indisponible.'));
   console.log(`✅ Bot connecté : ${client.user.tag}`);
   if(process.send)process.send({type:'discordReady',ready:true});
   require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
   require('./shared/bot-job-worker').start({client,loadDb,saveDb});
+  require('./shared/game-log-worker').start({client,loadDb,saveDb});
 });
 
 client.on('shardDisconnect',()=>{if(process.send)process.send({type:'discordReady',ready:false});});
@@ -156,6 +158,7 @@ client.on('interactionCreate', async interaction => {
   try {
     if(interaction.isChatInputCommand()){await interaction.deferReply({ephemeral:true});interaction.reply=async options=>{if(typeof options==='string')return interaction.editReply(options);const {ephemeral,flags,...rest}=options;return interaction.editReply(rest);};}
     const db = await loadDb();
+    if(interaction.isChatInputCommand()&&await require('./shared/community-commands').handle(interaction,{db,saveDb,isAdmin,client}))return;
 
     if (interaction.isButton()) {
       if (interaction.customId === 'panel_shop') return interaction.reply({ ephemeral:true, content:'Utilise `/shop list` pour voir le shop.' });
@@ -556,7 +559,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const server = interaction.options.getString('serveur');
         let items = cfg.shop || [];
         if (game) items = items.filter(i=>i.game===game);
-        if (server) items = items.filter(i=>i.server.toLowerCase()===server.toLowerCase());
+        if (server) items = items.filter(i=>String(i.serverId||i.server||'').toLowerCase()===server.toLowerCase());
         return interaction.reply({ ephemeral:true, content:items.length ? items.map(i=>`• **${i.id}** — ${i.name} — ${i.price} coins — ${i.server} / ${i.map}`).join('\n') : 'Aucun item.' });
       }
       if (sub === 'buy') {
@@ -572,11 +575,19 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const account=getBankAccount(db,interaction.guildId,interaction.user.id);
         if(account.bank<item.price)return interaction.reply({ephemeral:true,content:'❌ Solde banque insuffisant.'});
         const idOrder=require('node:crypto').randomUUID();
-        const purchase={id:idOrder,guildId:interaction.guildId,userId:interaction.user.id,itemId:id,itemName:item.name,game:item.game,server:item.server,map:item.map,x,z,price:item.price,status:'awaiting_staff',createdAt:new Date().toISOString()};
-        const delivery={...purchase,serverId:item.server};
-        const automatic=item.game==='ark'&&!!item.blueprint&&!!playerId;
+        const purchase={id:idOrder,guildId:interaction.guildId,userId:interaction.user.id,itemId:id,itemName:item.name,game:item.game,server:item.serverId||item.server,map:item.map,x,z,price:item.price,status:'awaiting_staff',createdAt:new Date().toISOString()};
+        const delivery={...purchase,serverId:item.serverId||item.server};
+        const bridgeServer=item.deliveryMode==='bridge'?rconTools.findServer(db,interaction.guildId,item.serverId||item.server):null;
+        if(item.deliveryMode==='bridge'){
+          if(!bridgeServer?.bridgeEnabled||!bridgeServer.bridgeState?.capabilities?.delivery||Date.parse(bridgeServer.bridgeState.checkedAt)<Date.now()-120000)throw new Error('L’adaptateur de livraison du serveur est absent ou hors ligne.');
+          const link=require('./dashboard/lib/game-operations.cjs').linked;const identity=(db.playerLinks||[]).find(l=>l.guildId===interaction.guildId&&l.serverId===bridgeServer.id&&l.userId===interaction.user.id&&l.verified);
+          if(!identity)throw new Error('Lie et vérifie ton compte du jeu avec /profil lier avant cet achat.');
+          if(!/^[A-Za-z0-9_./-]{1,160}$/.test(item.className||'')||!Number.isSafeInteger(item.quantity||1)||(item.quantity||1)<1||(item.quantity||1)>100)throw new Error('Classe ou quantité de l’article invalide.');
+          Object.assign(delivery,{serverId:bridgeServer.id,playerUid:identity.uid,className:item.className,quantity:item.quantity||1,status:'bridge_queued'});purchase.status='bridge_queued';
+        }
+        const automatic=item.deliveryMode!=='bridge'&&item.game==='ark'&&!!item.blueprint&&!!playerId;
         let arkServer;
-        if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
+        if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
         account.bank-=item.price;
         addBankTransaction(db,{guildId:interaction.guildId,userId:interaction.user.id,to:interaction.user.id,amount:-item.price,type:'shop_purchase',reason:item.name,orderId:idOrder});
         (db.shopPurchases||=[]).push(purchase);(db.deliveries||=[]).push(delivery);
@@ -589,6 +600,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           await saveDb(current);
           return interaction.reply({ephemeral:true,content:error?`⚠️ Commande ${idOrder} : livraison à vérifier par le staff avant toute nouvelle tentative. Paiement conservé pour éviter une double livraison.`:`✅ Banque débitée. Commande ARK acquittée pour **${item.name}**. Vérifie l’inventaire en jeu.`});
         }
+        if(item.deliveryMode==='bridge')return interaction.reply({ephemeral:true,content:`Achat ${idOrder} enregistré. Livraison en attente de l’adaptateur du jeu ; consulte son état dans Livraisons.`});
         await sendLog(interaction,`🛒 Commande ${idOrder} — <@${interaction.user.id}> — ${item.name} — livraison manuelle sur ${item.server}`);
         return interaction.reply({ephemeral:true,content:`✅ Achat enregistré et banque débitée : **${item.name}**. Livraison par le staff en attente. Référence : ${idOrder}`});
       }

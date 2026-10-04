@@ -45,6 +45,7 @@ export const links = [
   ['/rp', 'RP', BriefcaseBusiness],
   ['/economy', 'Économie', Coins],
   ['/alarms', 'Alarmes', Siren],
+  ['/operations', 'Primes & automatisations', Trophy],
   ['/interpol', 'Interpol', Search],
   ['/killfeed', 'Killfeed', Skull],
   ['/leaderboard', 'Classements', Trophy],

@@ -21,7 +21,7 @@ export default async function Page() {
             <h3 className="text-xl font-black">{item.title || item.name || item.player || item.itemName || item.label || 'Entrée'}</h3>
             <div className="mt-3 space-y-1 text-white/70">
               <p>Joueur : {item.player || '—'}</p>
-<p>Score : {item.score || '—'}</p>
+<p>Kills : {item.kills||0} — Morts : {item.deaths||0} — K/D : {(item.kd||0).toFixed(2)}</p><p>Banque : {item.bank||0} — XP : {item.xp||0}</p>
 <p>Serveur : {item.serverId || '—'}</p>
               {item.createdAt && <p>Date : {item.createdAt}</p>}
               {item.status && <p>Statut : {item.status}</p>}
