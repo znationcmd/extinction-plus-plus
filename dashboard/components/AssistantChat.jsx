@@ -1,34 +1,9 @@
 'use client';
-import { useState } from 'react';
-
-export default function AssistantChat() {
-  const [message, setMessage] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function ask(e) {
-    e.preventDefault();
-    if (!message.trim()) return;
-    setLoading(true);
-    setAnswer('');
-    try {
-      const res = await fetch('/api/ai', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message }) });
-      const data = await res.json();
-      setAnswer(data.answer || 'Aucune réponse.');
-    } catch {
-      setAnswer('Erreur IA locale. Vérifie le dashboard.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return <div className="card">
-    <h3 className="mb-3 text-2xl font-black">🤖 Assistant IA Extinction++ RSS</h3>
-    <p className="mb-4 text-white/70">Pose une question si tu ne comprends pas Nitrado, RCON, whitelist, shop, banque, RP ou dashboard.</p>
-    <form onSubmit={ask} className="space-y-3">
-      <textarea className="w-full rounded-2xl bg-black/40 p-4 outline-none ring-1 ring-white/10 focus:ring-purple-500" rows="4" value={message} onChange={e=>setMessage(e.target.value)} placeholder="Ex: comment configurer RCON GPortal ?" />
-      <button className="rounded-2xl bg-purple-600 px-5 py-3 font-bold" disabled={loading}>{loading ? 'Réponse...' : 'Demander à l’IA'}</button>
-    </form>
-    {answer && <div className="mt-4 rounded-2xl bg-black/40 p-4 whitespace-pre-wrap">{answer}</div>}
-  </div>;
+import {useState} from 'react';
+import guide from '../lib/help-assistant.cjs';
+export default function AssistantChat({compact=false}){
+ const [message,setMessage]=useState(''),[reply,setReply]=useState(null),[history,setHistory]=useState([]),[error,setError]=useState('');
+ function ask(question){setError('');try{const result=guide.answer(question);setReply(result);setMessage(question);setHistory(rows=>[...rows.slice(-4),{question,result}]);}catch(e){setError(e.message);}}
+ const content=<div className="space-y-4"><p className="text-white/70">Guide local gratuit, sans clé API ni abonnement. Il explique la documentation du bot ; il ne consulte pas ton serveur et ne génère pas de réponses avec un modèle d’IA.</p><div className="flex flex-wrap gap-2">{(reply?.suggestions||['Comment utiliser les cartes ?','Comment créer un groupe ?','Erreur redirect_uri OAuth2']).map(q=><button key={q} type="button" className="btn bg-white/10" onClick={()=>ask(q)}>{q}</button>)}</div><form onSubmit={e=>{e.preventDefault();ask(message);}} className="space-y-3"><label className="block">Ta question<textarea required maxLength={2000} className="input mt-2" rows={3} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Comment placer un marqueur pour mon groupe ?"/></label><button className="btn btn-primary">Expliquer</button>{history.length>0&&<button type="button" className="btn bg-white/10 ml-3" onClick={()=>{setReply(null);setHistory([]);setMessage('');setError('');}}>Effacer la discussion</button>}</form>{error&&<p role="alert">{error}</p>}<div aria-live="polite" aria-atomic="false" className="space-y-4">{history.map((entry,index)=><article key={index} className="rounded-xl bg-black/30 p-4"><h4 className="font-bold mb-3">{entry.question}</h4><p className="whitespace-pre-wrap">{entry.result.answer}</p>{entry.result.sources.length>0&&<nav aria-label="Pages utiles" className="flex flex-wrap gap-3 mt-4">{entry.result.sources.map(s=><a key={s.id} href={s.path} className="underline text-purple-300">{s.title}</a>)}</nav>}</article>)}</div></div>;
+ return compact?<details className="card my-5"><summary className="cursor-pointer font-bold text-lg">🤖 Besoin d’aide ? Assistant gratuit</summary><div className="mt-4">{content}</div></details>:<section className="card"><h2 className="text-2xl font-bold mb-4">🤖 Assistant gratuit Extinction++</h2>{content}</section>;
 }

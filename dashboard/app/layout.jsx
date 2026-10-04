@@ -33,7 +33,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
-      <body><PwaProvider>{children}</PwaProvider></body>
+      <body><PwaProvider>{children}<footer className="px-5 py-8 pb-28 text-center"><a href="https://discord.gg/t5dGcykTdE" target="_blank" rel="noopener noreferrer" className="btn btn-primary">Rejoindre notre Discord</a></footer></PwaProvider></body>
     </html>
   );
 }

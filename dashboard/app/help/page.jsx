@@ -1,0 +1,2 @@
+import AssistantChat from '../../components/AssistantChat';
+export default function Help(){return <main className="max-w-4xl mx-auto p-5 lg:p-10"><nav className="flex flex-wrap gap-5 mb-8"><a href="/public">Cartes publiques</a><a href="/groups">Groupes de joueurs</a><a href="https://discord.gg/t5dGcykTdE" target="_blank" rel="noopener noreferrer">Rejoindre notre Discord</a></nav><h1 className="text-4xl font-black mb-6">Aide gratuite</h1><AssistantChat/></main>;}

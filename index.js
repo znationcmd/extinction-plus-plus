@@ -137,42 +137,9 @@ function addBankTransaction(db, tx) {
   db.economy.transactions.push({ id: `${Date.now()}_${Math.random().toString(36).slice(2,7)}`, createdAt: new Date().toISOString(), ...tx });
 }
 
-function localAiAnswer(message) {
-  const q = String(message || '').toLowerCase();
-  if (!q.trim()) return 'Pose-moi une question sur Extinction++ RSS.';
-  if (q.includes('nitrado')) return 'Pour Nitrado : remplis NITRADO_TOKEN dans Railway/config, puis teste avec /nitrado test et /nitrado services. Ajoute ensuite le serveur avec /serveur ajouter et son nitrado_id.';
-  if (q.includes('rcon') || q.includes('gportal')) return 'Pour RCON : active RCON dans ton hébergeur (Nitrado/GPortal), puis ajoute rcon_host, rcon_port et rcon_password avec /serveur ajouter. Teste avec /rcon test.';
-  if (q.includes('whitelist') || q.includes('whiltliste')) return 'Whitelist : un admin crée le panneau avec /whitelist-panel. Le joueur clique sur le bouton, écrit son pseudo, puis les admins valident dans le salon whitelist.';
-  if (q.includes('shop') || q.includes('boutique')) return 'Shop : crée un item avec /shop create, affiche la liste avec /shop list, achat avec /shop buy. Les commandes sont aussi visibles dans le dashboard /shop.';
-  if (q.includes('banque') || q.includes('bank') || q.includes('argent')) return 'Banque : /bank solde pour voir ton argent, /bank pay pour payer un joueur, /bank add pour ajouter de l’argent en admin. Le dashboard Économie affiche transactions et comptes.';
-  if (q.includes('rp') || q.includes('metier') || q.includes('métier')) return 'RP : le dashboard RP contient métiers, licences, amendes, mandats, entreprises, propriétés et salaires. Utilise la page RP pour gérer les données.';
-  if (q.includes('interpol')) return 'INTERPOL : /interpol signaler crée un dossier joueur. La page INTERPOL du dashboard centralise les dossiers et signalements.';
-  if (q.includes('kill') || q.includes('connexion') || q.includes('déconnexion')) return 'Killfeed : /event kill ajoute un kill, /event login ajoute une connexion, /event logout ajoute une déconnexion. Les événements apparaissent dans le dashboard Killfeed.';
-  return 'Je peux aider sur : Nitrado, RCON/GPortal, whitelist, shop, banque, RP, INTERPOL, killfeed, Battle Pass, quêtes et dashboard. Dis-moi ce que tu ne comprends pas.';
-}
-
 async function aiAnswer(message) {
-  const key = process.env.OPENAI_API_KEY || config.OPENAI_API_KEY || '';
-  if (!key) return localAiAnswer(message);
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || config.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Tu es l’assistant intégré Extinction++ RSS. Réponds en français, simplement, pour aider les admins et joueurs à utiliser Nitrado, RCON, whitelist, shop, banque, RP, INTERPOL, killfeed et dashboard.' },
-          { role: 'user', content: String(message).slice(0, 2000) }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
-      })
-    });
-    const data = await res.json();
-    return data?.choices?.[0]?.message?.content || localAiAnswer(message);
-  } catch (e) {
-    return localAiAnswer(message);
-  }
+ const result=require('./dashboard/lib/help-assistant.cjs').answer(message);
+ return result.answer.slice(0,1750)+'\n\nGuide local gratuit • Aide : '+(process.env.DASHBOARD_URL||'https://dashboard-production-e07b.up.railway.app')+'/help';
 }
 
 client.once('clientReady', () => {
@@ -469,7 +436,7 @@ Banque: **${account.bank || 0}**` });
     if (interaction.commandName === 'ia') {
       const sub = interaction.options.getSubcommand();
       if (sub === 'aide') {
-        return interaction.reply({ ephemeral:true, content:'🤖 IA RSS : utilise `/ia question message:...` pour demander de l’aide sur Nitrado, RCON, whitelist, shop, banque, RP, INTERPOL ou dashboard.' });
+        return interaction.reply({ ephemeral:true, content:'🤖 Assistant gratuit : utilise `/ia question message:...` pour demander de l’aide sur les cartes, groupes, saisons, quêtes et les fonctions du bot.' });
       }
       const msg = interaction.options.getString('message');
       if(!interaction.deferred)await interaction.deferReply({ ephemeral:true });

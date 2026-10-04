@@ -49,7 +49,7 @@ export const links = [
   ['/stats', 'Stats', BarChart3],
   ['/tickets', 'Tickets', Ticket],
   ['/plugins', 'Plugins', Plug],
-  ['/ai', 'IA', Brain],
+  ['/ai', 'Assistant gratuit', Brain],
   ['/customization', 'Personnalisation', Palette],
   ['/settings', 'Paramètres', Settings],
   ['/select-discord', 'Changer de Discord', KeyRound],
