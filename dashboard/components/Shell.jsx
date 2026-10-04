@@ -1,3 +1,5 @@
+'use client';
+import {useState} from 'react';
 import Link from 'next/link';
 import {
   Map,
@@ -64,6 +66,7 @@ const bottomLinks = [
 ];
 
 export default function Shell({ children }) {
+  const [menuOpen,setMenuOpen]=useState(false);
   return (
     <main className="min-h-screen bg-extinction-bg pb-28 text-white">
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
@@ -96,15 +99,16 @@ export default function Shell({ children }) {
             <p className="text-sm text-white/50">Real Survival System</p>
           </div>
         </Link>
-        <Menu className="text-white/80" size={32} />
+        <button type="button" aria-label={menuOpen?'Fermer le menu':'Ouvrir le menu'} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={()=>setMenuOpen(open=>!open)} className="p-2 text-white/80"><Menu size={32}/></button>
       </header>
 
-      <nav className="grid grid-cols-3 gap-3 border-b border-white/10 bg-[#08111f] p-4 lg:hidden">
+      <nav id="mobile-menu" aria-label="Navigation mobile" className={`${menuOpen?'grid':'hidden'} grid-cols-3 gap-3 border-b border-white/10 bg-[#08111f] p-4 lg:hidden`}>
         {links.map(([href, label, Icon]) => (
           <Link
             key={href}
             href={href}
             prefetch={false}
+            onClick={()=>setMenuOpen(false)}
             className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-4 text-center text-sm active:bg-red-600"
           >
             <Icon size={28} />

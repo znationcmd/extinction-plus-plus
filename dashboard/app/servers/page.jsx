@@ -1,6 +1,7 @@
 import ServerActions from '../../components/ServerActions';
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
+import hosting from '../../lib/hosting.cjs';
 import { readDb } from '../../lib/db';
 
 async function getServers() {
@@ -33,6 +34,7 @@ export default async function Servers() {
             {s.image && <img src={s.image} alt={s.name} className="mb-4 h-36 w-full rounded-2xl object-cover" />}
             <h4 className="text-xl font-black">{s.name || 'Serveur sans nom'}</h4>
             <p className="text-white/70">{s.game || 'Jeu'} — {s.platform || 'Plateforme'}</p>
+            <p>Hébergeur : {(s.provider==='other'&&s.providerName)||hosting.providers[s.provider]||s.providerName||(hosting.isNitrado(s)?'Nitrado':'Non renseigné')}</p>
             <p>Map : {s.map || '—'}</p>
             <p>ID Nitrado : {s.nitradoId || s.nitradoServiceId || '—'}</p>
             <p>IP/Port : {s.ip || '—'} {s.port ? `:${s.port}` : ''}</p>
@@ -41,6 +43,6 @@ export default async function Servers() {
         ))}
         {!servers.length && <div className="card md:col-span-2 xl:col-span-3">Aucun serveur configuré. Ajoute-en un avec /serveur ajouter.</div>}
       </div>
-    <ModuleEditor endpoint="/api/servers" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu", "required": true}, {"name": "platform", "label": "Plateforme"}, {"name": "map", "label": "Carte"}, {"name": "nitradoId", "label": "ID Nitrado"}, {"name": "ip", "label": "Adresse"}, {"name": "port", "label": "Port du jeu"}, {"name": "rconHost", "label": "Adresse RCON"}, {"name": "rconPort", "label": "Port RCON", "type": "integer"}, {"name": "rconPassword", "label": "Mot de passe RCON", "type": "password"}, {"name": "rconProtocol", "label": "Protocole RCON", "options": {"source": "Source (ARK / Palworld / Conan)", "battleye": "BattlEye (DayZ PC / Arma)"}}, {"name": "enabled", "label": "Activé", "type": "boolean"}]} readKey="servers" /><ServerActions /></Shell>
+    <ModuleEditor endpoint="/api/servers" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu", "required": true}, {"name": "provider", "label": "Hébergeur", "options": hosting.providers}, {"name": "providerName", "label": "Nom de l’autre hébergeur"}, {"name": "panelUrl", "label": "Lien HTTPS du panel hébergeur"}, {"name": "platform", "label": "Plateforme"}, {"name": "map", "label": "Carte"}, {"name": "nitradoId", "label": "ID Nitrado"}, {"name": "ip", "label": "Adresse"}, {"name": "port", "label": "Port du jeu"}, {"name": "rconHost", "label": "Adresse RCON"}, {"name": "rconPort", "label": "Port RCON", "type": "integer"}, {"name": "rconPassword", "label": "Mot de passe RCON", "type": "password"}, {"name": "rconProtocol", "label": "Protocole RCON", "options": {"source": "Source (ARK / Palworld / Conan)", "battleye": "BattlEye (DayZ PC / Arma)"}}, {"name": "enabled", "label": "Activé", "type": "boolean"}]} readKey="servers" /><ServerActions /></Shell>
   );
 }

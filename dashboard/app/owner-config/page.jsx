@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import hosting from '../../lib/hosting.cjs';
 
 const platforms = ['PC', 'Xbox', 'PlayStation'];
 const games = ['dayz_pc','dayz_ps','dayz_xbox','ark','palworld','arma','conan','7dtd','aniimo'];
@@ -15,6 +16,7 @@ function blankServer() {
     platform: 'PC',
     map: 'Chernarus',
     nitradoId: '',
+    provider:'nitrado',providerName:'',panelUrl:'',
     ip: '',
     port: '',
     image: '',
@@ -29,14 +31,17 @@ export default function OwnerConfigPage() {
   const [nitradoToken, setNitradoToken] = useState('');
   const [servers, setServers] = useState([blankServer()]);
   const [saved, setSaved] = useState('');
+  const [busy,setBusy]=useState(false);
 
   async function loadConfig(id = guildId) {
+    try {
     const res = await fetch('/api/owner-config');
     const data = await res.json();
     if(!res.ok){setSaved(data.error||'Chargement impossible.');return;}
     setGuildId(data.guildId);
     setNitradoToken('');
     setServers(data.servers?.length ? data.servers : [blankServer()]);
+    } catch(e){setSaved(e.message);}
   }
 
   useEffect(() => { loadConfig(); }, []);
@@ -54,6 +59,8 @@ export default function OwnerConfigPage() {
   }
 
   async function save() {
+    setBusy(true);
+    try {
     setSaved('Sauvegarde...');
     const normalized = servers.map((s, i) => ({
       ...s,
@@ -72,6 +79,7 @@ export default function OwnerConfigPage() {
     } else {
       const data=await res.json();setSaved(data.error||'Erreur sauvegarde.');
     }
+    }catch(e){setSaved(e.message);}finally{setBusy(false);}
   }
 
   return (
@@ -118,7 +126,7 @@ export default function OwnerConfigPage() {
 
               <label>
                 <span className="mb-2 block font-bold">ID Nitrado / Service ID</span>
-                <input className="input" value={s.nitradoId} onChange={e => updateServer(index, 'nitradoId', e.target.value)} placeholder="12345678" />
+                <select aria-label="Hébergeur" className="input mb-3" value={s.provider||(s.nitradoId?'nitrado':'other')} onChange={e=>updateServer(index,'provider',e.target.value)}>{Object.entries(hosting.providers).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select><input aria-label="Nom de l’autre hébergeur" className="input mb-3" value={s.providerName||''} onChange={e=>updateServer(index,'providerName',e.target.value)} placeholder="Nom de l’autre hébergeur"/><input aria-label="Lien du panel hébergeur" type="url" className="input mb-3" value={s.panelUrl||''} onChange={e=>updateServer(index,'panelUrl',e.target.value)} placeholder="https://panel.ton-hebergeur.fr"/><input className="input" value={s.nitradoId} onChange={e => updateServer(index, 'nitradoId', e.target.value)} placeholder="12345678" />
               </label>
 
               <label>
@@ -168,8 +176,9 @@ export default function OwnerConfigPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <p className="text-white/70">Tous les hébergeurs peuvent être enregistrés. Le contrôle automatique utilise Nitrado ou les accès RCON du jeu ; le lien du panel ouvre les autres hébergeurs.</p>
         <button onClick={addServer} className="btn bg-white/10">+ Ajouter un serveur</button>
-        <button onClick={save} className="btn bg-red-600">Enregistrer</button>
+        <button disabled={busy} onClick={save} className="btn bg-red-600">Enregistrer</button>
       </div>
 
       {saved && <div className="card mt-6">{saved}</div>}
