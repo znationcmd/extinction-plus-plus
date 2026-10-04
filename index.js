@@ -190,6 +190,7 @@ async function aiAnswer(message) {
 
 client.once('clientReady', () => {
   console.log(`✅ Bot connecté : ${client.user.tag}`);
+  require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
 });
 
 client.on('interactionCreate', async interaction => {

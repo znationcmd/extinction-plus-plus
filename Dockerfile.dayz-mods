@@ -1,0 +1,16 @@
+# Optional Railway bot image. Dashboard continues to use its own service.
+FROM node:22-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl lib32gcc-s1 lib32stdc++6 util-linux \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /opt/steamcmd /data && curl --fail --location \
+    https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
+    | tar -xz -C /opt/steamcmd \
+    && ln -s /data/steam-home /home/node/.steam
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY . .
+ENV STEAMCMD_PATH=/data/steamcmd/steamcmd.sh
+ENV BOT_DATABASE_PATH=/data/database.json
+CMD ["bash", "scripts/start-dayz-mod-bot.sh"]

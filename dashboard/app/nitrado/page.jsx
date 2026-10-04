@@ -10,6 +10,7 @@ export default function Page() {
   return (
     <Shell>
       <h2 className="mb-6 text-4xl font-black">Nitrado SaaS Multi-Discord</h2>
+      <a href="/dayz-mods" className="btn mb-6 inline-block bg-purple-600">🧩 Mises à jour des mods DayZ PC — accès fondateurs</a>
 
       <div className="card mb-6">
         <h3 className="text-2xl font-black">Connexion client</h3>
