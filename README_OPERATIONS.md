@@ -41,7 +41,7 @@ Les nouvelles commandes sont enregistrées au démarrage du bot. Les anciennes r
 
 - Aucune affirmation de classement numéro 1 ni de fiabilité mesurée en production sur tous les hébergeurs.
 - La liste des hébergeurs ne représente pas autant d’APIs de démarrage/arrêt. Nitrado et les panels Pterodactyl avec clé Client sont intégrés ; RCON et FTP dépendent des accès de chaque hébergeur.
-- Aucune intégration native CFTools/BattleMetrics : leurs APIs exigent une intégration et des clés séparées.
+- CFTools DayZ PC et les lectures BattleMetrics sont maintenant intégrés avec des clés séparées : voir README_ADMIN_CONNECTIONS.md. Les écritures administratives BattleMetrics ne sont pas implémentées.
 - Le protocole d’adaptateur n’est pas un mod universel. Le dépôt ne contient pas encore de mod DayZ/ARK/Arma installable pour générer/remettre les objets. La livraison ARK RCON existante reste disponible ; les autres achats restent manuels sauf avec un adaptateur installé et testé.
 - La protection de zone observe les logs et peut manquer les passages entre deux positions. L’écriture d’un ban ne confirme pas son application immédiate ni l’expulsion d’un joueur connecté.
 - Les bases RP sont des outils communautaires ; elles ne créent pas directement les métiers, véhicules, bâtiments ou paies dans tous les jeux.

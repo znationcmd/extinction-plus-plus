@@ -335,7 +335,8 @@ Le token est chiffré dans la base.`);
         await saveDb(db);
         return interaction.editReply(`✅ Serveur Nitrado lié : **${name}**
 Service ID: **${serviceId}**
-Whitelist path: **${whitelistPath || 'non configuré'}**`);
+Whitelist path: **${whitelistPath || 'non configuré'}**
+Personnalise son image dans le dashboard → Serveurs.`);
       }
 
       if (sub === 'info') {
@@ -506,7 +507,7 @@ ${answer}`);
         const rconPort = interaction.options.getInteger('rcon_port') || 0;
         const rconPassword = interaction.options.getString('rcon_password') || '';
         const rconProtocol=interaction.options.getString('rcon_protocol')||'';
-        const image = interaction.options.getString('image') || '';
+        const image = interaction.options.getString('image') || '';require('./dashboard/lib/server-images.cjs').validateUrl(image);
         cfg.servers.push({ id:`${Date.now()}_${Math.random().toString(36).slice(2,6)}`, game, name, map, platform, provider, nitradoId, nitradoServiceId:nitradoId, ip, port, rconHost, rconPort, rconProtocol, rconPassword:secureStore.encrypt(rconPassword), image, enabled:true, createdAt:new Date().toISOString() });
         await saveDb(db);
         return interaction.reply({ ephemeral:true, content:`✅ Serveur ajouté : **${name}** — ${game} — ${map}
@@ -584,9 +585,10 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           if(!bridgeServer?.bridgeEnabled||!bridgeServer.bridgeState?.capabilities?.delivery||Date.parse(bridgeServer.bridgeState.checkedAt)<Date.now()-120000)throw new Error('L’adaptateur de livraison du serveur est absent ou hors ligne.');
           const link=require('./dashboard/lib/game-operations.cjs').linked;const identity=(db.playerLinks||[]).find(l=>l.guildId===interaction.guildId&&l.serverId===bridgeServer.id&&l.userId===interaction.user.id&&l.verified);
           if(!identity)throw new Error('Lie et vérifie ton compte du jeu avec /profil lier avant cet achat.');
-          if(!/^[A-Za-z0-9_./-]{1,160}$/.test(item.className||'')||!Number.isSafeInteger(item.quantity||1)||(item.quantity||1)<1||(item.quantity||1)>100)throw new Error('Classe ou quantité de l’article invalide.');
-          Object.assign(delivery,{serverId:bridgeServer.id,playerUid:identity.uid,className:item.className,quantity:item.quantity||1,status:'bridge_queued'});purchase.status='bridge_queued';
+          const contents=require('./dashboard/lib/shop-items.cjs').items(item);if(item.kitItems&&!bridgeServer.bridgeState.capabilities.kits)throw new Error('L’adaptateur installé ne prend pas en charge les kits.');
+          Object.assign(delivery,{serverId:bridgeServer.id,playerUid:identity.uid,className:contents[0].className,quantity:contents[0].quantity,items:contents,status:'bridge_queued'});purchase.status='bridge_queued';
         }
+        let cfPrepared;if(item.deliveryMode==='cftools'){const server=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!server)throw new Error('Serveur DayZ PC introuvable.');const identity=(db.playerLinks||[]).find(l=>l.guildId===interaction.guildId&&l.serverId===server.id&&l.userId===interaction.user.id&&l.verified);if(!identity)throw new Error('Identité du jeu vérifiée requise.');cfPrepared=await require('./dashboard/lib/external-admin.cjs').cfDelivery({...server,guildId:interaction.guildId},identity,item);purchase.status=delivery.status='processing';}
         const automatic=(!item.deliveryMode||item.deliveryMode==='rcon')&&item.game==='ark'&&!!item.blueprint&&!!playerId;
         let arkServer;
         if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
@@ -594,6 +596,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         addBankTransaction(db,{guildId:interaction.guildId,userId:interaction.user.id,to:interaction.user.id,amount:-item.price,type:'shop_purchase',reason:item.name,orderId:idOrder});
         (db.shopPurchases||=[]).push(purchase);(db.deliveries||=[]).push(delivery);
         await saveDb(db);
+        if(cfPrepared){let error;try{await cfPrepared.execute();}catch(e){error=e;}const current=await loadDb();for(const list of [current.shopPurchases,current.deliveries]){const row=list.find(r=>r.id===idOrder);row.status=error?'delivery_uncertain':'cftools_acknowledged';}await saveDb(current);return interaction.reply({ephemeral:true,content:error?`Commande ${idOrder} : livraison GameLabs non confirmée. Le staff doit vérifier avant toute nouvelle tentative.`:`Commande ${idOrder} acquittée par CFTools GameLabs. Vérifie ton inventaire en jeu.`});}
         if(automatic){
           let response,error;
           try{response=await giveArkItem(arkServer,playerId,item.blueprint,1);}catch(e){error=e;}

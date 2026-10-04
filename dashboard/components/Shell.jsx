@@ -29,6 +29,7 @@ import {
 export const links = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
+  ['/integrations', 'CFTools & BattleMetrics', Plug],
   ['/maps', 'Cartes interactives', Map],
   ['/groups', 'Groupes de joueurs', Map],
   ['/install', 'Installer l’application', Home],
@@ -61,6 +62,7 @@ export const links = [
 const bottomLinks = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
+  ['/integrations', 'CFTools & BattleMetrics', Plug],
   ['/whitelist', 'Whitelist', Shield],
   ['/shop', 'Shop', ShoppingCart],
   ['/killfeed', 'Killfeed', Skull],

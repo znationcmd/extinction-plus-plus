@@ -11,6 +11,6 @@ Les jeux et serveurs sont contrôlés ensemble pour éviter de vendre un article
 
 ## Limites des automatisations
 
-Le lecteur de logs intégré est DayZ ADM, sur accès FTP/FTPS. Les autres jeux peuvent importer des événements via le protocole signé décrit dans README_GAME_BRIDGE.md ; ce dépôt ne contient pas de mod natif installable pour chaque jeu. Sans événements fiables, utiliser les preuves staff. Les consoles n’acceptent pas tous les mods PC. L’existence d’un jeu dans le menu ne prouve pas une livraison automatique en jeu. Les intégrations natives CFTools et BattleMetrics restent absentes.
+Le lecteur de logs intégré est DayZ ADM, sur accès FTP/FTPS. Les autres jeux peuvent importer des événements via le protocole signé décrit dans README_GAME_BRIDGE.md ; les sources du module DayZ PC et de son agent sont fournies dans native/dayz, à compiler et tester avant installation. Les autres jeux demandent encore leur propre adaptateur. Sans événements fiables, utiliser les preuves staff. Les consoles n’acceptent pas tous les mods PC. L’existence d’un jeu dans le menu ne prouve pas une livraison automatique en jeu. CFTools prend en charge les sessions, profils/statistiques, bans, whitelist/file prioritaire et la livraison avec GameLabs pour DayZ PC ; BattleMetrics fournit les lectures d’état et de sessions. Les actions administratives BattleMetrics ne sont pas implémentées.
 
 Les messages libres des tickets Discord ne sont pas synchronisés automatiquement ; utiliser `/ticket repondre` ou le dashboard pour conserver l’historique commun.

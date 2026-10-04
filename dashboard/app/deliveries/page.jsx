@@ -11,7 +11,7 @@ export default async function Page() {
       <h2 className="mb-6 text-4xl font-black">Livraisons Shop</h2>
 
       <div className="card mb-6">
-        <p className="text-white/70">Commandes en attente de restart, coordonnées carte et historique des achats.</p>
+        <p className="text-white/70">Commandes, résultats des adaptateurs et confirmations du staff. Une annulation d’achat rembourse la banque une seule fois. Les commandes en cours ne peuvent pas être annulées ; un compte rendu de vérification est requis.</p>
         <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/shop buy id: ID_ITEM x: 5000 z: 5000</div>
       </div>
 
@@ -38,6 +38,6 @@ export default async function Page() {
           </div>
         )}
       </div>
-    <ModuleEditor endpoint="/api/deliveries" fields={[{"name": "itemName", "label": "Objet"}, {"name": "userId", "label": "ID joueur"}, {"name": "serverId", "label": "Serveur"}, {"name": "status", "label": "Statut", "options": {"awaiting_staff": "À traiter", "delivered": "Livré par le staff", "cancelled": "Annulé"}}]} /></Shell>
+    <ModuleEditor allowDelete={false} endpoint="/api/deliveries" fields={[{"name": "itemName", "label": "Objet"}, {"name": "userId", "label": "ID joueur"}, {"name": "serverId", "label": "Serveur"}, {name:'reviewNote',label:'Compte rendu du staff : inventaire vérifié, ou absence de livraison pour annuler'},{"name": "status", "label": "Statut", "options": {"awaiting_staff": "À traiter", "delivered": "Livré par le staff", "cancelled": "Annulé"}}]} /></Shell>
   );
 }

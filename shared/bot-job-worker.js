@@ -30,6 +30,7 @@ function start({client,loadDb,saveDb}){
           }else{if(row.discordApprovedAt||row.status?.startsWith('approved'))throw new Error('Validation déjà effectuée. Retire les accès Discord et jeu explicitement pour révoquer ce joueur.');row.status='rejected';result='Demande refusée.';}
           row.reviewedBy=job.actor_id;row.reviewedAt=new Date().toISOString();await saveDb(db);
         }
+        else if(job.kind==='cftools'){const server=rcon.findServer(db,job.guild_id,job.payload.serverId);if(!server||server.enabled===false)throw new Error('Serveur introuvable ou désactivé.');result=await require('../dashboard/lib/external-admin.cjs').cfExecute({...server,guildId:job.guild_id},job.payload);}
         else if(job.kind==='power'){const server=rcon.findServer(db,job.guild_id,job.payload.serverId);if(!server||server.enabled===false)throw new Error('Serveur introuvable ou désactivé.');await require('../dashboard/lib/panel-api.cjs').power(db,{...server,guildId:job.guild_id},job.payload.action);result='Demande acceptée par le panel. Vérifie ensuite le statut du serveur.';}
         else if(job.kind==='ticket'){
           const row=db.tickets?.find(t=>t.id===job.payload.ticketId&&t.guildId===job.guild_id);
@@ -46,7 +47,7 @@ function start({client,loadDb,saveDb}){
         }
         else throw new Error('Action inconnue.');
         await lock.query("UPDATE extinction_bot_jobs SET status='succeeded',result=$2,updated_at=NOW() WHERE id=$1",[job.id,String(result||'Commande acquittée.').slice(0,8000)]);
-      }catch(e){await lock.query("UPDATE extinction_bot_jobs SET status=$3,result=$2,updated_at=NOW() WHERE id=$1",[job.id,String(e.message).slice(0,1000),['rcon','power','ticket'].includes(job.kind)?'uncertain':'failed']);}}
+      }catch(e){await lock.query("UPDATE extinction_bot_jobs SET status=$3,result=$2,updated_at=NOW() WHERE id=$1",[job.id,String(e.message).slice(0,1000),['rcon','power','ticket','cftools'].includes(job.kind)?'uncertain':'failed']);}}
     }catch(e){console.error('File du bot : opération indisponible.');}finally{if(lock){await lock.query('SELECT pg_advisory_unlock(221100,1702)').catch(()=>{});lock.release();}busy=false;}}
   tick();const timer=setInterval(tick,5000);timer.unref();
 }

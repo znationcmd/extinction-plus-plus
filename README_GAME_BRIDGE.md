@@ -15,3 +15,7 @@ Le plugin annonce `capabilities: {delivery:true}` dans ses messages réguliers (
 Le plugin appelle `claim()`, qui réclame atomiquement une livraison pour ce serveur et renvoie id,playerUid,className,quantity,x,z. Il doit persister cet ID avant toute remise d’objet et utiliser sa propre API native pour effectuer la livraison. Puis `ack(id,'delivered',message)` confirme le résultat, ou `ack(id,'delivery_uncertain',message)` indique un résultat incertain. Après crash, ne jamais redonner automatiquement un objet sans vérifier le journal local. Une commande réclamée ne repasse pas automatiquement en file : le staff vérifie son état avant une intervention. Une réponse HTTP 409 demande de renvoyer la même requête. Les secrets ne doivent apparaître ni en logs ni dans un plugin exécuté par les clients joueurs.
 
 L’activation de l’adaptateur ne garantit pas une livraison en jeu : elle nécessite un plugin réellement installé, sa méthode native testée et une confirmation de réception.
+
+## Module DayZ PC fourni
+
+Les sources Enforce Script et l’agent Node.js sont dans `native/dayz`. Le téléchargement est disponible dans Administration connectée (`/integrations`). Le PBO reste à compiler avec DayZ Tools et le chargement doit être testé sur un serveur DayZ PC ; il n’est pas automatiquement installé chez les hébergeurs ni publié au Workshop. Les kits sont annoncés séparément via `capabilities.kits`.
