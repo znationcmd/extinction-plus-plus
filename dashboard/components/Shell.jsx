@@ -28,6 +28,7 @@ export const links = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
   ['/maps', 'Cartes interactives', Map],
+  ['/groups', 'Groupes de joueurs', Map],
   ['/install', 'Installer l’application', Home],
   ['/nitrado', 'Nitrado', Cloud],
   ['/dayz-mods', 'Mods DayZ PC', PackageCheck],

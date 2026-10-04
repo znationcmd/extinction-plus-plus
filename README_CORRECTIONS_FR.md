@@ -116,3 +116,18 @@ Les tests Steam / FTP / Nitrado et protocole réseau utilisent des doubles ou de
 serveurs locaux. L'installation et la livraison sur de vrais serveurs, le login
 Discord avec les identifiants de production et la migration de PostgreSQL restent
 à vérifier. Les modifications n'ont pas été publiées ni déployées.
+# Groupes de joueurs sur les cartes
+
+La page `/groups` permet à tout joueur connecté à Discord de créer un groupe ou
+de le rejoindre avec une invitation. Aucun rôle Fondateur ni Discord sélectionné
+n'est nécessaire. Les invitations sont renouvelables, révocables et expirent
+après 7 jours. Le créateur peut renommer le groupe, exclure un membre ou
+transférer la gestion. Un membre peut quitter le groupe.
+
+Les terrains publiés sur `/public` sont accessibles à tous. Les marqueurs de
+groupe sont stockés séparément dans PostgreSQL et visibles uniquement aux membres.
+L'auteur d'un marqueur et le créateur du groupe peuvent le modifier ou le supprimer.
+Les marqueurs sont actualisés toutes les 15 secondes ; il ne s'agit pas d'un suivi
+automatique des joueurs. Les fonds de cartes doivent encore être configurés et
+publiés par un administrateur. Limites : 50 groupes par créateur, 100 membres et
+1000 marqueurs par groupe.
