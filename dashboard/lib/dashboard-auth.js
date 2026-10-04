@@ -8,7 +8,7 @@ export const activeGuild=cache(async function activeGuild() {
   const guilds=await discord('/users/@me/guilds',s.token);
   const id=selected || guilds.find(g=>g.owner)?.id;
   if(!id) throw Object.assign(new Error('Choisis un Discord dans Paramètres.'),{status:403});
-  await authorize(id);return id;
+  await authorize(id,false,{session:s,guilds});return id;
 });
 export function guarded(handler) {
   return async function(req,context) {

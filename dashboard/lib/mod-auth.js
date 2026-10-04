@@ -30,7 +30,7 @@ export function unseal(value) {
 export const cookieOptions = { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' };
 export async function discord(path, token) {
   const res = await fetch(`https://discord.com/api/v10${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw Object.assign(new Error('Connexion Discord expirée ou accès refusé.'), { status: res.status === 401 ? 401 : 403 });
+  if (!res.ok) throw Object.assign(new Error(res.status===429?'Discord limite temporairement les requêtes. Réessaie dans un instant.':res.status>=500?'Discord est temporairement indisponible.':'Connexion Discord expirée ou accès refusé.'), { status: res.status===429||res.status>=500?503:res.status===401?401:403 });
   return res.json();
 }
 export async function session() {
@@ -39,10 +39,10 @@ export async function session() {
   if (!s) throw Object.assign(new Error('Connecte-toi avec Discord.'), { status: 401 });
   return s;
 }
-export async function authorize(guildId, ownerOnly = false) {
+export async function authorize(guildId, ownerOnly = false, context) {
   if (!/^\d{15,22}$/.test(guildId || '')) throw Object.assign(new Error('Discord invalide.'), { status: 400 });
-  const s = await session();
-  const guilds = await discord('/users/@me/guilds', s.token);
+  const s = context?.session || await session();
+  const guilds = context?.guilds || await discord('/users/@me/guilds', s.token);
   const guild = guilds.find(g => g.id === guildId);
   if (!guild) throw Object.assign(new Error('Accès refusé à ce Discord.'), { status: 403 });
   const p = await store.ready();

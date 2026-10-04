@@ -149,3 +149,7 @@ La page `/battlepass-admin` permet de créer et planifier les saisons, sans chev
 ## Assistant gratuit
 
 Guide local sur /help, les cartes, les groupes, le dashboard et /ia question. Aucun appel externe ni coût d’inférence, même si OPENAI_API_KEY est configurée. Il utilise la documentation, pas un modèle génératif ; il ne lit pas les données privées et ne lance aucune action. Historique temporaire et effaçable. Les boutons « Rejoindre notre Discord » pointent vers https://discord.gg/t5dGcykTdE.
+
+## Compatibilité des données historiques
+
+Le dashboard accepte les anciennes collections vides stockées en objets, ainsi que les collections indexées par identifiant. La conversion garde les enregistrements et leur séparation par guildId, sans déduire un Discord depuis une clé. Les données malformées sont signalées plutôt que supprimées. Les listes de Discord déjà récupérées sont réutilisées pour les contrôles d’accès ; une limitation ou panne de Discord est signalée comme indisponibilité temporaire.
