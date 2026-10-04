@@ -27,6 +27,7 @@ import {
 export const links = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
+  ['/install', 'Installer l’application', Home],
   ['/nitrado', 'Nitrado', Cloud],
   ['/dayz-mods', 'Mods DayZ PC', PackageCheck],
   ['/file-validator', 'Valider JSON / XML', ClipboardList],
@@ -84,7 +85,7 @@ export default function Shell({ children }) {
         </nav>
       </aside>
 
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-black/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <header className="mobile-header sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-black/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Link href="/" prefetch={false} className="flex items-center gap-3">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="h-12 w-12 rounded-xl object-cover" />
           <div>
@@ -109,7 +110,7 @@ export default function Shell({ children }) {
         ))}
       </nav>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-1 border-t border-white/10 bg-black/95 p-2 backdrop-blur-xl lg:hidden">
+      <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-1 border-t border-white/10 bg-black/95 p-2 backdrop-blur-xl lg:hidden">
         {bottomLinks.map(([href, label, Icon]) => (
           <Link
             key={href}

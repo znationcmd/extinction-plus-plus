@@ -1,4 +1,4 @@
-import store from '../../../../shared/dayz-mod-store';
+import store from '../../../lib/dayz-mod-store.cjs';
 import { authorize, session, discord, sameOrigin, failure } from '../../../lib/mod-auth';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

@@ -1,4 +1,4 @@
-import validator from '../../../../shared/file-validator';
+import validator from '../../../lib/file-validator.cjs';
 import { authorize, sameOrigin, failure } from '../../../lib/mod-auth';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
