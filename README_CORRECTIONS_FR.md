@@ -131,3 +131,9 @@ Les marqueurs sont actualisés toutes les 15 secondes ; il ne s'agit pas d'un su
 automatique des joueurs. Les fonds de cartes doivent encore être configurés et
 publiés par un administrateur. Limites : 50 groupes par créateur, 100 membres et
 1000 marqueurs par groupe.
+
+## Catalogue de terrains publics
+
+60 fonds intégrés : 33 DayZ (3 officiels + 30 mods), 17 variantes ARK (ASE/ASA et royaumes de Fjordur), Everon et Arland, Terres de l’Exil (fond 2018), Palworld, 5 cartes de biomes/routes 7 Days to Die, Breezy Plains pour Aniimo. Tous sont accessibles sans compte sur /public et utilisables pour les marqueurs privés des groupes.
+
+Les fonds sont chargés directement depuis les sources indiquées sous chaque carte ; leur disponibilité dépend de ces hébergeurs. Les versions sont des instantanés : aucune promesse de synchronisation avec les mises à jour des jeux. Les coordonnées sont visuelles en pourcentage (origine en haut à gauche), pas des coordonnées de téléportation validées. Les fonds Conan et certains ARK sont anciens ; Siptah, Kolguyev, autres extensions et mods restent à importer avec une image compatible. Les mondes 7 Days to Die générés pour un serveur ne sont pas les mondes prégénérés du catalogue. Aucune liste finie ne peut couvrir tous les mods et mondes générés. Les attributions et filigranes des sources sont conservés.
