@@ -21,7 +21,7 @@ export function clean(body,fields) {
   return data;
 }
 export const common={name:'string',title:'string',description:'string',game:'string',serverId:'string',enabled:'boolean'};
-export function collection(key,fields=common,{guildShop=false,readOnly=false}={}) {
+export function collection(key,fields=common,{guildShop=false,readOnly=false,validate}={}) {
   async function list(db,id){if(guildShop){db.guilds[id]||={id,servers:[],shop:[]};return db.guilds[id].shop||=[];}return db[key]||=[];}
   const GET=guarded(async()=>{const db=await readDb();return Response.json(await list(db,await activeGuild()));});
   async function mutate(req,remove=false) {
@@ -32,6 +32,7 @@ export function collection(key,fields=common,{guildShop=false,readOnly=false}={}
     else {
       const data=clean(body,fields);
       if(data.serverId && ![...(db.connectedServers||[]),...(db.guilds[id]?.servers||[])].some(s=>s.id===data.serverId||s.name===data.serverId))throw new Error('Serveur introuvable dans ce Discord.');
+      if(validate)validate({...items[target],...data},db,id);
       if(req.method==='POST')items.push({id:crypto.randomUUID(),...data,guildId:id,createdAt:new Date().toISOString()});
       else items[target]={...items[target],...data,guildId:id,updatedAt:new Date().toISOString()};
     }

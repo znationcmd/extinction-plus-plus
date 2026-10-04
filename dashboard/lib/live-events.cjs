@@ -40,6 +40,7 @@ function apply(db,server,entries,now=new Date().toISOString()){
  db.events.push(saved);
  if(['disconnect','kill','death','suicide'].includes(event.type))for(const alarm of db.alarms||[])if(alarm.guildId===gid&&[server.id,server.name].includes(alarm.serverId))delete alarm.liveOccupants?.[event.playerUid];
  require('./game-operations.cjs').processEvent(db,server,saved,now);
+ require('./quests.cjs').processEvent(db,server,saved,now);
  for(const actor of event.actors){let player=db.livePlayers.find(p=>p.guildId===gid&&p.serverId===server.id&&p.uid===actor.uid);if(!player){player={id:digest(`${gid}:${server.id}:${actor.uid}`),guildId:gid,serverId:server.id,uid:actor.uid,name:actor.name,kills:0,deaths:0};db.livePlayers.push(player);}player.name=actor.name;player.lastSeen=now;if(actor.x!==undefined){player.x=actor.x;player.z=actor.z;}if(['disconnect','kill','death','suicide'].includes(event.type)&&actor.uid===event.playerUid)player.online=false;else player.online=true;
  if(event.type==='kill'&&actor.uid===event.killerUid)player.kills++;
  if(['kill','death','suicide'].includes(event.type)&&actor.uid===event.playerUid)player.deaths++;

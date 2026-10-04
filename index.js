@@ -143,7 +143,7 @@ async function aiAnswer(message) {
 }
 
 client.once('clientReady', () => {
-  require('./shared/community-commands').register(client).then(()=>console.log('Commandes primes, factions, profil et tickets enregistrées.')).catch(()=>console.error('Commandes communautaires : enregistrement Discord indisponible.'));
+  require('./shared/community-commands').register(client).then(()=>console.log('Commandes pass, quêtes, primes, factions, profil et tickets enregistrées.')).catch(()=>console.error('Commandes communautaires : enregistrement Discord indisponible.'));
   console.log(`✅ Bot connecté : ${client.user.tag}`);
   if(process.send)process.send({type:'discordReady',ready:true});
   require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
@@ -571,6 +571,8 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         if (!item) return interaction.reply({ ephemeral:true, content:'❌ Item introuvable.' });
 
         if(item.hidden || item.enabled===false)return interaction.reply({ephemeral:true,content:'❌ Article indisponible.'});
+        require('./dashboard/lib/multigame.cjs').validate({...item,serverId:item.serverId||item.server},db,interaction.guildId);
+        const shopServer=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(shopServer&&(shopServer.enabled===false||shopServer.shopEnabled===false))throw new Error('Boutique désactivée sur ce serveur.');
         if(!Number.isSafeInteger(item.price)||item.price<0)throw new Error('Prix invalide.');
         const account=getBankAccount(db,interaction.guildId,interaction.user.id);
         if(account.bank<item.price)return interaction.reply({ephemeral:true,content:'❌ Solde banque insuffisant.'});
@@ -585,7 +587,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           if(!/^[A-Za-z0-9_./-]{1,160}$/.test(item.className||'')||!Number.isSafeInteger(item.quantity||1)||(item.quantity||1)<1||(item.quantity||1)>100)throw new Error('Classe ou quantité de l’article invalide.');
           Object.assign(delivery,{serverId:bridgeServer.id,playerUid:identity.uid,className:item.className,quantity:item.quantity||1,status:'bridge_queued'});purchase.status='bridge_queued';
         }
-        const automatic=item.deliveryMode!=='bridge'&&item.game==='ark'&&!!item.blueprint&&!!playerId;
+        const automatic=(!item.deliveryMode||item.deliveryMode==='rcon')&&item.game==='ark'&&!!item.blueprint&&!!playerId;
         let arkServer;
         if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
         account.bank-=item.price;
@@ -632,22 +634,27 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
       if(bp.seasons?.length&&!season)return interaction.reply({ephemeral:true,content:'🎖️ Aucune saison active. Les saisons précédentes sont conservées.'});
       const progress=battlepass.progress(db,interaction.guildId,interaction.user.id,season),levels=season?.levels||bp.levels||[];
       const dates=season?`\nDu ${new Date(season.startsAt).toLocaleString('fr-FR',{timeZone:'Europe/Paris'})} au ${new Date(season.endsAt).toLocaleString('fr-FR',{timeZone:'Europe/Paris'})}`:'';
-      return interaction.reply({ephemeral:true,content:`🎖️ ${season?.name||bp.name||'Battle Pass historique'} — ${progress.xp} XP${dates}\n${levels.length?levels.map(l=>`Niveau ${l.level} : ${l.xp} XP — ${l.reward||0} banque${l.premium?' (premium : validation manuelle)':progress.claimed?.includes(l.id)?' ✅':''}`).join('\n').slice(0,1600):'Aucun niveau configuré.'}`});
+      return interaction.reply({ephemeral:true,content:`🎖️ ${season?.name||bp.name||'Battle Pass historique'} — ${progress.xp} XP${dates}\n${levels.length?levels.map(l=>`Niveau ${l.level} : ${l.xp} XP — ${l.reward||0} banque${l.premium?' (piste premium)':progress.claimed?.includes(l.id)?' ✅':''}`).join('\n').slice(0,1600):'Aucun niveau configuré.'}`});
     }
     if (interaction.commandName === 'quete') {
-      const quests=(db.quests||[]).filter(q=>q.guildId===interaction.guildId&&q.enabled!==false);
-      if(interaction.options.getSubcommand()==='liste')return interaction.reply({ephemeral:true,content:quests.length?quests.map(q=>`**${q.title}** — ${q.objective} — ID : ${q.id}`).join('\n').slice(0,1900):'Aucune quête active.'});
+      const selectedGame=interaction.options.getString('jeu')?require('./dashboard/lib/games.cjs').normalize(interaction.options.getString('jeu')):null,serverQuery=interaction.options.getString('serveur');const selectedServer=serverQuery?rconTools.findServer(db,interaction.guildId,serverQuery):null;if(serverQuery&&!selectedServer)throw new Error('Serveur introuvable.');
+      const quests=(db.quests||[]).filter(q=>q.guildId===interaction.guildId&&q.enabled!==false&&(!selectedGame||!q.game||q.game===selectedGame)&&(!selectedServer||!q.serverId||[selectedServer.id,selectedServer.name].includes(q.serverId)));
+      if(interaction.options.getSubcommand()==='liste')return interaction.reply({ephemeral:true,content:quests.length?quests.map(q=>{const key=require('./dashboard/lib/quests.cjs').period(q);const progress=(db.questProgress||[]).find(p=>p.guildId===interaction.guildId&&p.userId===interaction.user.id&&p.questId===q.id&&p.periodKey===key);return `**${q.title}** — ${q.game||'Tous jeux'} / ${q.serverId||'Tous serveurs'} — ${q.objective||''} — ${q.reward||0} banque / ${q.xp||0} XP — ${q.type||'once'}${q.eventType&&q.eventType!=='manual'?` — ${progress?.count||0}/${q.target}`:''} — ID : ${q.id}`;}).join('\n').slice(0,1900):'Aucune quête active.'});
       const questId=interaction.options.getString('id'),photo=interaction.options.getAttachment('photo');
-      if(!quests.some(q=>q.id===questId)||!photo)return interaction.reply({ephemeral:true,content:'❌ ID de quête active et photo de preuve requis.'});
-      (db.questProofs||=[]).push({id:require('node:crypto').randomUUID(),guildId:interaction.guildId,userId:interaction.user.id,questId,photo:photo.url,status:'pending',createdAt:new Date().toISOString()});
+      const quest=quests.find(q=>q.id===questId);
+      if(!quest||!photo)return interaction.reply({ephemeral:true,content:'❌ ID de quête active et photo de preuve requis.'});
+      if(quest.eventType&&quest.eventType!=='manual')throw new Error('Cette quête progresse automatiquement depuis les événements du jeu.');
+      const periodKey=require('./dashboard/lib/quests.cjs').period(quest);if(require('./dashboard/lib/quests.cjs').awarded(db,interaction.guildId,interaction.user.id,quest,periodKey))throw new Error('Quête déjà récompensée pour cette période.');
+      if((db.questProofs||[]).some(p=>p.guildId===interaction.guildId&&p.userId===interaction.user.id&&p.questId===questId&&p.status==='pending'&&(p.periodKey||'once')===periodKey))throw new Error('Une preuve attend déjà la validation du staff.');
+      (db.questProofs||=[]).push({periodKey,game:quest.game,serverId:quest.serverId,id:require('node:crypto').randomUUID(),guildId:interaction.guildId,userId:interaction.user.id,questId,photo:photo.url,status:'pending',createdAt:new Date().toISOString()});
       await saveDb(db);return interaction.reply({ephemeral:true,content:'✅ Preuve enregistrée pour validation par le staff.'});
     }
     return interaction.reply({ephemeral:true,content:'Cette commande n’est pas reconnue. Mets les commandes Discord à jour.'});
 
   } catch (e) {
     console.error(e);
-    if (interaction.deferred || interaction.replied) return interaction.editReply('❌ Erreur bot. Regarde la console.');
-    return interaction.reply({ ephemeral:true, content:'❌ Erreur bot. Regarde la console.' });
+    if (interaction.deferred || interaction.replied) return interaction.editReply(`❌ ${String(e.message||'Action impossible.').slice(0,300)}`);
+    return interaction.reply({ ephemeral:true, content:`❌ ${String(e.message||'Action impossible.').slice(0,300)}` });
   }
 });
 

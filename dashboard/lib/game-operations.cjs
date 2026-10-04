@@ -27,6 +27,7 @@ function processEvent(db,s,e,now){if(e.type!=='kill'||!e.killerUid||e.killerUid=
  (db.liveAlerts||=[]).push({id:id(),guildId:s.guildId,serverId:s.id,channelId:s.feedChannelId,content:`🎯 Prime remportée : ${e.killer} reçoit ${bounty.amount} pour ${bounty.targetName}.`,createdAt:now});
  }
 }
+function settleBounty(db,gid,bountyId,userId,evidence,actorId){const b=(db.bounties||[]).find(b=>b.guildId===gid&&b.id===bountyId);if(!b||b.status!=='active'||Date.parse(b.expiresAt)<=Date.now())throw new Error('Prime inactive ou expirée.');if(typeof evidence!=='string'||!evidence.trim()||evidence.length>1000)throw new Error('Preuve ou motif de validation requis.');const killer=(db.playerLinks||[]).find(l=>l.guildId===gid&&l.serverId===b.serverId&&l.userId===userId&&l.verified);if(!killer||killer.uid===b.targetUid||userId===b.creatorId)throw new Error('Bénéficiaire vérifié et distinct requis.');const victim=linked(db,gid,b.serverId,b.targetUid),f=faction(db,gid,b.serverId,userId);if(f&&victim&&f.members.includes(victim.userId))throw new Error('Prime interdite dans la même faction.');change(db,gid,userId,b.amount,'Prime validée par le staff',`manual:bounty:${b.id}`);Object.assign(b,{status:'claimed',claimedBy:userId,claimedAt:new Date().toISOString(),reviewedBy:actorId,evidence,source:'staff_review'});return b;}
 function validateTask(body,previous={},now=Date.now()){
  const t={...previous,...body};if(!t.name||!t.serverId||!['restart','start','stop','message'].includes(t.action))throw new Error('Nom, serveur et action programmée requis.');
  if(t.intervalSeconds!==undefined)integer(t.intervalSeconds,0,2592000);
@@ -36,4 +37,4 @@ function validateTask(body,previous={},now=Date.now()){
  if(!previous.id&&Date.parse(t.nextRunAt)<now)throw new Error('Choisis une date future.');
  return t;
 }
-module.exports={account,change,transaction,createBounty,cancelBounty,expire,faction,treasury,linked,processEvent,validateTask,integer};
+module.exports={account,change,transaction,createBounty,cancelBounty,expire,faction,treasury,linked,processEvent,settleBounty,validateTask,integer};

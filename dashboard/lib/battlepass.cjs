@@ -6,6 +6,7 @@ function date(value){if(typeof value!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d(?:
 function mutate(bp,body,method,now=Date.now()){
  bp.levels||=[];bp.seasons||=[];
  const collection=body.collection||'levels';
+ if(collection==='premium'){const userId=String(body.userId||'');if(!/^\d{15,22}$/.test(userId))throw new Error('ID Discord requis.');const season=body.seasonId?bp.seasons.find(s=>s.id===body.seasonId):null;if(body.seasonId&&!season)throw new Error('Saison introuvable.');const target=season||bp;target.premiumUsers||=[];if(method==='DELETE')target.premiumUsers=target.premiumUsers.filter(v=>v!==userId);else if(!target.premiumUsers.includes(userId)){if(target.premiumUsers.length>=10000)throw new Error('Limite premium atteinte.');target.premiumUsers.push(userId);}return;}
  if(collection==='seasons'){
   const old=bp.seasons.find(s=>s.id===body.id);
   if(method!=='POST'&&!old)throw new Error('Saison introuvable.');
@@ -29,7 +30,8 @@ function mutate(bp,body,method,now=Date.now()){
  const item={...(idx>=0?rows[idx]:{}),id:idx>=0?rows[idx].id:crypto.randomUUID()};
  for(const key of ['level','xp','reward']){const v=body[key]??item[key]??(key==='reward'?0:undefined);if(!Number.isSafeInteger(v)||v<0||(key==='level'&&v===0))throw new Error(`${key} invalide.`);item[key]=v;}
  if(body.premium!==undefined&&typeof body.premium!=='boolean')throw new Error('Premium invalide.');item.premium=body.premium??item.premium??false;
- if(rows.some(l=>l.id!==item.id&&l.level===item.level&&!!l.premium===item.premium))throw new Error('Ce niveau existe déjà sur cette piste.');
+ for(const key of ['game','serverId'])if(body[key]!==undefined){if(typeof body[key]!=='string')throw new Error('Jeu ou serveur invalide.');item[key]=key==='game'&&body[key]?require('./games.cjs').normalize(body[key]):body[key];}
+ if(rows.some(l=>l.id!==item.id&&l.level===item.level&&!!l.premium===item.premium&&(l.game||'')===(item.game||'')&&(l.serverId||'')===(item.serverId||'')))throw new Error('Ce niveau existe déjà sur cette piste.');
  if(method==='POST'){if(rows.length>=1000)throw new Error('Limite de 1000 niveaux atteinte.');rows.push(item);}else rows[idx]=item;
 }
 // Validation time controls rewards; submission time determines which season owns the XP.
@@ -42,6 +44,8 @@ function earn(db,guildId,userId,xp,proof,credit,now=Date.now()){
  if(seasonal&&(!season||!Number.isFinite(submitted)||submitted<Date.parse(season.startsAt)||submitted>=Date.parse(season.endsAt)))return;
  let target=p,levels=bp.levels||[];
  if(season){p.seasons||={};target=p.seasons[season.id]||={xp:0,claimed:[]};if(!Number.isSafeInteger(target.xp+xp))throw new Error('XP trop élevé.');target.xp+=xp;levels=season.levels;proof.seasonId=season.id;}
- for(const l of levels){if(!l.premium&&target.xp>=l.xp&&!(target.claimed||=[]).includes(l.id)){credit(db,guildId,userId,l.reward||0,`Battle Pass ${season?.name||'historique'} — niveau ${l.level}`);target.claimed.push(l.id);}}
+ const scope=[proof.game?require('./games.cjs').normalize(proof.game):'',proof.serverId||''].join(':');target.scopes||={};const scoped=target.scopes[scope]||={xp:0};scoped.xp+=xp;
+ for(const l of levels){const eligibleXp=l.game||l.serverId?Object.entries(target.scopes).filter(([k])=>{const [g,s]=k.split(':');return (!l.game||l.game===g)&&(!l.serverId||l.serverId===s);}).reduce((n,[,v])=>n+v.xp,0):target.xp;
+ if((!l.premium||(season||bp).premiumUsers?.includes(userId))&&eligibleXp>=l.xp&&!(target.claimed||=[]).includes(l.id)){credit(db,guildId,userId,l.reward||0,`Battle Pass ${season?.name||'historique'} — niveau ${l.level}`);target.claimed.push(l.id);}}
 }
 module.exports={config,active,progress,mutate,earn};

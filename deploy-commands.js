@@ -17,7 +17,6 @@ const commands = [
   ...require('./shared/community-commands').commands(),
   new SlashCommandBuilder().setName('shoplink').setDescription('Ouvrir le Shop public Extinction++ RSS'),
   new SlashCommandBuilder().setName('dashboard').setDescription('Obtenir le lien du Dashboard Extinction++ RSS'),
-  new SlashCommandBuilder().setName('battlepass').setDescription('Ouvrir le Battle Pass Extinction++ RSS'),
   new SlashCommandBuilder().setName('quetes').setDescription('Ouvrir les quêtes Extinction++ RSS'),
   new SlashCommandBuilder().setName('rp').setDescription('Ouvrir le système RP Extinction++ RSS'),
   new SlashCommandBuilder().setName('stats').setDescription('Ouvrir les statistiques Extinction++ RSS'),
@@ -176,14 +175,6 @@ const commands = [
       .addStringOption(o => o.setName('message').setDescription('Question').setRequired(true)))
     .addSubcommand(s => s.setName('aide').setDescription('Voir l’aide de l’assistant')),
 
-
-  new SlashCommandBuilder()
-    .setName('quete')
-    .setDescription('Quêtes RSS')
-    .addSubcommand(sc => sc.setName('liste').setDescription('Lister les quêtes'))
-    .addSubcommand(sc => sc.setName('preuve').setDescription('Envoyer une preuve')
-      .addStringOption(o => o.setName('id').setDescription('ID quête').setRequired(false))
-      .addAttachmentOption(o => o.setName('photo').setDescription('Photo preuve').setRequired(false))),
 
   new SlashCommandBuilder()
     .setName('interpol')
