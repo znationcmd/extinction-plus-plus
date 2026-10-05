@@ -24,7 +24,7 @@ export default async function Shop({searchParams}) {
             <p>{i.guild || i.guildId || 'Global'} — {i.server || i.serverId || 'Serveur'} — {i.map || 'Map'}</p>
             <p>Prix : {i.price || 0}</p>
             <p>Catégorie : {i.category || '—'}</p>
-            <p>ID : {i.id || '—'}</p>{['dayz_restart','bridge_restart'].includes(i.deliveryMode)&&<ShopPosition item={i}/>}
+            <p>ID : {i.id || '—'}</p>{(['dayz_restart','bridge_restart'].includes(i.deliveryMode)||i.deliveryMode==='manual'&&i.positionMap)&&<ShopPosition item={i}/>}
           </div>
         ))}
         {!shops.length && <div className="card md:col-span-2 xl:col-span-3">Aucun item. Utilise /shop create.</div>}

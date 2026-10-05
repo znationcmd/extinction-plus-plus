@@ -582,7 +582,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const account=getBankAccount(db,interaction.guildId,interaction.user.id);
         if(account.bank<item.price)return interaction.reply({ephemeral:true,content:'❌ Solde banque insuffisant.'});
         const idOrder=require('node:crypto').randomUUID();
-        const purchase={id:idOrder,guildId:interaction.guildId,userId:interaction.user.id,itemId:id,itemName:item.name,game:item.game,server:item.serverId||item.server,map:item.map,x,z,price:item.price,status:'awaiting_staff',createdAt:new Date().toISOString()};
+        const purchase={id:idOrder,guildId:interaction.guildId,userId:interaction.user.id,itemId:id,itemName:item.name,game:item.game,server:item.serverId||item.server,map:item.map,x,z,...(Number.isFinite(y)?{y}:{}),price:item.price,status:'awaiting_staff',createdAt:new Date().toISOString()};
         const delivery={...purchase,serverId:item.serverId||item.server};
         const bridgeServer=item.deliveryMode==='bridge'?rconTools.findServer(db,interaction.guildId,item.serverId||item.server):null;
         if(item.deliveryMode==='bridge'){
