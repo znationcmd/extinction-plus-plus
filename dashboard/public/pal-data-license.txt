@@ -1,5 +1,7 @@
 Source : https://github.com/stolenvw/pyPalworldAPI
-Sélection des noms, types, statistiques, aptitudes, coûts de recettes et paires de reproduction ; descriptions et images non reproduites.
+Sélection des noms, types, statistiques, aptitudes, coûts de recettes paires de reproduction, objets, technologies, constructions, cartes d’habitat liées et points de carte ; descriptions omises ; les images de fiches restent liées au dépôt source.
+Fonds world/tree : conversion des images source de voyages rapides (world) et de notes (tree) en WebP 2048 × 2048, limites conservées, sans ajout de positions.
+MapX/MapY sont des pixels du fond de carte 8192 × 8192 de la source, convertis en pourcentage ; ce ne sont pas des coordonnées GPS en jeu.
 Palworld appartient à Pocketpair. Catalogue de version datée, pas une garantie de correspondance avec chaque serveur.
 
 MIT License

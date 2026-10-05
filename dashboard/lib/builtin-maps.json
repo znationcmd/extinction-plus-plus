@@ -1103,5 +1103,33 @@
     "imageUrl": "/api/public/map-images/astraeos",
     "sourceUrl": "https://arkbuddy.app/maps/astraeos",
     "attribution": "Fond Arkbuddy ; Astraeos © Nekatus / Studio Wildcard. Instantané de la source, non garanti à jour."
+  },
+  {
+    "id": "builtin-palworld-source-world",
+    "name": "Palpagos — catalogue juillet 2026",
+    "game": "palworld",
+    "imageUrl": "/companion/palworld-world.webp",
+    "sourceUrl": "https://github.com/stolenvw/pyPalworldAPI/tree/d531c094da71e6ce907114ccd916498552b7e9aa",
+    "attribution": "pyPalworldAPI (MIT) ; Palworld © Pocketpair. Fond avec repères de voyage de la source. Version WebP réduite à 2048 × 2048, mêmes limites et positions.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Pixels MapX/MapY de la source ramenés en %. X vers la droite, Y vers le bas ; coordonnées GPS en jeu non affichées."
+  },
+  {
+    "id": "builtin-palworld-source-tree",
+    "name": "Arbre du Monde — catalogue juillet 2026",
+    "game": "palworld",
+    "imageUrl": "/companion/palworld-tree.webp",
+    "sourceUrl": "https://github.com/stolenvw/pyPalworldAPI/tree/d531c094da71e6ce907114ccd916498552b7e9aa",
+    "attribution": "pyPalworldAPI (MIT) ; Palworld © Pocketpair. Fond avec repères de notes de la source. Version WebP réduite à 2048 × 2048, mêmes limites et positions.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Pixels MapX/MapY de la source ramenés en %. X vers la droite, Y vers le bas ; coordonnées GPS en jeu non affichées."
   }
 ]

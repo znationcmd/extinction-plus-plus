@@ -1,0 +1,10 @@
+Images liées au wiki communautaire DayZ : https://dayz.wiki.gg/
+Chaque correspondance renvoie à la page File: exacte de l’image.
+Les fichiers restent hébergés sur le wiki ; aucun fichier d’image n’est copié dans ce dépôt.
+DayZ et ses éléments graphiques appartiennent à Bohemia Interactive et aux ayants droit indiqués sur chaque page de fichier.
+Licence générale des pages du wiki : Creative Commons Attribution-NonCommercial-ShareAlike 4.0, sauf mention contraire.
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+Les mentions spécifiques de chaque image restent applicables et sont consultables avec le lien « Source de l’image » dans sa fiche.
+Adaptation : correspondance exacte des noms de fichiers publiés avec les classes vanilla ; liens manquants laissés sans image, sans URL inventée.
+Index consulté le 5 octobre 2026 ; script reproductible : scripts/import-dayz-images.py.
+Les données d’économie DayZ restent sous la licence ADPL-SA indiquée dans /dayz-data-license.txt.

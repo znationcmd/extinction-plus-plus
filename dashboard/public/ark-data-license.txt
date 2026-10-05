@@ -1,5 +1,6 @@
 Source : https://github.com/cadon/ARKStatsExtractor
-Adaptation : sélection des noms, variantes, statistiques de base et durées de reproduction.
+Adaptation : sélection des noms, variantes, statistiques de base, durées de reproduction, nourritures et paramètres d’apprivoisement.
+Calcul KO adapté de Taming.cs : nourriture unique confirmée, multiplicateur interne 4, sans dégâts ni élixir. Aucune approximation de mécanique spéciale ou passive.
 
 The MIT License (MIT)
 

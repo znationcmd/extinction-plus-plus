@@ -83,3 +83,5 @@ Sources, date de récupération et SHA256 des données originales :
     "sha256": "0c052ed4b1c941e66436f01fcade807b5923d589d9bd1bd15dfba1885e7aee97"
   }
 ]
+Ressources The Island ASA : https://ark.wiki.gg/wiki/Data:Maps/Resources/The_Island/ASA
+Récupéré le 05/10/2026, 2 797 repères, SHA256 f8ba5190f602e96120a5cd1d4681e4fea7e1571e91723e4a5c9a766f07f37db7. Coordonnées X/Y source conservées en pourcentage.
