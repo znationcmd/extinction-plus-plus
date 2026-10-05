@@ -1,0 +1,7 @@
+import {readDb} from '../../../lib/db';
+import {activeGuild,guarded} from '../../../lib/dashboard-auth';
+import {session} from '../../../lib/mod-auth';
+import {allServers} from '../../../lib/servers';
+import jobs from '../../../lib/bot-jobs.cjs';
+export const GET=guarded(async req=>{if(new URL(req.url).searchParams.get('template')==='1')return new Response(JSON.stringify({Objects:[]}),{headers:{'Content-Type':'application/json','Content-Disposition':'attachment; filename="extinction-shop-orders.json"'}});const db=await readDb();return Response.json((db.restartBatches||[]).map(({payload,...b})=>b));});
+export const POST=guarded(async req=>{const body=await req.json(),gid=await activeGuild(),db=await readDb(),s=allServers(db,gid).find(s=>s.id===body.serverId);if(!s)throw new Error('Serveur introuvable.');if(body.action!=='recover'||typeof body.note!=='string'||body.note.trim().length<10||body.note.length>1000)throw new Error('Action et compte rendu de vérification requis.');if(!db.restartBatches?.some(b=>b.id===body.batchId&&b.serverId===s.id&&b.guildId===gid&&b.status==='uncertain'))throw new Error('Lot incertain introuvable.');const jobId=await jobs.enqueue(gid,(await session()).userId,'restart_recover',{serverId:s.id,batchId:body.batchId,note:body.note});return Response.json({jobId,message:'Vérification et nettoyage placés en file ; attendre le résultat dans Actions serveur.'},{status:202});});

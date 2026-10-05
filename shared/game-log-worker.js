@@ -39,6 +39,7 @@ function start({client,loadDb,saveDb}){let busy=false;
  try{if(process.env.DATABASE_URL){lock=await(await appStore.ready()).connect();if(!(await lock.query('SELECT pg_try_advisory_lock(221100,1704) AS locked')).rows[0].locked)return;}
  const db=await loadDb();for(const gid of Object.keys(db.guilds||{}))for(const server of rcon.getAllServers(db,gid)){if(server.enabled===false||(!server.liveEnabled&&!server.monitorEnabled))continue;const options={server:{...server,guildId:gid},loadDb,saveDb};if(server.liveEnabled)try{await poll(options);}catch(e){await failure(options).catch(()=>{});}
  if(server.monitorEnabled)await require('./server-monitor').poll(options).catch(()=>{});}
+ await require('./restart-shop-worker').tick({loadDb,saveDb});
  await require('./operations-worker').tick({loadDb,saveDb});
  await deliver({client,loadDb,saveDb});
  }catch(e){console.error('Événements automatiques : service indisponible.');}finally{if(lock){await lock.query('SELECT pg_advisory_unlock(221100,1704)').catch(()=>{});lock.release();}busy=false;}}

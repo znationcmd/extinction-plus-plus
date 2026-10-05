@@ -143,6 +143,7 @@ async function aiAnswer(message) {
 }
 
 client.once('clientReady', () => {
+  client.application.commands.create(require('./deploy-commands').commands.find(c=>c.name==='shop').toJSON()).then(()=>console.log('Commande shop avec altitude enregistrée.')).catch(()=>console.error('Enregistrement shop indisponible.'));
   require('./shared/community-commands').register(client).then(()=>console.log('Commandes pass, quêtes, primes, factions, profil et tickets enregistrées.')).catch(()=>console.error('Commandes communautaires : enregistrement Discord indisponible.'));
   console.log(`✅ Bot connecté : ${client.user.tag}`);
   if(process.send)process.send({type:'discordReady',ready:true});
@@ -568,6 +569,7 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
         const playerId = interaction.options.getString('playerid');
         const x = interaction.options.getInteger('x');
         const z = interaction.options.getInteger('z');
+        const y = interaction.options.getNumber('y');
         const item = (cfg.shop || []).find(i=>i.id===id);
         if (!item) return interaction.reply({ ephemeral:true, content:'❌ Item introuvable.' });
 
@@ -589,6 +591,8 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           Object.assign(delivery,{serverId:bridgeServer.id,playerUid:identity.uid,className:contents[0].className,quantity:contents[0].quantity,items:contents,status:'bridge_queued'});purchase.status='bridge_queued';
         }
         let cfPrepared;if(item.deliveryMode==='cftools'){const server=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!server)throw new Error('Serveur DayZ PC introuvable.');const identity=(db.playerLinks||[]).find(l=>l.guildId===interaction.guildId&&l.serverId===server.id&&l.userId===interaction.user.id&&l.verified);if(!identity)throw new Error('Identité du jeu vérifiée requise.');cfPrepared=await require('./dashboard/lib/external-admin.cjs').cfDelivery({...server,guildId:interaction.guildId},identity,item);purchase.status=delivery.status='processing';}
+        if(item.deliveryMode==='bridge_restart'){if(!shopServer)throw new Error('Serveur ARK introuvable.');Object.assign(delivery,require('./dashboard/lib/restart-shop.cjs').prepareBridge(db,{...shopServer,guildId:interaction.guildId},item,{x,y,z}));purchase.status='bridge_queued';Object.assign(purchase,{x,y,z,deliveryMode:'bridge_restart'});}
+        if(item.deliveryMode==='dayz_restart'){if(!shopServer)throw new Error('Serveur DayZ introuvable.');Object.assign(delivery,require('./dashboard/lib/restart-shop.cjs').prepare(db,{...shopServer,guildId:interaction.guildId},item,{x,y,z}));purchase.status='restart_queued';Object.assign(purchase,{x,y,z,deliveryMode:'dayz_restart'});}
         const automatic=(!item.deliveryMode||item.deliveryMode==='rcon')&&item.game==='ark'&&!!item.blueprint&&!!playerId;
         let arkServer;
         if(automatic){arkServer=rconTools.findServer(db,interaction.guildId,item.serverId||item.server);if(!arkServer||arkServer.game!=='ark')throw new Error('Serveur ARK lié introuvable.');rconTools.getRconConfig(arkServer);purchase.status=delivery.status='processing';}
@@ -605,7 +609,8 @@ RCON: **${rconHost && rconPort && rconPassword ? 'configuré' : 'non configuré'
           await saveDb(current);
           return interaction.reply({ephemeral:true,content:error?`⚠️ Commande ${idOrder} : livraison à vérifier par le staff avant toute nouvelle tentative. Paiement conservé pour éviter une double livraison.`:`✅ Banque débitée. Commande ARK acquittée pour **${item.name}**. Vérifie l’inventaire en jeu.`});
         }
-        if(item.deliveryMode==='bridge')return interaction.reply({ephemeral:true,content:`Achat ${idOrder} enregistré. Livraison en attente de l’adaptateur du jeu ; consulte son état dans Livraisons.`});
+        if(item.deliveryMode==='dayz_restart')return interaction.reply({ephemeral:true,content:`Commande ${idOrder} réservée pour X ${x}, altitude Y ${y}, Z ${z}. Elle sera préparée au prochain redémarrage lancé par le bot. Le staff confirmera son apparition en jeu. Un redémarrage direct du panel ne prépare pas cette commande.`});
+        if(['bridge','bridge_restart'].includes(item.deliveryMode))return interaction.reply({ephemeral:true,content:`Achat ${idOrder} enregistré. Livraison en attente de l’adaptateur du jeu ; consulte son état dans Livraisons.`});
         await sendLog(interaction,`🛒 Commande ${idOrder} — <@${interaction.user.id}> — ${item.name} — livraison manuelle sur ${item.server}`);
         return interaction.reply({ephemeral:true,content:`✅ Achat enregistré et banque débitée : **${item.name}**. Livraison par le staff en attente. Référence : ${idOrder}`});
       }

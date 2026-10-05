@@ -1,3 +1,4 @@
+import RestartDeliveries from '../../components/RestartDeliveries';
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { readPageDb as readDb } from '../../lib/db';
@@ -8,7 +9,7 @@ export default async function Page() {
 
   return (
     <Shell>
-      <h2 className="mb-6 text-4xl font-black">Livraisons Shop</h2>
+      <h2 className="mb-6 text-4xl font-black">Livraisons Shop</h2><RestartDeliveries/>
 
       <div className="card mb-6">
         <p className="text-white/70">Commandes, résultats des adaptateurs et confirmations du staff. Une annulation d’achat rembourse la banque une seule fois. Les commandes en cours ne peuvent pas être annulées ; un compte rendu de vérification est requis.</p>
@@ -23,8 +24,9 @@ export default async function Page() {
               <p>Serveur : {item.serverId || '—'}</p>
 <p>Map : {item.map || '—'}</p>
 <p>Joueur : {item.userId || '—'}</p>
-<p>X : {item.x || '—'}</p>
-<p>Z : {item.z || '—'}</p>
+<p>X : {item.x ?? '—'}</p>
+<p>Altitude Y : {item.y ?? '—'}</p>
+<p>Z : {item.z ?? '—'}</p>
               {item.createdAt && <p>Date : {item.createdAt}</p>}
               {item.status && <p>Statut : {item.status}</p>}
             </div>

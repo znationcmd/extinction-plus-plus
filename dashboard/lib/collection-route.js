@@ -10,6 +10,7 @@ export function clean(body,fields) {
     if(blocked.includes(key))throw new Error('Champ interdit.');
     if(body[key]===undefined)continue;
     const value=body[key];
+    if(type==='numberSigned'&&!Number.isFinite(value))throw new Error(`${key} doit être un nombre fini.`);
     if(type==='number' && (!Number.isFinite(value)||value<0))throw new Error(`${key} doit être un nombre positif ou nul.`);
     if(type==='integer' && (!Number.isSafeInteger(value)||value<0))throw new Error(`${key} doit être un entier positif ou nul.`);
     if(type==='string' && (typeof value!=='string'||value.length>4000))throw new Error(`${key} doit être un texte de 4000 caractères maximum.`);

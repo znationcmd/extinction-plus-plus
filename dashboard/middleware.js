@@ -5,7 +5,7 @@ export function middleware(req) {
   const path=req.nextUrl.pathname;
   if(path==='/api/game-bridge'&&req.method==='POST')return NextResponse.next(); // The handler requires a server HMAC signature.
   const readOnly=req.method==='GET'||req.method==='HEAD';
-  if(readOnly && (path==='/public'||path==='/help'||path==='/groups'||path==='/api/public/maps'||path.startsWith('/api/public/map-images/')))return NextResponse.next();
+  if(readOnly && (path==='/public'||path==='/help'||path==='/groups'||path==='/api/public/maps'||path==='/api/public/atlas'||/^\/explorer\/(ark|palworld|aniimo|dayz)$/.test(path)||path.startsWith('/api/public/map-images/')))return NextResponse.next();
   if(['/login','/install','/offline.html','/shop'].includes(path) || path.startsWith('/api/mod-auth/'))return NextResponse.next();
   if(!unseal(req.cookies.get('extinction_mod_session')?.value)) {
     if(path==='/' && readOnly)return NextResponse.redirect(new URL('/public',req.url));

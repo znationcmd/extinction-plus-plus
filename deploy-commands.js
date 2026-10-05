@@ -124,7 +124,8 @@ const commands = [
       .addStringOption(o => o.setName('id').setDescription('ID item').setRequired(true))
       .addStringOption(o => o.setName('playerid').setDescription('SteamID/EOS ID ARK ou pseudo').setRequired(false))
       .addIntegerOption(o => o.setName('x').setDescription('Coordonnée X livraison').setRequired(false))
-      .addIntegerOption(o => o.setName('z').setDescription('Coordonnée Z livraison').setRequired(false))),
+      .addIntegerOption(o => o.setName('z').setDescription('Coordonnée Z livraison').setRequired(false))
+      .addNumberOption(o => o.setName('y').setDescription('Altitude Y exacte pour DayZ au redémarrage').setRequired(false))),
 
   new SlashCommandBuilder()
     .setName('event')
@@ -184,6 +185,8 @@ const commands = [
       .addStringOption(o => o.setName('raison').setDescription('Raison').setRequired(true)))
 ];
 
+module.exports={commands};
+if(require.main===module){
 const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);
 
 (async () => {
@@ -196,3 +199,5 @@ const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);
     process.exitCode=1;
   }
 })();
+
+}

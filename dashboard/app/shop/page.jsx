@@ -1,3 +1,4 @@
+import ShopPosition from '../../components/ShopPosition';
 import ModuleEditor from '../../components/ModuleEditor';
 import Shell from '../../components/Shell';
 import { publicShop } from '../../lib/public-shop';
@@ -23,11 +24,11 @@ export default async function Shop({searchParams}) {
             <p>{i.guild || i.guildId || 'Global'} — {i.server || i.serverId || 'Serveur'} — {i.map || 'Map'}</p>
             <p>Prix : {i.price || 0}</p>
             <p>Catégorie : {i.category || '—'}</p>
-            <p>ID : {i.id || '—'}</p>
+            <p>ID : {i.id || '—'}</p>{['dayz_restart','bridge_restart'].includes(i.deliveryMode)&&<ShopPosition item={i}/>}
           </div>
         ))}
         {!shops.length && <div className="card md:col-span-2 xl:col-span-3">Aucun item. Utilise /shop create.</div>}
       </div>
-    {admin&&<ModuleEditor endpoint="/api/shop" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "server", "label": "Nom du serveur"}, {"name": "map", "label": "Carte"}, {"name": "price", "label": "Prix banque", "type": "integer"}, {"name": "category", "label": "Catégorie"}, {"name":"deliveryMode","label":"Méthode de livraison","options":{"manual":"Staff (tous jeux)","rcon":"RCON ARK","cftools":"DayZ PC via CFTools + GameLabs installé","bridge":"Adaptateur de jeu installé"}},{name:'kitItems',label:'Kit : JSON (ex. [{"className":"BandageDressing","quantity":2}])'},{"name":"className","label":"Classe de l’objet pour l’adaptateur"},{"name":"quantity","label":"Quantité pour l’adaptateur","type":"integer"},{"name": "blueprint", "label": "Blueprint ou ID ARK"}, {"name": "hidden", "label": "Masqué", "type": "boolean"}]} />}</Shell>
+    {admin&&<ModuleEditor endpoint="/api/shop" fields={[{"name": "name", "label": "Nom", "required": true}, {"name": "game", "label": "Jeu"}, {"name": "serverId", "label": "Serveur (ID ou nom)"}, {"name": "enabled", "label": "Activé", "type": "boolean"}, {"name": "server", "label": "Nom du serveur"}, {"name": "map", "label": "Carte"}, {"name": "price", "label": "Prix banque", "type": "integer"}, {"name": "category", "label": "Catégorie"}, {"name":"deliveryMode","label":"Méthode de livraison","options":{"bridge_restart":"ARK : adaptateur au sol / redémarrage installé","dayz_restart":"DayZ PC / Xbox / PlayStation : position au redémarrage","manual":"Staff (tous jeux)","rcon":"RCON ARK","cftools":"DayZ PC via CFTools + GameLabs installé","bridge":"Adaptateur de jeu installé"}},{name:'kitItems',label:'Kit : JSON (ex. [{"className":"BandageDressing","quantity":2}])'},{"name":"className","label":"Classe de l’objet pour l’adaptateur"},{"name":"quantity","label":"Quantité pour l’adaptateur","type":"integer"},{"name": "blueprint", "label": "Blueprint ou ID ARK"}, {"name": "hidden", "label": "Masqué", "type": "boolean"}]} />}</Shell>
   );
 }
