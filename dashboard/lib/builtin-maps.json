@@ -2199,5 +2199,22 @@
         "tileTemplate": "https://static.xam.nu/dayz/maps/siberia/26.09.01/satellite/{z}/{x}/{y}.webp"
       }
     ]
+  },
+  {
+    "id": "builtin-ark-amissa-ase",
+    "name": "Amissa — ASE (archive 0.8)",
+    "game": "ark",
+    "edition": "ASE",
+    "modded": true,
+    "version": "0.8 — carte communautaire Rev.2 (2020)",
+    "imageUrl": "https://i.ibb.co/9bkZsZQ/ark-amissa-map.jpg",
+    "sourceUrl": "https://steamcommunity.com/workshop/filedetails/discussion/1383342563/1744514257105529432/",
+    "attribution": "Carte communautaire Rev.2 © 123 (Steam), partage autorisé par son auteur ; terrain Amissa © sicco0803 ; ARK © ses ayants droit.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Carte ASE ancienne, positions visuelles (%) ; ne pas appliquer aux coordonnées ASA. Calibration non vérifiée."
   }
 ]
