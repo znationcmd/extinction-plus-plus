@@ -2216,5 +2216,113 @@
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Carte ASE ancienne, positions visuelles (%) ; ne pas appliquer aux coordonnées ASA. Calibration non vérifiée."
+  },
+  {
+    "id": "builtin-dayz-varlind",
+    "name": "Varlind",
+    "game": "dayz_pc",
+    "imageUrl": "https://maps.izurvive.com/maps/Arland-Top/0.0.0/tiles/0/0/0.webp",
+    "sourceUrl": "https://github.com/WoozyMasta/dzmap/blob/master/config.yaml",
+    "attribution": "Fond © iZurvive ; DayZ © Bohemia Interactive ; terrain © son auteur.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "tileTemplate": "https://maps.izurvive.com/maps/Arland-Top/0.0.0/tiles/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 4,
+    "tileBaseGrid": 1,
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.0.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/Arland-Top/0.0.0/tiles/0/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/Arland-Top/0.0.0/tiles/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://maps.izurvive.com/maps/Arland-Sat/0.0.0/tiles/0/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/Arland-Sat/0.0.0/tiles/{z}/{x}/{y}.webp"
+      }
+    ],
+    "tileBottomOrigin": false
+  },
+  {
+    "id": "builtin-dayz-greencounty",
+    "name": "Green County",
+    "game": "dayz_pc",
+    "imageUrl": "https://maps.izurvive.com/maps/GreenCounty-Top/0.0.0/tiles/0/0/0.webp",
+    "sourceUrl": "https://github.com/WoozyMasta/dzmap/blob/master/config.yaml",
+    "attribution": "Fond © iZurvive ; DayZ © Bohemia Interactive ; terrain © son auteur.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "tileTemplate": "https://maps.izurvive.com/maps/GreenCounty-Top/0.0.0/tiles/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 4,
+    "tileBaseGrid": 1,
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.0.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/GreenCounty-Top/0.0.0/tiles/0/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/GreenCounty-Top/0.0.0/tiles/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://maps.izurvive.com/maps/GreenCounty-Sat/0.0.0/tiles/0/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/GreenCounty-Sat/0.0.0/tiles/{z}/{x}/{y}.webp"
+      }
+    ],
+    "tileBottomOrigin": false
+  },
+  {
+    "id": "builtin-dayz-swansisland",
+    "name": "Swans Island",
+    "game": "dayz_pc",
+    "imageUrl": "https://maps.izurvive.com/maps/SwansIsland-Top/1.0.0/tiles/0/0/0.png",
+    "sourceUrl": "https://github.com/WoozyMasta/dzmap/blob/master/config.yaml",
+    "attribution": "Fond © iZurvive ; DayZ © Bohemia Interactive ; terrain © son auteur.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "tileTemplate": "https://maps.izurvive.com/maps/SwansIsland-Top/1.0.0/tiles/{z}/{x}/{y}.png",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 4,
+    "tileBaseGrid": 1,
+    "modded": true,
+    "edition": "DayZ",
+    "version": "1.0.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/SwansIsland-Top/1.0.0/tiles/0/0/0.png",
+        "tileTemplate": "https://maps.izurvive.com/maps/SwansIsland-Top/1.0.0/tiles/{z}/{x}/{y}.png"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://maps.izurvive.com/maps/SwansIsland-Sat/1.0.0/tiles/0/0/0.png",
+        "tileTemplate": "https://maps.izurvive.com/maps/SwansIsland-Sat/1.0.0/tiles/{z}/{x}/{y}.png"
+      }
+    ],
+    "tileBottomOrigin": true
   }
 ]
