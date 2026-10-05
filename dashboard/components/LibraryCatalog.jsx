@@ -3,7 +3,7 @@ import {useState,useEffect} from 'react';
 import icons from '../lib/resource-icons.cjs';
 import breed from '../lib/pal-breeding.cjs';
 import crafting from '../lib/crafting-plan.cjs';
-const labels={Fire:'Feu',Water:'Eau',Dark:'Ombre',Grass:'Plante',Electric:'Électricité',Ice:'Glace',Earth:'Terre',Dragon:'Dragon',Neutral:'Neutre','attributes-fire':'Feu','attributes-water':'Eau','attributes-dark':'Ombre','attributes-light':'Lumière','attributes-ice':'Glace','attributes-earth':'Terre','attributes-grass':'Plante','attributes-wind':'Vent','attributes-electric':'Électricité','position-dps':'Dégâts','position-breaker':'Rupture','position-healer':'Soin','position-support':'Soutien','position-energy':'Énergie'};
+const labels={Fire:'Feu',Water:'Eau',Dark:'Ombre',Grass:'Plante',Electric:'Électricité',Ice:'Glace',Earth:'Terre',Dragon:'Dragon',Neutral:'Neutre','attributes-fire':'Feu','attributes-water':'Eau','attributes-dark':'Ombre','attributes-light':'Lumière','attributes-ice':'Glace','attributes-earth':'Terre','attributes-grass':'Plante','attributes-wind':'Vent','attributes-electric':'Électricité','position-dps':'Dégâts','position-breaker':'Rupture','position-healer':'Soin','position-support':'Soutien','position-energy':'Énergie','attributes-rock':'Roche','attributes-holy':'Lumière','position-break':'Rupture','position-heal':'Soin','position-sup':'Soutien'};
 const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export default function LibraryCatalog({game,data,view='codex',onLocations}){
  const [limit,setLimit]=useState(120);
