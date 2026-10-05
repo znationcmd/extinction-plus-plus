@@ -1,3 +1,4 @@
+import SetupGuide from '../components/SetupGuide';
 import Link from 'next/link';
 import Shell, { links } from '../components/Shell';
 import { readPageDb as readDb } from '../lib/db';
@@ -11,7 +12,7 @@ export default async function Home() {
   const servers = guildServers + ownerServers + (db.servers || []).length + (db.connectedServers || []).length;
 
   return (
-    <Shell>
+    <Shell><SetupGuide/>
       <div className="card mb-5 overflow-hidden">
         <div className="grid gap-5 xl:grid-cols-[320px_1fr]">
           <div className="rounded-3xl border border-purple-500/30 bg-black/40 p-4">
@@ -44,7 +45,7 @@ export default async function Home() {
         </Link>
       </div>
 
-      <h3 className="mt-8 mb-4 text-3xl font-black">Modules</h3>
+      <h3 id="modules" className="mt-8 mb-4 text-3xl font-black">Modules</h3>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {links.filter(([href]) => href !== '/').map(([href, label, Icon]) => (
           <Link key={href} href={href} prefetch={false} className="flex min-h-[120px] flex-col items-center justify-center rounded-3xl bg-white/10 p-5 text-center hover:bg-white/15 active:bg-red-600">

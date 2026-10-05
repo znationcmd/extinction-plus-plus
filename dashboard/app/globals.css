@@ -46,3 +46,8 @@ a, button {
     padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+select.input { color-scheme: dark; min-height: 48px; }
+select.input option { background: #08111f; color: white; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+[id] { scroll-margin-top: 100px; }
