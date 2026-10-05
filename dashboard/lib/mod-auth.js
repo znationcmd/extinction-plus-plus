@@ -29,10 +29,24 @@ export function unseal(value) {
   } catch { return null; }
 }
 export const cookieOptions = { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' };
+const discordCache=new Map();
 export async function discord(path, token) {
-  const res = await fetch(`https://discord.com/api/v10${path}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw Object.assign(new Error(res.status===429?'Discord limite temporairement les requêtes. Réessaie dans un instant.':res.status>=500?'Discord est temporairement indisponible.':'Connexion Discord expirée ou accès refusé.'), { status: res.status===429||res.status>=500?503:res.status===401?401:403 });
-  return res.json();
+  const cacheKey=crypto.createHash('sha256').update(token+'|'+path).digest('hex');
+  const cached=discordCache.get(cacheKey);
+  if(cached&&cached.expires>Date.now())return cached.data;
+  let res=await fetch(`https://discord.com/api/v10${path}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:AbortSignal.timeout(15000)});
+  if(res.status===429){
+    const body=await res.json().catch(()=>({}));
+    const wait=Math.min(3000,Math.max(250,Math.ceil(Number(body.retry_after||0.75)*1000)));
+    await new Promise(resolve=>setTimeout(resolve,wait));
+    res=await fetch(`https://discord.com/api/v10${path}`,{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:AbortSignal.timeout(15000)});
+    if(res.status===429&&cached)return cached.data;
+  }
+  if(!res.ok)throw Object.assign(new Error(res.status===429?'Discord limite temporairement les requêtes. Réessaie dans un instant.':res.status>=500?'Discord est temporairement indisponible.':'Connexion Discord expirée ou accès refusé.'),{status:res.status===429||res.status>=500?503:res.status===401?401:403});
+  const data=await res.json();
+  discordCache.set(cacheKey,{data,expires:Date.now()+(path==='/users/@me/guilds'?60000:30000)});
+  if(discordCache.size>500)for(const [k,v] of discordCache)if(v.expires<=Date.now())discordCache.delete(k);
+  return data;
 }
 export async function session() {
   const jar = await cookies();
