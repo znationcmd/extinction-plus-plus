@@ -1,6 +1,6 @@
 const builtin=require('./builtin-maps.json');
 function family(game){return game?.startsWith('dayz_')?'dayz':game;}
-const families=['ark','palworld','aniimo','dayz'];
+const families=['ark','palworld','aniimo','dayz','conan'];
 function terrain(db,id,gid){return (db.maps||[]).find(m=>m.id===id&&m.guildId===gid)||builtin.find(m=>m.id===id);}
 function validate(row,db,gid){
  const m=terrain(db,row.mapId,gid);if(!m||!families.includes(family(m.game)))throw new Error('Carte du Discord ou carte intégrée compatible requise.');
@@ -15,7 +15,7 @@ function publicView(db,game,guildId){
  const maps=builtin.concat((db.maps||[]).filter(m=>m.public===true&&(!guildId||m.guildId===guildId)));
  const entries=(db.atlasEntries||[]).filter(e=>e.public===true&&(!guildId||e.guildId===guildId)&&family(maps.find(m=>m.id===e.mapId)?.game)===game&&maps.some(m=>m.id===e.mapId&&(builtin.some(b=>b.id===m.id)||m.guildId===e.guildId)));
  const keys=['id','mapId','kind','name','category','x','z','conditions','notes','sourceUrl','updatedAt','element','drops','diet','rarity'];
- return {entries:entries.map(e=>Object.fromEntries(keys.map(k=>[k,e[k]]))),maps:maps.filter(m=>family(m.game)===game).map(m=>Object.fromEntries(['id','name','game','imageUrl','tileTemplate','tileMinZoom','tileMaxZoom','tileBaseGrid','tileBottomOrigin','tileReverseZoom','xMin','xMax','yMin','yMax','flipY','coordinateLabel','sourceUrl','attribution'].map(k=>[k,m[k]])))};
+ return {entries:(game==='dayz'?require('./dayz-vanilla.cjs').concat(entries):entries).map(e=>Object.fromEntries(keys.map(k=>[k,e[k]]))),maps:maps.filter(m=>family(m.game)===game).map(m=>Object.fromEntries(['id','name','game','imageUrl','tileTemplate','tileMinZoom','tileMaxZoom','tileBaseGrid','tileBottomOrigin','tileReverseZoom','xMin','xMax','yMin','yMax','flipY','coordinateLabel','sourceUrl','attribution'].map(k=>[k,m[k]])))};
 }
 function bulk(db,gid,mapId,rows){
  if(!Array.isArray(rows)||!rows.length||rows.length>200)throw new Error('De 1 à 200 points par lot.');

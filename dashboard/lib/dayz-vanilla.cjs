@@ -1,0 +1,2 @@
+const d=JSON.parse(require('node:zlib').gunzipSync(Buffer.from(require('./dayz-vanilla-data.cjs'),'base64')));
+module.exports=d.points.map(([m,n,c,x,z],i)=>({id:'vanilla-'+i,mapId:d.maps[m],kind:'loot',name:d.names[n],category:d.categories[c],x,z,notes:'Bâtiment de loot vanilla ; contenu réel selon le serveur, aucun objet garanti.',conditions:'Centre du bâtiment, pas position exacte d’un objet.',sourceUrl:'https://github.com/BohemiaInteractive/DayZ-Central-Economy'}));

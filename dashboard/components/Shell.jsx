@@ -33,6 +33,7 @@ export const links = [
   ['/maps', 'Cartes interactives', Map],
   ['/explorer/ark', 'Dinos & ressources ARK', Search],
   ['/explorer/palworld', 'Pals & ressources', Search],
+  ['/explorer/conan', 'Guide Conan Exiles', Search],
   ['/explorer/aniimo', 'Aniimo & ressources', Search],
   ['/explorer/dayz', 'Loot DayZ', Search],
   ['/atlas-admin', 'Gérer les emplacements', Map],
