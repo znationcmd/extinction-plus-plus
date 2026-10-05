@@ -1,0 +1,3 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{totals}=require('../dashboard/lib/crafting-plan.cjs');
+test('crafting aggregates recipes with yields, whole batches and shared ingredients',()=>{assert.deepEqual(totals([{quantity:5,yield:2,ingredients:[{name:'Bois',amount:4}]},{quantity:2,yield:1,ingredients:[{name:' bois ',amount:3}]}]),[{name:'Bois',amount:18}]);assert.deepEqual(totals([]),[]);});
+test('invalid recipe quantities and ingredients are rejected',()=>{for(const quantity of [0,-1,1.5,NaN])assert.throws(()=>totals([{quantity,yield:1,ingredients:[{name:'Bois',amount:1}]}]));assert.throws(()=>totals([{quantity:1,yield:0,ingredients:[]}]));assert.throws(()=>totals([{quantity:1,yield:1,ingredients:[{name:'',amount:1}]}]));});
