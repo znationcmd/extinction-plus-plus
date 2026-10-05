@@ -5,7 +5,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -16,7 +16,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": false
+    "modded": false,
+    "edition": "DayZ",
+    "version": "1.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-enoch",
@@ -24,7 +40,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -35,7 +51,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": false
+    "modded": false,
+    "edition": "DayZ",
+    "version": "1.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/livonia/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-sakhal",
@@ -43,7 +75,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -54,7 +86,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": false
+    "modded": false,
+    "edition": "DayZ",
+    "version": "1.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sakhal/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-alteria",
@@ -62,7 +110,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/alteria/1.0/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -73,7 +121,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "May.3",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/alteria/1.0/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/alteria/1.0/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/alteria/1.0/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/alteria/1.0/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-anastara",
@@ -81,7 +145,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/anastara/Jan.15/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -92,26 +156,58 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jan.15",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/anastara/Jan.15/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/anastara/Jan.15/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/anastara/Jan.15/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/anastara/Jan.15/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-antoria",
     "name": "Antoria",
     "game": "dayz_pc",
-    "imageUrl": "https://static.xam.nu/dayz/maps/antoria/25.05.18/topographic/0/0/0.webp",
+    "imageUrl": "https://static.xam.nu/dayz/maps/antoria/26.07.13/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
-    "tileTemplate": "https://static.xam.nu/dayz/maps/antoria/25.05.18/topographic/{z}/{x}/{y}.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/antoria/26.07.13/topographic/{z}/{x}/{y}.webp",
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jul.12",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/antoria/26.07.13/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/antoria/26.07.13/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/antoria/26.07.13/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/antoria/26.07.13/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-arsteinen",
@@ -119,7 +215,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/arsteinen/May.28/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -130,7 +226,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Dec.13",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/arsteinen/May.28/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/arsteinen/May.28/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/arsteinen/May.28/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/arsteinen/May.28/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-azalea",
@@ -138,7 +250,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/azalea/25.09.24/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -149,26 +261,58 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.3.4",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/azalea/25.09.24/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/azalea/25.09.24/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/azalea/25.09.24/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/azalea/25.09.24/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-banov",
     "name": "Banov",
     "game": "dayz_pc",
-    "imageUrl": "https://static.xam.nu/dayz/maps/banov/24.12.15-1/topographic/0/0/0.webp",
+    "imageUrl": "https://static.xam.nu/dayz/maps/banov/26.06.10/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
-    "tileTemplate": "https://static.xam.nu/dayz/maps/banov/24.12.15-1/topographic/{z}/{x}/{y}.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/banov/26.06.10/topographic/{z}/{x}/{y}.webp",
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jun.15",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/banov/26.06.10/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/banov/26.06.10/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/banov/26.06.10/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/banov/26.06.10/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-bitterroot",
@@ -176,7 +320,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/bitterroot/Aug.1/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -187,7 +331,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jan.11",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/bitterroot/Aug.1/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/bitterroot/Aug.1/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/bitterroot/Aug.1/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/bitterroot/Aug.1/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-chiemsee",
@@ -195,7 +355,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/chiemsee/2.7/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -206,7 +366,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "4.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chiemsee/2.7/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chiemsee/2.7/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chiemsee/2.7/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chiemsee/2.7/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-deadfall",
@@ -214,7 +390,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/deadfall/25.07.06/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -225,7 +401,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jul.6",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deadfall/25.07.06/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deadfall/25.07.06/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deadfall/25.07.06/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deadfall/25.07.06/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-deerisle",
@@ -233,7 +425,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/5.923/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -244,7 +436,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "5.923",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/5.923/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deerisle/5.923/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/5.923/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deerisle/5.923/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-esseker",
@@ -252,7 +460,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/esseker/0.58/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -263,7 +471,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.58",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/esseker/0.58/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/esseker/0.58/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/esseker/0.58/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/esseker/0.58/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-iztek",
@@ -271,7 +495,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/iztek/2.0.4/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -282,7 +506,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "2.0.4",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/iztek/2.0.4/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/iztek/2.0.4/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/iztek/2.0.4/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/iztek/2.0.4/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-malvinas",
@@ -290,7 +530,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/malvinas/25.09.17/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -301,7 +541,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Sep.16",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/malvinas/25.09.17/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/malvinas/25.09.17/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/malvinas/25.09.17/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/malvinas/25.09.17/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-namalsk",
@@ -309,7 +565,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/namalsk/May.27/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -320,7 +576,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.8",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/namalsk/May.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/namalsk/May.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/namalsk/May.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/namalsk/May.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-nhchernobyl",
@@ -328,7 +600,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/nhchernobyl/Mar.13/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -339,7 +611,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jul.22",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nhchernobyl/Mar.13/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nhchernobyl/Mar.13/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nhchernobyl/Mar.13/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nhchernobyl/Mar.13/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-novikostok",
@@ -347,7 +635,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/novikostok/25.11.11/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -358,7 +646,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Oct.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/novikostok/25.11.11/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/novikostok/25.11.11/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/novikostok/25.11.11/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/novikostok/25.11.11/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-nukezzone",
@@ -366,7 +670,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/nukezzone/Mar.13/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -377,7 +681,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jul.24",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nukezzone/Mar.13/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nukezzone/Mar.13/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nukezzone/Mar.13/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nukezzone/Mar.13/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-onforin",
@@ -385,7 +705,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/onforin/Apr.8/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -396,7 +716,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.8",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/onforin/Apr.8/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/onforin/Apr.8/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/onforin/Apr.8/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/onforin/Apr.8/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-pnw",
@@ -404,7 +740,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/pnw/25.08.28/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -415,7 +751,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "2.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/pnw/25.08.28/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/pnw/25.08.28/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/pnw/25.08.28/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/pnw/25.08.28/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-pripyat",
@@ -423,7 +775,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/pripyat/19.08/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -434,7 +786,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.94a",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/pripyat/19.08/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/pripyat/19.08/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/pripyat/19.08/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/pripyat/19.08/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-raman",
@@ -442,7 +810,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/raman/Mar.14/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -453,7 +821,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Mar.14",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/raman/Mar.14/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/raman/Mar.14/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/raman/Mar.14/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/raman/Mar.14/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-ros",
@@ -461,7 +845,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/ros/Jul.28/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -472,7 +856,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jul.28",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/ros/Jul.28/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/ros/Jul.28/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/ros/Jul.28/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/ros/Jul.28/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-rostow",
@@ -480,7 +880,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/rostow/02.15/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -491,7 +891,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "1.122",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/rostow/02.15/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/rostow/02.15/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/rostow/02.15/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/rostow/02.15/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-sahrani",
@@ -499,7 +915,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/sahrani/25.06.25/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -510,7 +926,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jan.23",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sahrani/25.06.25/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sahrani/25.06.25/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sahrani/25.06.25/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sahrani/25.06.25/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-stuartisland",
@@ -518,7 +950,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/stuartisland/20.04.27/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -529,7 +961,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.27",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/stuartisland/20.04.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/stuartisland/20.04.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/stuartisland/20.04.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/stuartisland/20.04.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-takistanplus",
@@ -537,7 +985,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/takistanplus/1.041/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -548,7 +996,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "1.0631",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/takistanplus/1.041/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/takistanplus/1.041/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/takistanplus/1.041/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/takistanplus/1.041/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-valning",
@@ -556,7 +1020,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/valning/26.11/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -567,7 +1031,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Nov.26",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/valning/26.11/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/valning/26.11/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/valning/26.11/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/valning/26.11/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-vela",
@@ -575,7 +1055,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/vela/0.5/topographic/0/0/0.jpg",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -586,7 +1066,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Dec.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/vela/0.5/topographic/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/vela/0.5/topographic/{z}/{x}/{y}.jpg"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/vela/0.5/satellite/0/0/0.jpg",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/vela/0.5/satellite/{z}/{x}/{y}.jpg"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-visisland",
@@ -594,7 +1090,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/visisland/0.04/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -605,7 +1101,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "0.04",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/visisland/0.04/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/visisland/0.04/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/visisland/0.04/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/visisland/0.04/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-dayz-yiprit",
@@ -613,7 +1125,7 @@
     "game": "dayz_pc",
     "imageUrl": "https://static.xam.nu/dayz/maps/yiprit/31.07/topographic/0/0/0.webp",
     "sourceUrl": "https://dayz.xam.nu/",
-    "attribution": "Tuiles © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés : leurs auteurs.",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
@@ -624,7 +1136,23 @@
     "tileMinZoom": 0,
     "tileMaxZoom": 5,
     "tileBaseGrid": 1,
-    "modded": true
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jan.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/yiprit/31.07/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/yiprit/31.07/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/yiprit/31.07/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/yiprit/31.07/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   },
   {
     "id": "builtin-ark-1",
@@ -638,7 +1166,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-2",
@@ -652,7 +1182,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASA",
+    "modded": false
   },
   {
     "id": "builtin-ark-3",
@@ -666,7 +1198,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-4",
@@ -680,7 +1214,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASA",
+    "modded": false
   },
   {
     "id": "builtin-ark-5",
@@ -694,7 +1230,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-6",
@@ -708,7 +1246,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-7",
@@ -722,7 +1262,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-8",
@@ -736,7 +1278,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-9",
@@ -750,7 +1294,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-10",
@@ -764,7 +1310,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-11",
@@ -778,7 +1326,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-12",
@@ -792,7 +1342,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-13",
@@ -806,7 +1358,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-14",
@@ -820,7 +1374,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-15",
@@ -834,7 +1390,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-16",
@@ -848,7 +1406,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-ark-17",
@@ -862,7 +1422,9 @@
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée."
+    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
+    "edition": "ASE",
+    "modded": false
   },
   {
     "id": "builtin-palworld",
@@ -973,43 +1535,95 @@
   },
   {
     "id": "builtin-arma-everon",
-    "name": "Everon — vue satellite",
+    "name": "Everon",
     "game": "arma",
-    "imageUrl": "https://reforger.recoil.org/map-tiles/everon/5/0/0/tile.jpg",
-    "sourceUrl": "https://reforger.recoil.org/everon/",
-    "attribution": "Tuiles © Nick Ludlam / Reforger Maps ; Arma Reforger © Bohemia Interactive.",
+    "imageUrl": "https://maps.izurvive.com/maps/Reforger-Everon-Top/0.1.0/tiles/1/0/0.webp",
+    "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Everon-Top/0.1.0/tiles/{z}/{x}/{y}.webp",
+    "tileMinZoom": 1,
+    "tileMaxZoom": 7,
+    "tileBaseGrid": 1,
+    "tileBottomOrigin": false,
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
-    "tileTemplate": "https://reforger.recoil.org/map-tiles/everon/{z}/{x}/{y}/tile.jpg",
-    "tileMinZoom": 0,
-    "tileMaxZoom": 5,
-    "tileBaseGrid": 4,
-    "tileReverseZoom": 5,
-    "tileBottomOrigin": true
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "sourceUrl": "https://www.izurvive.com/reforger_everon",
+    "attribution": "Fond © iZurvive ; Arma Reforger © Bohemia Interactive.",
+    "modded": false,
+    "edition": "Arma Reforger",
+    "version": "0.1.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/Reforger-Everon-Top/0.1.0/tiles/1/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Everon-Top/0.1.0/tiles/{z}/{x}/{y}.webp",
+        "tileMinZoom": 1,
+        "tileMaxZoom": 7,
+        "tileBaseGrid": 1,
+        "tileReverseZoom": null,
+        "tileBottomOrigin": false
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://reforger.recoil.org/map-tiles/everon/5/0/0/tile.jpg",
+        "tileTemplate": "https://reforger.recoil.org/map-tiles/everon/{z}/{x}/{y}/tile.jpg",
+        "tileMinZoom": 0,
+        "tileMaxZoom": 5,
+        "tileBaseGrid": 4,
+        "tileReverseZoom": 5,
+        "tileBottomOrigin": true
+      }
+    ]
   },
   {
     "id": "builtin-arma-arland",
-    "name": "Arland — vue satellite",
+    "name": "Arland",
     "game": "arma",
-    "imageUrl": "https://reforger.recoil.org/map-tiles/arland/5/0/0/tile.jpg",
-    "sourceUrl": "https://reforger.recoil.org/arland/",
-    "attribution": "Tuiles © Nick Ludlam / Reforger Maps ; Arma Reforger © Bohemia Interactive.",
+    "imageUrl": "https://maps.izurvive.com/maps/Reforger-Arland-Top/0.1.0/tiles/1/0/0.webp",
+    "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Arland-Top/0.1.0/tiles/{z}/{x}/{y}.webp",
+    "tileMinZoom": 1,
+    "tileMaxZoom": 7,
+    "tileBaseGrid": 1,
+    "tileBottomOrigin": false,
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
-    "tileTemplate": "https://reforger.recoil.org/map-tiles/arland/{z}/{x}/{y}/tile.jpg",
-    "tileMinZoom": 0,
-    "tileMaxZoom": 5,
-    "tileBaseGrid": 1.25,
-    "tileReverseZoom": 5,
-    "tileBottomOrigin": true
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "sourceUrl": "https://www.izurvive.com/reforger_arland",
+    "attribution": "Fond © iZurvive ; Arma Reforger © Bohemia Interactive.",
+    "modded": false,
+    "edition": "Arma Reforger",
+    "version": "0.1.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/Reforger-Arland-Top/0.1.0/tiles/1/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Arland-Top/0.1.0/tiles/{z}/{x}/{y}.webp",
+        "tileMinZoom": 1,
+        "tileMaxZoom": 7,
+        "tileBaseGrid": 1,
+        "tileReverseZoom": null,
+        "tileBottomOrigin": false
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://reforger.recoil.org/map-tiles/arland/5/0/0/tile.jpg",
+        "tileTemplate": "https://reforger.recoil.org/map-tiles/arland/{z}/{x}/{y}/tile.jpg",
+        "tileMinZoom": 0,
+        "tileMaxZoom": 5,
+        "tileBaseGrid": 1.25,
+        "tileReverseZoom": 5,
+        "tileBottomOrigin": true
+      }
+    ]
   },
   {
     "id": "builtin-aniimo-breezy",
@@ -1062,18 +1676,50 @@
     "tileBaseGrid": 1
   },
   {
+    "id": "builtin-arma-kolguyev",
+    "name": "Kolguyev",
+    "game": "arma",
+    "imageUrl": "https://maps.izurvive.com/maps/Reforger-Kolguyev-Top/0.0.0/tiles/1/0/0.webp",
+    "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Kolguyev-Top/0.0.0/tiles/{z}/{x}/{y}.webp",
+    "tileMinZoom": 1,
+    "tileMaxZoom": 8,
+    "tileBaseGrid": 1,
+    "tileBottomOrigin": false,
     "xMin": 0,
     "xMax": 100,
     "yMin": 0,
     "yMax": 100,
     "flipY": false,
-    "coordinateLabel": "Coordonnées visuelles (%) : X vers la droite, Y vers le bas. Calibration en jeu non vérifiée.",
-    "id": "builtin-arma-kolguyev",
-    "name": "Kolguyev — vue satellite complète",
-    "game": "arma",
-    "imageUrl": "https://reforger.recoil.org/kolguyev_hero_composite.jpg",
-    "sourceUrl": "https://reforger.recoil.org/kolguyev/",
-    "attribution": "Fond © Nick Ludlam / Reforger Maps ; Arma Reforger © Bohemia Interactive. Vue complète de la source, sans suivi automatique des joueurs."
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "sourceUrl": "https://www.izurvive.com/reforger_kolguyev",
+    "attribution": "Fond © iZurvive ; Arma Reforger © Bohemia Interactive.",
+    "modded": false,
+    "edition": "Arma Reforger",
+    "version": "0.0.0",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://maps.izurvive.com/maps/Reforger-Kolguyev-Top/0.0.0/tiles/1/0/0.webp",
+        "tileTemplate": "https://maps.izurvive.com/maps/Reforger-Kolguyev-Top/0.0.0/tiles/{z}/{x}/{y}.webp",
+        "tileMinZoom": 1,
+        "tileMaxZoom": 8,
+        "tileBaseGrid": 1,
+        "tileReverseZoom": null,
+        "tileBottomOrigin": false
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://reforger.recoil.org/kolguyev_hero_composite.jpg",
+        "tileTemplate": null,
+        "tileMinZoom": null,
+        "tileMaxZoom": null,
+        "tileBaseGrid": 1,
+        "tileReverseZoom": null,
+        "tileBottomOrigin": false
+      }
+    ]
   },
   {
     "xMin": 0,
@@ -1102,7 +1748,9 @@
     "game": "ark",
     "imageUrl": "/api/public/map-images/astraeos",
     "sourceUrl": "https://arkbuddy.app/maps/astraeos",
-    "attribution": "Fond Arkbuddy ; Astraeos © Nekatus / Studio Wildcard. Instantané de la source, non garanti à jour."
+    "attribution": "Fond Arkbuddy ; Astraeos © Nekatus / Studio Wildcard. Instantané de la source, non garanti à jour.",
+    "edition": "ASA",
+    "modded": true
   },
   {
     "id": "builtin-palworld-source-world",
@@ -1131,5 +1779,425 @@
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Pixels MapX/MapY de la source ramenés en %. X vers la droite, Y vers le bas ; coordonnées GPS en jeu non affichées."
+  },
+  {
+    "id": "builtin-dayz-chernarusplusexp",
+    "name": "Chernarus Experimental",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": false,
+    "edition": "Experimental",
+    "version": "1.30",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarusplus/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-livoniaexp",
+    "name": "Livonia Experimental",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": false,
+    "edition": "Experimental",
+    "version": "1.30",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/livonia/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/livonia/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/livonia/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-sakhalexp",
+    "name": "Sakhal Experimental",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": false,
+    "edition": "Experimental",
+    "version": "1.30",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sakhal/1.27/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/sakhal/1.27/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/sakhal/1.27/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-avalon",
+    "name": "Avalon",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/avalon/26.04.11/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/avalon/26.04.11/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.9",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/avalon/26.04.11/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/avalon/26.04.11/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/avalon/26.04.11/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/avalon/26.04.11/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-channel",
+    "name": "Channel",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/channel/26.05.10/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/channel/26.05.10/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.30",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/channel/26.05.10/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/channel/26.05.10/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/channel/26.05.10/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/channel/26.05.10/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-chernarus2035",
+    "name": "Chernarus2035",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Mar.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/chernarus2035/26.08.19/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-deerisleexp",
+    "name": "Deer Isle Experimental",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "Experimental",
+    "version": "6.1",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/deerisle/26.04.29/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-hashima",
+    "name": "Hashima",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/hashima/25.11.26/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/hashima/25.11.26/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Jun.8",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/hashima/25.11.26/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/hashima/25.11.26/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/hashima/25.11.26/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/hashima/25.11.26/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-lux",
+    "name": "Lux",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/lux/26.05.28/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/lux/26.05.28/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "May.29",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/lux/26.05.28/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/lux/26.05.28/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/lux/26.05.28/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/lux/26.05.28/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-melkart",
+    "name": "Melkart",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/melkart/26.04.10/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/melkart/26.04.10/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Dec.30",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/melkart/26.04.10/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/melkart/26.04.10/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/melkart/26.04.10/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/melkart/26.04.10/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-nyheim",
+    "name": "Nyheim",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "Apr.25",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/nyheim2/26.05.08/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
+  },
+  {
+    "id": "builtin-dayz-siberia",
+    "name": "Siberia",
+    "game": "dayz_pc",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) : calibration en jeu non vérifiée.",
+    "imageUrl": "https://static.xam.nu/dayz/maps/siberia/26.09.01/topographic/0/0/0.webp",
+    "tileTemplate": "https://static.xam.nu/dayz/maps/siberia/26.09.01/topographic/{z}/{x}/{y}.webp",
+    "tileMinZoom": 0,
+    "tileMaxZoom": 5,
+    "tileBaseGrid": 1,
+    "sourceUrl": "https://dayz.xam.nu/",
+    "attribution": "Fond © Xam.nu ; DayZ © Bohemia Interactive ; terrains modés © leurs auteurs.",
+    "modded": true,
+    "edition": "DayZ",
+    "version": "May.13",
+    "variants": [
+      {
+        "id": "topographic",
+        "name": "Topographique",
+        "imageUrl": "https://static.xam.nu/dayz/maps/siberia/26.09.01/topographic/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/siberia/26.09.01/topographic/{z}/{x}/{y}.webp"
+      },
+      {
+        "id": "satellite",
+        "name": "Satellite",
+        "imageUrl": "https://static.xam.nu/dayz/maps/siberia/26.09.01/satellite/0/0/0.webp",
+        "tileTemplate": "https://static.xam.nu/dayz/maps/siberia/26.09.01/satellite/{z}/{x}/{y}.webp"
+      }
+    ]
   }
 ]
