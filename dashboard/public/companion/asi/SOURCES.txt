@@ -1,0 +1,6 @@
+ARK: Survival Ascended map graphics © Studio Wildcard.
+Source images: ASA Save Inspector, K07H, commit e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc (2026-07-22).
+https://github.com/K07H/ASA-Save-Inspector/tree/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets
+No application source code is copied. This notice does not license ASA Save Inspector code.
+Images resized to 1024 px; 500 px technical margins removed according to the source README.
+Archive imagery; no live spawn data or verified game coordinates are inferred.

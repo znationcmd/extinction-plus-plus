@@ -2426,5 +2426,102 @@
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Coordonnées visuelles (%) ; terrain exemple, calibration et emplacements de loot non intégrés."
+  },
+  {
+    "id": "builtin-ark-ragnarok-asa-asi",
+    "name": "Ragnarok — ASA (archive ASI)",
+    "game": "ark",
+    "imageUrl": "/companion/asi/ragnarok.webp",
+    "sourceUrl": "https://github.com/K07H/ASA-Save-Inspector/blob/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets/Ragnarok_Minimap_Margin.jpg",
+    "attribution": "Fond du jeu ARK © Studio Wildcard, documenté dans ASA Save Inspector (K07H). Archive de juillet 2026 ; actualité non garantie.",
+    "edition": "ASA",
+    "modded": false,
+    "version": "ASI 2026-07-22",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive."
+  },
+  {
+    "id": "builtin-ark-valguero-asa-asi",
+    "name": "Valguero — ASA (archive ASI)",
+    "game": "ark",
+    "imageUrl": "/companion/asi/valguero.webp",
+    "sourceUrl": "https://github.com/K07H/ASA-Save-Inspector/blob/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets/Valguero_Minimap_Margin.jpg",
+    "attribution": "Fond du jeu ARK © Studio Wildcard, documenté dans ASA Save Inspector (K07H). Archive de juillet 2026 ; actualité non garantie.",
+    "edition": "ASA",
+    "modded": false,
+    "version": "ASI 2026-07-22",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive."
+  },
+  {
+    "id": "builtin-ark-lost-colony-asa-asi",
+    "name": "Lost Colony — ASA (archive ASI)",
+    "game": "ark",
+    "imageUrl": "/companion/asi/lost-colony.webp",
+    "sourceUrl": "https://github.com/K07H/ASA-Save-Inspector/blob/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets/LostColony_Minimap_Margin.jpg",
+    "attribution": "Fond du jeu ARK © Studio Wildcard, documenté dans ASA Save Inspector (K07H). Archive de juillet 2026 ; actualité non garantie.",
+    "edition": "ASA",
+    "modded": false,
+    "version": "ASI 2026-07-22",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive."
+  },
+  {
+    "id": "builtin-ark-club-ark-asa-asi",
+    "name": "Club ARK — ASA (archive ASI)",
+    "game": "ark",
+    "imageUrl": "/companion/asi/club-ark.webp",
+    "sourceUrl": "https://github.com/K07H/ASA-Save-Inspector/blob/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets/ClubArk_Minimap_Margin.jpg",
+    "attribution": "Fond du jeu ARK © Studio Wildcard, documenté dans ASA Save Inspector (K07H). Archive de juillet 2026 ; actualité non garantie.",
+    "edition": "ASA",
+    "modded": false,
+    "version": "ASI 2026-07-22",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive."
+  },
+  {
+    "id": "builtin-ark-genesis-part-1-asa-asi",
+    "name": "Genesis Part 1 — ASA (archive ASI)",
+    "game": "ark",
+    "imageUrl": "/companion/asi/genesis-part-1-ocean.webp",
+    "sourceUrl": "https://github.com/K07H/ASA-Save-Inspector/blob/e24d3c1c7d25bca8cd88e1b8f6bed7095f1068fc/ASA_Save_Inspector/Assets/Genesis1Ocean_Minimap_Margin.jpg",
+    "attribution": "Fond du jeu ARK © Studio Wildcard, documenté dans ASA Save Inspector (K07H). Archive de juillet 2026 ; actualité non garantie.",
+    "edition": "ASA",
+    "modded": false,
+    "version": "ASI 2026-07-22",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive.",
+    "variants": [
+      {
+        "id": "ocean",
+        "name": "Océan",
+        "imageUrl": "/companion/asi/genesis-part-1-ocean.webp"
+      },
+      {
+        "id": "biomes",
+        "name": "Biomes",
+        "imageUrl": "/companion/asi/genesis-part-1-biomes.webp"
+      }
+    ]
   }
 ]
