@@ -2523,5 +2523,22 @@
         "imageUrl": "/companion/asi/genesis-part-1-biomes.webp"
       }
     ]
+  },
+  {
+    "id": "builtin-ark-amissa-asa-pax",
+    "name": "Amissa — ASA (source PAX)",
+    "game": "ark",
+    "imageUrl": "https://playpaxark.com/livemaps/maps/amissa-ASA.jpg",
+    "sourceUrl": "https://playpaxark.com/livemaps/",
+    "attribution": "Fond Amissa © Sicco0803 ; image publique référencée comme ASA par PAX Ark. Version exacte et calibration non vérifiées.",
+    "edition": "ASA",
+    "modded": true,
+    "version": "PAX consulté 2026-10-05",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; calibration en jeu requise pour les livraisons."
   }
 ]
