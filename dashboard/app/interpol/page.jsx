@@ -13,6 +13,10 @@ export default async function Page() {
 
       <div className="card mb-6">
         <p className="text-white/70">Signalements joueurs entre serveurs avec validation admin.</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {['EXTINCTION ++ RSS','DAYZ GATE','BOT ARK'].map(name => <div key={name} className="rounded-2xl border border-purple-400/30 bg-purple-500/10 p-4"><p className="font-black">{name}</p><p className="mt-1 text-xs text-white/60">PARTENAIRE OFFICIEL · INTERPOL CONNECTÉ</p></div>)}
+        </div>
+        <p className="mt-4 text-sm text-white/60">Réseau Valhalla Extinction : Interpol relie la modération et les partenariats des trois services.</p>
         <div className="mt-4 rounded-2xl bg-black/40 p-4 font-mono text-sm">/interpol signaler joueur: pseudo raison: grief</div>
       </div>
 
