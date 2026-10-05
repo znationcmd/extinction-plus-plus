@@ -185,6 +185,7 @@ const commands = [
       .addStringOption(o => o.setName('raison').setDescription('Raison').setRequired(true)))
 ];
 
+commands.push(...require('./shared/arcade-commands').commands());
 module.exports={commands};
 if(require.main===module){
 const rest = new REST({ version: '10' }).setToken(config.DISCORD_TOKEN);

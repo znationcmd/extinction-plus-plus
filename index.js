@@ -145,6 +145,7 @@ async function aiAnswer(message) {
 client.once('clientReady', () => {
   client.application.commands.create(require('./deploy-commands').commands.find(c=>c.name==='shop').toJSON()).then(()=>console.log('Commande shop avec altitude enregistrée.')).catch(()=>console.error('Enregistrement shop indisponible.'));
   require('./shared/community-commands').register(client).then(()=>console.log('Commandes pass, quêtes, primes, factions, profil et tickets enregistrées.')).catch(()=>console.error('Commandes communautaires : enregistrement Discord indisponible.'));
+  require('./shared/arcade-commands').register(client).then(()=>console.log('Commandes casino, loterie et mini-jeux enregistrées.')).catch(()=>console.error('Enregistrement des commandes arcade indisponible.'));
   console.log(`✅ Bot connecté : ${client.user.tag}`);
   if(process.send)process.send({type:'discordReady',ready:true});
   require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
@@ -159,6 +160,7 @@ client.on('interactionCreate', async interaction => {
   try {
     if(interaction.isChatInputCommand()){await interaction.deferReply({ephemeral:true});interaction.reply=async options=>{if(typeof options==='string')return interaction.editReply(options);const {ephemeral,flags,...rest}=options;return interaction.editReply(rest);};}
     const db = await loadDb();
+    if(interaction.isChatInputCommand()&&await require('./shared/arcade-commands').handle(interaction,{db,saveDb}))return;
     if(interaction.isChatInputCommand()&&await require('./shared/community-commands').handle(interaction,{db,saveDb,isAdmin,client}))return;
 
     if (interaction.isButton()) {
