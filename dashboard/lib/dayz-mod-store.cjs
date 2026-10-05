@@ -17,6 +17,10 @@ async function ready() {
       await connection.query('BEGIN');
       await connection.query('SELECT pg_advisory_xact_lock(221100,1700)');
       await connection.query(`
+    CREATE TABLE IF NOT EXISTS dashboard_discord_sessions (
+      id TEXT PRIMARY KEY, payload TEXT NOT NULL, expires BIGINT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS dashboard_discord_session_expiry ON dashboard_discord_sessions(expires);
     CREATE TABLE IF NOT EXISTS dayz_mod_servers (
       id TEXT PRIMARY KEY, guild_id TEXT NOT NULL, service_id TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL, token TEXT NOT NULL, config JSONB NOT NULL DEFAULT '{}',

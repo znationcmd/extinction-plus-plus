@@ -1,4 +1,4 @@
 import {NextResponse} from 'next/server';
-import {session,discord,authorize,sameOrigin,failure,cookieOptions} from '../../../lib/mod-auth';
+import {session,discord,authorize,sameOrigin,failure,cookieOptions,sessionLifetime} from '../../../lib/mod-auth';
 export async function GET(){try{const s=await session();const all=await discord('/users/@me/guilds',s.token);const guilds=[];for(const g of all){if(g.owner)guilds.push({id:g.id,name:g.name});else try{await authorize(g.id,false,{session:s,guilds:all});guilds.push({id:g.id,name:g.name})}catch(e){if(e.status!==403)throw e}}return Response.json({guilds},{headers:{'Cache-Control':'no-store'}})}catch(e){return failure(e)}}
-export async function POST(req){try{sameOrigin(req);const {guildId}=await req.json();await authorize(guildId);const r=NextResponse.json({ok:true});r.cookies.set('extinction_guild',guildId,{...cookieOptions,maxAge:3600});return r}catch(e){return failure(e)}}
+export async function POST(req){try{sameOrigin(req);const {guildId}=await req.json();await authorize(guildId);const r=NextResponse.json({ok:true});r.cookies.set('extinction_guild',guildId,{...cookieOptions,maxAge:sessionLifetime});return r}catch(e){return failure(e)}}

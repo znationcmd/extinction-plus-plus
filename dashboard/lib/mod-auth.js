@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import store from './dayz-mod-store.cjs';
 import secure from './secure-store.cjs';
+import sessions from './discord-sessions.cjs';
 
 export function origin() {
   const url = new URL(process.env.DASHBOARD_URL || process.env.PUBLIC_URL || 'http://localhost:3000');
@@ -37,8 +38,18 @@ export async function session() {
   const jar = await cookies();
   const s = unseal(jar.get('extinction_mod_session')?.value);
   if (!s) throw Object.assign(new Error('Connecte-toi avec Discord.'), { status: 401 });
-  return s;
+  if(!s.sid)return s; // Existing short sessions remain usable until their normal expiry.
+  return sessions.resolve({pool:await store.ready(),sid:s.sid,seal,unseal,refresh:refreshDiscord});
 }
+export async function refreshDiscord(refreshToken) {
+  const reply=await fetch('https://discord.com/api/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:process.env.CLIENT_ID,client_secret:process.env.CLIENT_SECRET,grant_type:'refresh_token',refresh_token:refreshToken}),signal:AbortSignal.timeout(15000)});
+  if(!reply.ok){const error=await reply.json().catch(()=>({}));const revoked=error.error==='invalid_grant';throw Object.assign(new Error(revoked?'Autorisation Discord révoquée. Reconnecte-toi.':'Discord temporairement indisponible, réessaie.'),{status:revoked?401:503});}
+  return reply.json();
+}
+export async function createSession(token,user){return sessions.create({pool:await store.ready(),seal,token,user});}
+export async function revokeSession(s){if(s?.sid)await sessions.revoke(await store.ready(),s.sid);}
+export const sessionLifetime=sessions.lifetime;
+
 export async function authorize(guildId, ownerOnly = false, context) {
   if (!/^\d{15,22}$/.test(guildId || '')) throw Object.assign(new Error('Discord invalide.'), { status: 400 });
   const s = context?.session || await session();

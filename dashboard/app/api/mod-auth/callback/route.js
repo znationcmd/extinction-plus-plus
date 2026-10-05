@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { seal, unseal, origin, cookieOptions, discord, failure } from '../../../../lib/mod-auth';
+import { seal, unseal, origin, cookieOptions, discord, failure, createSession, sessionLifetime } from '../../../../lib/mod-auth';
 export const dynamic = 'force-dynamic';
 export async function GET(req) {
   const jar = await cookies();
@@ -13,9 +13,9 @@ export async function GET(req) {
     if (!reply.ok) throw new Error('Discord a refusé la connexion.');
     const token = await reply.json();
     const user = await discord('/users/@me', token.access_token);
-    const lifetime = Math.min(Number(token.expires_in), 3600);
+    const persistent = await createSession(token,user);
     const res = NextResponse.redirect(`${origin()}${saved.returnTo==='/groups'?'/groups':'/select-discord'}`);
-    res.cookies.set('extinction_mod_session', seal({ token:token.access_token, userId:user.id, name:user.username, expires:Date.now()+lifetime*1000 }), { ...cookieOptions, maxAge:lifetime });
+    res.cookies.set('extinction_mod_session', seal(persistent), { ...cookieOptions, maxAge:sessionLifetime });
     return res;
   } catch(e) { return failure(e); }
 }

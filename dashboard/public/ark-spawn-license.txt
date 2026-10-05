@@ -1,0 +1,85 @@
+Apparitions ARK : contributeurs du wiki officiel communautaire ARK, https://ark.wiki.gg/
+Données sous Creative Commons Attribution–NonCommercial–ShareAlike 4.0 (CC BY-NC-SA 4.0).
+Licence : https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.fr
+Adaptation Extinction++ RSS : extraction des créatures et zones, déduplication, centres des rectangles, coordonnées visuelles en pourcentage. Cette adaptation est distribuée sous la même licence, usage non commercial. Aucune garantie, aucune affiliation au wiki ou à Studio Wildcard.
+Les apparitions ASE ne sont pas présentées comme des apparitions ASA. Les probabilités ne sont pas calculées.
+Sources, date de récupération et SHA256 des données originales :
+[
+  {
+    "mapId": "builtin-ark-1",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/The_Island",
+    "retrievedAt": "2026-10-05",
+    "count": 577,
+    "sha256": "43fef92d2e696b57775d1bffc9da93c429d2bf2a27123e003dedd015fa7b6641"
+  },
+  {
+    "mapId": "builtin-ark-2",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/The_Island/ASA",
+    "retrievedAt": "2026-10-05",
+    "count": 573,
+    "sha256": "a1e6f39626db4bad5fd0e3cb72612daf717e351f2cac56743c6047202df6667e"
+  },
+  {
+    "mapId": "builtin-ark-3",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Scorched_Earth",
+    "retrievedAt": "2026-10-05",
+    "count": 159,
+    "sha256": "058158f75ff1b4ff638d6496a2ce8563507ed76d1c142cae14732f8e0aa88e9d"
+  },
+  {
+    "mapId": "builtin-ark-6",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Ragnarok",
+    "retrievedAt": "2026-10-05",
+    "count": 409,
+    "sha256": "8b922d63c1558cc938a1edd7854014c90d84070441049652c94f89202e07f78c"
+  },
+  {
+    "mapId": "builtin-ark-7",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Aberration",
+    "retrievedAt": "2026-10-05",
+    "count": 149,
+    "sha256": "702518438f71e9ce6044714e6eca2a3bd3773e8bd1d9e3138c275b7d0769d8e2"
+  },
+  {
+    "mapId": "builtin-ark-8",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Extinction",
+    "retrievedAt": "2026-10-05",
+    "count": 545,
+    "sha256": "7b20ef23c3cc4bfa28aa5e7ed2b43cbd19304f6be028ca5762fc5dc3d755e79b"
+  },
+  {
+    "mapId": "builtin-ark-9",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Genesis:_Part_1",
+    "retrievedAt": "2026-10-05",
+    "count": 228,
+    "sha256": "55e3fee5d1e40a3e8b51d1ef4f26c6a91a966ce3e57407ad6a8b28b755083b6e"
+  },
+  {
+    "mapId": "builtin-ark-10",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Genesis:_Part_2",
+    "retrievedAt": "2026-10-05",
+    "count": 682,
+    "sha256": "98ba3033a2e214f405f7b3812cf68892cb732c543b738b14b04e1c8edb0a1d9b"
+  },
+  {
+    "mapId": "builtin-ark-11",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Valguero",
+    "retrievedAt": "2026-10-05",
+    "count": 391,
+    "sha256": "598aaa06444e8a5d85d908166fa39757930a46f1d6168bc9c2da688b1c90d73b"
+  },
+  {
+    "mapId": "builtin-ark-12",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Crystal_Isles",
+    "retrievedAt": "2026-10-05",
+    "count": 521,
+    "sha256": "6c0b4dea72e320f13ce891982e82973d646416c7faa6ea37c893fa885673fee2"
+  },
+  {
+    "mapId": "builtin-ark-13",
+    "sourceUrl": "https://ark.wiki.gg/wiki/Data:Spawn_Map/Lost_Island",
+    "retrievedAt": "2026-10-05",
+    "count": 669,
+    "sha256": "0c052ed4b1c941e66436f01fcade807b5923d589d9bd1bd15dfba1885e7aee97"
+  }
+]
