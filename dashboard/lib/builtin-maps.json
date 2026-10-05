@@ -2409,5 +2409,22 @@
     "yMax": 100,
     "flipY": false,
     "coordinateLabel": "Coordonnées visuelles (%) ; calibration et positions en jeu non vérifiées pour cette archive."
+  },
+  {
+    "id": "builtin-dayz-utes",
+    "name": "Útes — terrain exemple Bohemia",
+    "game": "dayz_pc",
+    "edition": "DayZ",
+    "modded": true,
+    "version": "DayZ-Samples 2023-05-22",
+    "imageUrl": "/companion/utes-dayz.webp",
+    "sourceUrl": "https://github.com/BohemiaInteractive/DayZ-Samples/tree/da5e5437c9502620d9853fb6eed14701135ab2ea/Test_Terrain",
+    "attribution": "© Bohemia Interactive, ADPL-SA, usage non commercial. Terrain exemple Útes ; satellite réduit à 1024 × 1024, limites originales conservées.",
+    "xMin": 0,
+    "xMax": 100,
+    "yMin": 0,
+    "yMax": 100,
+    "flipY": false,
+    "coordinateLabel": "Coordonnées visuelles (%) ; terrain exemple, calibration et emplacements de loot non intégrés."
   }
 ]
