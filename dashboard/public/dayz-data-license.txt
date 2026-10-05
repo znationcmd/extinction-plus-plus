@@ -1,7 +1,7 @@
 Données © 2019 BOHEMIA INTERACTIVE a.s.
 Source : https://github.com/BohemiaInteractive/DayZ-Central-Economy
 Révision : 9a21bb9f5fb9c62a7ce2761402196091588133e6
-Adaptation Extinction++ RSS : extraction des centres des bâtiments, catégories et coordonnées normalisées.
+Adaptation Extinction++ RSS : extraction des centres des bâtiments, catégories, coordonnées normalisées et classes de loot associées aux usages/catégories.
 Cette adaptation est distribuée sous ADPL-SA, réservée à DayZ et à un usage non commercial. Aucune garantie.
 Licence officielle : https://www.bohemia.net/en/licenses/arma-and-dayz-public-license-share-alike-adpl-sa
 

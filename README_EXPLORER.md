@@ -20,3 +20,5 @@ Conan Exiles : rubrique publique /explorer/conan, cartes intégrées, catégorie
 
 ARK : fiches ASE et ASA nommées issues de cadon/ARKStatsExtractor (MIT), statistiques de base, modes d’apprivoisement, collection locale et calcul des durées de reproduction selon EggHatchSpeedMultiplier et BabyMatureSpeedMultiplier. Catalogue ASA partiel ; pas de calcul complet de nourriture ou d’efficacité d’apprivoisement.
 Conan : catégories du guide ouvrant les sources externes, recherche wiki et calculateur multi-recettes à coûts saisis par le joueur, quantités et rendements, agrégation des matériaux, sauvegarde locale. Ne remplace pas une base exhaustive de recettes ni un calcul récursif de matières premières.
+
+Repères : icônes par matière/catégorie, clic vers la fiche. DayZ : catalogue des classes à nominal positif, filtrées par usages de bâtiment et catégories, recherche et fiche d’objet ; le filtrage ne tient pas compte de tous les tiers/tags et ne garantit pas le loot actuel. Données dérivées de types.xml sous ADPL-SA, attribution identique à la carte vanilla.
