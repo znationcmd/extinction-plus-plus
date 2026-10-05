@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Amissa",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/amissa"
+  },
+  {
+    "name": "Svartalfheim — test PC",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/svartalfheim"
+  },
+  {
+    "name": "Svartalfheim — test crossplay / consoles",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/svartalfheim-crossplay"
+  },
+  {
+    "name": "Svartalfheim — Premium",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/svartalfheim-premium"
+  },
+  {
+    "name": "Forglar Part I — Premium",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/forglar-premium"
+  },
+  {
+    "name": "ALTHEMIA",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/althemia"
+  },
+  {
+    "name": "Insaluna",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/insaluna"
+  },
+  {
+    "name": "The Volcano",
+    "game": "ark",
+    "edition": "ASA",
+    "sourceUrl": "https://www.curseforge.com/ark-survival-ascended/mods/the-volcano"
+  },
+  {
+    "name": "Worthy Islands",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/596CB4A0AE84C08E-WorthyIslands"
+  },
+  {
+    "name": "Skogsmoen",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/6A092ECD0DD9FD8C-Skogsmoen"
+  },
+  {
+    "name": "Mount Emarald",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/6A1D2057318410E6-MountEmarald"
+  },
+  {
+    "name": "Tenhult",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/596B37942E7D5B10-Tenhult"
+  },
+  {
+    "name": "Kalvoy Island",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/597244C8DBD1A9B9-KalvoyIsland"
+  },
+  {
+    "name": "Karpovka",
+    "game": "arma",
+    "edition": "Arma Reforger",
+    "sourceUrl": "https://reforger.armaplatform.com/workshop/695EB214B7395451-Karpovka"
+  }
+]
