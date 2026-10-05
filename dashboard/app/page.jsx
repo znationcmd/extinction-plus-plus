@@ -1,6 +1,7 @@
 import SetupGuide from '../components/SetupGuide';
 import Link from 'next/link';
-import Shell, { links } from '../components/Shell';
+import Shell from '../components/Shell';
+import ModuleGrid from '../components/ModuleGrid';
 import { readPageDb as readDb } from '../lib/db';
 
 export default async function Home() {
@@ -46,14 +47,7 @@ export default async function Home() {
       </div>
 
       <h3 id="modules" className="mt-8 mb-4 text-3xl font-black">Modules</h3>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {links.filter(([href]) => href !== '/').map(([href, label, Icon]) => (
-          <Link key={href} href={href} prefetch={false} className="flex min-h-[120px] flex-col items-center justify-center rounded-3xl bg-white/10 p-5 text-center hover:bg-white/15 active:bg-red-600">
-            <Icon size={34} />
-            <span className="mt-3 text-lg font-bold">{label}</span>
-          </Link>
-        ))}
-      </div>
+      <ModuleGrid />
     </Shell>
   );
 }

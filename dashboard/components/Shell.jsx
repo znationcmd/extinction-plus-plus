@@ -1,4 +1,6 @@
 'use client';
+import LanguageSelector from './LanguageSelector';
+import { useLanguage } from './LanguageProvider';
 import {useState} from 'react';
 import Link from 'next/link';
 import {
@@ -75,6 +77,7 @@ const bottomLinks = [
 ];
 
 export default function Shell({ children }) {
+  const { t } = useLanguage();
   const [menuOpen,setMenuOpen]=useState(false);
   return (
     <main className="min-h-screen bg-extinction-bg pb-28 text-white">
@@ -85,6 +88,7 @@ export default function Shell({ children }) {
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
 
+        <div className="mb-5"><LanguageSelector /></div>
         <nav className="space-y-2 pb-8">
           {links.map(([href, label, Icon]) => (
             <Link
@@ -94,7 +98,7 @@ export default function Shell({ children }) {
               className="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-white/10 active:bg-red-600"
             >
               <Icon size={20} />
-              {label}
+              {t(label)}
             </Link>
           ))}
         </nav>
@@ -108,10 +112,11 @@ export default function Shell({ children }) {
             <p className="text-sm text-white/50">Real Survival System</p>
           </div>
         </Link>
-        <button type="button" aria-label={menuOpen?'Fermer le menu':'Ouvrir le menu'} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={()=>setMenuOpen(open=>!open)} className="p-2 text-white/80"><Menu size={32}/></button>
+        <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={()=>setMenuOpen(open=>!open)} className="p-2 text-white/80"><Menu size={32}/></button>
       </header>
 
-      <nav id="mobile-menu" aria-label="Navigation mobile" className={`${menuOpen?'grid':'hidden'} grid-cols-3 gap-3 border-b border-white/10 bg-[#08111f] p-4 lg:hidden`}>
+      <div className="border-b border-white/10 bg-[#08111f] px-4 py-3 lg:hidden"><LanguageSelector /></div>
+      <nav id="mobile-menu" aria-label={t('Navigation mobile')} className={`${menuOpen?'grid':'hidden'} grid-cols-3 gap-3 border-b border-white/10 bg-[#08111f] p-4 lg:hidden`}>
         {links.map(([href, label, Icon]) => (
           <Link
             key={href}
@@ -121,7 +126,7 @@ export default function Shell({ children }) {
             className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-4 text-center text-sm active:bg-red-600"
           >
             <Icon size={28} />
-            <span className="mt-2 leading-tight">{label}</span>
+            <span className="mt-2 leading-tight">{t(label)}</span>
           </Link>
         ))}
       </nav>
@@ -135,7 +140,7 @@ export default function Shell({ children }) {
             className="flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-2 text-[11px] active:bg-red-600"
           >
             <Icon size={22} />
-            <span>{label}</span>
+            <span>{t(label)}</span>
           </Link>
         ))}
       </nav>
