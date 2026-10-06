@@ -1,0 +1,28 @@
+'use client';
+import {useEffect,useState} from 'react';
+import Shell from '../../components/Shell';
+
+export default function PremiumPage(){
+ const [data,setData]=useState(null),[admin,setAdmin]=useState(null),[code,setCode]=useState(''),[msg,setMsg]=useState('');
+ async function load(){
+  const r=await fetch('/api/premium',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Chargement Premium impossible.');setData(d);
+  if(d.isOperator){const a=await fetch('/api/premium?admin=1',{cache:'no-store'}),ad=await a.json();if(a.ok)setAdmin(ad);}
+ }
+ useEffect(()=>{load().catch(e=>setMsg(e.message))},[]);
+ async function post(body){setMsg('');const r=await fetch('/api/premium',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw new Error(d.error||'Opération impossible.');return d}
+ async function buy(product,billing){try{const d=await post({action:'request',product,billing});setMsg('Référence PayPal : '+d.reference+' — ajoute cette référence dans la note du paiement.');window.open(d.paypalUrl,'_blank','noopener');await load();}catch(e){setMsg(e.message)}}
+ async function redeem(){try{await post({action:'redeem',code});setCode('');setMsg('Premium activé.');await load();}catch(e){setMsg(e.message)}}
+ async function approve(id){try{const d=await post({action:'approve',id});window.prompt('Code à transmettre au client :',d.code);await load();}catch(e){setMsg(e.message)}}
+ async function generate(product,billing){try{const d=await post({action:'generate',product,billing});window.prompt('Code généré :',d.code);await load();}catch(e){setMsg(e.message)}}
+ const active=x=>x?<span className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm text-emerald-300">Actif jusqu’au {new Date(x.expiresAt).toLocaleDateString('fr-FR')}</span>:<span className="rounded-full bg-white/10 px-3 py-1 text-sm text-white/60">Inactif</span>;
+ return <Shell>
+  <div className="mb-6"><p className="text-sm font-bold uppercase tracking-[.25em] text-purple-300">Premium Valhalla</p><h2 className="text-4xl font-black">Premium & codes d’activation</h2><p className="mt-2 text-white/60">Paiement via PayPal.me. Les codes sont générés après validation du paiement.</p></div>
+  {msg&&<div className="card mb-5">{msg}</div>}
+  <div className="grid gap-5 lg:grid-cols-2">
+   <section className="card space-y-4"><div className="flex items-center justify-between gap-3"><h3 className="text-2xl font-black">Premium Multi-serveur</h3>{data&&active(data.multiserver)}</div><p>Jusqu’à <b>20 serveurs</b> sur le même Discord.</p><div className="flex flex-wrap gap-3"><button className="btn bg-red-600" onClick={()=>buy('multiserver','monthly')}>2,99 € / mois</button><button className="btn bg-white/10" onClick={()=>buy('multiserver','yearly')}>25 € / an</button></div>{data&&<p className="text-sm text-white/60">Limite actuelle : {data.maxServers} serveur(s).</p>}</section>
+   <section className="card space-y-4"><div className="flex items-center justify-between gap-3"><h3 className="text-2xl font-black">Pass de combat Premium</h3>{data&&active(data.battlepass)}</div><p>Débloque les récompenses Premium du Battle Pass.</p><div className="flex flex-wrap gap-3"><button className="btn bg-red-600" onClick={()=>buy('battlepass','monthly')}>2,99 € / mois</button><button className="btn bg-white/10" onClick={()=>buy('battlepass','yearly')}>25 € / an</button></div></section>
+  </div>
+  <section className="card mt-6 space-y-4"><h3 className="text-2xl font-black">Activer un code</h3><div className="flex flex-col gap-3 sm:flex-row"><input className="input" value={code} onChange={e=>setCode(e.target.value)} placeholder="VAL-..." maxLength={80}/><button className="btn bg-red-600" onClick={redeem}>Activer</button><a className="btn bg-[#0070ba]" href="https://www.paypal.me/ZnationCmdofficiel" target="_blank" rel="noopener noreferrer">Payer avec PayPal ↗</a></div></section>
+  {data?.isOperator&&<section className="card mt-6 space-y-4"><h3 className="text-2xl font-black">Administration Premium</h3><p className="text-white/60">Vérifie le paiement PayPal avec la référence avant de générer un code.</p><div className="flex flex-wrap gap-2"><button className="btn bg-white/10" onClick={()=>generate('multiserver','monthly')}>Code Multi 1 mois</button><button className="btn bg-white/10" onClick={()=>generate('multiserver','yearly')}>Code Multi 1 an</button><button className="btn bg-white/10" onClick={()=>generate('battlepass','monthly')}>Code Pass 1 mois</button><button className="btn bg-white/10" onClick={()=>generate('battlepass','yearly')}>Code Pass 1 an</button></div><div className="space-y-3">{(admin?.requests||[]).filter(x=>x.status==='pending').map(r=><div key={r.id} className="rounded-xl border border-white/10 bg-black/30 p-3"><b>{r.reference}</b> · {r.product} · {r.billing} · {(Number(r.amountCents)/100).toFixed(2)} € <button className="btn ml-2 bg-red-600" onClick={()=>approve(r.id)}>Paiement vérifié → code</button></div>)}</div></section>}
+ </Shell>;
+}
