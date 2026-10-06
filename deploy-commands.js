@@ -10,7 +10,8 @@ const games = [
   { name: 'Arma Reforger Crossplay', value: 'arma' },
   { name: 'Conan Exiles', value: 'conan' },
   { name: '7 Days to Die', value: '7dtd' },
-  { name: 'Aniimo (communauté / carte)', value: 'aniimo' }
+  { name: 'Aniimo (communauté / carte)', value: 'aniimo' },
+  { name: 'Rust', value: 'rust' }
 ];
 
 const commands = [
