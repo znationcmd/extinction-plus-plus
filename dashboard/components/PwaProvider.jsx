@@ -1,7 +1,7 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
-const Context = createContext({ installed: false, ios: false, prompt: null, secure: true, refreshApp: async()=>{}, updateAvailable:false });
+const Context = createContext({ installed: false, ios: false, prompt: null, secure: true, refreshApp: async()=>{} });
 export function usePwa() { return useContext(Context); }
 
 export default function PwaProvider({ children }) {
@@ -10,8 +10,33 @@ export default function PwaProvider({ children }) {
   const [prompt, setPrompt] = useState(null);
   const [secure, setSecure] = useState(true);
   const [offline, setOffline] = useState(false);
-  const [registration,setRegistration]=useState(null);
-  const [updateAvailable,setUpdateAvailable]=useState(false);
+  const [refreshing,setRefreshing]=useState(false);
+  const registrationRef=useRef(null);
+  const reloadingRef=useRef(false);
+
+  async function checkUpdate(forceReload=false){
+    if(!('serviceWorker' in navigator)||!window.isSecureContext)return false;
+    try{
+      const registration=registrationRef.current || await navigator.serviceWorker.getRegistration('/');
+      if(!registration){if(forceReload)window.location.reload();return false}
+      registrationRef.current=registration;
+      await registration.update();
+      if(registration.waiting){registration.waiting.postMessage({type:'SKIP_WAITING'});return true}
+      if(forceReload)window.location.reload();
+      return false;
+    }catch{if(forceReload)window.location.reload();return false}
+  }
+  async function refreshApp(){
+    setRefreshing(true);
+    try{
+      if('caches' in window){
+        const keys=await caches.keys();
+        await Promise.all(keys.filter(k=>k.startsWith('extinction-pwa-')).map(k=>caches.delete(k)));
+      }
+      await checkUpdate(true);
+    }finally{setTimeout(()=>setRefreshing(false),1200)}
+  }
+
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)');
     const checkInstalled = () => setInstalled(standalone.matches || window.navigator.standalone === true);
@@ -21,43 +46,46 @@ export default function PwaProvider({ children }) {
     setOffline(!navigator.onLine);
     const beforeInstall = event => { event.preventDefault(); setPrompt(event); };
     const appInstalled = () => { setInstalled(true); setPrompt(null); };
-    const online = () => setOffline(false);
+    const online = () => { setOffline(false); checkUpdate(false); };
     const disconnected = () => setOffline(true);
+    const focus=()=>checkUpdate(false);
+    const visibility=()=>{if(document.visibilityState==='visible')checkUpdate(false)};
+    const controllerChange=()=>{if(reloadingRef.current)return;reloadingRef.current=true;window.location.reload()};
+
     window.addEventListener('beforeinstallprompt', beforeInstall);
     window.addEventListener('appinstalled', appInstalled);
     window.addEventListener('online', online);
     window.addEventListener('offline', disconnected);
+    window.addEventListener('focus',focus);
+    document.addEventListener('visibilitychange',visibility);
     standalone.addEventListener('change', checkInstalled);
+
+    let interval;
     if ('serviceWorker' in navigator && window.isSecureContext) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
-        .then(reg => {setRegistration(reg);reg.addEventListener('updatefound',()=>{const sw=reg.installing;if(!sw)return;sw.addEventListener('statechange',()=>{if(sw.state==='installed'&&navigator.serviceWorker.controller){setUpdateAvailable(true);sw.postMessage({type:'SKIP_WAITING'});}})});return reg.update();})
-        .catch(() => {});
-      let reloading=false;
-      const controllerChange=()=>{if(reloading)return;reloading=true;window.location.reload();};
       navigator.serviceWorker.addEventListener('controllerchange',controllerChange);
-      const check=()=>navigator.serviceWorker.getRegistration('/').then(reg=>reg?.update()).catch(()=>{});
-      const visible=()=>{if(document.visibilityState==='visible')check();};
-      window.addEventListener('focus',check);
-      document.addEventListener('visibilitychange',visible);
-      const timer=setInterval(check,10*60*1000);
-      return () => {navigator.serviceWorker.removeEventListener('controllerchange',controllerChange);window.removeEventListener('focus',check);document.removeEventListener('visibilitychange',visible);clearInterval(timer);window.removeEventListener('beforeinstallprompt', beforeInstall);window.removeEventListener('appinstalled', appInstalled);window.removeEventListener('online', online);window.removeEventListener('offline', disconnected);standalone.removeEventListener('change', checkInstalled);};
+      navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })
+        .then(registration => {
+          registrationRef.current=registration;
+          registration.addEventListener('updatefound',()=>{
+            const sw=registration.installing;if(!sw)return;
+            sw.addEventListener('statechange',()=>{if(sw.state==='installed'&&navigator.serviceWorker.controller)sw.postMessage({type:'SKIP_WAITING'})});
+          });
+          return registration.update();
+        }).catch(() => {});
+      interval=setInterval(()=>checkUpdate(false),10*60*1000);
     }
     return () => {
       window.removeEventListener('beforeinstallprompt', beforeInstall);
       window.removeEventListener('appinstalled', appInstalled);
       window.removeEventListener('online', online);
       window.removeEventListener('offline', disconnected);
+      window.removeEventListener('focus',focus);
+      document.removeEventListener('visibilitychange',visibility);
       standalone.removeEventListener('change', checkInstalled);
+      navigator.serviceWorker?.removeEventListener?.('controllerchange',controllerChange);
+      if(interval)clearInterval(interval);
     };
   }, []);
-  async function refreshApp() {
-    try{
-      const reg=registration||await navigator.serviceWorker?.getRegistration('/');
-      if(reg){await reg.update();if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});return true;}}
-    }catch{}
-    window.location.reload();
-    return true;
-  }
   async function install() {
     if (!prompt) return false;
     try {
@@ -66,9 +94,9 @@ export default function PwaProvider({ children }) {
       return choice.outcome === 'accepted';
     } finally { setPrompt(null); }
   }
-  return <Context.Provider value={{ installed, ios, prompt, secure, install, refreshApp, updateAvailable }}>
+  return <Context.Provider value={{ installed, ios, prompt, secure, install, refreshApp }}>
     {children}
+    <button type="button" onClick={refreshApp} disabled={refreshing} aria-label="Actualiser et vérifier les mises à jour" title="Actualiser / vérifier les mises à jour" className="fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top,0px))] z-[80] grid h-12 w-12 place-items-center rounded-2xl border border-purple-400/50 bg-black/85 text-2xl font-black text-white shadow-2xl backdrop-blur-xl disabled:opacity-50">{refreshing?'…':'↻'}</button>
     {offline && <div role="status" className="fixed left-3 right-3 top-3 z-[70] rounded-2xl bg-amber-300 px-4 py-3 text-center text-sm font-bold text-black shadow-xl">Connexion perdue. Les actions sur tes serveurs nécessitent Internet.</div>}
-    <button type="button" onClick={refreshApp} className="fixed right-3 top-[calc(10px+env(safe-area-inset-top,0px))] z-[75] rounded-xl border border-purple-400/50 bg-black/85 px-3 py-2 text-sm font-black shadow-xl backdrop-blur lg:right-5 lg:top-5">↻ {updateAvailable?'Mettre à jour':'Actualiser'}</button>
   </Context.Provider>;
 }
