@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {cookies} from 'next/headers';
 import {session,discord,authorize,sameOrigin,failure,cookieOptions,sessionLifetime} from '../../../lib/mod-auth';
+import {readPageDb as readDb} from '../../../lib/db';
 
 const iconUrl=g=>g.icon?`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.webp?size=128`:null;
 function canManageGuild(g){
@@ -17,15 +18,29 @@ async function botGuildIds(){
     return new Set((await r.json()).map(g=>String(g.id)));
   }catch{return null}
 }
+async function knownGuildIds(){
+  const ids=new Set();
+  const live=await botGuildIds();
+  if(live)for(const id of live)ids.add(String(id));
+  try{
+    const db=await readDb();
+    for(const id of Object.keys(db.guilds||{}))ids.add(String(id));
+    for(const s of db.connectedServers||[])if(s?.guildId)ids.add(String(s.guildId));
+    for(const id of Object.keys(db.nitradoAccounts||{}))if(/^\d{15,22}$/.test(id))ids.add(String(id));
+  }catch{}
+  const env=String(process.env.GUILD_ID||'');
+  if(/^\d{15,22}$/.test(env))ids.add(env);
+  return ids;
+}
 
 export async function GET(){
   try{
     const s=await session();
     const all=await discord('/users/@me/guilds',s.token);
-    const installed=await botGuildIds();
+    const installed=await knownGuildIds();
     const guilds=[];
     for(const g of all){
-      if(installed&&!installed.has(String(g.id)))continue;
+      if(installed.size&&!installed.has(String(g.id)))continue;
       if(canManageGuild(g))guilds.push({id:g.id,name:g.name,icon:iconUrl(g),owner:Boolean(g.owner),manager:true,installed:true});
       else try{
         await authorize(g.id,false,{session:s,guilds:all});
@@ -42,7 +57,7 @@ export async function POST(req){
     sameOrigin(req);
     const {guildId}=await req.json();
     const installed=await botGuildIds();
-    if(installed&&!installed.has(String(guildId)))throw Object.assign(new Error('EXTINCTION ++ RSS n’est pas installé sur ce Discord.'),{status:404});
+    if(installed.size&&!installed.has(String(guildId)))throw Object.assign(new Error('EXTINCTION ++ RSS n’est pas installé sur ce Discord.'),{status:404});
     const s=await session(),all=await discord('/users/@me/guilds',s.token),guild=all.find(g=>String(g.id)===String(guildId));
     if(!guild)throw Object.assign(new Error('Accès refusé à ce Discord.'),{status:403});
     if(!canManageGuild(guild))await authorize(guildId,false,{session:s,guilds:all});

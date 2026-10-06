@@ -2,13 +2,17 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { session, discord, authorize, sameOrigin, failure } from './mod-auth';
 import { redirect } from 'next/navigation';
+function canManageGuild(g){if(g?.owner)return true;try{const p=BigInt(g?.permissions||'0');return Boolean((p&8n)||(p&32n))}catch{return false}}
 export const activeGuild=cache(async function activeGuild() {
   const s=await session();
   const selected=(await cookies()).get('extinction_guild')?.value;
   const guilds=await discord('/users/@me/guilds',s.token);
-  const id=selected || guilds.find(g=>g.owner)?.id;
+  const id=selected || guilds.find(canManageGuild)?.id;
   if(!id) throw Object.assign(new Error('Choisis un Discord dans Paramètres.'),{status:403});
-  await authorize(id,false,{session:s,guilds});return id;
+  const guild=guilds.find(g=>String(g.id)===String(id));
+  if(!guild)throw Object.assign(new Error('Accès refusé à ce Discord.'),{status:403});
+  if(!canManageGuild(guild))await authorize(id,false,{session:s,guilds});
+  return id;
 });
 export function guarded(handler) {
   return async function(req,context) {
