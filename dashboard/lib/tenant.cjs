@@ -35,6 +35,7 @@ function apply(raw,scoped,id) {
   }
   raw.battlepasses||={};raw.battlepasses[id]=scoped.battlepass||{levels:[]};
   raw.premiumCodes=structuredClone(scoped.premiumCodes||raw.premiumCodes||[]);
+  raw.premiumComplimentaryUsers=structuredClone(scoped.premiumComplimentaryUsers||raw.premiumComplimentaryUsers||[]);
   return raw;
 }
 module.exports={view,apply,rows};
