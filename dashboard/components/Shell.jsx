@@ -35,6 +35,7 @@ export const links = [
   ['/integrations', 'CFTools & BattleMetrics', Plug],
   ['/maps', 'Cartes interactives', Map],
   ['/top-servers', 'Top Serveurs', Trophy],
+  ['/premium', 'Premium', Trophy],
   ['/explorer/ark', 'Dinos & ressources ARK', Search],
   ['/explorer/palworld', 'Pals & ressources', Search],
   ['/explorer/conan', 'Guide Conan Exiles', Search],
