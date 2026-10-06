@@ -151,6 +151,7 @@ client.once('clientReady', () => {
   require('./shared/dayz-mod-worker').startWorker({ client, loadDb });
   require('./shared/bot-job-worker').start({client,loadDb,saveDb});
   require('./shared/game-log-worker').start({client,loadDb,saveDb});
+  require('./shared/radio').start({client,loadDb,saveDb});
 });
 
 client.on('shardDisconnect',()=>{if(process.send)process.send({type:'discordReady',ready:false});});
@@ -162,6 +163,7 @@ client.on('interactionCreate', async interaction => {
     const db = await loadDb();
     if(interaction.isChatInputCommand()&&await require('./shared/arcade-commands').handle(interaction,{db,saveDb}))return;
     if(interaction.isChatInputCommand()&&await require('./shared/community-commands').handle(interaction,{db,saveDb,isAdmin,client}))return;
+    if(interaction.isChatInputCommand()&&await require('./shared/radio').handle(interaction,{db,saveDb,isAdmin,client}))return;
 
     if (interaction.isButton()) {
       if (interaction.customId === 'panel_shop') return interaction.reply({ ephemeral:true, content:'Utilise `/shop list` pour voir le shop.' });
