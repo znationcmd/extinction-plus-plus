@@ -46,7 +46,10 @@ function defaultDb() {
     backups: [],
     notifications: [],
     radioMessages: [],
-    radioBroadcasts: []
+    radioBroadcasts: [],
+    premiumSubscriptions: [],
+    premiumPaymentRequests: [],
+    premiumCodes: []
   };
 }
 
