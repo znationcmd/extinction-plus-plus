@@ -10,7 +10,7 @@ function ensure(db,gid){
 }
 function commands(){return[
  new SlashCommandBuilder().setName('radio').setDescription('Radio communautaire Extinction++ RSS')
-  .addSubcommand(s=>s.setName('config').setDescription('Configurer la station radio').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand(s=>s.setName('config').setDescription('Configurer la station radio')
     .addChannelOption(o=>o.setName('salon').setDescription('Salon de diffusion').setRequired(true))
     .addStringOption(o=>o.setName('frequence').setDescription('Ex: 87.8 MHz').setRequired(false).setMaxLength(20))
     .addStringOption(o=>o.setName('station').setDescription('Nom de la station').setRequired(false).setMaxLength(80)))
@@ -19,12 +19,12 @@ function commands(){return[
     .addStringOption(o=>o.setName('type').setDescription('Type de diffusion').setRequired(false).addChoices({name:'HQ',value:'hq'},{name:'Ambiance',value:'ambiance'},{name:'Alerte',value:'alerte'})))
   .addSubcommand(s=>s.setName('historique').setDescription('Voir les dernières transmissions')),
  new SlashCommandBuilder().setName('rappel').setDescription('Messages récurrents')
-  .addSubcommand(s=>s.setName('ajouter').setDescription('Programmer un message récurrent').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand(s=>s.setName('ajouter').setDescription('Programmer un message récurrent')
     .addChannelOption(o=>o.setName('salon').setDescription('Salon').setRequired(true))
     .addIntegerOption(o=>o.setName('minutes').setDescription('Intervalle en minutes').setRequired(true).setMinValue(5).setMaxValue(10080))
     .addStringOption(o=>o.setName('message').setDescription('Message').setRequired(true).setMaxLength(1800)))
   .addSubcommand(s=>s.setName('liste').setDescription('Lister les rappels'))
-  .addSubcommand(s=>s.setName('supprimer').setDescription('Supprimer un rappel').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand(s=>s.setName('supprimer').setDescription('Supprimer un rappel')
     .addStringOption(o=>o.setName('id').setDescription('ID du rappel').setRequired(true)))
 ];}
 function formatted(row,cfg){
