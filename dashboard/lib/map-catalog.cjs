@@ -6,7 +6,8 @@ const names={
   conan:['Exiled Lands','Isle of Siptah','Savage Wilds'],
   palworld:['Palpagos','Sakurajima','Feybreak'],
   '7dtd':['Navezgane','Pregen','Monde généré aléatoirement'],
-  aniimo:[]
+  aniimo:[],
+  rust:['Procedural Map','Custom Map','Savas']
 };
 function suggestions(game,servers=[],maps=[]){const key=game?.startsWith('dayz')?'dayz':game;return [...new Set([...(names[key]||[]),...servers.filter(s=>s.game===game).map(s=>s.map),...maps.filter(m=>m.game===game).map(m=>m.name)].filter(Boolean))];}
 module.exports={suggestions};
