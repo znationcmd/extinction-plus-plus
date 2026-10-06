@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
-const gameNames={dayz_pc:'DayZ PC',dayz_ps:'DayZ PlayStation',dayz_xbox:'DayZ Xbox',ark:'ARK',arma:'Arma Reforger',palworld:'Palworld',conan:'Conan Exiles','7dtd':'7 Days to Die',aniimo:'Aniimo'};
+const gameNames={dayz_pc:'DayZ PC',dayz_ps:'DayZ PlayStation',dayz_xbox:'DayZ Xbox',ark:'ARK',arma:'Arma Reforger',palworld:'Palworld',conan:'Conan Exiles','7dtd':'7 Days to Die',aniimo:'Aniimo',rust:'Rust'};
 export default function ModuleEditor({endpoint,title='Gestion',fields,readKey,listKey,allowDelete=true,basicFields=null}) {
   const [items,setItems]=useState([]),[form,setForm]=useState({}),[error,setError]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
   async function load(){const r=await fetch(endpoint,{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Chargement impossible.');const values=readKey?d[readKey]:d;setItems(Array.isArray(values)?values:[]);setLoaded(true);}
