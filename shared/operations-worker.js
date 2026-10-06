@@ -8,8 +8,23 @@ function server(db,row){const s=rcon.findServer(db,row.guildId,row.serverId);if(
 async function runTask(db,task,deps={}){const s=server(db,task);if(task.action==='message'){const command=s.game==='dayz_pc'||s.rconProtocol==='battleye'?`say -1 ${task.message}`:s.game==='ark'?`ServerChat ${task.message}`:`Broadcast ${task.message}`;return (deps.rcon||rcon.send)(s,command);}
  return require('./restart-shop-worker').power({db,server:s,action:task.action,actorId:task.createdBy||'scheduled',saveDb:deps.saveDb,fetcher:deps.fetch});
 }
+
+async function tickRadio(db,now){
+ const due=(db.radioMessages||[]).filter(r=>r.enabled!==false&&r.nextRunAt&&Date.parse(r.nextRunAt)<=now).slice(0,25);
+ for(const row of due){
+   const emittedAt=new Date(now).toISOString();
+   const broadcast={id:crypto.randomUUID(),guildId:row.guildId,station:row.station||'Radio',frequency:row.frequency||'',title:row.title||'',message:row.message||'',kind:row.kind||'rp',game:row.game||'',serverId:row.serverId||'',emittedAt};
+   (db.radioBroadcasts||=[]).push(broadcast);
+   if(row.channelId)(db.liveAlerts||=[]).push({id:crypto.randomUUID(),guildId:row.guildId,serverId:row.serverId||'',channelId:row.channelId,content:`📻 **${broadcast.station}${broadcast.frequency?' · '+broadcast.frequency:''}**${broadcast.title?'\n**'+broadcast.title+'**':''}\n${broadcast.message}`,createdAt:emittedAt});
+   const interval=Number(row.intervalMinutes||0);
+   if(interval>0)row.nextRunAt=new Date(now+interval*60000).toISOString();else row.enabled=false;
+   row.lastRunAt=emittedAt;
+ }
+ if((db.radioBroadcasts||[]).length>2000)db.radioBroadcasts=db.radioBroadcasts.slice(-2000);
+}
+
 async function tick({loadDb,saveDb,run=runTask,ban=require('./game-files').ban,now=Date.now()}){
- let db=await loadDb();ops.expire(db,now);
+ let db=await loadDb();ops.expire(db,now);await tickRadio(db,now);
  for(const row of [...(db.scheduledTasks||[]),...(db.gameActions||[])])if(row.status==='running'){row.status='uncertain';row.error='Opération interrompue : vérifie le serveur avant de réactiver.';row.enabled=false;}
  await saveDb(db);
  const tasks=(db.scheduledTasks||[]).filter(t=>t.enabled!==false&&!['uncertain','failed','running'].includes(t.status)&&Date.parse(t.nextRunAt)<=now).slice(0,10).map(t=>t.id);
