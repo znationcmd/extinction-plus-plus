@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const config = require('./config');
+const topServers = require('./shared/top-servers');
 
 const children = new Set();
 let stopping = false;
@@ -54,7 +55,9 @@ if(hasDashboardBuild) {
   run('dashboard',[require.resolve('next/dist/bin/next',{paths:[dashboardDir,__dirname]}),'start','-H','0.0.0.0','-p',String(port)],dashboardDir,env);
 } else {
   // Separate Railway services do not ship a Next production build on the bot.
-  const health=http.createServer((req,res)=>{
+  topServers.init().catch(e=>console.error('Top Serveurs :',e.code||e.message));
+  const health=http.createServer(async(req,res)=>{
+    if(await topServers.http(req,res))return;
     if(req.url==='/health') {res.writeHead(discordReady?200:503,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({discordConnected:discordReady,dashboard:'separate',uptime:Math.floor(process.uptime())}));return;}
     if(req.url==='/' && /^https:\/\//.test(config.DASHBOARD_URL)) {res.writeHead(302,{Location:config.DASHBOARD_URL});res.end();return;}
     res.writeHead(404,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Utilise le service Dashboard.'}));
