@@ -8,7 +8,7 @@ function db(){
 }
 async function init(){
   if(ready)return ready;
-  ready=db().query(String.raw\`
+  ready=db().query(String.raw`
 CREATE TABLE IF NOT EXISTS network_top_servers(
  id TEXT PRIMARY KEY,
  guild_id TEXT NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS network_top_server_votes(
  PRIMARY KEY(server_id,user_id,vote_day)
 );
 CREATE INDEX IF NOT EXISTS idx_network_top_votes_created ON network_top_server_votes(created_at);
-\`).then(()=>true);
+`).then(()=>true);
   return ready;
 }
 const clean=(v,n=300)=>String(v??'').trim().slice(0,n);
@@ -45,7 +45,7 @@ async function list({game='',limit=25}={}){
   await init();limit=Math.max(1,Math.min(100,Number(limit)||25));
   const args=[];let where='s.enabled=TRUE';if(game){args.push(clean(game,40).toLowerCase());where+=' AND LOWER(s.game)=$1';}
   args.push(limit);const li='$'+args.length;
-  const q=await db().query(\`
+  const q=await db().query(`
 SELECT s.*,
  COUNT(v.*)::int AS votes_total,
  COUNT(v.*) FILTER (WHERE v.created_at>=date_trunc('month',NOW()))::int AS votes_month,
@@ -55,7 +55,7 @@ LEFT JOIN network_top_server_votes v ON v.server_id=s.id
 WHERE \${where}
 GROUP BY s.id
 ORDER BY votes_month DESC,votes_total DESC,s.updated_at DESC
-LIMIT \${li}\`,args);
+LIMIT \${li}`,args);
   return q.rows;
 }
 async function register(input){
@@ -69,14 +69,14 @@ async function register(input){
     sourceBot:clean(input.sourceBot,60)||'unknown'
   };
   if(!row.guildId||!row.ownerUserId||!row.name||!row.game)throw Object.assign(new Error('missing_fields'),{status:400});
-  const q=await db().query(\`
+  const q=await db().query(`
 INSERT INTO network_top_servers(id,guild_id,owner_user_id,name,game,map,platform,description,address,invite_url,website_url,source_bot)
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 ON CONFLICT(id) DO UPDATE SET
  guild_id=EXCLUDED.guild_id,owner_user_id=EXCLUDED.owner_user_id,name=EXCLUDED.name,game=EXCLUDED.game,map=EXCLUDED.map,
  platform=EXCLUDED.platform,description=EXCLUDED.description,address=EXCLUDED.address,invite_url=EXCLUDED.invite_url,
  website_url=EXCLUDED.website_url,source_bot=EXCLUDED.source_bot,enabled=TRUE,updated_at=NOW()
-RETURNING *\`,[row.id,row.guildId,row.ownerUserId,row.name,row.game,row.map,row.platform,row.description,row.address,row.inviteUrl,row.websiteUrl,row.sourceBot]);
+RETURNING *`,[row.id,row.guildId,row.ownerUserId,row.name,row.game,row.map,row.platform,row.description,row.address,row.inviteUrl,row.websiteUrl,row.sourceBot]);
   return q.rows[0];
 }
 async function vote(id,userId,sourceBot){
