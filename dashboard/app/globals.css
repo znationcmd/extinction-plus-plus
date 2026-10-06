@@ -51,3 +51,26 @@ select.input { color-scheme: dark; min-height: 48px; }
 select.input option { background: #08111f; color: white; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 [id] { scroll-margin-top: 100px; }
+
+/* Living dashboard background + iPhone safe areas */
+@keyframes extinctionBackgroundDrift {
+  0% { background-position: 20% 15%, 80% 85%, center; }
+  50% { background-position: 35% 25%, 65% 70%, center; }
+  100% { background-position: 20% 15%, 80% 85%, center; }
+}
+.dashboard-motion-bg {
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(124,58,237,.20), transparent 34%),
+    radial-gradient(circle at 80% 85%, rgba(220,38,38,.14), transparent 32%),
+    linear-gradient(180deg,#08111f,#050913);
+  background-size: 120% 120%, 125% 125%, 100% 100%;
+  animation: extinctionBackgroundDrift 32s ease-in-out infinite;
+  background-attachment: fixed;
+}
+@media (max-width: 1023px) {
+  .mobile-header { min-height: calc(76px + env(safe-area-inset-top, 0px)); }
+  #mobile-menu { max-height: calc(100dvh - 150px - env(safe-area-inset-top, 0px)); overflow-y: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-motion-bg { animation: none; }
+}
