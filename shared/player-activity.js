@@ -2,7 +2,7 @@ const {Pool}=require('pg');
 const crypto=require('node:crypto');
 let pool,ready;
 function db(){if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL requis');if(!pool){pool=new Pool({connectionString:process.env.DATABASE_URL,max:3,connectionTimeoutMillis:10000,idleTimeoutMillis:30000});pool.on('error',e=>console.error('Activity logs DB :',e.code||e.name));}return pool;}
-async function init(){if(ready)return ready;ready=db().query(String.raw\`
+async function init(){if(ready)return ready;ready=db().query(String.raw`
 CREATE TABLE IF NOT EXISTS network_player_activity(
  id TEXT PRIMARY KEY,
  guild_id TEXT NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS network_player_activity(
 CREATE INDEX IF NOT EXISTS idx_network_activity_guild_time ON network_player_activity(guild_id,occurred_at DESC);
 CREATE INDEX IF NOT EXISTS idx_network_activity_server_time ON network_player_activity(server_id,occurred_at DESC);
 CREATE INDEX IF NOT EXISTS idx_network_activity_type ON network_player_activity(event_type,occurred_at DESC);
-\`).then(()=>true);return ready;}
+`).then(()=>true);return ready;}
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n),num=v=>Number.isFinite(Number(v))?Number(v):null;
 function auth(req){const expected=process.env.TOP_SERVERS_API_KEY||'';const got=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!expected||!got)return false;const a=crypto.createHash('sha256').update(got).digest(),b=crypto.createHash('sha256').update(expected).digest();return crypto.timingSafeEqual(a,b);}
 async function parseBody(req,limit=65536){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',c=>{size+=c.length;if(size>limit){reject(Object.assign(new Error('too_large'),{status:413}));req.destroy();return}chunks.push(c)});req.on('end',()=>{try{resolve(chunks.length?JSON.parse(Buffer.concat(chunks).toString('utf8')):{})}catch{reject(Object.assign(new Error('bad_json'),{status:400}))}});req.on('error',reject);});}
