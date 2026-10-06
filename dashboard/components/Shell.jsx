@@ -84,7 +84,7 @@ export default function Shell({ children }) {
   const { t } = useLanguage();
   const [menuOpen,setMenuOpen]=useState(false);
   return (
-    <main className="min-h-screen bg-extinction-bg pb-28 text-white">
+    <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
         <Link href="/" prefetch={false} className="mb-8 block">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
