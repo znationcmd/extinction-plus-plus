@@ -46,6 +46,7 @@ export const links = [
   ['/install', 'Installer l’application', Home],
   ['/nitrado', 'Nitrado', Cloud],
   ['/dayz-mods', 'Mods DayZ PC', PackageCheck],
+  ['/dayz-tools', 'Outils DayZ complets', ClipboardList],
   ['/file-validator', 'Valider JSON / XML', ClipboardList],
   ['/owner-config', 'Config propriétaires', KeyRound],
   ['/whitelist', 'Whitelist', Shield],
