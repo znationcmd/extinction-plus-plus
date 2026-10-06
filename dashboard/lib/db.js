@@ -49,7 +49,8 @@ function defaultDb() {
     radioBroadcasts: [],
     premiumSubscriptions: [],
     premiumPaymentRequests: [],
-    premiumCodes: []
+    premiumCodes: [],
+    premiumComplimentaryUsers: []
   };
 }
 
