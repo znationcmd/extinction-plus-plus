@@ -59,14 +59,14 @@ async function handle(interaction,{db,saveDb,isAdmin,client}){
   if(!isAdmin(interaction))throw new Error('Admin uniquement.');
   const ch=interaction.options.getChannel('salon',true);if(!ch.isTextBased())throw new Error('Salon texte requis.');
   const minutes=interaction.options.getInteger('minutes',true),row={id:uid(),guildId:gid,channelId:ch.id,message:interaction.options.getString('message',true).trim(),intervalMinutes:minutes,enabled:true,nextRunAt:Date.now()+minutes*60000,createdBy:user,createdAt:new Date().toISOString()};
-  db.recurringMessages.push(row);await saveDb(db);await interaction.editReply(`⏰ Rappel créé : toutes les **${minutes} min** dans <#${ch.id}>.\nID : `${row.id}``);return true;
+  db.recurringMessages.push(row);await saveDb(db);await interaction.editReply(`⏰ Rappel créé : toutes les **${minutes} min** dans <#${ch.id}>.\nID : \`${row.id}\``);return true;
  }
  if(sub==='supprimer'){
   if(!isAdmin(interaction))throw new Error('Admin uniquement.');
   const id=interaction.options.getString('id',true),before=db.recurringMessages.length;db.recurringMessages=db.recurringMessages.filter(x=>!(x.guildId===gid&&x.id===id));if(before===db.recurringMessages.length)throw new Error('Rappel introuvable.');await saveDb(db);await interaction.editReply('✅ Rappel supprimé.');return true;
  }
  const rows=db.recurringMessages.filter(x=>x.guildId===gid&&x.enabled!==false);
- await interaction.editReply(rows.length?rows.slice(-20).map(x=>`• `${x.id}` · toutes les ${x.intervalMinutes} min · <#${x.channelId}>\n${x.message}`).join('\n\n'):'Aucun rappel récurrent.');return true;
+ await interaction.editReply(rows.length?rows.slice(-20).map(x=>`• \`${x.id}\` · toutes les ${x.intervalMinutes} min · <#${x.channelId}>\n${x.message}`).join('\n\n'):'Aucun rappel récurrent.');return true;
 }
 function start({client,loadDb,saveDb}){let busy=false;async function tick(){if(busy)return;busy=true;try{const db=await loadDb();ensure(db,'__seed__');db.recurringMessages=db.recurringMessages||[];let changed=false;const now=Date.now();for(const row of db.recurringMessages.filter(x=>x.enabled!==false&&Number(x.nextRunAt)<=now).slice(0,50)){try{const ch=await client.channels.fetch(row.channelId);if(!ch?.isTextBased())throw new Error('Salon inaccessible');await ch.send({content:`⏰ **Rappel récurrent**\n${row.message}`,allowedMentions:{parse:[]}});row.nextRunAt=now+Math.max(5,Number(row.intervalMinutes)||60)*60000;row.lastRunAt=new Date().toISOString();changed=true;}catch(e){row.lastError=String(e.code||e.message).slice(0,200);row.nextRunAt=now+300000;changed=true;}}if(changed)await saveDb(db);}finally{busy=false}}tick();const timer=setInterval(tick,60000);timer.unref();return timer;}
 module.exports={commands,handle,start,ensure,formatted};
