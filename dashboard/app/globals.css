@@ -134,3 +134,15 @@ select.input option { background: #08111f; color: white; }
   :root{--ext-rail:64px;--ext-panel:310px}
   .ext-guild-bubble{width:47px;height:47px;min-height:47px}
 }
+
+@media(max-width:1023px){
+  .ext-draft-header{padding-left:6px;padding-right:6px}
+  .ext-draft-header>img{position:absolute;left:50%;transform:translateX(-50%)}
+  .ext-header-actions{display:flex;align-items:center;gap:0;margin-left:auto}
+  .ext-header-actions>button{width:52px;height:52px;min-width:52px;border:0;background:transparent;color:#a78bfa;display:grid;place-items:center;padding:0}
+  .ext-refresh-button:disabled{opacity:.45}
+  .ext-grid-button{display:grid!important;grid-template-columns:repeat(2,13px)!important;grid-template-rows:repeat(2,13px)!important;gap:5px!important}
+}
+@media(max-width:520px){
+  .ext-header-actions>button{width:47px;height:47px;min-width:47px}
+}
