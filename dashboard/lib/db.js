@@ -44,7 +44,9 @@ function defaultDb() {
     connectedServers: [],
     saasAudit: [],
     backups: [],
-    notifications: []
+    notifications: [],
+    radioMessages: [],
+    radioBroadcasts: []
   };
 }
 
@@ -75,5 +77,6 @@ export const GAME_LABELS = {
   arma: 'Arma Reforger',
   conan: 'Conan Exiles',
   '7dtd':'7 Days to Die',
-  aniimo:'Aniimo'
+  aniimo:'Aniimo',
+  rust: 'Rust'
 };
