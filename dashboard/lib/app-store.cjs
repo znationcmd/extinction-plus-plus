@@ -1,6 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Pool } = require('pg');
+const pgModule = require('pg');
+const Pool = [pgModule.Pool, pgModule.Pool?.default, pgModule.default?.Pool, pgModule.default].find(v => typeof v === 'function');
+if (!Pool) throw new Error('Pilote PostgreSQL incompatible : Pool indisponible.');
 const snapshots = new WeakMap();
 let pool, initialized;
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b);
