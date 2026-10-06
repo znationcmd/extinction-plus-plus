@@ -100,7 +100,7 @@ const bottomLinks = [
   ['/shop', 'Shop', ShoppingCart],
 ];
 
-const byHref=new Map(links.map(x=>[x[0],x]));
+const byHref=new globalThis.Map(links.map(x=>[x[0],x]));
 const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';
 
 export default function Shell({ children }) {
