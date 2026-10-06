@@ -51,15 +51,42 @@ export const links = [
   ['/customization', 'Personnalisation', Palette],
   ['/settings', 'Paramètres', Settings],
   ['/select-discord', 'Changer de Discord', KeyRound],
+  ['/discord-module/messages', 'Messages', Radio],
+  ['/discord-module/welcome', 'Arrivées et départs', Home],
+  ['/discord-module/autoroles', 'Rôles automatiques', Shield],
+  ['/discord-module/verification', 'Vérification', Shield],
+  ['/discord-module/levels', 'Niveaux', Trophy],
+  ['/discord-module/invitations', 'Invitations', KeyRound],
+  ['/discord-module/reputation', 'Réputation', Trophy],
+  ['/discord-module/tempvoice', 'Salons vocaux temporaires', Radio],
+  ['/discord-module/infinity', 'Route de l’Infini', Trophy],
+  ['/discord-module/suggestions', 'Suggestions', Brain],
+  ['/discord-module/secureroles', 'Rôles sécurisés', Shield],
+  ['/discord-module/moderation', 'Modération', Shield],
+  ['/discord-module/automod', 'Auto-Modération', Shield],
+  ['/discord-module/reports', 'Signalements', Siren],
+  ['/discord-module/giveaways', 'Lots & Giveaways', Trophy],
+  ['/discord-module/polls', 'Sondages', ClipboardList],
+  ['/discord-module/embeds', 'Embeds', Radio],
+  ['/discord-module/snippets', 'Snippets', ClipboardList],
+  ['/discord-module/social', 'Notifications sociales', Radio],
+  ['/discord-module/recurring', 'Messages récurrents', RefreshCw],
+  ['/discord-module/statschannels', 'Salons de statistiques', BarChart3],
+  ['/discord-module/counters', 'Compteurs', BarChart3],
+  ['/discord-module/birthdays', 'Anniversaires', Trophy],
+  ['/discord-module/customcommands', 'Commandes personnalisées', Settings],
+  ['/discord-module/wordreactions', 'Réactions de mots', Brain],
+  ['/discord-module/starboard', 'Starboards', Trophy],
+  ['/discord-module/reactionroles', 'Rôles-Réactions', Tags],
 ];
 
 const groups = [
-  ['PARAMÈTRES',['/settings','/customization','/owner-config']],
-  ['ACCUEIL DES MEMBRES',['/whitelist','/groups','/select-discord']],
-  ['ENGAGEMENT',['/battlepass-admin','/quests-admin','/leaderboard','/economy']],
-  ['SÉCURITÉ',['/interpol','/killfeed','/alarms']],
-  ['COMMUNICATION',['/tickets','/radio','/operations']],
-  ['COMMUNAUTÉ',['/rp','/shop','/deliveries','/coupons','/stats']],
+  ['PARAMÈTRES',['/settings','/customization','/owner-config','/discord-module/messages']],
+  ['ACCUEIL DES MEMBRES',['/whitelist','/groups','/select-discord','/discord-module/welcome','/discord-module/autoroles','/discord-module/verification']],
+  ['ENGAGEMENT',['/battlepass-admin','/quests-admin','/leaderboard','/economy','/discord-module/levels','/discord-module/invitations','/discord-module/reputation','/discord-module/tempvoice','/discord-module/infinity','/discord-module/suggestions']],
+  ['SÉCURITÉ',['/interpol','/killfeed','/alarms','/discord-module/secureroles','/discord-module/moderation','/discord-module/automod','/discord-module/reports']],
+  ['COMMUNICATION',['/tickets','/radio','/operations','/discord-module/giveaways','/discord-module/polls','/discord-module/embeds','/discord-module/snippets','/discord-module/social','/discord-module/recurring','/discord-module/statschannels','/discord-module/counters']],
+  ['COMMUNAUTÉ',['/rp','/shop','/deliveries','/coupons','/stats','/discord-module/birthdays','/discord-module/customcommands','/discord-module/wordreactions','/discord-module/starboard','/discord-module/reactionroles']],
   ['SERVEURS & OUTILS',['/servers','/nitrado','/integrations','/maps','/dayz-mods','/dayz-tools','/file-validator','/atlas-admin']],
   ['EXPLORATEURS',['/explorer/ark','/explorer/palworld','/explorer/conan','/explorer/aniimo','/explorer/dayz']],
   ['RÉSEAU',['/premium','/top-servers','/plugins','/ai','/install']],
@@ -112,7 +139,12 @@ export default function Shell({ children }) {
 
   return (
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
+      <div className="fixed left-0 top-0 z-50 hidden h-screen w-20 flex-col items-center gap-3 overflow-y-auto border-r border-white/10 bg-[#161a1e]/95 px-2 py-5 lg:flex" aria-label="Discord installés sur ordinateur">
+        {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 ${selectedGuild?.id===g.id?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
+          {g.icon?<img src={g.icon} alt="" className="h-full w-full object-cover"/>:<span className="text-xs font-black">{initials(g.name)}</span>}
+        </button>)}
+      </div>
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
           <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
@@ -174,7 +206,7 @@ export default function Shell({ children }) {
         {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-2 text-[11px] active:bg-red-600"><Icon size={22}/><span>{t(label)}</span></Link>)}
       </nav>
 
-      <section className="ext-content px-4 py-5 lg:ml-72 lg:p-10">{children}</section>
+      <section className="ext-content px-4 py-5 lg:ml-[23rem] lg:p-10">{children}</section>
     </main>
   );
 }
