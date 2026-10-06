@@ -1,4 +1,4 @@
-const scopedArrays=['atlasEntries','restartBatches','questProgress','bounties','factions','playerLinks','eventRules','scheduledTasks','gameActions','livePlayers','liveAlerts','maps','mapPins','events','pendingWhitelist','shopPurchases','shop','deliveries','quests','questProofs','interpol','alarms','tickets','leaderboard','coupons','promotions','plugins','nitradoServers','connectedServers','saasAudit','backups','notifications','radioMessages','radioBroadcasts','servers'];
+const scopedArrays=['atlasEntries','restartBatches','questProgress','bounties','factions','playerLinks','eventRules','scheduledTasks','gameActions','livePlayers','liveAlerts','maps','mapPins','events','pendingWhitelist','shopPurchases','shop','deliveries','quests','questProofs','interpol','alarms','tickets','leaderboard','coupons','promotions','plugins','nitradoServers','connectedServers','saasAudit','backups','notifications','radioMessages','radioBroadcasts','premiumSubscriptions','premiumPaymentRequests','servers'];
 // Earlier bot versions stored empty collections as {} or records keyed by ID.
 // Keep explicit guildId isolation; never infer membership from a dictionary key.
 function rows(value,key) {
@@ -34,6 +34,7 @@ function apply(raw,scoped,id) {
     raw[key]||={};for(const field of fields) raw[key][field]=[...rows(raw[key][field],`${key}.${field}`).filter(x=>String(x.guildId)!==id),...rows(scoped[key]?.[field],`${key}.${field}`).map(x=>({...x,guildId:id}))];
   }
   raw.battlepasses||={};raw.battlepasses[id]=scoped.battlepass||{levels:[]};
+  raw.premiumCodes=structuredClone(scoped.premiumCodes||raw.premiumCodes||[]);
   return raw;
 }
 module.exports={view,apply,rows};
