@@ -1,12 +1,13 @@
 'use client';
 import LanguageSelector from './LanguageSelector';
+import {usePwa} from './PwaProvider';
 import { useLanguage } from './LanguageProvider';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {
   Map,ShoppingCart,Skull,Shield,Settings,Palette,Trophy,ClipboardList,Home,Menu,
   PackageCheck,Siren,Search,BriefcaseBusiness,BarChart3,Coins,Plug,Brain,Ticket,
-  Tags,Cloud,KeyRound,Radio
+  Tags,Cloud,KeyRound,Radio,RefreshCw
 } from 'lucide-react';
 
 export const links = [
@@ -77,6 +78,7 @@ const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).m
 
 export default function Shell({ children }) {
   const { t } = useLanguage();
+  const {refreshApp,refreshing}=usePwa();
   const [menuOpen,setMenuOpen]=useState(false);
   const [menuQuery,setMenuQuery]=useState('');
   const [workspace,setWorkspace]=useState({guilds:[],selectedGuildId:null});
@@ -116,7 +118,10 @@ export default function Shell({ children }) {
           <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
-        <div className="mb-5"><LanguageSelector /></div>
+        <div className="mb-3"><LanguageSelector /></div>
+        <button type="button" onClick={refreshApp} disabled={refreshing} className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/30 bg-white/5 px-3 py-3 text-sm font-bold text-white/80 hover:bg-white/10 disabled:opacity-50">
+          <RefreshCw size={18} className={refreshing?'animate-spin':''}/>{refreshing?t('Actualisation…'):t('Actualiser')}
+        </button>
         <nav className="pb-8">
           {groups.map(([title,hrefs])=>{
             const items=hrefs.map(h=>byHref.get(h)).filter(Boolean);
@@ -131,7 +136,12 @@ export default function Shell({ children }) {
       <header className="ext-draft-header lg:hidden">
         <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
         <img src="/extinction-logo.png" alt="EXTINCTION++ RSS"/>
-        <button type="button" aria-label="Modules" className="ext-grid-button" onClick={()=>setMenuOpen(v=>!v)}><i/><i/><i/><i/></button>
+        <div className="ext-header-actions">
+          <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
+            <RefreshCw size={29} className={refreshing?'animate-spin':''}/>
+          </button>
+          <button type="button" aria-label="Modules" className="ext-grid-button" onClick={()=>setMenuOpen(v=>!v)}><i/><i/><i/><i/></button>
+        </div>
       </header>
 
       {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>}
