@@ -84,6 +84,8 @@ const bottomLinks = [
 export default function Shell({ children }) {
   const { t } = useLanguage();
   const [menuOpen,setMenuOpen]=useState(false);
+  const [menuQuery,setMenuQuery]=useState('');
+  const visibleLinks=links.filter(([,label])=>t(label).toLowerCase().includes(menuQuery.trim().toLowerCase()));
   return (
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
@@ -121,20 +123,29 @@ export default function Shell({ children }) {
       </header>
 
       <div className="border-b border-white/10 bg-[#08111f] px-4 py-3 lg:hidden"><LanguageSelector /></div>
-      <nav id="mobile-menu" aria-label={t('Navigation mobile')} className={`${menuOpen?'grid':'hidden'} grid-cols-3 gap-3 border-b border-white/10 bg-[#08111f] p-4 lg:hidden`}>
-        {links.map(([href, label, Icon]) => (
-          <Link
-            key={href}
-            href={href}
-            prefetch={false}
-            onClick={()=>setMenuOpen(false)}
-            className="flex min-h-[92px] flex-col items-center justify-center rounded-2xl bg-white/10 px-2 py-4 text-center text-sm active:bg-red-600"
-          >
-            <Icon size={28} />
-            <span className="mt-2 leading-tight">{t(label)}</span>
-          </Link>
-        ))}
-      </nav>
+      {menuOpen&&<div className="fixed inset-0 z-[58] bg-black/70 lg:hidden" onClick={()=>setMenuOpen(false)} />}
+      <aside id="mobile-menu" aria-label={t('Navigation mobile')} className={`${menuOpen?'translate-x-0':'-translate-x-full'} fixed bottom-0 left-0 top-0 z-[60] flex w-[min(92vw,380px)] flex-col border-r border-white/10 bg-[#171d24]/[.99] shadow-2xl backdrop-blur-xl transition-transform duration-200 lg:hidden`}>
+        <div className="border-b border-white/10 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <img src="/extinction-logo.png" alt="" className="h-11 w-11 rounded-xl object-cover" />
+              <div><p className="font-black text-purple-300">EXTINCTION++ RSS</p><p className="text-xs text-white/45">Modules du Discord sélectionné</p></div>
+            </div>
+            <button type="button" onClick={()=>setMenuOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-xl">×</button>
+          </div>
+          <div className="mt-4"><LanguageSelector /></div>
+          <label className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 py-3">
+            <Search size={20} className="text-white/45"/><input value={menuQuery} onChange={e=>setMenuQuery(e.target.value)} placeholder={t('Rechercher un module')} className="w-full bg-transparent text-white outline-none placeholder:text-white/35"/>
+          </label>
+        </div>
+        <nav className="min-h-0 flex-1 overflow-y-auto p-4">
+          {visibleLinks.length?visibleLinks.map(([href,label,Icon])=>(
+            <Link key={href} href={href} prefetch={false} onClick={()=>setMenuOpen(false)} className="mb-1 flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 hover:bg-white/10 active:bg-purple-700">
+              <Icon size={21}/><span>{t(label)}</span>
+            </Link>
+          )):<p className="rounded-xl bg-white/5 p-4 text-sm text-white/55">{t('Aucun module trouvé')}</p>}
+        </nav>
+      </aside>
 
       <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-1 border-t border-white/10 bg-black/95 p-2 backdrop-blur-xl lg:hidden">
         {bottomLinks.map(([href, label, Icon]) => (
