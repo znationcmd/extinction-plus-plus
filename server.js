@@ -4,6 +4,7 @@ const fs = require('fs');
 const http = require('http');
 const config = require('./config');
 const topServers = require('./shared/top-servers');
+const constructionLogs = require('./shared/construction-logs');
 
 const children = new Set();
 let stopping = false;
@@ -56,8 +57,10 @@ if(hasDashboardBuild) {
 } else {
   // Separate Railway services do not ship a Next production build on the bot.
   topServers.init().catch(e=>console.error('Top Serveurs :',e.code||e.message));
+  constructionLogs.init().catch(e=>console.error('Construction logs :',e.code||e.message));
   const health=http.createServer(async(req,res)=>{
     if(await topServers.http(req,res))return;
+    if(await constructionLogs.http(req,res))return;
     if(req.url==='/health') {res.writeHead(discordReady?200:503,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({discordConnected:discordReady,dashboard:'separate',uptime:Math.floor(process.uptime())}));return;}
     if(req.url==='/' && /^https:\/\//.test(config.DASHBOARD_URL)) {res.writeHead(302,{Location:config.DASHBOARD_URL});res.end();return;}
     res.writeHead(404,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Utilise le service Dashboard.'}));
