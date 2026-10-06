@@ -1,4 +1,6 @@
-const { Pool } = require('pg');
+const pgModule = require('pg');
+const Pool = [pgModule.Pool, pgModule.Pool?.default, pgModule.default?.Pool, pgModule.default].find(v => typeof v === 'function');
+if (!Pool) throw new Error('Pilote PostgreSQL incompatible : Pool indisponible.');
 const crypto = require('crypto');
 let pool;
 let tables;
