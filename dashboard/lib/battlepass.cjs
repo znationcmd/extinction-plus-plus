@@ -46,6 +46,7 @@ function earn(db,guildId,userId,xp,proof,credit,now=Date.now()){
  if(season){p.seasons||={};target=p.seasons[season.id]||={xp:0,claimed:[]};if(!Number.isSafeInteger(target.xp+xp))throw new Error('XP trop élevé.');target.xp+=xp;levels=season.levels;proof.seasonId=season.id;}
  const scope=[proof.game?require('./games.cjs').normalize(proof.game):'',proof.serverId||''].join(':');target.scopes||={};const scoped=target.scopes[scope]||={xp:0};scoped.xp+=xp;
  for(const l of levels){const eligibleXp=l.game||l.serverId?Object.entries(target.scopes).filter(([k])=>{const [g,s]=k.split(':');return (!l.game||l.game===g)&&(!l.serverId||l.serverId===s);}).reduce((n,[,v])=>n+v.xp,0):target.xp;
- if((!l.premium||(season||bp).premiumUsers?.includes(userId))&&eligibleXp>=l.xp&&!(target.claimed||=[]).includes(l.id)){credit(db,guildId,userId,l.reward||0,`Battle Pass ${season?.name||'historique'} — niveau ${l.level}`);target.claimed.push(l.id);}}
+ const complimentary=(db.premiumComplimentaryUsers||[]).includes(String(userId));
+ if((!l.premium||complimentary||(season||bp).premiumUsers?.includes(userId))&&eligibleXp>=l.xp&&!(target.claimed||=[]).includes(l.id)){credit(db,guildId,userId,l.reward||0,`Battle Pass ${season?.name||'historique'} — niveau ${l.level}`);target.claimed.push(l.id);}}
 }
 module.exports={config,active,progress,mutate,earn};
