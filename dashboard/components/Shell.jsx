@@ -25,7 +25,8 @@ import {
   Ticket,
   Tags,
   Cloud,
-  KeyRound
+  KeyRound,
+  Radio
 } from 'lucide-react';
 
 export const links = [
@@ -56,6 +57,7 @@ export const links = [
   ['/economy', 'Économie', Coins],
   ['/alarms', 'Alarmes', Siren],
   ['/operations', 'Primes & automatisations', Trophy],
+  ['/radio', 'Radio & messages', Radio],
   ['/interpol', 'Interpol', Search],
   ['/killfeed', 'Killfeed', Skull],
   ['/leaderboard', 'Classements', Trophy],
