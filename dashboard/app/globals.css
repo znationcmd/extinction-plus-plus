@@ -183,3 +183,15 @@ select.input option { background: #08111f; color: white; }
   .ext-mobile-guild-strip .ext-guild-bubble{width:43px;height:43px;min-width:43px;min-height:43px;flex-basis:43px}
   .ext-content{padding-top:calc(var(--ext-head) + 78px + env(safe-area-inset-top,0px))!important}
 }
+
+
+/* EXTINCTION · DraftBot menu + application launcher v6 */
+@media(max-width:1023px){
+  .ext-mobile-guild-strip{display:none!important}
+  .ext-content{padding-top:calc(var(--ext-head) + env(safe-area-inset-top,0px) + 18px)!important}
+  .ext-guild-rail:not(.open){opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateX(-110%)!important}
+  .ext-guild-rail.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateX(0)!important}
+  .ext-module-panel:not(.open){opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+  .ext-module-panel.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+}
+#applications{scroll-margin-top:120px}

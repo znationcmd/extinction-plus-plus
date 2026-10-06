@@ -172,18 +172,9 @@ export default function Shell({ children }) {
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
             <RefreshCw size={29} className={refreshing?'animate-spin':''}/>
           </button>
-          <button type="button" aria-label="Modules" className="ext-grid-button" onClick={()=>setMenuOpen(v=>!v)}><i/><i/><i/><i/></button>
+          <button type="button" aria-label="Applications" title="Applications" className="ext-grid-button" onClick={()=>{setMenuOpen(false);window.location.href='/#applications'}}><i/><i/><i/><i/></button>
         </div>
       </header>
-
-      {!!workspace.guilds?.length&&<div className={`ext-mobile-guild-strip lg:hidden ${menuOpen?'is-hidden':''}`} aria-label="Discord installés">
-        <strong>DISCORD</strong>
-        <div className="ext-mobile-guild-scroll">
-          {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`ext-guild-bubble ${selectedGuild?.id===g.id?'active':''}`}>
-            {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
-          </button>)}
-        </div>
-      </div>}
 
       {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
 

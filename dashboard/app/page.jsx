@@ -46,8 +46,15 @@ export default async function Home() {
         </Link>
       </div>
 
-      <h3 id="modules" className="mt-8 mb-4 text-3xl font-black">Modules</h3>
-      <ModuleGrid />
+      <section id="applications" className="mt-8 scroll-mt-28">
+        <span id="modules" className="sr-only">Modules</span>
+        <div className="mb-4">
+          <p className="text-xs font-black uppercase tracking-[.18em] text-purple-300/70">EXTINCTION ++ RSS</p>
+          <h3 className="text-3xl font-black">Applications</h3>
+          <p className="mt-1 text-sm text-white/55">Tous les outils et modules en accès rapide, comme avant.</p>
+        </div>
+        <ModuleGrid />
+      </section>
     </Shell>
   );
 }
