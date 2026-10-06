@@ -176,7 +176,16 @@ export default function Shell({ children }) {
         </div>
       </header>
 
-      {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>}
+      {!!workspace.guilds?.length&&<div className={`ext-mobile-guild-strip lg:hidden ${menuOpen?'is-hidden':''}`} aria-label="Discord installés">
+        <strong>DISCORD</strong>
+        <div className="ext-mobile-guild-scroll">
+          {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`ext-guild-bubble ${selectedGuild?.id===g.id?'active':''}`}>
+            {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
+          </button>)}
+        </div>
+      </div>}
+
+      {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
         {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`ext-guild-bubble ${selectedGuild?.id===g.id?'active':''}`}>

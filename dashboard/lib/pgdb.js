@@ -1,4 +1,8 @@
-import { Pool } from 'pg';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const pgModule = require('pg');
+const Pool = [pgModule.Pool, pgModule.Pool?.default, pgModule.default?.Pool, pgModule.default].find(v => typeof v === 'function');
+if (!Pool) throw new Error('Pilote PostgreSQL incompatible : Pool indisponible.');
 
 let pool;
 export function getPool() {

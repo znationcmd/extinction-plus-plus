@@ -159,3 +159,27 @@ select.input option { background: #08111f; color: white; }
   will-change:background-position,background-size;
 }
 @media(prefers-reduced-motion:reduce){.dashboard-motion-bg{animation:none!important}}
+
+
+/* EXTINCTION visible mobile Discord strip v4 */
+.ext-mobile-guild-strip{display:none}
+@media(max-width:1023px){
+  .ext-mobile-guild-strip{
+    position:fixed;left:0;right:0;top:calc(var(--ext-head) + env(safe-area-inset-top,0px));z-index:61;
+    height:66px;padding:7px 10px;display:flex;align-items:center;gap:10px;
+    background:rgba(22,26,31,.97);border-bottom:1px solid rgba(167,139,250,.26);
+    box-shadow:0 8px 24px #0007;backdrop-filter:blur(16px)
+  }
+  .ext-mobile-guild-strip.is-hidden{display:none}
+  .ext-mobile-guild-strip>strong{font-size:10px;letter-spacing:.14em;color:#8f97a2;writing-mode:vertical-rl;transform:rotate(180deg)}
+  .ext-mobile-guild-scroll{display:flex;align-items:center;gap:9px;overflow-x:auto;overflow-y:hidden;min-width:0;flex:1;scrollbar-width:none}
+  .ext-mobile-guild-scroll::-webkit-scrollbar{display:none}
+  .ext-mobile-guild-strip .ext-guild-bubble{width:46px;height:46px;min-width:46px;min-height:46px;flex:0 0 46px}
+  .ext-mobile-guild-strip .ext-guild-bubble.active:before{display:none}
+  .ext-content{padding-top:calc(var(--ext-head) + 84px + env(safe-area-inset-top,0px))!important}
+}
+@media(max-width:520px){
+  .ext-mobile-guild-strip{height:62px;padding:6px 8px}
+  .ext-mobile-guild-strip .ext-guild-bubble{width:43px;height:43px;min-width:43px;min-height:43px;flex-basis:43px}
+  .ext-content{padding-top:calc(var(--ext-head) + 78px + env(safe-area-inset-top,0px))!important}
+}
