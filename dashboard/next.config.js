@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  serverExternalPackages: ['pg'],
+  serverExternalPackages: ['pg', 'pg-pool'],
   outputFileTracingRoot: path.join(__dirname),
   async headers() {
     return [{ source: '/sw.js', headers: [
