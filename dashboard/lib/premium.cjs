@@ -11,10 +11,11 @@ function bad(message,status=400){throw Object.assign(new Error(message),{status}
 function plan(product,billing){const p=PLANS[product],b=p?.[billing];if(!p||!b)bad('Offre Premium invalide.');return {...p,...b,product,billing};}
 function code(product){return `VAL-${product==='multiserver'?'MULTI':'PASS'}-${crypto.randomBytes(9).toString('base64url').toUpperCase()}`;}
 function activeRows(db,guildId,product){const now=Date.now();return (db.premiumSubscriptions||[]).filter(x=>String(x.guildId)===String(guildId)&&x.product===product&&Date.parse(x.expiresAt)>now);}
-function multiActive(db,guildId){return activeRows(db,guildId,'multiserver').sort((a,b)=>Date.parse(b.expiresAt)-Date.parse(a.expiresAt))[0]||null;}
-function battleActive(db,guildId,userId){return activeRows(db,guildId,'battlepass').filter(x=>String(x.userId)===String(userId)).sort((a,b)=>Date.parse(b.expiresAt)-Date.parse(a.expiresAt))[0]||null;}
-function serverLimit(db,guildId){return multiActive(db,guildId)?20:1;}
-function status(db,guildId,userId){return {paypalUrl:PAYPAL_URL,plans:PLANS,multiserver:multiActive(db,guildId),battlepass:battleActive(db,guildId,userId),maxServers:serverLimit(db,guildId)};}
+function lifetime(guildId,userId,product){return {id:`owner-lifetime-${product}`,guildId:String(guildId),userId:String(userId),product,startsAt:'2026-01-01T00:00:00.000Z',expiresAt:'9999-12-31T23:59:59.999Z',complimentary:true};}
+function multiActive(db,guildId,complimentary=false,userId='owner'){if(complimentary)return lifetime(guildId,userId,'multiserver');return activeRows(db,guildId,'multiserver').sort((a,b)=>Date.parse(b.expiresAt)-Date.parse(a.expiresAt))[0]||null;}
+function battleActive(db,guildId,userId,complimentary=false){if(complimentary)return lifetime(guildId,userId,'battlepass');return activeRows(db,guildId,'battlepass').filter(x=>String(x.userId)===String(userId)).sort((a,b)=>Date.parse(b.expiresAt)-Date.parse(a.expiresAt))[0]||null;}
+function serverLimit(db,guildId,complimentary=false,userId='owner'){return multiActive(db,guildId,complimentary,userId)?20:1;}
+function status(db,guildId,userId,complimentary=false){return {paypalUrl:PAYPAL_URL,plans:PLANS,multiserver:multiActive(db,guildId,complimentary,userId),battlepass:battleActive(db,guildId,userId,complimentary),maxServers:serverLimit(db,guildId,complimentary,userId),complimentary:Boolean(complimentary)};}
 function requestPayment(db,guildId,userId,product,billing){
  const p=plan(product,billing),id=crypto.randomUUID(),reference=`VAL-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
  db.premiumPaymentRequests||=[];const row={id,guildId,userId,product,billing,amountCents:p.amountCents,reference,status:'pending',createdAt:new Date().toISOString()};db.premiumPaymentRequests.push(row);return {...row,paypalUrl:PAYPAL_URL,amount:(p.amountCents/100).toFixed(2)+' €'};
@@ -39,5 +40,5 @@ function redeem(db,guildId,userId,plain){
  return {...sub,maxServers:row.product==='multiserver'?20:0};
 }
 function admin(db){return {requests:(db.premiumPaymentRequests||[]).slice().sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)),codes:(db.premiumCodes||[]).map(({codeHash,...x})=>x),subscriptions:(db.premiumSubscriptions||[]).slice().sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))};}
-function operator(userId){const ids=String(process.env.PREMIUM_ADMIN_DISCORD_IDS||'').split(',').map(x=>x.trim()).filter(Boolean);if(!ids.includes(String(userId)))bad('Administration Premium non autorisée. Configure PREMIUM_ADMIN_DISCORD_IDS.',403);return true;}
+function operator(userId,projectOwner=false){if(projectOwner)return true;const ids=String(process.env.PREMIUM_ADMIN_DISCORD_IDS||'').split(',').map(x=>x.trim()).filter(Boolean);if(!ids.includes(String(userId)))bad('Administration Premium non autorisée. Configure PREMIUM_ADMIN_DISCORD_IDS.',403);return true;}
 module.exports={PAYPAL_URL,PLANS,status,requestPayment,generateCode,approvePayment,redeem,admin,serverLimit,multiActive,battleActive,operator};
