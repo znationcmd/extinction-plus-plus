@@ -195,3 +195,29 @@ select.input option { background: #08111f; color: white; }
   .ext-module-panel.open{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
 }
 #applications{scroll-margin-top:120px}
+
+
+/* EXTINCTION small apps restored v7 */
+.ext-small-app{
+  border:1px solid rgba(167,139,250,.18);
+  box-shadow:0 8px 24px rgba(0,0,0,.20);
+  backdrop-filter:blur(10px);
+}
+@media(max-width:639px){
+  #applications .grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  .ext-small-app{
+    min-height:104px!important;
+    padding:12px 8px!important;
+    border-radius:20px!important;
+  }
+  .ext-small-app svg{
+    width:27px!important;
+    height:27px!important;
+  }
+  .ext-small-app span{
+    font-size:12px!important;
+    line-height:1.15!important;
+  }
+}

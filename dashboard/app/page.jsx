@@ -51,7 +51,7 @@ export default async function Home() {
         <div className="mb-4">
           <p className="text-xs font-black uppercase tracking-[.18em] text-purple-300/70">EXTINCTION ++ RSS</p>
           <h3 className="text-3xl font-black">Applications</h3>
-          <p className="mt-1 text-sm text-white/55">Tous les outils et modules en accès rapide, comme avant.</p>
+          <p className="mt-1 text-sm text-white/55">Les petites applications rapides comme avant, avec le menu complet en plus.</p>
         </div>
         <ModuleGrid />
       </section>
