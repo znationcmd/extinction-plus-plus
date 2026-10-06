@@ -1,32 +1,12 @@
 'use client';
 import LanguageSelector from './LanguageSelector';
 import { useLanguage } from './LanguageProvider';
-import {useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {
-  Map,
-  ShoppingCart,
-  Skull,
-  Shield,
-  Settings,
-  Palette,
-  Trophy,
-  ClipboardList,
-  Home,
-  Menu,
-  PackageCheck,
-  Siren,
-  Search,
-  BriefcaseBusiness,
-  BarChart3,
-  Coins,
-  Plug,
-  Brain,
-  Ticket,
-  Tags,
-  Cloud,
-  KeyRound,
-  Radio
+  Map,ShoppingCart,Skull,Shield,Settings,Palette,Trophy,ClipboardList,Home,Menu,
+  PackageCheck,Siren,Search,BriefcaseBusiness,BarChart3,Coins,Plug,Brain,Ticket,
+  Tags,Cloud,KeyRound,Radio
 } from 'lucide-react';
 
 export const links = [
@@ -72,98 +52,119 @@ export const links = [
   ['/select-discord', 'Changer de Discord', KeyRound],
 ];
 
+const groups = [
+  ['PARAMÈTRES',['/settings','/customization','/owner-config']],
+  ['ACCUEIL DES MEMBRES',['/whitelist','/groups','/select-discord']],
+  ['ENGAGEMENT',['/battlepass-admin','/quests-admin','/leaderboard','/economy']],
+  ['SÉCURITÉ',['/interpol','/killfeed','/alarms']],
+  ['COMMUNICATION',['/tickets','/radio','/operations']],
+  ['COMMUNAUTÉ',['/rp','/shop','/deliveries','/coupons','/stats']],
+  ['SERVEURS & OUTILS',['/servers','/nitrado','/integrations','/maps','/dayz-mods','/dayz-tools','/file-validator','/atlas-admin']],
+  ['EXPLORATEURS',['/explorer/ark','/explorer/palworld','/explorer/conan','/explorer/aniimo','/explorer/dayz']],
+  ['RÉSEAU',['/premium','/top-servers','/plugins','/ai','/install']],
+];
+
 const bottomLinks = [
   ['/', 'Accueil', Home],
   ['/servers', 'Serveurs', Map],
   ['/integrations', 'CFTools & BattleMetrics', Plug],
   ['/whitelist', 'Whitelist', Shield],
   ['/shop', 'Shop', ShoppingCart],
-  ['/killfeed', 'Killfeed', Skull],
 ];
+
+const byHref=new Map(links.map(x=>[x[0],x]));
+const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';
 
 export default function Shell({ children }) {
   const { t } = useLanguage();
   const [menuOpen,setMenuOpen]=useState(false);
   const [menuQuery,setMenuQuery]=useState('');
-  const visibleLinks=links.filter(([,label])=>t(label).toLowerCase().includes(menuQuery.trim().toLowerCase()));
+  const [workspace,setWorkspace]=useState({guilds:[],selectedGuildId:null});
+
+  useEffect(()=>{
+    let cancelled=false;
+    fetch('/api/workspace',{cache:'no-store'}).then(async r=>{
+      const body=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(body.error||'workspace');
+      if(!cancelled)setWorkspace(body);
+    }).catch(()=>{});
+    return()=>{cancelled=true};
+  },[]);
+
+  const selectedGuild=workspace.guilds?.find(g=>g.id===workspace.selectedGuildId)||workspace.guilds?.[0]||null;
+  const visibleGroups=useMemo(()=>{
+    const q=menuQuery.trim().toLowerCase();
+    return groups.map(([title,hrefs])=>{
+      const items=hrefs.map(h=>byHref.get(h)).filter(Boolean).filter(([,label])=>!q||t(label).toLowerCase().includes(q));
+      return [title,items];
+    }).filter(([,items])=>items.length);
+  },[menuQuery,t]);
+
+  async function selectGuild(guildId){
+    try{
+      const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guildId})});
+      if(!r.ok)return;
+      location.reload();
+    }catch{}
+  }
+
   return (
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:block">
-        <Link href="/" prefetch={false} className="mb-8 block">
+        <Link href="/" prefetch={false} className="mb-6 block">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
           <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
-
         <div className="mb-5"><LanguageSelector /></div>
-        <nav className="space-y-2 pb-8">
-          {links.map(([href, label, Icon]) => (
-            <Link
-              key={href}
-              href={href}
-              prefetch={false}
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 hover:bg-white/10 active:bg-red-600"
-            >
-              <Icon size={20} />
-              {t(label)}
-            </Link>
-          ))}
+        <nav className="pb-8">
+          {groups.map(([title,hrefs])=>{
+            const items=hrefs.map(h=>byHref.get(h)).filter(Boolean);
+            return <section key={title} className="mb-5">
+              <h3 className="mb-2 px-3 text-[11px] font-black tracking-[.13em] text-white/35">{title}</h3>
+              {items.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/75 hover:bg-white/10 active:bg-red-600"><Icon size={20}/>{t(label)}</Link>)}
+            </section>
+          })}
         </nav>
       </aside>
 
-      <header className="mobile-header sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-black/95 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <Link href="/" prefetch={false} className="flex items-center gap-3">
-          <img src="/extinction-logo.png" alt="Extinction++ RSS" className="h-12 w-12 rounded-xl object-cover" />
-          <div>
-            <p className="text-xl font-black text-purple-400">Extinction++ RSS</p>
-            <p className="text-sm text-white/50">Real Survival System</p>
-          </div>
-        </Link>
-        <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} aria-expanded={menuOpen} aria-controls="mobile-menu" onClick={()=>setMenuOpen(open=>!open)} className="p-2 text-white/80"><Menu size={32}/></button>
+      <header className="ext-draft-header lg:hidden">
+        <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
+        <img src="/extinction-logo.png" alt="EXTINCTION++ RSS"/>
+        <button type="button" aria-label="Modules" className="ext-grid-button" onClick={()=>setMenuOpen(v=>!v)}><i/><i/><i/><i/></button>
       </header>
 
-      <div className="border-b border-white/10 bg-[#08111f] px-4 py-3 lg:hidden"><LanguageSelector /></div>
-      {menuOpen&&<div className="fixed inset-0 z-[58] bg-black/70 lg:hidden" onClick={()=>setMenuOpen(false)} />}
-      <aside id="mobile-menu" aria-label={t('Navigation mobile')} className={`${menuOpen?'translate-x-0':'-translate-x-full'} fixed bottom-0 left-0 top-0 z-[60] flex w-[min(92vw,380px)] flex-col border-r border-white/10 bg-[#171d24]/[.99] shadow-2xl backdrop-blur-xl transition-transform duration-200 lg:hidden`}>
-        <div className="border-b border-white/10 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <img src="/extinction-logo.png" alt="" className="h-11 w-11 rounded-xl object-cover" />
-              <div><p className="font-black text-purple-300">EXTINCTION++ RSS</p><p className="text-xs text-white/45">Modules du Discord sélectionné</p></div>
-            </div>
-            <button type="button" onClick={()=>setMenuOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-xl">×</button>
+      {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>}
+
+      <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
+        {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`ext-guild-bubble ${selectedGuild?.id===g.id?'active':''}`}>
+          {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
+        </button>)}
+      </div>
+
+      <aside className={`ext-module-panel lg:hidden ${menuOpen?'open':''}`}>
+        <div className="ext-module-top">
+          <div className="ext-server-context">
+            {selectedGuild?.icon?<img src={selectedGuild.icon} alt=""/>:<div className="ext-server-fallback">{initials(selectedGuild?.name||'EX')}</div>}
+            <div><strong>{selectedGuild?.name||'EXTINCTION++ RSS'}</strong><small>{selectedGuild?'Bot installé':'Discord sélectionné'}</small></div>
           </div>
-          <div className="mt-4"><LanguageSelector /></div>
-          <label className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 py-3">
-            <Search size={20} className="text-white/45"/><input value={menuQuery} onChange={e=>setMenuQuery(e.target.value)} placeholder={t('Rechercher un module')} className="w-full bg-transparent text-white outline-none placeholder:text-white/35"/>
-          </label>
+          <label className="ext-module-search"><Search size={21}/><input value={menuQuery} onChange={e=>setMenuQuery(e.target.value)} placeholder={t('Rechercher un module')}/></label>
         </div>
-        <nav className="min-h-0 flex-1 overflow-y-auto p-4">
-          {visibleLinks.length?visibleLinks.map(([href,label,Icon])=>(
-            <Link key={href} href={href} prefetch={false} onClick={()=>setMenuOpen(false)} className="mb-1 flex min-h-[48px] items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-white/80 hover:bg-white/10 active:bg-purple-700">
-              <Icon size={21}/><span>{t(label)}</span>
-            </Link>
-          )):<p className="rounded-xl bg-white/5 p-4 text-sm text-white/55">{t('Aucun module trouvé')}</p>}
+        <nav className="ext-module-scroll">
+          {visibleGroups.map(([title,items])=><section key={title} className="ext-module-group">
+            <h3>{title}<span>⌄</span></h3>
+            {items.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} onClick={()=>setMenuOpen(false)}><Icon size={21}/><span>{t(label)}</span></Link>)}
+          </section>)}
+          {!visibleGroups.length&&<p className="p-4 text-sm text-white/45">{t('Aucun module trouvé')}</p>}
         </nav>
+        <div className="ext-module-footer"><LanguageSelector/></div>
       </aside>
 
       <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-1 border-t border-white/10 bg-black/95 p-2 backdrop-blur-xl lg:hidden">
-        {bottomLinks.map(([href, label, Icon]) => (
-          <Link
-            key={href}
-            href={href}
-            prefetch={false}
-            className="flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-2 text-[11px] active:bg-red-600"
-          >
-            <Icon size={22} />
-            <span>{t(label)}</span>
-          </Link>
-        ))}
+        {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-2 text-[11px] active:bg-red-600"><Icon size={22}/><span>{t(label)}</span></Link>)}
       </nav>
 
-      <section className="px-4 py-5 lg:ml-72 lg:p-10">
-        {children}
-      </section>
+      <section className="ext-content px-4 py-5 lg:ml-72 lg:p-10">{children}</section>
     </main>
   );
 }
