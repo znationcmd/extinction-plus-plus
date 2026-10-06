@@ -146,3 +146,16 @@ select.input option { background: #08111f; color: white; }
 @media(max-width:520px){
   .ext-header-actions>button{width:47px;height:47px;min-width:47px}
 }
+
+
+/* Extinction existing background motion v3 */
+@keyframes extinctionExistingBackgroundMotion{
+  0%{background-position:20% 15%,80% 85%,50% 50%;background-size:120% 120%,125% 125%,100% 100%}
+  50%{background-position:28% 22%,72% 76%,50% 50%;background-size:128% 128%,132% 132%,104% 104%}
+  100%{background-position:20% 15%,80% 85%,50% 50%;background-size:120% 120%,125% 125%,100% 100%}
+}
+.dashboard-motion-bg{
+  animation:extinctionExistingBackgroundMotion 28s ease-in-out infinite!important;
+  will-change:background-position,background-size;
+}
+@media(prefers-reduced-motion:reduce){.dashboard-motion-bg{animation:none!important}}
