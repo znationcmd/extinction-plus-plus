@@ -172,6 +172,9 @@ export default function Shell({ children }) {
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
           <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
+          <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-full border border-purple-400/35 bg-purple-500/10 px-3 py-1.5 text-[11px] font-black tracking-wide text-purple-200 hover:bg-purple-500/20">
+            <img src="https://cmd-top-serveur-production.up.railway.app/cmd-official.svg" alt="CMD" className="h-5 w-5"/> CMD OFFICIEL
+          </a>
         </Link>
         <div className="mb-3"><LanguageSelector /></div>
         <button type="button" onClick={refreshApp} disabled={refreshing} className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/30 bg-white/5 px-3 py-3 text-sm font-bold text-white/80 hover:bg-white/10 disabled:opacity-50">
@@ -191,6 +194,7 @@ export default function Shell({ children }) {
       <header className="ext-draft-header lg:hidden">
         <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
         <img src="/extinction-logo.png" alt="EXTINCTION++ RSS"/>
+        <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" title="CMD Officiel" className="grid h-8 w-8 place-items-center rounded-full border border-purple-400/35 bg-purple-500/10"><img src="https://cmd-top-serveur-production.up.railway.app/cmd-official.svg" alt="CMD" className="h-6 w-6"/></a>
         <div className="ext-header-actions">
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
             <RefreshCw size={29} className={refreshing?'animate-spin':''}/>
