@@ -27,8 +27,10 @@ export default function Select(){
     </section>
     <section className="space-y-3">
       <h2 className="text-xl font-bold">{t('Inviter le bot sur un de tes Discord')}</h2>
-      {available.map(g=><a key={g.id} className="btn block w-full" href={g.inviteUrl||'#'} target="_blank" rel="noopener noreferrer">
-        ＋ {g.name} <span className="opacity-70">— {t('Inviter EXTINCTION ++ RSS')}</span>
+      {available.map(g=><a key={g.id} className="btn flex w-full items-center gap-3 opacity-50 grayscale-[0.65] hover:opacity-85 hover:grayscale-0 transition" href={g.inviteUrl||'#'} target="_blank" rel="noopener noreferrer">
+        {g.icon?<img src={g.icon} alt="" className="h-10 w-10 rounded-full opacity-80"/>:<span className="h-10 w-10 rounded-full bg-white/10 grid place-items-center">{g.name?.[0]||'?'}</span>}
+        <span className="flex-1 text-left"><strong>{g.name}</strong><span className="block text-sm opacity-70">Bot non installé</span></span>
+        <span>＋ {t('Inviter EXTINCTION ++ RSS')}</span>
       </a>)}
       {!available.length&&!error&&<p className="text-white/60">{t('Tous les Discord que tu peux gérer ont déjà le bot, ou aucun autre Discord n’est disponible.')}</p>}
     </section>
