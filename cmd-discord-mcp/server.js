@@ -118,13 +118,20 @@ function parseCookies(req){
   return out;
 }
 function dashboardAuth(req){
-  const raw=parseCookies(req).cmd_discord_dashboard;if(!raw)return null;
+  const cookies=parseCookies(req);
+  const raw=cookies.cmd_sphere_session||cookies.cmd_discord_dashboard;
+  if(!raw)return null;
   try{const d=verifySigned(raw);return d.typ==="dashboard_session"&&d.user?.id&&Array.isArray(d.guildIds)?d:null}catch{return null}
 }
-function dashboardCookie(value,maxAge=7*24*3600){
-  return "cmd_discord_dashboard="+encodeURIComponent(value)+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
+function dashboardCookie(value,maxAge=10*365*24*3600){
+  return "cmd_sphere_session="+encodeURIComponent(value)+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge+"; Expires="+new Date(Date.now()+maxAge*1000).toUTCString();
 }
-function clearDashboardCookie(){return "cmd_discord_dashboard=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}
+function clearDashboardCookies(){
+  return [
+    "cmd_sphere_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "cmd_discord_dashboard=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+  ];
+}
 function html(res,body,status=200,headers={}){
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
@@ -577,7 +584,9 @@ const httpServer=createServer(async(req,res)=>{
     const url=new URL(req.url,baseUrl);
 
     if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/dashboard")){
-      const auth=dashboardAuth(req);html(res,dashboardPage(auth));return;
+      const auth=dashboardAuth(req);
+      if(url.pathname==="/"&&auth){redirect(res,baseUrl+"/dashboard");return}
+      html(res,dashboardPage(auth));return;
     }
     if(req.method==="GET"&&url.pathname==="/profile"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/profile"));return}
@@ -597,7 +606,7 @@ const httpServer=createServer(async(req,res)=>{
       const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
     }
     if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
-      html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookie()});return;
+      html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookies()});return;
     }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
@@ -704,8 +713,8 @@ const httpServer=createServer(async(req,res)=>{
         const tx=verifySigned(url.searchParams.get("state"));
         const identity=verifyDiscordBridge(url.searchParams.get("token"));
         if(tx.typ==="dashboard_tx"){
-          const session=signPayload({typ:"dashboard_session",exp:Date.now()+7*24*3600*1000,user:identity.user,guildIds:identity.guildIds,guilds:identity.guilds||[]});
-          res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store"});res.end();return;
+          const session=signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user:identity.user,guildIds:identity.guildIds,guilds:identity.guilds||[]});
+          res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0"});res.end();return;
         }
         if(tx.typ!=="oauth_tx")throw new Error("Transaction OAuth invalide.");
         const code=signPayload({typ:"auth_code",exp:Date.now()+90*1000,clientId:tx.clientId,redirectUri:tx.redirectUri,codeChallenge:tx.codeChallenge,scope:tx.scope,resource:tx.resource,user:identity.user,guildIds:identity.guildIds});
