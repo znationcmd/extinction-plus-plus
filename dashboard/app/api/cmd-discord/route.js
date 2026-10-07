@@ -1,5 +1,4 @@
 import crypto from 'node:crypto';
-import { PermissionsBitField } from 'discord.js';
 
 export const dynamic='force-dynamic';
 const types={text:0,voice:2,category:4,announcement:5,forum:15};
@@ -30,7 +29,14 @@ async function structure(guildId){
   const highest=(member?.roles||[]).map(id=>roleMap.get(String(id))?.position??0).reduce((a,b)=>Math.max(a,b),0);
   return {id:String(guildId),name:(await guilds()).find(g=>g.id===String(guildId))?.name||String(guildId),bot:{id:me.id,name:me.username,highestRolePosition:highest},channels:channels.map(ch=>({id:ch.id,name:ch.name,type:typeLabel(ch.type),typeId:ch.type,parentId:ch.parent_id||null,position:ch.position??0,topic:ch.topic||null})).sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name,'fr')),roles:roles.map(r=>({id:r.id,name:r.name,color:'#'+Number(r.color||0).toString(16).padStart(6,'0'),position:r.position,hoist:Boolean(r.hoist),mentionable:Boolean(r.mentionable),managed:Boolean(r.managed),permissions:String(r.permissions||'0'),everyone:String(r.id)===String(guildId)})).sort((a,b)=>b.position-a.position)};
 }
-const bits=list=>PermissionsBitField.resolve(Array.isArray(list)?list:[]).toString();
+const permissionBits={
+  CreateInstantInvite:0n,KickMembers:1n,BanMembers:2n,Administrator:3n,ManageChannels:4n,ManageGuild:5n,AddReactions:6n,ViewAuditLog:7n,PrioritySpeaker:8n,Stream:9n,ViewChannel:10n,SendMessages:11n,SendTTSMessages:12n,ManageMessages:13n,EmbedLinks:14n,AttachFiles:15n,ReadMessageHistory:16n,MentionEveryone:17n,UseExternalEmojis:18n,ViewGuildInsights:19n,Connect:20n,Speak:21n,MuteMembers:22n,DeafenMembers:23n,MoveMembers:24n,UseVAD:25n,ChangeNickname:26n,ManageNicknames:27n,ManageRoles:28n,ManageWebhooks:29n,ManageGuildExpressions:30n,UseApplicationCommands:31n,RequestToSpeak:32n,ManageEvents:33n,ManageThreads:34n,CreatePublicThreads:35n,CreatePrivateThreads:36n,UseExternalStickers:37n,SendMessagesInThreads:38n,UseEmbeddedActivities:39n,ModerateMembers:40n,UseSoundboard:42n,CreateGuildExpressions:43n,CreateEvents:44n,UseExternalSounds:45n,SendVoiceMessages:46n
+};
+const bits=list=>{
+  let out=0n;
+  for(const name of Array.isArray(list)?list:[]){const bit=permissionBits[name];if(bit===undefined)throw Object.assign(new Error('Permission Discord inconnue: '+name),{status:400});out|=(1n<<bit)}
+  return out.toString();
+};
 async function action(body){
   const g=String(body.guildId||'');if(!/^\d{15,22}$/.test(g))throw Object.assign(new Error('Discord invalide'),{status:400});
   const a=String(body.action||'');
