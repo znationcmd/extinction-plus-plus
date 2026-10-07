@@ -57,6 +57,26 @@ async function channelMessages(guildId,channelId,{before,limit=100}={}){
   return {channel:{id:String(ch.id),name:ch.name||String(ch.id),type:typeLabel(ch.type),topic:ch.topic||null,parentId:ch.parent_id||null},messages:(rows||[]).map(serializeMessage),hasMore:Array.isArray(rows)&&rows.length===n,nextBefore:Array.isArray(rows)&&rows.length?String(rows[rows.length-1].id):null};
 }
 
+
+function webhookAvatarUrl(w){
+  if(!w?.id||!w?.avatar)return null;
+  return 'https://cdn.discordapp.com/avatars/'+w.id+'/'+w.avatar+'.webp?size=128';
+}
+function serializeWebhook(w){
+  const id=String(w.id||''),tokenValue=typeof w.token==='string'&&w.token?w.token:null;
+  return {
+    id,guildId:w.guild_id?String(w.guild_id):null,channelId:w.channel_id?String(w.channel_id):null,
+    name:String(w.name||'Webhook'),avatar:webhookAvatarUrl(w),type:Number(w.type||1),
+    applicationId:w.application_id?String(w.application_id):null,
+    creator:w.user?{id:String(w.user.id||''),username:String(w.user.global_name||w.user.username||'Discord'),avatar:avatarUrl(w.user)}:null,
+    url:tokenValue?('https://discord.com/api/webhooks/'+id+'/'+tokenValue):null,hasToken:Boolean(tokenValue)
+  };
+}
+async function guildWebhooks(guildId){
+  if(!/^\d{15,22}$/.test(String(guildId||'')))throw Object.assign(new Error('Discord invalide'),{status:400});
+  const rows=await discord('/guilds/'+guildId+'/webhooks');
+  return {guildId:String(guildId),webhooks:(rows||[]).map(serializeWebhook)};
+}
 async function structure(guildId){
   if(!/^\d{15,22}$/.test(String(guildId||'')))throw Object.assign(new Error('Discord invalide'),{status:400});
   const [channels,roles,me]=await Promise.all([discord('/guilds/'+guildId+'/channels'),discord('/guilds/'+guildId+'/roles'),discord('/users/@me')]);
@@ -91,6 +111,23 @@ async function action(body){
     if(body.replyTo&&/^\d{15,22}$/.test(String(body.replyTo)))payload.message_reference={message_id:String(body.replyTo),channel_id:String(body.channelId),guild_id:g,fail_if_not_exists:false};
     const m=await discord('/channels/'+body.channelId+'/messages',{method:'POST',body:payload});return {ok:true,message:serializeMessage(m),sentAsBot:true};
   }
+  if(a==='create_webhook'){
+    const channelId=String(body.channelId||'');if(!/^\d{15,22}$/.test(channelId))throw Object.assign(new Error('Salon invalide'),{status:400});
+    const ch=await discord('/channels/'+channelId);if(String(ch.guild_id||'')!==g)throw Object.assign(new Error("Ce salon n'appartient pas à ce Discord"),{status:403});
+    const name=String(body.name||'CMD Webhook').trim().slice(0,80);if(name.length<1)throw Object.assign(new Error('Nom du webhook requis'),{status:400});
+    const w=await discord('/channels/'+channelId+'/webhooks',{method:'POST',body:{name}});return {ok:true,webhook:serializeWebhook(w)};
+  }
+  if(a==='update_webhook'){
+    const id=String(body.webhookId||'');if(!/^\d{15,22}$/.test(id))throw Object.assign(new Error('Webhook invalide'),{status:400});
+    const current=await discord('/webhooks/'+id);if(String(current.guild_id||'')!==g)throw Object.assign(new Error("Ce webhook n'appartient pas à ce Discord"),{status:403});
+    const p={};if(body.name!==undefined)p.name=String(body.name||'Webhook').trim().slice(0,80);if(body.channelId!==undefined)p.channel_id=String(body.channelId||'');
+    const w=await discord('/webhooks/'+id,{method:'PATCH',body:p});return {ok:true,webhook:serializeWebhook(w)};
+  }
+  if(a==='delete_webhook'){
+    const id=String(body.webhookId||'');if(!/^\d{15,22}$/.test(id))throw Object.assign(new Error('Webhook invalide'),{status:400});
+    const current=await discord('/webhooks/'+id);if(String(current.guild_id||'')!==g)throw Object.assign(new Error("Ce webhook n'appartient pas à ce Discord"),{status:403});
+    await discord('/webhooks/'+id,{method:'DELETE'});return {ok:true,deleted:{id}};
+  }
   throw Object.assign(new Error('Action MCP inconnue'),{status:400});
 }
 function fail(e){return Response.json({error:e.message,details:e.discord||undefined},{status:e.status||500,headers:{'Cache-Control':'no-store'}})}
@@ -101,6 +138,7 @@ export async function GET(req){
     if(op==='guilds')return Response.json(await guilds(),{headers:{'Cache-Control':'no-store'}});
     if(op==='structure')return Response.json(await structure(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
     if(op==='messages')return Response.json(await channelMessages(u.searchParams.get('guildId'),u.searchParams.get('channelId'),{before:u.searchParams.get('before')||'',limit:u.searchParams.get('limit')||100}),{headers:{'Cache-Control':'no-store'}});
+    if(op==='webhooks')return Response.json(await guildWebhooks(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
     throw Object.assign(new Error('Opération inconnue'),{status:400});
   }catch(e){return fail(e)}
 }
