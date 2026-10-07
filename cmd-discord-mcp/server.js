@@ -747,6 +747,10 @@ async function initNativeDb(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await pool.query('ALTER TABLE cmd_premium_subscriptions ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ');
+  await pool.query('ALTER TABLE cmd_premium_subscriptions ADD COLUMN IF NOT EXISTS payment_reference TEXT');
+  await pool.query('ALTER TABLE cmd_premium_subscriptions ADD COLUMN IF NOT EXISTS payment_note TEXT');
+
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_boosts(
     id UUID PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -1618,6 +1622,8 @@ async function setServerFolderCollapsed(auth,id,collapsed){
 async function listNativeGuilds(auth){
   const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
     (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count,
+    (SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE) AS boost_count,
+    (SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.user_id=$1 AND sb.active=TRUE) AS my_boost_count,
     (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
       LEFT JOIN cmd_native_channel_reads rd ON rd.user_id=$1 AND rd.channel_id=msg.channel_id
       WHERE msg.guild_id=g.id AND msg.sender_user_id<>$1 AND msg.created_at>COALESCE(rd.last_read_at,'1970-01-01'::timestamptz)) AS unread_count
