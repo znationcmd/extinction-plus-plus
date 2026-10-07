@@ -560,6 +560,45 @@ async function initNativeDb(){
     PRIMARY KEY(user_id,item_key)
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_layout_user_pos_idx ON cmd_server_layout(user_id,position)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_discord_mirror_jobs(
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    auth_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status TEXT NOT NULL DEFAULT 'queued',
+    progress JSONB NOT NULL DEFAULT '{}'::jsonb,
+    summary JSONB NOT NULL DEFAULT '{}'::jsonb,
+    error TEXT,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_discord_mirror_jobs_user_idx ON cmd_discord_mirror_jobs(user_id,started_at DESC)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_discord_mirror_profile(
+    user_id TEXT PRIMARY KEY,
+    discord_user_id TEXT,
+    profile JSONB NOT NULL DEFAULT '{}'::jsonb,
+    guilds JSONB NOT NULL DEFAULT '[]'::jsonb,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_discord_mirror_guilds(
+    user_id TEXT NOT NULL,
+    guild_id TEXT NOT NULL,
+    bot TEXT,
+    snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,guild_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_discord_mirror_messages(
+    user_id TEXT NOT NULL,
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    message_timestamp TIMESTAMPTZ,
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,message_id)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_discord_mirror_messages_channel_idx ON cmd_discord_mirror_messages(user_id,guild_id,channel_id,message_timestamp)');
   await initConnections(pool);
 
 }
@@ -1338,11 +1377,13 @@ async function backend(bot,kind,{guildId,channelId,before,limit,body}={}){
     else if(kind==="structure")url+="?op=structure&guildId="+encodeURIComponent(guildId);
     else if(kind==="messages"){url+="?op=messages&guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
     else if(kind==="webhooks")url+="?op=webhooks&guildId="+encodeURIComponent(guildId);
+    else if(kind==="extras")url+="?op=extras&guildId="+encodeURIComponent(guildId);
   }else{
     if(kind==="guilds")url+="/guilds";
     else if(kind==="structure")url+="/structure?guildId="+encodeURIComponent(guildId);
     else if(kind==="messages"){url+="/messages?guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
     else if(kind==="webhooks")url+="/webhooks?guildId="+encodeURIComponent(guildId);
+    else if(kind==="extras")url+="/extras?guildId="+encodeURIComponent(guildId);
     else if(kind==="action")url+="/action";
   }
   let lastError=null;
