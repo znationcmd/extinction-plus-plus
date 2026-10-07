@@ -319,7 +319,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function updateReplyBar(){const b=qs('#replyBar');if(!b)return;b.classList.toggle('on',Boolean(CHAT.replyTo));if(!CHAT.replyTo)qs('#replyText').textContent=''}
   async function sendDiscordMessage(ev){
     ev.preventDefault();const input=qs('#channelInput'),content=String(input.value||'').trim();if(!content||!CHAT.open)return;const old=input.value;input.value='';qs('#channelSend').disabled=true;
-    try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify({action:'send_message',guildId:CHAT.guildId,bot:CHAT.bot,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined})});CHAT.replyTo=null;updateReplyBar();await refreshDiscordMessages()}catch(e){input.value=old;toast(e.message,false)}finally{qs('#channelSend').disabled=false;input.focus()}
+    try{const out=await api('/api/dashboard/action',{method:'POST',body:JSON.stringify({action:'send_message',guildId:CHAT.guildId,bot:CHAT.bot,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined})});if(out.bot)CHAT.bot=out.bot;CHAT.replyTo=null;updateReplyBar();toast('Message envoyé via '+(out.botName||'CMD'));await refreshDiscordMessages()}catch(e){input.value=old;toast(e.message,false)}finally{qs('#channelSend').disabled=false;input.focus()}
   }
   async function submit(e,action){e.preventDefault();const f=new FormData(e.currentTarget),body={action,guildId:S.guild.id,bot:S.bot};for(const [k,v] of f)body[k]=v;if(action==='create_role'){body.hoist=e.currentTarget.hoist.checked;body.mentionable=e.currentTarget.mentionable.checked}try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify(body)});toast('Modification appliquée sur Discord');e.currentTarget.reset();await loadStructure()}catch(x){toast(x.message,false)}}
   async function refreshEverything(){
@@ -1451,6 +1451,29 @@ async function resolveBot(auth,guildId,preferred){
   return g.availableBots[0].id;
 }
 
+
+async function dashboardSendMessage(auth,raw){
+  const guildId=String(raw.guildId||"");requireGuild(auth,guildId);
+  const all=await installedEverywhere(auth);
+  const guild=all.guilds.find(g=>String(g.id)===guildId);
+  if(!guild)throw new Error("Aucun bot CMD n'est installé sur ce Discord.");
+  const available=(guild.availableBots||[]).map(x=>x.id);
+  const order=[...new Set([raw.bot,...available].filter(Boolean))];
+  const errors=[];
+  for(const bot of order){
+    try{
+      const rows=await backend(bot,"guilds");
+      if(!Array.isArray(rows)||!rows.some(g=>String(g.id)===guildId))continue;
+      const out=await backend(bot,"action",{body:{...raw,bot:undefined}});
+      return {bot,botName:bots[bot].label,...out};
+    }catch(e){
+      errors.push({bot,botName:bots[bot]?.label||bot,error:String(e.message||e)});
+    }
+  }
+  const detail=errors.map(x=>x.botName+" : "+x.error).join(" · ");
+  throw new Error("Impossible d'envoyer dans ce salon avec les bots CMD disponibles. "+(detail||"Vérifie Voir le salon + Envoyer des messages pour au moins un bot."));
+}
+
 async function dashboardWebhooks(auth,guildId,preferred){
   requireGuild(auth,guildId);
   const all=await installedEverywhere(auth);
@@ -2000,7 +2023,14 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
-      try{const raw=await readFormBodyJson(req),guildId=String(raw.guildId||"");requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,raw.bot);const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions","send_message"]);if(!allowed.has(String(raw.action||"")))throw new Error("Action non autorisée.");const out=await backend(chosen,"action",{body:raw});sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...out})}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{
+        const raw=await readFormBodyJson(req),guildId=String(raw.guildId||"");requireGuild(auth,guildId);
+        const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions","send_message"]);
+        if(!allowed.has(String(raw.action||"")))throw new Error("Action non autorisée.");
+        if(String(raw.action)==="send_message"){sendJson(res,200,await dashboardSendMessage(auth,raw));return}
+        const chosen=await resolveBot(auth,guildId,raw.bot),out=await backend(chosen,"action",{body:raw});
+        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...out});
+      }catch(e){sendJson(res,400,{error:e.message})}return;
     }
 
     if(req.method==="GET"&&url.pathname.startsWith("/invite/")){
