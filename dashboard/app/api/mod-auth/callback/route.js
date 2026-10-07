@@ -20,7 +20,9 @@ export async function GET(req) {
       const all=await discord('/users/@me/guilds',token.access_token);
       const canManage=g=>{if(g?.owner)return true;try{const p=BigInt(g?.permissions||'0');return Boolean((p&8n)||(p&32n))}catch{return false}};
       const guilds=all.filter(canManage).slice(0,50).map(g=>({id:String(g.id),name:String(g.name||g.id).slice(0,100),icon:g.icon||null,owner:Boolean(g.owner),permissions:String(g.permissions||'0')}));
-      const payload=Buffer.from(JSON.stringify({v:1,exp:Date.now()+5*60*1000,user:{id:String(user.id),name:String(user.username||'Discord').slice(0,100)},guilds})).toString('base64url');
+      const avatar=user.avatar?`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${String(user.avatar).startsWith('a_')?'gif':'png'}?size=256`:null;
+      const banner=user.banner?`https://cdn.discordapp.com/banners/${user.id}/${user.banner}.${String(user.banner).startsWith('a_')?'gif':'png'}?size=1024`:null;
+      const payload=Buffer.from(JSON.stringify({v:1,exp:Date.now()+5*60*1000,user:{id:String(user.id),name:String(user.username||'Discord').slice(0,100),displayName:String(user.global_name||user.username||'Discord').slice(0,100),avatar, banner, accentColor:user.accent_color??null},guilds})).toString('base64url');
       const sig=crypto.createHmac('sha256',secret).update(payload).digest('base64url');
       const target=new URL('/auth/discord-bridge',saved.bridgeTarget);target.searchParams.set('token',payload+'.'+sig);if(saved.bridgeState)target.searchParams.set('state',saved.bridgeState);
       return NextResponse.redirect(target);
