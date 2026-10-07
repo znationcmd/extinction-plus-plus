@@ -173,13 +173,13 @@ function dashboardPage(auth){
   async function submit(e,action){e.preventDefault();const f=new FormData(e.currentTarget),body={action,guildId:S.guild.id,bot:S.bot};for(const [k,v] of f)body[k]=v;if(action==='create_role'){body.hoist=e.currentTarget.hoist.checked;body.mentionable=e.currentTarget.mentionable.checked}try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify(body)});toast('Modification appliquée sur Discord');e.currentTarget.reset();await loadStructure()}catch(x){toast(x.message,false)}}
   function openAdd(view='menu'){qs('#addModal').classList.add('on');renderAdd(view)}
   function closeAdd(){qs('#addModal').classList.remove('on')}
-  function renderAdd(view){const box=qs('#addBody');if(view==='menu'){box.innerHTML='<h2>Ajouter un serveur</h2><p class="muted">Comme sur une application communautaire classique.</p><div class="add-grid"><button class="btn add-choice" onclick="renderAdd(\'create\')"><b>＋ Créer un serveur</b><br><small>Nouvel espace CMD Sphere</small></button><button class="btn add-choice" onclick="renderAdd(\'join\')"><b>🔗 J’ai une invitation</b><br><small>Rejoindre par lien ou code</small></button><button class="btn add-choice" onclick="renderAdd(\'discover\')"><b>◎ Découvrir</b><br><small>Voir les serveurs publics</small></button><button class="btn add-choice" onclick="renderAdd(\'import\')"><b>⬇ Importer Discord</b><br><small>Copier salons, rôles et permissions</small></button></div>';return}if(view==='create'){box.innerHTML='<h2>Créer un serveur CMD Sphere</h2><form id="createNative"><p><input name="name" required maxlength="100" placeholder="Nom du serveur"></p><label><input type="checkbox" name="isPublic" style="width:auto"> Visible dans Découvrir</label><p><button class="btn primary">Créer</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#createNative').onsubmit=createNative;return}if(view==='join'){box.innerHTML='<h2>Rejoindre un serveur</h2><form id="joinNative"><p><input name="invite" required placeholder="Lien ou code d’invitation CMD Sphere"></p><p><button class="btn primary">Rejoindre</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#joinNative').onsubmit=joinNative;return}if(view==='discover'){box.innerHTML='<h2>Découvrir</h2><div id="discoverNative"><p class="muted">Chargement…</p></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadDiscover();return}if(view==='import'){box.innerHTML='<h2>Importer depuis Discord</h2><p class="muted">Seuls les Discord avec un bot CMD peuvent être copiés automatiquement.</p><button class="btn primary" onclick="importAll()">Importer tous ceux disponibles</button><div id="importList"></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadImports();return}}
+  function renderAdd(view){const box=qs('#addBody');if(view==='menu'){box.innerHTML='<h2>Ajouter un serveur</h2><p class="muted">Comme sur une application communautaire classique.</p><div class="add-grid"><button class="btn add-choice" onclick="renderAdd(\'create\')"><b>＋ Créer un serveur</b><br><small>Nouvel espace CMD Sphere</small></button><button class="btn add-choice" onclick="renderAdd(\'join\')"><b>🔗 J’ai une invitation</b><br><small>Rejoindre par lien ou code</small></button><button class="btn add-choice" onclick="renderAdd(\'discover\')"><b>◎ Découvrir</b><br><small>Voir les serveurs publics</small></button><button class="btn add-choice" onclick="renderAdd(\'import\')"><b>⬇ Importer Discord</b><br><small>Copier salons, rôles et permissions</small></button></div>';return}if(view==='create'){box.innerHTML='<h2>Créer un serveur CMD Sphere</h2><form id="createNative"><p><input name="name" required maxlength="100" placeholder="Nom du serveur"></p><label><input type="checkbox" name="isPublic" style="width:auto"> Visible dans Découvrir</label><p><button class="btn primary">Créer</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#createNative').onsubmit=createNative;return}if(view==='join'){box.innerHTML='<h2>Rejoindre un serveur</h2><form id="joinNative"><p><input name="invite" required placeholder="Lien ou code d’invitation CMD Sphere"></p><p><button class="btn primary">Rejoindre</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#joinNative').onsubmit=joinNative;return}if(view==='discover'){box.innerHTML='<h2>Découvrir</h2><div id="discoverNative"><p class="muted">Chargement…</p></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadDiscover();return}if(view==='import'){box.innerHTML='<h2>Importer depuis Discord</h2><p class="muted">Tous les Discord dont tu es propriétaire sont importés. Avec un bot CMD : structure complète. Sans bot : nom + icône, structure à synchroniser plus tard.</p><button class="btn primary" onclick="importAll()">Importer tous mes Discord créés</button><div id="importList"></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadImports();return}}
   async function createNative(e){e.preventDefault();const f=new FormData(e.currentTarget);try{await api('/api/native/guilds',{method:'POST',body:JSON.stringify({name:f.get('name'),isPublic:f.get('isPublic')==='on'})});closeAdd();await loadGuilds();toast('Serveur CMD Sphere créé')}catch(x){toast(x.message,false)}}
   function joinNative(e){e.preventDefault();let v=String(new FormData(e.currentTarget).get('invite')||'').trim();try{if(v.includes('/invite/'))v=new URL(v).pathname.split('/').filter(Boolean).pop()}catch{}if(v)location.href='/invite/'+encodeURIComponent(v)}
   async function loadDiscover(){try{const d=await api('/api/native/discover');qs('#discoverNative').innerHTML=(d.guilds||[]).map(g=>'<div class="native-box"><strong>'+esc(g.name)+'</strong><small>'+Number(g.member_count||0)+' membre(s)</small><p><a class="btn primary" href="'+esc(g.inviteUrl)+'">Rejoindre</a></p></div>').join('')||'<p class="muted">Aucun serveur public.</p>'}catch(x){toast(x.message,false)}}
   async function loadImports(){try{const d=await api('/api/dashboard/guilds');qs('#importList').innerHTML=(d.guilds||[]).map(g=>'<div class="native-box"><strong>'+esc(g.name)+'</strong><small>'+(g.installed?'Bot CMD disponible':'Aucun bot CMD installé')+'</small>'+(g.installed?'<p><button class="btn" onclick="importOne(\''+esc(g.id)+'\')">Importer</button></p>':'')+'</div>').join('')}catch(x){toast(x.message,false)}}
   async function importOne(id){try{await api('/api/native/import',{method:'POST',body:JSON.stringify({sourceGuildId:id})});closeAdd();await loadGuilds();toast('Discord importé dans CMD Sphere')}catch(x){toast(x.message,false)}}
-  async function importAll(){try{const d=await api('/api/native/import-all',{method:'POST',body:'{}'});closeAdd();await loadGuilds();toast((d.imported||[]).length+' serveur(s) importé(s)')}catch(x){toast(x.message,false)}}
+  async function importAll(){try{const d=await api('/api/native/import-all',{method:'POST',body:'{}'});closeAdd();await loadGuilds();toast((d.imported||[]).length+' Discord propriétaire(s) importé(s)')}catch(x){toast(x.message,false)}}
   async function copyInvite(v){try{await navigator.clipboard.writeText(v);toast('Invitation copiée')}catch{prompt('Copie le lien',v)}}
   qs('#refresh').onclick=loadStructure;qs('#railPlus').onclick=()=>openAdd('menu');qs('#addClose').onclick=closeAdd;qs('#addModal').onclick=e=>{if(e.target.id==='addModal')closeAdd()};if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));
   `;
@@ -338,7 +338,7 @@ function authFromAccount(account,identity){
       discordId:identity?.provider_user_id?String(identity.provider_user_id):null
     },
     guildIds:[...new Set(guilds.map(g=>String(g.id||"")).filter(id=>/^\d{15,22}$/.test(id)))],
-    guilds:guilds.map(g=>({id:String(g.id||""),name:String(g.name||g.id||"Discord").slice(0,100),icon:g.icon?String(g.icon).slice(0,300):null})).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100)
+    guilds:guilds.map(g=>({id:String(g.id||""),name:String(g.name||g.id||"Discord").slice(0,100),icon:g.icon?String(g.icon).slice(0,300):null,owner:Boolean(g.owner),permissions:String(g.permissions||"0")})).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100)
   };
 }
 async function migrateLegacyDiscordUser(discordId,accountId){
@@ -387,7 +387,9 @@ async function resolveDiscordAccount(identity,linkAccountId=null){
     ON CONFLICT(provider,provider_user_id) DO UPDATE SET account_id=EXCLUDED.account_id,profile=EXCLUDED.profile,guilds=EXCLUDED.guilds,updated_at=NOW()`,
     [String(accountId),did,JSON.stringify(profile),JSON.stringify(identity.guilds||[])]);
   await migrateLegacyDiscordUser(did,accountId);
-  return authFromAccount(account,{provider_user_id:did,profile,guilds:identity.guilds||[]});
+  const authData=authFromAccount(account,{provider_user_id:did,profile,guilds:identity.guilds||[]});
+  setTimeout(()=>importOwnedDiscordGuilds(authData).then(x=>console.log("[owned-import] login owned="+x.ownedCount+" imported="+x.imported.length)).catch(e=>console.error("[owned-import] login failed: "+e.message)),50);
+  return authData;
 }
 async function createNativeAccount(input){
   const {username,key}=normalizeUsername(input.username);
@@ -476,12 +478,29 @@ async function requireNativeMember(auth,guildId){
 async function requireNativeAdmin(auth,guildId){
   const m=await requireNativeMember(auth,guildId);if(!["owner","admin"].includes(m.membership_role))throw new Error("Permission administrateur requise.");return m;
 }
+async function linkedDiscordGuilds(auth){
+  let guilds=Array.isArray(auth.guilds)?auth.guilds:[];
+  if(guilds.length&&guilds.some(g=>g&&("owner" in g)))return guilds;
+  try{
+    const r=await pool.query("SELECT guilds FROM cmd_account_identities WHERE account_id=$1 AND provider='discord' LIMIT 1",[String(auth.user.id)]);
+    if(Array.isArray(r.rows[0]?.guilds))guilds=r.rows[0].guilds;
+  }catch{}
+  return guilds;
+}
+function discordGuildIcon(g){
+  const icon=String(g?.icon||"");
+  if(!icon)return null;
+  if(/^https?:\/\//i.test(icon))return icon;
+  const id=String(g?.id||"");
+  return /^\d{15,22}$/.test(id)?("https://cdn.discordapp.com/icons/"+id+"/"+icon+".webp?size=128"):null;
+}
 async function allManagedGuilds(auth){
   const installed=await installedEverywhere(auth);
   const byId=new Map(installed.guilds.map(g=>[String(g.id),g]));
+  const metas=await linkedDiscordGuilds(auth),metaById=new Map(metas.map(g=>[String(g.id),g]));
   const guilds=auth.guildIds.map(id=>{
-    const meta=authGuildMeta(auth,id),hit=byId.get(String(id));
-    return {id:String(id),name:hit?.name||meta.name||String(id),icon:hit?.icon||meta.icon||null,memberCount:hit?.memberCount??null,availableBots:hit?.availableBots||[],installed:Boolean(hit)};
+    const meta=metaById.get(String(id))||{id:String(id),name:String(id),icon:null},hit=byId.get(String(id));
+    return {id:String(id),name:hit?.name||meta.name||String(id),icon:hit?.icon||discordGuildIcon(meta),owner:Boolean(meta.owner),memberCount:hit?.memberCount??null,availableBots:hit?.availableBots||[],installed:Boolean(hit)};
   }).sort((a,b)=>a.name.localeCompare(b.name,"fr"));
   return {guilds,errors:installed.errors||[]};
 }
@@ -536,6 +555,48 @@ async function syncNativeFromDiscord(auth,sourceGuildId,preferredBot){
       [crypto.randomUUID(),nativeId,String(role.id||crypto.randomUUID()),safeText(role.name||'rôle',100),role.color!=null?String(role.color):null,JSON.stringify(role.permissions||{}),Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]);
   }
   return {id:nativeId,name,sourceDiscordId:String(sourceGuildId),bot,botName:bots[bot].label,inviteUrl:baseUrl+"/invite/"+inviteCode};
+}
+async function importDiscordShell(auth,meta){
+  const sourceId=String(meta.id||"");if(!/^\d{15,22}$/.test(sourceId))throw new Error("Discord invalide.");
+  const name=safeText(meta.name||("Discord "+sourceId),100),icon=discordGuildIcon(meta);
+  const existing=await pool.query('SELECT id,invite_code FROM cmd_native_guilds WHERE owner_user_id=$1 AND source_discord_id=$2 LIMIT 1',[String(auth.user.id),sourceId]);
+  const nativeId=existing.rows[0]?.id||crypto.randomUUID(),inviteCode=existing.rows[0]?.invite_code||crypto.randomBytes(8).toString("base64url");
+  await pool.query(`INSERT INTO cmd_native_guilds(id,owner_user_id,source_discord_id,name,icon,invite_code)
+    VALUES($1,$2,$3,$4,$5,$6)
+    ON CONFLICT(owner_user_id,source_discord_id) DO UPDATE SET name=EXCLUDED.name,icon=EXCLUDED.icon,updated_at=NOW()`,
+    [nativeId,String(auth.user.id),sourceId,name,icon,inviteCode]);
+  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET membership_role=EXCLUDED.membership_role',[nativeId,String(auth.user.id),'owner',safeText(auth.user.displayName||auth.user.name,80)]);
+  return {id:nativeId,name,icon,sourceDiscordId:sourceId,full:false,inviteUrl:baseUrl+"/invite/"+inviteCode};
+}
+async function importOwnedDiscordGuilds(auth){
+  const metas=(await linkedDiscordGuilds(auth)).filter(g=>Boolean(g.owner));
+  const installed=await installedEverywhere(auth),installedById=new Map(installed.guilds.map(g=>[String(g.id),g]));
+  const imported=[],failed=[];
+  for(const meta of metas){
+    const id=String(meta.id||"");
+    try{
+      const hit=installedById.get(id);
+      if(hit){
+        const full=await syncNativeFromDiscord({...auth,guilds:metas},id,hit.availableBots?.[0]?.id);
+        imported.push({...full,full:true});
+      }else{
+        imported.push(await importDiscordShell(auth,meta));
+      }
+    }catch(e){failed.push({id,name:String(meta.name||id),error:e.message})}
+  }
+  return {ownedCount:metas.length,imported,failed};
+}
+async function backfillOwnedDiscordGuilds(){
+  const r=await pool.query(`SELECT a.*,i.provider_user_id,i.profile,i.guilds
+    FROM cmd_accounts a JOIN cmd_account_identities i ON i.account_id=a.id
+    WHERE i.provider='discord'`);
+  for(const row of r.rows){
+    try{
+      const auth=authFromAccount(row,{provider_user_id:row.provider_user_id,profile:row.profile,guilds:row.guilds});
+      const out=await importOwnedDiscordGuilds(auth);
+      console.log("[owned-import] account="+row.id+" owned="+out.ownedCount+" imported="+out.imported.length+" failed="+out.failed.length);
+    }catch(e){console.error("[owned-import] "+row.id+" failed: "+e.message)}
+  }
 }
 async function nativeGuildDetail(auth,id){
   const member=await requireNativeMember(auth,id);
@@ -801,12 +862,15 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,{guild:await syncNativeFromDiscord(auth,String(body.sourceGuildId||""),body.bot||undefined)})}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/native/import-owned"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,200,await importOwnedDiscordGuilds(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
     if(req.method==="POST"&&url.pathname==="/api/native/import-all"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{
-        const managed=await allManagedGuilds(auth),imported=[],skipped=[];
-        for(const g of managed.guilds){if(!g.installed){skipped.push({id:g.id,name:g.name,reason:"Aucun bot CMD installé"});continue}try{imported.push(await syncNativeFromDiscord(auth,g.id))}catch(e){skipped.push({id:g.id,name:g.name,reason:e.message})}}
-        sendJson(res,200,{imported,skipped});
+        const out=await importOwnedDiscordGuilds(auth);
+        sendJson(res,200,{imported:out.imported,skipped:out.failed,ownedCount:out.ownedCount});
       }catch(e){sendJson(res,500,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname.startsWith("/api/native/guild/")){
@@ -953,7 +1017,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();console.log("[native] CMD Sphere database ready")}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>backfillOwnedDiscordGuilds().catch(e=>console.error("[owned-import] startup failed: "+e.message)),500)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
