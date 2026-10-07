@@ -28,7 +28,7 @@ export default function PwaProvider({children}){
     if(!('serviceWorker' in navigator)||!window.isSecureContext)return null;
     let registration=registrationRef.current||await navigator.serviceWorker.getRegistration('/');
     if(!registration){
-      registration=await navigator.serviceWorker.register('/sw.js?v=4',{scope:'/',updateViaCache:'none'}).catch(()=>null);
+      registration=await navigator.serviceWorker.register('/sw.js?v=5',{scope:'/',updateViaCache:'none'}).catch(()=>null);
     }
     if(registration)registrationRef.current=registration;
     return registration;
@@ -90,7 +90,7 @@ export default function PwaProvider({children}){
     const controllerChange=()=>{
       if(reloadingRef.current)return;
       try{
-        const key='extinction-pwa-reloaded-v4';
+        const key='extinction-pwa-reloaded-v5';
         if(sessionStorage.getItem(key)==='1')return;
         sessionStorage.setItem(key,'1');
       }catch{}
