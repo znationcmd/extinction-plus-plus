@@ -20,8 +20,6 @@ async function botGuildIds(){
 }
 async function knownGuildIds(){
   const ids=new Set();
-  const live=await botGuildIds();
-  if(live)for(const id of live)ids.add(String(id));
   try{
     const db=await readDb();
     for(const id of Object.keys(db.guilds||{}))ids.add(String(id));
@@ -37,7 +35,8 @@ export async function GET(){
   try{
     const s=await session();
     const all=await discord('/users/@me/guilds',s.token);
-    const installed=await knownGuildIds();
+    const liveInstalled=await botGuildIds();
+    const installed=liveInstalled||await knownGuildIds();
     const guilds=[];
     const clientId=String(process.env.CLIENT_ID||'');
     const inviteFor=id=>clientId?`https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=268454928&integration_type=0&scope=bot%20applications.commands&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`:null;
@@ -62,7 +61,8 @@ export async function POST(req){
   try{
     sameOrigin(req);
     const {guildId}=await req.json();
-    const installed=await botGuildIds();
+    const liveInstalled=await botGuildIds();
+    const installed=liveInstalled||await knownGuildIds();
     if(installed.size&&!installed.has(String(guildId)))throw Object.assign(new Error('EXTINCTION ++ RSS n’est pas installé sur ce Discord.'),{status:404});
     const s=await session(),all=await discord('/users/@me/guilds',s.token),guild=all.find(g=>String(g.id)===String(guildId));
     if(!guild)throw Object.assign(new Error('Accès refusé à ce Discord.'),{status:403});
