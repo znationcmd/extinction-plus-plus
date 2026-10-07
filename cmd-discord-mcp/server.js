@@ -612,7 +612,9 @@ async function initNativeDb(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     edited_at TIMESTAMPTZ
   )`);
-  await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_channel_messages_channel_created_idx ON cmd_native_channel_messages(channel_id,created_at DESC)');  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_global_profiles(
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_channel_messages_channel_created_idx ON cmd_native_channel_messages(channel_id,created_at DESC)');
+  await pool.query("ALTER TABLE cmd_native_channel_messages ADD COLUMN IF NOT EXISTS attachments JSONB NOT NULL DEFAULT '[]'::jsonb");
+  await pool.query("ALTER TABLE cmd_native_channel_messages ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb");  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_global_profiles(
     user_id TEXT PRIMARY KEY,
     display_name TEXT,
     avatar_data_url TEXT,
@@ -1667,22 +1669,43 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
   const messages=(rows.rows||[]).map(row=>({
     id:String(row.id),channelId:String(ch.id),guildId:String(guildId),content:String(row.body||""),timestamp:row.created_at,editedTimestamp:row.edited_at,
     author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},
-    attachments:[],embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
+    attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata&&typeof row.metadata==="object"?row.metadata:{},embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
   if(!before)await markNativeChannelRead(auth,guildId,ch.id);
   return {mode:"native",channel:{id:String(ch.id),name:ch.name,type:ch.type,topic:ch.topic||null},messages,hasMore:messages.length===n,nextBefore:messages.length?messages[messages.length-1].id:null};
 }
+
+function sanitizeNativeAttachments(v){
+  const arr=Array.isArray(v)?v:[],out=[];let total=0;
+  const allowed=/^data:(image\/(?:png|jpeg|webp|gif)|audio\/(?:webm|mpeg|mp4)|application\/pdf|text\/plain);base64,/i;
+  for(const raw of arr.slice(0,4)){
+    const dataUrl=String(raw?.dataUrl||"");if(!allowed.test(dataUrl))continue;
+    const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);if(approx>4*1024*1024)throw new Error("Un fichier dépasse 4 Mo.");
+    total+=approx;if(total>8*1024*1024)throw new Error("Pièces jointes : 8 Mo maximum par message.");
+    out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:safeText(raw?.contentType||"",80),size:approx,url:dataUrl});
+  }
+  return out;
+}
+function sanitizeNativeMetadata(v){
+  const meta=v&&typeof v==="object"?v:{},out={};
+  if(meta.poll&&typeof meta.poll==="object"){
+    const question=safeText(meta.poll.question,300),options=(Array.isArray(meta.poll.options)?meta.poll.options:[]).map(x=>safeText(x,100)).filter(Boolean).slice(0,10);
+    if(question&&options.length>=2)out.poll={question,options};
+  }
+  return out;
+}
 async function sendNativeChannelMessage(auth,input){
   const guildId=String(input.guildId||""),ch=await nativeTextChannel(auth,guildId,input.channelId),body=String(input.content||"").trim().slice(0,4000);
-  if(!body)throw new Error("Message vide.");
+  const attachments=sanitizeNativeAttachments(input.attachments),metadata=sanitizeNativeMetadata(input.metadata);
+  if(!body&&!attachments.length&&!metadata.poll)throw new Error("Message vide.");
   let replyTo=null;
   if(input.replyTo&&/^[0-9a-f-]{36}$/i.test(String(input.replyTo))){
     const r=await pool.query('SELECT id FROM cmd_native_channel_messages WHERE id=$1 AND channel_id=$2 LIMIT 1',[String(input.replyTo),ch.id]);
     if(r.rows[0])replyTo=r.rows[0].id;
   }
   const id=crypto.randomUUID();
-  await pool.query('INSERT INTO cmd_native_channel_messages(id,guild_id,channel_id,sender_user_id,body,reply_to) VALUES($1,$2,$3,$4,$5,$6)',[id,guildId,ch.id,String(auth.user.id),body,replyTo]);
+  await pool.query('INSERT INTO cmd_native_channel_messages(id,guild_id,channel_id,sender_user_id,body,reply_to,attachments,metadata) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)',[id,guildId,ch.id,String(auth.user.id),body,replyTo,JSON.stringify(attachments),JSON.stringify(metadata)]);
   const r=await pool.query(`SELECT m.*,COALESCE(mem.profile_display_name,gp.display_name,a.display_name,a.username,'Utilisateur') AS author_name,
       COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar
     FROM cmd_native_channel_messages m
@@ -1691,7 +1714,7 @@ async function sendNativeChannelMessage(auth,input){
     LEFT JOIN cmd_accounts a ON a.id::text=m.sender_user_id
     WHERE m.id=$1 LIMIT 1`,[id]);
   const row=r.rows[0];
-  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},attachments:[],embeds:[],stickers:[],reactions:[]}};
+  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
 async function nativeGuildDetail(auth,id){
