@@ -741,10 +741,19 @@ async function backend(bot,kind,{guildId,body}={}){
     else if(kind==="structure")url+="/structure?guildId="+encodeURIComponent(guildId);
     else if(kind==="action")url+="/action";
   }
-  const res=await fetch(url,{method:kind==="action"?"POST":"GET",headers:{"x-cmd-mcp-secret":backendSecret,"content-type":"application/json"},body:kind==="action"?JSON.stringify(body||{}):undefined,signal:AbortSignal.timeout(20000),cache:"no-store"});
-  const data=await res.json().catch(()=>({error:"Réponse backend invalide"}));
-  if(!res.ok)throw new Error(cfg.label+" : "+(data.error||("HTTP "+res.status)));
-  return data;
+  let lastError=null;
+  for(let attempt=0;attempt<3;attempt++){
+    const res=await fetch(url,{method:kind==="action"?"POST":"GET",headers:{"x-cmd-mcp-secret":backendSecret,"content-type":"application/json"},body:kind==="action"?JSON.stringify(body||{}):undefined,signal:AbortSignal.timeout(20000),cache:"no-store"});
+    const data=await res.json().catch(()=>({error:"Réponse backend invalide"}));
+    if(res.ok)return data;
+    const msg=String(data.error||("HTTP "+res.status));
+    lastError=new Error(cfg.label+" : "+msg);
+    const rateLimited=res.status===429||/rate limit|too many requests/i.test(msg);
+    if(!rateLimited||attempt===2)throw lastError;
+    const waitMs=Math.min(5000,900*(attempt+1));
+    await new Promise(r=>setTimeout(r,waitMs));
+  }
+  throw lastError||new Error(cfg.label+" indisponible");
 }
 async function installedEverywhere(auth){
   const allowed=new Set(auth.guildIds.map(String));
@@ -896,7 +905,18 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname.startsWith("/native/")){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent(url.pathname));return}
-      try{html(res,renderNativeGuildPage(auth,await nativeGuildDetail(auth,url.pathname.split("/").pop())))}catch(e){html(res,'<body style="background:#09070d;color:white;font-family:system-ui;padding:30px"><h1>Serveur indisponible</h1><p>'+escHtml(e.message)+'</p><a style="color:#a78bfa" href="/dashboard">Retour</a></body>',404)}return;
+      try{
+        const nativeId=url.pathname.split("/").pop();
+        let detail=await nativeGuildDetail(auth,nativeId);
+        if((detail.channels||[]).length===0&&/^\d{15,22}$/.test(String(detail.guild?.source_discord_id||""))){
+          try{
+            await syncNativeGuildById(auth,nativeId);
+            detail=await nativeGuildDetail(auth,nativeId);
+            console.log("[native-auto-sync] "+nativeId+" channels="+detail.channels.length+" roles="+detail.roles.length);
+          }catch(syncErr){console.log("[native-auto-sync] "+nativeId+" skipped: "+syncErr.message)}
+        }
+        html(res,renderNativeGuildPage(auth,detail));
+      }catch(e){html(res,'<body style="background:#09070d;color:white;font-family:system-ui;padding:30px"><h1>Serveur indisponible</h1><p>'+escHtml(e.message)+'</p><a style="color:#a78bfa" href="/dashboard">Retour</a></body>',404)}return;
     }
     if(req.method==="GET"&&url.pathname==="/servers/add"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/servers/add"));return}
