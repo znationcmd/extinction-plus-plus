@@ -1219,6 +1219,7 @@ async function installShopItem(auth,input){
   const type=String(input.type||""),key=String(input.key||"");
   const item=shopCatalog().find(x=>x.type===type&&x.key===key);
   if(!item)throw new Error("Élément de boutique inconnu.");
+  if(premiumItem(item)){const premium=await getPremiumState(auth);if(!premium.active)throw new Error("Cet élément est réservé à CMD Sphere Premium.");}
   const p=await getGlobalProfile(auth);
   const patch={displayName:p.displayName,bio:p.bio,status:p.status,pronouns:p.pronouns,accentColor:p.accentColor,theme:p.theme,nameStyle:p.nameStyle,badges:p.badges,avatarDecoration:p.avatarDecoration,profileEffect:p.profileEffect,profileFrame:p.profileFrame,nameplateStyle:p.nameplateStyle,featuredTagGuildId:p.featuredTagGuildId};
   if(type==="frame")patch.profileFrame=key;
