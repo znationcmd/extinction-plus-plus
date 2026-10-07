@@ -193,7 +193,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   async function copyInvite(v){try{await navigator.clipboard.writeText(v);toast('Invitation copiée')}catch{prompt('Copie le lien',v)}}
   if(qs('#refresh'))qs('#refresh').onclick=loadStructure;if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));
   `;
-  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12051f"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>CMD Sphere</title><style>'+style+'</style></head><body><div class="sphere-app"><aside class="server-rail"><a class="rail-home" href="/dashboard" title="CMD Sphere"><img src="/app-icon.webp?v=5" alt="CMD Sphere"></a><div class="rail-sep"></div><a class="rail-server rail-top" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener" title="CMD Top Serveur · Voter">🏆</a><div class="rail-sep"></div><div id="railGuilds" style="display:contents">'+nativeRailHtml+'</div><a class="rail-plus" id="railPlus" href="/servers/add" title="Créer ou rejoindre">＋</a></aside><div class="wrap"><div class="top"><div class="brand"><img src="/app-icon.webp?v=5" class="logo-img" alt="CMD Sphere"><div><h1 style="margin:0">CMD Sphere</h1><div class="muted">Communautés · Salons · Rôles · Invitations · Votes</div></div></div><div><span class="muted">'+user+'</span> <a class="btn" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mes Discord</a> <a class="btn" href="/profile">Mon profil</a> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div><div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list">'+nativeListHtml+'</div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">CMD Sphere</h2><div id="gbots" class="muted"></div></div><button id="refresh" class="btn" disabled>Actualiser</button></div><div id="workspace" class="empty"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h2>Choisis un serveur dans la barre de gauche</h2><p>Ou appuie sur ＋ pour en créer/rejoindre un.</p><div class="card" style="margin:22px auto 0;max-width:640px;text-align:left;background:linear-gradient(135deg,#24102f,#15101f)"><div class="top"><div><div class="muted">🏆 CMD TOP SERVEUR</div><h2 style="margin:5px 0">Vote pour tes serveurs préférés</h2><p class="muted" style="margin:0">Classement par votes · 24 h / mois / total · 1 vote toutes les 2 heures.</p></div><a class="btn primary" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener">🗳️ VOTER</a></div></div></div></main></div></div></div><div id="addModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="addClose">✕</button></div><div id="addBody"></div></div></div><div id="status" class="status"></div><script>'+script+'</script></body></html>';
+  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12051f"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>CMD Sphere</title><style>'+style+'</style></head><body><div class="sphere-app"><aside class="server-rail"><a class="rail-home" href="/dashboard" title="CMD Sphere"><img src="/app-icon.webp?v=5" alt="CMD Sphere"></a><div class="rail-sep"></div><a class="rail-server rail-top" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener" title="CMD Top Serveur · Voter">🏆</a><div class="rail-sep"></div><div id="railGuilds" style="display:contents">'+nativeRailHtml+'</div><a class="rail-plus" id="railPlus" href="/servers/add" title="Créer ou rejoindre">＋</a></aside><div class="wrap"><div class="top"><div class="brand"><img src="/app-icon.webp?v=5" class="logo-img" alt="CMD Sphere"><div><h1 style="margin:0">CMD Sphere</h1><div class="muted">Communautés · Salons · Rôles · Invitations · Votes</div></div></div><div><span class="muted">'+user+'</span> <a class="btn" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mes Discord</a> <a class="btn" href="/messages">💬 Messages</a> <a class="btn" href="/shop">🛍️ Boutique gratuite</a> <a class="btn" href="/profile">Mon profil</a> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div><div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list">'+nativeListHtml+'</div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">CMD Sphere</h2><div id="gbots" class="muted"></div></div><button id="refresh" class="btn" disabled>Actualiser</button></div><div id="workspace" class="empty"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h2>Choisis un serveur dans la barre de gauche</h2><p>Ou appuie sur ＋ pour en créer/rejoindre un.</p><div class="card" style="margin:22px auto 0;max-width:640px;text-align:left;background:linear-gradient(135deg,#24102f,#15101f)"><div class="top"><div><div class="muted">🏆 CMD TOP SERVEUR</div><h2 style="margin:5px 0">Vote pour tes serveurs préférés</h2><p class="muted" style="margin:0">Classement par votes · 24 h / mois / total · 1 vote toutes les 2 heures.</p></div><a class="btn primary" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener">🗳️ VOTER</a></div></div></div></main></div></div></div><div id="addModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="addClose">✕</button></div><div id="addBody"></div></div></div><div id="status" class="status"></div><script>'+script+'</script></body></html>';
 }
 
 function bearerAuth(req){
@@ -1264,6 +1264,42 @@ const httpServer=createServer(async(req,res)=>{
         const experience=await getProfileExperience(auth,url.searchParams.get("server")||"");
         html(res,profilePage(auth,profile,experience));
       }catch(e){html(res,"<h1>Profil indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/shop"){
+      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
+      try{html(res,shopPage(auth,await installedShopItems(auth)))}catch(e){html(res,"<h1>Boutique indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/shop/install"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await installShopItem(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/messages"){
+      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
+      try{html(res,messagesPage(auth,await listDmThreads(auth),await getDmPreferences(auth)))}catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dm/search"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{users:await searchDmUsers(auth,url.searchParams.get("q")||"")})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/dm/start"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,{thread:await startDmThread(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname.startsWith("/api/dm/thread/")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await getDmMessages(auth,url.pathname.split("/").pop()))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/dm/send"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,{message:await sendDmMessage(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dm/preferences"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await getDmPreferences(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/dm/preferences"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await updateDmPreferences(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/connections"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/connections"));return}
