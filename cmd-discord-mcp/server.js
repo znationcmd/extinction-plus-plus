@@ -1581,7 +1581,7 @@ function shopPage(auth,installed,premium={active:false,owner:false,boosts:[],boo
 
   return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Boutique · CMD Sphere</title><style>'+
   '*{box-sizing:border-box}body{margin:0;background:#111214;color:#fff;font-family:system-ui}.top{position:sticky;top:0;z-index:5;background:#1e1f22ee;border-bottom:1px solid #ffffff10;padding:14px 16px;display:flex;align-items:center;gap:12px}.top a{color:#fff;text-decoration:none}.wrap{max-width:1080px;margin:auto;padding:18px 16px 90px}.hero{background:radial-gradient(circle at 85% 0,#22d3ee44,transparent 26%),linear-gradient(135deg,#4c1d95,#7e22ce,#1d4ed8);padding:24px;border-radius:22px;border:1px solid #ffffff18}.hero h1{margin:0 0 8px}.hero p{margin:0;color:#eee}.plans{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.plan,.statusCard,.adminBox,.boostSection{background:#1e1f22;border:1px solid #ffffff14;border-radius:18px;padding:18px}.plan{position:relative}.plan.annual{border-color:#22d3ee66}.plan strong{font-size:32px;display:block;margin:8px 0}.plan strong small{font-size:14px;color:#b5bac1}.save{display:inline-block;background:#083344;color:#67e8f9;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}.bigStar{color:#22d3ee;text-shadow:0 0 18px #22d3ee;font-size:34px}.paypal,.claim,.boostAdd,.boostRemove,.approve,.reject,.codeCreate button,.disableCode{border:0;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;text-decoration:none}.paypal{display:inline-flex;background:#0070ba;color:#fff;margin-right:6px}.claim,.boostRemove,.disableCode{background:#35373c;color:#fff}.boostAdd{background:#0891b2;color:#fff}.approve{background:#248046;color:#fff}.reject{background:#da373c;color:#fff}.statusCard{display:flex;gap:16px;align-items:center;margin:16px 0;background:linear-gradient(135deg,#28143a,#0e3440)}.statusCard.owner{border-color:#22d3ee66}.cyan{color:#22d3ee;text-shadow:0 0 10px #22d3ee}.muted{color:#b5bac1}.boostSection{margin:16px 0}.boostCard{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;border-bottom:1px solid #ffffff0c}.boostCard:last-child{border:0}.boostCard small{display:block;color:#b5bac1}.boostBtns{display:flex;gap:7px}.redeem{display:flex;gap:8px;margin:14px 0}.redeem input,.codeCreate input,.codeCreate select{background:#111214;border:1px solid #ffffff18;color:#fff;border-radius:10px;padding:10px}.redeem input{flex:1}.redeem button{border:0;border-radius:10px;background:#7c3aed;color:#fff;padding:10px 14px;font-weight:900}.adminBox{margin:16px 0}.adminRow,.codeRow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #ffffff0c}.adminRow small{display:block;color:#b5bac1}.codeCreate{display:grid;grid-template-columns:120px 120px 1fr auto;gap:8px}.codeRow code{font-weight:900;color:#67e8f9}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.item{background:#232428;border:1px solid #ffffff12;border-radius:15px;padding:12px;display:grid;gap:8px}.premiumItem{border-color:#22d3ee3d}.art{height:150px;border-radius:12px;background:linear-gradient(145deg,#35183e,#16161a);display:grid;place-items:center;overflow:hidden;position:relative}.shop-card{width:90%;height:118px;border-radius:14px;background:linear-gradient(180deg,#2b2d31,#3a1746);position:relative;overflow:hidden;border:1px solid #ffffff14}.shop-avatar{position:absolute;left:14px;top:18px;width:54px;height:54px;border-radius:50%;overflow:hidden;border:4px solid #7c3aed;background:#111;z-index:2}.shop-avatar.small{width:46px;height:46px}.shop-avatar.big{width:76px;height:76px;left:50%;top:50%;transform:translate(-50%,-50%)}.shop-avatar img{width:100%;height:100%;object-fit:cover}.shop-name{position:absolute;left:78px;top:28px;font-size:14px;font-weight:900}.shop-name.top{left:70px;top:22px}.shop-frame{position:absolute;inset:6px;border:4px solid #c084fc;border-radius:13px;box-shadow:0 0 14px #a855f7aa}.shop-effect:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 25%,#a855f755,transparent 42%),linear-gradient(135deg,#312e8133,#ec489933);animation:pulse 2.8s ease-in-out infinite}.shop-fx{position:absolute;right:16px;bottom:14px;font-size:42px}.shop-nameplate{position:absolute;left:12px;right:12px;bottom:10px;border-radius:9px;padding:8px 10px;background:linear-gradient(90deg,#4c1d95,#7c3aed,#db2777);font-size:12px;font-weight:900}.shop-deco-wrap{width:130px;height:130px;position:relative}.shop-deco-ring{position:absolute;left:50%;top:50%;width:96px;height:96px;transform:translate(-50%,-50%);border-radius:50%;border:5px solid #a855f7;box-shadow:0 0 16px #a855f7aa}.shop-deco-icon{position:absolute;right:8px;bottom:7px;font-size:28px}.shop-badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #ffffff20;background:#17181bcc;border-radius:999px;padding:9px 12px;font-size:18px}.itemLine{display:flex;justify-content:space-between;gap:8px}.proPill,.freePill{font-size:10px;border-radius:999px;padding:3px 6px;font-weight:1000}.proPill{background:#083344;color:#67e8f9}.freePill{background:#052e16;color:#86efac}.item small{color:#b5bac1}.item button{border:0;border-radius:10px;background:#5865f2;color:#fff;padding:11px;font-weight:900}.item button:disabled{opacity:.45}.toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;padding:12px 16px;border-radius:12px;z-index:20}.toast.on{display:block}@keyframes pulse{50%{filter:brightness(1.25)}}@media(max-width:760px){.plans,.grid{grid-template-columns:1fr}.codeCreate{grid-template-columns:1fr}.boostCard{align-items:flex-start;flex-direction:column}.adminRow,.codeRow{grid-template-columns:1fr 1fr}.adminRow>div,.codeRow code{grid-column:1/-1}}'+
-  '</style></head><body><div class="top"><a href="/dashboard">←</a><b>🛍️ Boutique CMD Sphere</b><a href="/profile" style="margin-left:auto">Profil</a></div><main class="wrap"><div class="hero"><h1>Boutique CMD Sphere</h1><p>Une collection gratuite pour tout le monde, et une collection Premium plus poussée.</p></div>'+
+  '</style></head><body><div class="top"><a href="/dashboard">←</a><b>🛍️ Boutique CMD Sphere</b><a href="/diamonds" style="margin-left:auto">💎 Diamants</a><a href="/profile">Profil</a></div><main class="wrap"><div class="hero"><h1>Boutique CMD Sphere</h1><p>Une collection gratuite pour tout le monde, et une collection Premium plus poussée.</p></div>'+
   '<section><h2>CMD Sphere Premium</h2>'+premiumStatus+'<p class="muted">Avec ton PayPal personnel, le paiement est actuellement validé manuellement. L’automatisation pourra être branchée plus tard si tu passes sur PayPal Business.</p></section>'+
   '<div class="redeem"><input id="rewardCode" placeholder="Code Premium récompense"><button id="redeemCode">Utiliser le code</button></div>'+
   '<section class="boostSection"><h2><span class="cyan">★</span> Boosts serveur</h2><p class="muted">'+(premium.owner?'Boosts illimités sur ton compte propriétaire.':premium.active?Math.max(0,3-premium.boostUsed)+' boost(s) disponible(s) sur 3.':'3 boosts inclus avec Premium.')+'</p>'+boostCards+'</section>'+
@@ -2868,6 +2868,13 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,await setServerFolderCollapsed(auth,body.id,body.collapsed))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="GET"&&url.pathname==="/diamonds"){
+      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/diamonds"));return}
+      try{
+        const [installed,unlocks,diamond,premium,offers]=await Promise.all([installedShopItems(auth),getDiamondUnlocks(auth),getDiamondState(auth),getPremiumState(auth),listRewardOffers(auth,true)]);
+        html(res,diamondsPage(auth,installed,unlocks,diamond,premium,offers));
+      }catch(e){html(res,"<h1>Boutique Diamants indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
     if(req.method==="GET"&&url.pathname==="/shop"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
       try{
@@ -2911,6 +2918,42 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/premium/code/disable"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await disablePremiumCode(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,403,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/diamonds/status"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await getDiamondState(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/buy-item"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await buyDiamondCosmetic(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/buy-pack"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await buyDiamondPack(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/buy-premium"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await buyPremiumWithDiamonds(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/quest/start"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await startRewardSession(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/quest/heartbeat"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await heartbeatRewardSession(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/quest/claim"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await claimRewardSession(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/offer/create"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await createRewardOffer(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,403,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/offer/active"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await setRewardOfferActive(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,403,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/shop/install"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
