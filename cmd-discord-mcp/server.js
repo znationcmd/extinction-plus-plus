@@ -1271,7 +1271,7 @@ async function installShopItem(auth,input){
   const type=String(input.type||""),key=String(input.key||"");
   const item=shopCatalog().find(x=>x.type===type&&x.key===key);
   if(!item)throw new Error("Élément de boutique inconnu.");
-  if(premiumItem(item)){const premium=await getPremiumState(auth);if(!premium.active)throw new Error("Cet élément est réservé à CMD Sphere Premium.");}
+  if(premiumItem(item)){const [premium,unlocks]=await Promise.all([getPremiumState(auth),getDiamondUnlocks(auth)]);if(!premium.active&&!unlocks.has(type+":"+key))throw new Error("Cet élément est Premium ou doit être débloqué avec des diamants.");}
   const p=await getGlobalProfile(auth);
   const patch={displayName:p.displayName,bio:p.bio,status:p.status,pronouns:p.pronouns,accentColor:p.accentColor,theme:p.theme,nameStyle:p.nameStyle,badges:p.badges,avatarDecoration:p.avatarDecoration,profileEffect:p.profileEffect,profileFrame:p.profileFrame,nameplateStyle:p.nameplateStyle,featuredTagGuildId:p.featuredTagGuildId};
   if(type==="frame")patch.profileFrame=key;
@@ -1405,6 +1405,154 @@ async function redeemPremiumCode(auth,input){
 async function disablePremiumCode(auth,input){
   if(!isCmdOwner(auth))throw new Error("Seul le propriétaire CMD peut gérer les codes.");
   const id=String(input.id||"");await pool.query("UPDATE cmd_premium_codes SET active=FALSE WHERE id=$1",[id]);return {ok:true};
+}
+
+
+const DIAMOND_PRICES={
+  frame:3500,effect:3500,nameplate:3500,decoration:3500,badge:1400,
+  premium_3d:1400,premium_1m:12000,pack_infinite:8900
+};
+function diamondPriceFor(item){return Number(DIAMOND_PRICES[item?.type]||3500)}
+async function getDiamondUnlocks(auth){
+  const r=await pool.query("SELECT item_type,item_key FROM cmd_shop_unlocks WHERE user_id=$1",[String(auth.user.id)]);
+  return new Set(r.rows.map(x=>String(x.item_type)+":"+String(x.item_key)));
+}
+async function getDiamondState(auth){
+  const uid=String(auth.user.id);
+  await pool.query("INSERT INTO cmd_diamond_wallets(user_id,balance) VALUES($1,0) ON CONFLICT(user_id) DO NOTHING",[uid]);
+  const [w,h]=await Promise.all([
+    pool.query("SELECT balance FROM cmd_diamond_wallets WHERE user_id=$1",[uid]),
+    pool.query("SELECT amount,reason,ref_type,ref_id,created_at FROM cmd_diamond_ledger WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50",[uid])
+  ]);
+  return {owner:isCmdOwner(auth),balance:isCmdOwner(auth)?null:Number(w.rows[0]?.balance||0),history:h.rows.map(r=>({amount:Number(r.amount||0),reason:r.reason,refType:r.ref_type,refId:r.ref_id,createdAt:r.created_at}))};
+}
+async function spendDiamonds(client,uid,amount,reason,refType,refId){
+  await client.query("INSERT INTO cmd_diamond_wallets(user_id,balance) VALUES($1,0) ON CONFLICT(user_id) DO NOTHING",[uid]);
+  const d=await client.query("UPDATE cmd_diamond_wallets SET balance=balance-$2,updated_at=NOW() WHERE user_id=$1 AND balance >= $2 RETURNING balance",[uid,amount]);
+  if(!d.rows[0])throw new Error("Pas assez de diamants.");
+  await client.query("INSERT INTO cmd_diamond_ledger(id,user_id,amount,reason,ref_type,ref_id) VALUES($1,$2,$3,$4,$5,$6)",[crypto.randomUUID(),uid,-amount,reason,refType,refId]);
+  return Number(d.rows[0].balance||0);
+}
+async function buyDiamondCosmetic(auth,input){
+  const type=String(input.type||""),key=String(input.key||""),item=shopCatalog().find(x=>x.type===type&&x.key===key);
+  if(!item)throw new Error("Élément de boutique inconnu.");
+  const uid=String(auth.user.id),price=diamondPriceFor(item);
+  const unlocks=await getDiamondUnlocks(auth);
+  if(!unlocks.has(type+":"+key)&&!isCmdOwner(auth)){
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
+      await spendDiamonds(client,uid,price,"Achat "+item.label,"shop_item",type+":"+key);
+      await client.query("INSERT INTO cmd_shop_unlocks(user_id,item_type,item_key,source) VALUES($1,$2,$3,'diamonds') ON CONFLICT(user_id,item_type,item_key) DO NOTHING",[uid,type,key]);
+      await client.query("COMMIT");
+    }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+  }else if(isCmdOwner(auth)){
+    await pool.query("INSERT INTO cmd_shop_unlocks(user_id,item_type,item_key,source) VALUES($1,$2,$3,'owner') ON CONFLICT(user_id,item_type,item_key) DO NOTHING",[uid,type,key]);
+  }
+  return installShopItem(auth,{type,key});
+}
+async function addPremiumDays(auth,days,provider,planId){
+  if(isCmdOwner(auth))return {ok:true,owner:true,state:await getPremiumState(auth)};
+  const uid=String(auth.user.id),r=await pool.query("SELECT current_period_end FROM cmd_premium_subscriptions WHERE user_id=$1 LIMIT 1",[uid]);
+  const current=r.rows[0]?.current_period_end?new Date(r.rows[0].current_period_end).getTime():0;
+  const base=Math.max(Date.now(),Number.isFinite(current)?current:0),until=new Date(base+Number(days)*86400000);
+  await pool.query("INSERT INTO cmd_premium_subscriptions(user_id,provider,plan_id,status,verified_at,current_period_end,updated_at) VALUES($1,$2,$3,'active',NOW(),$4,NOW()) ON CONFLICT(user_id) DO UPDATE SET provider=EXCLUDED.provider,plan_id=EXCLUDED.plan_id,status='active',verified_at=NOW(),current_period_end=EXCLUDED.current_period_end,updated_at=NOW()",[uid,provider,planId,until]);
+  return {ok:true,currentPeriodEnd:until.toISOString()};
+}
+async function buyPremiumWithDiamonds(auth,input){
+  const option=String(input.option||"1m"),days=option==="3d"?3:31,price=option==="3d"?DIAMOND_PRICES.premium_3d:DIAMOND_PRICES.premium_1m;
+  if(isCmdOwner(auth))return addPremiumDays(auth,days,"owner","owner_lifetime");
+  const uid=String(auth.user.id),client=await pool.connect();
+  try{
+    await client.query("BEGIN");
+    const balance=await spendDiamonds(client,uid,price,(option==="3d"?"3 jours":"1 mois")+" CMD Sphere Premium","premium",option);
+    await client.query("COMMIT");
+    const out=await addPremiumDays(auth,days,"diamonds","diamonds_"+option);
+    return {...out,balance,price};
+  }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+}
+async function buyDiamondPack(auth){
+  const pack=[["decoration","neon"],["effect","aurora"],["nameplate","cosmic"]];
+  const uid=String(auth.user.id),price=DIAMOND_PRICES.pack_infinite;
+  if(!isCmdOwner(auth)){
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
+      await spendDiamonds(client,uid,price,"Pack Tourbillon infini","shop_pack","infinite");
+      for(const [type,key] of pack)await client.query("INSERT INTO cmd_shop_unlocks(user_id,item_type,item_key,source) VALUES($1,$2,$3,'diamonds') ON CONFLICT(user_id,item_type,item_key) DO NOTHING",[uid,type,key]);
+      await client.query("COMMIT");
+    }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+  }else{
+    for(const [type,key] of pack)await pool.query("INSERT INTO cmd_shop_unlocks(user_id,item_type,item_key,source) VALUES($1,$2,$3,'owner') ON CONFLICT(user_id,item_type,item_key) DO NOTHING",[uid,type,key]);
+  }
+  return {ok:true,price,items:pack};
+}
+function rewardOfferUrl(v){
+  const raw=String(v||"").trim();if(!raw)return null;
+  try{const u=new URL(raw);if(u.protocol!=="https:"&&u.protocol!=="http:")throw new Error();return u.toString()}catch{throw new Error("Lien de mission invalide.")}
+}
+async function createRewardOffer(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Seul le propriétaire CMD peut créer des quêtes Diamants.");
+  const kind=String(input.kind||"");if(kind!=="video"&&kind!=="game")throw new Error("Type invalide.");
+  const title=safeText(input.title,120);if(!title)throw new Error("Titre requis.");
+  const description=safeText(input.description,500);
+  const reward=Math.max(1,Math.min(1000000,Number(input.rewardDiamonds)||0));
+  const minSeconds=Math.max(10,Math.min(604800,Number(input.minSeconds)||10));
+  const cooldown=Math.max(0,Math.min(2592000,Number(input.cooldownSeconds)||0));
+  const maxClaims=input.maxClaimsPerUser==null||input.maxClaimsPerUser===""?null:Math.max(1,Math.min(10000,Number(input.maxClaimsPerUser)||1));
+  const id=crypto.randomUUID();
+  await pool.query("INSERT INTO cmd_reward_offers(id,kind,title,description,reward_diamonds,min_seconds,launch_url,provider,repeatable,cooldown_seconds,max_claims_per_user,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,'cmd',$8,$9,$10,$11)",[id,kind,title,description,reward,minSeconds,rewardOfferUrl(input.launchUrl),Boolean(input.repeatable),cooldown,maxClaims,String(auth.user.id)]);
+  return {ok:true,id};
+}
+async function setRewardOfferActive(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Seul le propriétaire CMD peut gérer les quêtes Diamants.");
+  await pool.query("UPDATE cmd_reward_offers SET active=$2,updated_at=NOW() WHERE id=$1",[String(input.id||""),Boolean(input.active)]);
+  return {ok:true};
+}
+async function listRewardOffers(auth,includeInactive=false){
+  const uid=String(auth.user.id),allowInactive=Boolean(includeInactive&&isCmdOwner(auth));
+  const r=await pool.query("SELECT o.*,(SELECT COUNT(*)::int FROM cmd_reward_sessions s WHERE s.offer_id=o.id AND s.user_id=$1 AND s.status='claimed') AS my_claims,(SELECT MAX(s.claimed_at) FROM cmd_reward_sessions s WHERE s.offer_id=o.id AND s.user_id=$1 AND s.status='claimed') AS last_claimed_at FROM cmd_reward_offers o WHERE ($2::boolean=TRUE OR o.active=TRUE) ORDER BY o.active DESC,o.created_at DESC",[uid,allowInactive]);
+  return r.rows.map(o=>{
+    const last=o.last_claimed_at?new Date(o.last_claimed_at).getTime():0,remaining=Math.max(0,last+Number(o.cooldown_seconds||0)*1000-Date.now()),claims=Number(o.my_claims||0),max=o.max_claims_per_user==null?null:Number(o.max_claims_per_user);
+    return {id:String(o.id),kind:o.kind,title:o.title,description:o.description||"",rewardDiamonds:Number(o.reward_diamonds),minSeconds:Number(o.min_seconds),launchUrl:o.launch_url||null,repeatable:Boolean(o.repeatable),cooldownSeconds:Number(o.cooldown_seconds||0),maxClaimsPerUser:max,active:Boolean(o.active),myClaims:claims,cooldownRemainingMs:remaining,available:Boolean(o.active)&&(Boolean(o.repeatable)||claims===0)&&(!max||claims<max)&&remaining<=0};
+  });
+}
+async function startRewardSession(auth,input){
+  const offerId=String(input.offerId||""),offer=(await listRewardOffers(auth)).find(x=>x.id===offerId);
+  if(!offer||!offer.available)throw new Error("Cette quête n'est pas disponible.");
+  const sid=crypto.randomUUID();
+  await pool.query("INSERT INTO cmd_reward_sessions(id,offer_id,user_id,status,watched_seconds) VALUES($1,$2,$3,'started',0)",[sid,offerId,String(auth.user.id)]);
+  return {ok:true,sessionId:sid,offer};
+}
+async function heartbeatRewardSession(auth,input){
+  const sid=String(input.sessionId||""),uid=String(auth.user.id);
+  const r=await pool.query("SELECT * FROM cmd_reward_sessions WHERE id=$1 AND user_id=$2 AND status='started' LIMIT 1",[sid,uid]);
+  const row=r.rows[0];if(!row)throw new Error("Session introuvable.");
+  const delta=Math.max(0,Math.min(15,Math.floor((Date.now()-new Date(row.last_heartbeat_at).getTime())/1000)));
+  const u=await pool.query("UPDATE cmd_reward_sessions SET watched_seconds=watched_seconds+$2,last_heartbeat_at=NOW() WHERE id=$1 RETURNING watched_seconds",[sid,delta]);
+  return {ok:true,seconds:Number(u.rows[0]?.watched_seconds||0)};
+}
+async function claimRewardSession(auth,input){
+  const sid=String(input.sessionId||""),uid=String(auth.user.id),client=await pool.connect();
+  try{
+    await client.query("BEGIN");
+    const r=await client.query("SELECT s.*,o.reward_diamonds,o.min_seconds,o.active,o.repeatable,o.cooldown_seconds,o.max_claims_per_user,o.title FROM cmd_reward_sessions s JOIN cmd_reward_offers o ON o.id=s.offer_id WHERE s.id=$1 AND s.user_id=$2 FOR UPDATE",[sid,uid]);
+    const row=r.rows[0];if(!row||row.status!=="started")throw new Error("Quête introuvable.");
+    if(!row.active)throw new Error("Quête désactivée.");
+    if(Number(row.watched_seconds)<Number(row.min_seconds))throw new Error("La durée demandée n'est pas encore atteinte.");
+    const stats=await client.query("SELECT COUNT(*)::int AS n,MAX(claimed_at) AS last FROM cmd_reward_sessions WHERE offer_id=$1 AND user_id=$2 AND status='claimed'",[row.offer_id,uid]);
+    const claims=Number(stats.rows[0]?.n||0),last=stats.rows[0]?.last?new Date(stats.rows[0].last).getTime():0;
+    if(!row.repeatable&&claims>0)throw new Error("Quête déjà utilisée.");
+    if(row.max_claims_per_user!=null&&claims>=Number(row.max_claims_per_user))throw new Error("Limite atteinte.");
+    if(last&&Date.now()<last+Number(row.cooldown_seconds||0)*1000)throw new Error("Quête encore en recharge.");
+    const amount=Number(row.reward_diamonds);
+    await client.query("INSERT INTO cmd_diamond_wallets(user_id,balance) VALUES($1,0) ON CONFLICT(user_id) DO NOTHING",[uid]);
+    const w=await client.query("UPDATE cmd_diamond_wallets SET balance=balance+$2,updated_at=NOW() WHERE user_id=$1 RETURNING balance",[uid,amount]);
+    await client.query("UPDATE cmd_reward_sessions SET status='claimed',claimed_at=NOW() WHERE id=$1",[sid]);
+    await client.query("INSERT INTO cmd_diamond_ledger(id,user_id,amount,reason,ref_type,ref_id) VALUES($1,$2,$3,$4,'reward_offer',$5)",[crypto.randomUUID(),uid,amount,"Récompense : "+String(row.title||"Quête"),String(row.offer_id)]);
+    await client.query("COMMIT");
+    return {ok:true,diamonds:amount,balance:Number(w.rows[0]?.balance||0)};
+  }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
 }
 
 
