@@ -15,7 +15,7 @@ export const links = [
   ['/servers', 'Serveurs', Map],
   ['/integrations', 'CFTools & BattleMetrics', Plug],
   ['/maps', 'Cartes interactives', Map],
-  ['/top-servers', 'Top Serveurs', Trophy],
+  ['/top-servers', 'CMD Top Serveur', Trophy],
   ['/premium', 'Premium', Trophy],
   ['/explorer/ark', 'Dinos & ressources ARK', Search],
   ['/explorer/palworld', 'Pals & ressources', Search],
