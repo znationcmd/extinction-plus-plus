@@ -1960,6 +1960,14 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,await dashboardWebhooks(auth,guildId,preferred));
       }catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/mirror/start"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,202,await startMirrorJob(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/mirror/status"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,200,await mirrorStatus(auth,url.searchParams.get("jobId")||""))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -2100,7 +2108,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>backfillOwnedDiscordGuilds().catch(e=>console.error("[owned-import] startup failed: "+e.message)),500)}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>backfillOwnedDiscordGuilds().catch(e=>console.error("[owned-import] startup failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
