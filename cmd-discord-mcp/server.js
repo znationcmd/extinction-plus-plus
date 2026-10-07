@@ -1297,10 +1297,12 @@ async function backend(bot,kind,{guildId,channelId,before,limit,body}={}){
     if(kind==="guilds")url+="?op=guilds";
     else if(kind==="structure")url+="?op=structure&guildId="+encodeURIComponent(guildId);
     else if(kind==="messages"){url+="?op=messages&guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
+    else if(kind==="webhooks")url+="?op=webhooks&guildId="+encodeURIComponent(guildId);
   }else{
     if(kind==="guilds")url+="/guilds";
     else if(kind==="structure")url+="/structure?guildId="+encodeURIComponent(guildId);
     else if(kind==="messages"){url+="/messages?guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
+    else if(kind==="webhooks")url+="/webhooks?guildId="+encodeURIComponent(guildId);
     else if(kind==="action")url+="/action";
   }
   let lastError=null;
@@ -1344,6 +1346,27 @@ async function resolveBot(auth,guildId,preferred){
   if(!g)throw new Error("Aucun des trois bots CMD n'est installé sur ce Discord.");
   return g.availableBots[0].id;
 }
+
+async function dashboardWebhooks(auth,guildId,preferred){
+  requireGuild(auth,guildId);
+  const bot=await resolveBot(auth,guildId,preferred);
+  const [wh,st]=await Promise.all([backend(bot,"webhooks",{guildId}),backend(bot,"structure",{guildId}).catch(()=>({channels:[]}))]);
+  const channelMap=new Map((st.channels||[]).map(c=>[String(c.id),c.name]));
+  return {guildId:String(guildId),guildName:st.name||String(guildId),bot,botName:bots[bot].label,webhooks:(wh.webhooks||[]).map(w=>({...w,channelName:channelMap.get(String(w.channelId||''))||null}))};
+}
+async function dashboardAllWebhooks(auth){
+  const all=await installedEverywhere(auth),guilds=all.guilds||[],out=[],errors=[];
+  let index=0;
+  async function worker(){
+    while(index<guilds.length){
+      const g=guilds[index++];try{const d=await dashboardWebhooks(auth,g.id,g.availableBots?.[0]?.id);out.push({...d,guildName:g.name||d.guildName,guildIcon:g.icon||null})}catch(e){errors.push({guildId:g.id,guildName:g.name,error:e.message})}
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(4,guilds.length||1)},()=>worker()));
+  out.sort((a,b)=>String(a.guildName||'').localeCompare(String(b.guildName||''),'fr'));
+  return {guilds:out,total:out.reduce((n,g)=>n+(g.webhooks||[]).length,0),errors};
+}
+
 async function actionTool(auth,args,action){
   requireScope(auth,writeScope);requireGuild(auth,args.guildId);
   const bot=await resolveBot(auth,args.guildId,args.bot);
@@ -1676,6 +1699,15 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/dashboard/structure"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const guildId=url.searchParams.get("guildId"),bot=url.searchParams.get("bot")||undefined;requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,bot);sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...await backend(chosen,"structure",{guildId})})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dashboard/webhooks"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const all=url.searchParams.get("all")==="1";
+        if(all){sendJson(res,200,await dashboardAllWebhooks(auth));return}
+        const guildId=String(url.searchParams.get("guildId")||""),preferred=String(url.searchParams.get("bot")||"")||undefined;
+        sendJson(res,200,await dashboardWebhooks(auth,guildId,preferred));
+      }catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
