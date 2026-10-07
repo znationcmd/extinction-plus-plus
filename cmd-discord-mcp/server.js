@@ -765,6 +765,25 @@ async function initNativeDb(){
     config_value TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_premium_codes(
+    id UUID PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    months INT NOT NULL CHECK(months BETWEEN 1 AND 3),
+    max_uses INT NOT NULL DEFAULT 1 CHECK(max_uses >= 1),
+    uses INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_premium_code_redemptions(
+    code_id UUID NOT NULL REFERENCES cmd_premium_codes(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(code_id,user_id)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_premium_codes_active_idx ON cmd_premium_codes(active,created_at DESC)');
+
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_user_preferences(
     user_id TEXT PRIMARY KEY,
     allow_dms BOOLEAN NOT NULL DEFAULT TRUE,
