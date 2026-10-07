@@ -390,7 +390,7 @@ async function resolveDiscordAccount(identity,linkAccountId=null){
     [String(accountId),did,JSON.stringify(profile),JSON.stringify(identity.guilds||[])]);
   await migrateLegacyDiscordUser(did,accountId);
   const authData=authFromAccount(account,{provider_user_id:did,profile,guilds:identity.guilds||[]});
-  setTimeout(()=>importOwnedDiscordGuilds(authData).then(x=>console.log("[owned-import] login owned="+x.ownedCount+" imported="+x.imported.length)).catch(e=>console.error("[owned-import] login failed: "+e.message)),50);
+  setTimeout(()=>importOwnedDiscordGuilds(authData).then(x=>console.log("[owned-import] login manageable="+(x.manageableCount||0)+" owner="+x.ownedCount+" imported="+x.imported.length)).catch(e=>console.error("[owned-import] login failed: "+e.message)),50);
   return authData;
 }
 async function createNativeAccount(input){
@@ -571,7 +571,7 @@ async function importDiscordShell(auth,meta){
   return {id:nativeId,name,icon,sourceDiscordId:sourceId,full:false,inviteUrl:baseUrl+"/invite/"+inviteCode};
 }
 async function importOwnedDiscordGuilds(auth){
-  const metas=(await linkedDiscordGuilds(auth)).filter(g=>Boolean(g.owner));
+  const metas=(await linkedDiscordGuilds(auth)).filter(g=>/^\d{15,22}$/.test(String(g.id||"")));
   const installed=await installedEverywhere(auth),installedById=new Map(installed.guilds.map(g=>[String(g.id),g]));
   const imported=[],failed=[];
   for(const meta of metas){
@@ -580,13 +580,13 @@ async function importOwnedDiscordGuilds(auth){
       const hit=installedById.get(id);
       if(hit){
         const full=await syncNativeFromDiscord({...auth,guilds:metas},id,hit.availableBots?.[0]?.id);
-        imported.push({...full,full:true});
+        imported.push({...full,full:true,owner:Boolean(meta.owner)});
       }else{
-        imported.push(await importDiscordShell(auth,meta));
+        imported.push({...await importDiscordShell(auth,meta),owner:Boolean(meta.owner)});
       }
     }catch(e){failed.push({id,name:String(meta.name||id),error:e.message})}
   }
-  return {ownedCount:metas.length,imported,failed};
+  return {ownedCount:metas.filter(g=>Boolean(g.owner)).length,manageableCount:metas.length,imported,failed};
 }
 async function backfillOwnedDiscordGuilds(){
   const r=await pool.query(`SELECT a.*,i.provider_user_id,i.profile,i.guilds
@@ -596,7 +596,7 @@ async function backfillOwnedDiscordGuilds(){
     try{
       const auth=authFromAccount(row,{provider_user_id:row.provider_user_id,profile:row.profile,guilds:row.guilds});
       const out=await importOwnedDiscordGuilds(auth);
-      console.log("[owned-import] account="+row.id+" owned="+out.ownedCount+" imported="+out.imported.length+" failed="+out.failed.length);
+      console.log("[owned-import] account="+row.id+" manageable="+(out.manageableCount||0)+" owner="+out.ownedCount+" imported="+out.imported.length+" failed="+out.failed.length);
     }catch(e){console.error("[owned-import] "+row.id+" failed: "+e.message)}
   }
 }
