@@ -1,5 +1,5 @@
 /* Only public offline assets are cached. Dashboard and APIs always use fresh network responses. */
-const CACHE = 'extinction-pwa-v3';
+const CACHE = 'extinction-pwa-v4';
 const OFFLINE = '/offline.html';
 const PUBLIC_FILES = [OFFLINE, '/app-icons/icon-192.png', '/app-icons/icon-512.png', '/app-icons/maskable-512.png', '/app-icons/apple-touch-icon.png'];
 self.addEventListener('install', event => {
