@@ -839,6 +839,58 @@ async function initNativeDb(){
     installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(user_id,item_type,item_key)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_shop_unlocks(
+    user_id TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_key TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'diamonds',
+    unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,item_type,item_key)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_diamond_wallets(
+    user_id TEXT PRIMARY KEY,
+    balance BIGINT NOT NULL DEFAULT 0 CHECK(balance >= 0),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_diamond_ledger(
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    amount BIGINT NOT NULL,
+    reason TEXT NOT NULL,
+    ref_type TEXT,
+    ref_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_diamond_ledger_user_idx ON cmd_diamond_ledger(user_id,created_at DESC)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_reward_offers(
+    id UUID PRIMARY KEY,
+    kind TEXT NOT NULL CHECK(kind IN ('video','game')),
+    title TEXT NOT NULL,
+    description TEXT,
+    reward_diamonds INT NOT NULL CHECK(reward_diamonds > 0),
+    min_seconds INT NOT NULL CHECK(min_seconds >= 10),
+    launch_url TEXT,
+    provider TEXT NOT NULL DEFAULT 'cmd',
+    repeatable BOOLEAN NOT NULL DEFAULT TRUE,
+    cooldown_seconds INT NOT NULL DEFAULT 0,
+    max_claims_per_user INT,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_reward_sessions(
+    id UUID PRIMARY KEY,
+    offer_id UUID NOT NULL REFERENCES cmd_reward_offers(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'started',
+    watched_seconds INT NOT NULL DEFAULT 0,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    claimed_at TIMESTAMPTZ
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_reward_sessions_user_offer_idx ON cmd_reward_sessions(user_id,offer_id,started_at DESC)');
+
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_folders(
     id UUID PRIMARY KEY,
     user_id TEXT NOT NULL,
