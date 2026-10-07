@@ -77,6 +77,10 @@ function sendJson(res,status,data,headers={}){
   res.end(JSON.stringify(data));
 }
 function redirect(res,url){res.writeHead(302,{Location:url,"cache-control":"no-store"});res.end()}
+async function readFormBodyJson(req){
+  const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>262144)throw new Error("Requête trop volumineuse.");chunks.push(chunk)}
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+}
 async function readForm(req){
   const chunks=[];let size=0;
   for await(const chunk of req){size+=chunk.length;if(size>65536)throw new Error("Requête OAuth trop volumineuse.");chunks.push(chunk)}
@@ -90,6 +94,48 @@ function issueTokens(codeData){
   const access={typ:"access",exp:now+8*3600*1000,iat:now,user:codeData.user,guildIds:codeData.guildIds,scope:codeData.scope,aud:resource,clientId:codeData.clientId};
   const refresh={typ:"refresh",exp:now+30*24*3600*1000,iat:now,user:codeData.user,guildIds:codeData.guildIds,scope:codeData.scope,aud:resource,clientId:codeData.clientId};
   return {access_token:signPayload(access),token_type:"Bearer",expires_in:8*3600,refresh_token:signPayload(refresh),scope:codeData.scope.join(" ")};
+}
+function parseCookies(req){
+  const out={};for(const part of String(req.headers.cookie||"").split(";")){const i=part.indexOf("=");if(i<0)continue;const k=part.slice(0,i).trim(),v=part.slice(i+1).trim();if(k)out[k]=decodeURIComponent(v)}
+  return out;
+}
+function dashboardAuth(req){
+  const raw=parseCookies(req).cmd_discord_dashboard;if(!raw)return null;
+  try{const d=verifySigned(raw);return d.typ==="dashboard_session"&&d.user?.id&&Array.isArray(d.guildIds)?d:null}catch{return null}
+}
+function dashboardCookie(value,maxAge=7*24*3600){
+  return "cmd_discord_dashboard="+encodeURIComponent(value)+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
+}
+function clearDashboardCookie(){return "cmd_discord_dashboard=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}
+function html(res,body,status=200,headers={}){
+  res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
+}
+function dashboardPage(auth){
+  const user=auth?.user?.name||"";
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>CMD Discord Configurateur</title><style>
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:radial-gradient(circle at 20% 0,#2b1c55 0,#0b0d15 38%,#05070b 100%);color:#fff;min-height:100vh}a{color:inherit}.wrap{max-width:1180px;margin:auto;padding:24px}.top{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;gap:12px;align-items:center}.logo{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:grid;place-items:center;font-weight:1000;box-shadow:0 10px 35px #7c3aed44}.muted{color:#aeb4c0}.btn{border:1px solid #ffffff22;background:#ffffff0d;color:#fff;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}.btn:hover{background:#ffffff17}.primary{background:linear-gradient(135deg,#7c3aed,#db2777);border:0}.danger{background:#7f1d1d}.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:24px}.card{background:#10131bcc;border:1px solid #ffffff14;border-radius:18px;padding:16px;box-shadow:0 16px 50px #0005;backdrop-filter:blur(10px)}label{display:grid;gap:6px;font-size:13px;color:#c9ced8;margin-bottom:12px}input,select,textarea{width:100%;background:#080a10;border:1px solid #ffffff1d;color:#fff;border-radius:11px;padding:11px;font:inherit}textarea{min-height:84px;resize:vertical}.guild{width:100%;text-align:left;margin:7px 0}.guild.active{outline:2px solid #a78bfa}.bot{display:inline-flex;padding:3px 7px;border-radius:999px;background:#ffffff12;font-size:11px;margin-right:5px}.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.section{margin-top:16px}.list{display:grid;gap:8px;max-height:460px;overflow:auto}.row{padding:10px 12px;border:1px solid #ffffff12;background:#ffffff08;border-radius:12px}.row small{color:#9aa1ad}.status{position:fixed;right:18px;bottom:18px;max-width:360px;padding:12px 15px;border-radius:12px;background:#111827;border:1px solid #ffffff22;display:none}.status.show{display:block}.hero{padding:70px 20px;text-align:center}.hero h1{font-size:clamp(38px,7vw,72px);margin:0 0 12px}.hero p{font-size:18px;color:#b9bfca;max-width:720px;margin:0 auto 24px}.empty{padding:30px;text-align:center;color:#aeb4c0}@media(max-width:850px){.grid{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.wrap{padding:16px}}
+  </style></head><body>${auth?`<div class="wrap"><div class="top"><div class="brand"><div class="logo">CMD</div><div><h1 style="margin:0">Configurateur Discord CMD</h1><div class="muted">DAYZ GATE · BOT ARK · EXTINCTION ++ RSS</div></div></div><div><span class="muted">${user}</span> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div>
+  <div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list"><div class="empty">Chargement…</div></div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">Sélectionne un Discord</h2><div id="gbots" class="muted"></div></div><button id="refresh" class="btn" disabled>Actualiser</button></div><div id="workspace" class="empty">Choisis un Discord à gauche.</div></main></div></div><div id="status" class="status"></div>
+  <script>
+  const S={guild:null,bot:null,structure:null};const qs=s=>document.querySelector(s);
+  function toast(m,ok=true){const e=qs('#status');e.textContent=m;e.style.borderColor=ok?'#34d39966':'#fb718566';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
+  async function api(url,opt){const r=await fetch(url,{cache:'no-store',...opt,headers:{'content-type':'application/json',...(opt&&opt.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
+  async function loadGuilds(){const d=await api('/api/dashboard/guilds');const e=qs('#guilds');e.innerHTML='';for(const g of d.guilds||[]){const b=document.createElement('button');b.className='btn guild';b.innerHTML='<strong>'+g.name.replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x]))+'</strong><br><span class="muted">'+g.availableBots.map(x=>x.name).join(' · ')+'</span>';b.onclick=()=>selectGuild(g,b);e.appendChild(b)}if(!e.children.length)e.innerHTML='<div class="empty">Aucun Discord accessible par tes bots CMD.</div>'}
+  async function selectGuild(g,el){document.querySelectorAll('.guild').forEach(x=>x.classList.remove('active'));el.classList.add('active');S.guild=g;S.bot=g.availableBots[0]?.id||null;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+x.name+'</span>').join('');qs('#refresh').disabled=false;await loadStructure()}
+  async function loadStructure(){try{const d=await api('/api/dashboard/structure?guildId='+encodeURIComponent(S.guild.id)+(S.bot?'&bot='+encodeURIComponent(S.bot):''));S.structure=d;render()}catch(e){toast(e.message,false)}}
+  function render(){const d=S.structure||{},cats=(d.channels||[]).filter(x=>x.type==='category'),channels=(d.channels||[]).filter(x=>x.type!=='category'),roles=(d.roles||[]).filter(x=>!x.managed);qs('#workspace').className='';qs('#workspace').innerHTML=`
+    <div class="cols section">
+      <form id="catf" class="card"><h3>Nouvelle catégorie</h3><label>Nom<input name="name" required maxlength="100"></label><button class="btn primary">Créer</button></form>
+      <form id="chf" class="card"><h3>Nouveau salon</h3><label>Nom<input name="name" required maxlength="100"></label><label>Type<select name="type"><option value="text">Texte</option><option value="voice">Vocal</option><option value="announcement">Annonce</option><option value="forum">Forum</option></select></label><label>Catégorie<select name="parentId"><option value="">Aucune</option>${cats.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join('')}</select></label><label>Sujet<textarea name="topic" maxlength="1024"></textarea></label><button class="btn primary">Créer</button></form>
+      <form id="rolef" class="card"><h3>Nouveau rôle</h3><label>Nom<input name="name" required maxlength="100"></label><label>Couleur<input name="color" value="#7c3aed" pattern="#?[0-9A-Fa-f]{6}"></label><label><input type="checkbox" name="hoist" style="width:auto"> Afficher séparément</label><label><input type="checkbox" name="mentionable" style="width:auto"> Mentionnable</label><button class="btn primary">Créer</button></form>
+    </div>
+    <div class="section"><h3>Catégories & salons</h3><div class="list">${cats.map(c=>'<div class="row"><strong>📁 '+c.name+'</strong>'+channels.filter(x=>x.parentId===c.id).map(x=>'<div><small>'+x.type+'</small> · '+x.name+'</div>').join('')+'</div>').join('')}${channels.filter(x=>!x.parentId).map(x=>'<div class="row"><small>'+x.type+'</small> · '+x.name+'</div>').join('')}</div></div>
+    <div class="section"><h3>Rôles</h3><div class="list">${roles.map(r=>'<div class="row"><strong>'+r.name+'</strong> <small>position '+r.position+'</small></div>').join('')}</div></div>`;
+    qs('#catf').onsubmit=e=>submit(e,'create_category');qs('#chf').onsubmit=e=>submit(e,'create_channel');qs('#rolef').onsubmit=e=>submit(e,'create_role');
+  }
+  async function submit(e,action){e.preventDefault();const f=new FormData(e.currentTarget),body={action,guildId:S.guild.id,bot:S.bot};for(const [k,v] of f)body[k]=v;if(action==='create_role'){body.hoist=e.currentTarget.hoist.checked;body.mentionable=e.currentTarget.mentionable.checked}try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify(body)});toast('Modification appliquée sur Discord');e.currentTarget.reset();await loadStructure()}catch(x){toast(x.message,false)}}
+  qs('#refresh').onclick=loadStructure;loadGuilds().catch(e=>toast(e.message,false));
+  </script>`:`<div class="hero"><div class="logo" style="margin:0 auto 20px;width:78px;height:78px;font-size:22px">CMD</div><h1>Configurateur Discord CMD</h1><p>Configure gratuitement tes catégories, salons et rôles avec DAYZ GATE, BOT ARK ou EXTINCTION ++ RSS. Aucun abonnement supplémentaire.</p><a class="btn primary" href="/dashboard-login">Connexion Discord</a></div>`}</body></html>`;
 }
 function bearerAuth(req){
   const raw=String(req.headers.authorization||"").replace(/^Bearer\s+/i,"");
@@ -264,6 +310,29 @@ const httpServer=createServer(async(req,res)=>{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
 
+    if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/dashboard")){
+      const auth=dashboardAuth(req);html(res,dashboardPage(auth));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/dashboard-login"){
+      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000});
+      const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
+    }
+    if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
+      html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookie()});return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,200,await installedEverywhere(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dashboard/structure"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{const guildId=url.searchParams.get("guildId"),bot=url.searchParams.get("bot")||undefined;requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,bot);sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...await backend(chosen,"structure",{guildId})})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{const raw=await readFormBodyJson(req),guildId=String(raw.guildId||"");requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,raw.bot);const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions"]);if(!allowed.has(String(raw.action||"")))throw new Error("Action non autorisée.");const out=await backend(chosen,"action",{body:raw});sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...out})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+
     if(req.method==="GET"&&url.pathname==="/health"){
       sendJson(res,200,{ok:true,name:"CMD Discord MCP",oauth:true,bots:Object.values(bots).map(x=>x.label)});return;
     }
@@ -298,8 +367,13 @@ const httpServer=createServer(async(req,res)=>{
 
     if(req.method==="GET"&&url.pathname==="/auth/discord-bridge"){
       try{
-        const tx=verifySigned(url.searchParams.get("state"));if(tx.typ!=="oauth_tx")throw new Error("Transaction OAuth invalide.");
+        const tx=verifySigned(url.searchParams.get("state"));
         const identity=verifyDiscordBridge(url.searchParams.get("token"));
+        if(tx.typ==="dashboard_tx"){
+          const session=signPayload({typ:"dashboard_session",exp:Date.now()+7*24*3600*1000,user:identity.user,guildIds:identity.guildIds});
+          res.writeHead(302,{Location:baseUrl+"/dashboard","set-cookie":dashboardCookie(session),"cache-control":"no-store"});res.end();return;
+        }
+        if(tx.typ!=="oauth_tx")throw new Error("Transaction OAuth invalide.");
         const code=signPayload({typ:"auth_code",exp:Date.now()+90*1000,clientId:tx.clientId,redirectUri:tx.redirectUri,codeChallenge:tx.codeChallenge,scope:tx.scope,resource:tx.resource,user:identity.user,guildIds:identity.guildIds});
         const callback=new URL(tx.redirectUri);callback.searchParams.set("code",code);if(tx.oauthState)callback.searchParams.set("state",tx.oauthState);callback.searchParams.set("iss",issuer);redirect(res,callback);
       }catch(e){sendJson(res,400,{error:"oauth_bridge_failed",error_description:e.message})}
