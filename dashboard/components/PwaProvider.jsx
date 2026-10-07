@@ -28,7 +28,7 @@ export default function PwaProvider({children}){
     if(!('serviceWorker' in navigator)||!window.isSecureContext)return null;
     let registration=registrationRef.current||await navigator.serviceWorker.getRegistration('/');
     if(!registration){
-      registration=await navigator.serviceWorker.register('/sw.js?v=3',{scope:'/',updateViaCache:'none'}).catch(()=>null);
+      registration=await navigator.serviceWorker.register('/sw.js?v=4',{scope:'/',updateViaCache:'none'}).catch(()=>null);
     }
     if(registration)registrationRef.current=registration;
     return registration;
@@ -85,12 +85,15 @@ export default function PwaProvider({children}){
 
     const beforeInstall=e=>{e.preventDefault();setPrompt(e)};
     const appInstalled=()=>{setInstalled(true);setPrompt(null)};
-    const online=()=>{setOffline(false);checkUpdate(false)};
+    const online=()=>setOffline(false);
     const disconnected=()=>setOffline(true);
-    const focus=()=>checkUpdate(false);
-    const visibility=()=>{if(document.visibilityState==='visible')checkUpdate(false)};
     const controllerChange=()=>{
       if(reloadingRef.current)return;
+      try{
+        const key='extinction-pwa-reloaded-v4';
+        if(sessionStorage.getItem(key)==='1')return;
+        sessionStorage.setItem(key,'1');
+      }catch{}
       reloadingRef.current=true;
       window.location.reload();
     };
@@ -99,8 +102,6 @@ export default function PwaProvider({children}){
     window.addEventListener('appinstalled',appInstalled);
     window.addEventListener('online',online);
     window.addEventListener('offline',disconnected);
-    window.addEventListener('focus',focus);
-    document.addEventListener('visibilitychange',visibility);
     standalone.addEventListener('change',checkInstalled);
 
     let interval;
@@ -117,7 +118,7 @@ export default function PwaProvider({children}){
         });
         return registration.update();
       }).catch(()=>{});
-      interval=setInterval(()=>checkUpdate(false),10*60*1000);
+      interval=null;
     }
 
     return()=>{
@@ -125,8 +126,6 @@ export default function PwaProvider({children}){
       window.removeEventListener('appinstalled',appInstalled);
       window.removeEventListener('online',online);
       window.removeEventListener('offline',disconnected);
-      window.removeEventListener('focus',focus);
-      document.removeEventListener('visibilitychange',visibility);
       standalone.removeEventListener('change',checkInstalled);
       navigator.serviceWorker?.removeEventListener?.('controllerchange',controllerChange);
       if(interval)clearInterval(interval);
