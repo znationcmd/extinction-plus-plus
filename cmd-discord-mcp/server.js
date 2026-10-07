@@ -322,19 +322,30 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify({action:'send_message',guildId:CHAT.guildId,bot:CHAT.bot,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined})});CHAT.replyTo=null;updateReplyBar();await refreshDiscordMessages()}catch(e){input.value=old;toast(e.message,false)}finally{qs('#channelSend').disabled=false;input.focus()}
   }
   async function submit(e,action){e.preventDefault();const f=new FormData(e.currentTarget),body={action,guildId:S.guild.id,bot:S.bot};for(const [k,v] of f)body[k]=v;if(action==='create_role'){body.hoist=e.currentTarget.hoist.checked;body.mentionable=e.currentTarget.mentionable.checked}try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify(body)});toast('Modification appliquée sur Discord');e.currentTarget.reset();await loadStructure()}catch(x){toast(x.message,false)}}
+  async function refreshEverything(){
+    const b=qs('#refresh');if(b){b.disabled=true;b.textContent='↻ Actualisation…'}
+    try{
+      await loadGuilds();
+      if(S.guild&&S.guild.id)await loadStructure();
+      if(qs('#webhookModal')?.classList.contains('on'))await openWebhookManager();
+      toast('CMD Sphere actualisé');
+    }catch(e){toast(e.message,false)}
+    finally{if(b){b.disabled=false;b.textContent='↻ Actualiser'}}
+  }
   function closeWebhookManager(){qs('#webhookModal').classList.remove('on')}
   async function openWebhookManager(){
     qs('#webhookModal').classList.add('on');const box=qs('#webhookBody');box.innerHTML='<h2>Webhooks Discord</h2><p class="muted">Récupération des webhooks accessibles sur tous tes serveurs…</p>';
     try{
       const d=await api('/api/dashboard/webhooks?all=1');
       const guilds=d.guilds||[];
-      box.innerHTML='<h2>Webhooks Discord</h2><p class="muted">'+Number(d.total||0)+' webhook(s) trouvés sur '+guilds.length+' serveur(s). Les URL secrètes ne sont pas affichées ici.</p><div class="webhook-toolbar"><input id="webhookSearch" placeholder="Rechercher un webhook, salon ou serveur…"><button class="btn" id="webhookRefresh">↻ Actualiser</button></div><div id="webhookList"></div>';
+      box.innerHTML='<h2>Webhooks Discord</h2><p class="muted"><b>'+Number(d.total||0)+'</b> webhook(s) trouvés sur '+guilds.length+' serveur(s) · <b>'+Number(d.mine||0)+'</b> créé(s) par ton compte Discord. CMD Sphere interroge tous les bots CMD disponibles pour ne rien rater.</p><div class="webhook-toolbar"><input id="webhookSearch" placeholder="Rechercher un webhook, salon ou serveur…"><button class="btn" id="webhookMine">Mes webhooks</button><button class="btn" id="webhookRefresh">↻ Actualiser</button></div><div id="webhookList"></div>';
       const list=qs('#webhookList');
+      let mineOnly=false;
       function draw(q=''){
         q=String(q||'').trim().toLowerCase();
         let html='';
         for(const g of guilds){
-          const rows=(g.webhooks||[]).filter(w=>!q||[g.guildName,w.name,w.channelName,w.creator?.username,w.id].some(v=>String(v||'').toLowerCase().includes(q)));
+          const rows=(g.webhooks||[]).filter(w=>(!mineOnly||w.mine)&&(!q||[g.guildName,w.name,w.channelName,w.creator?.username,w.id].some(v=>String(v||'').toLowerCase().includes(q))));
           if(!rows.length)continue;
           const icon=g.guildIcon&&/^https?:/i.test(g.guildIcon)?'<img src="'+esc(g.guildIcon)+'" alt="">':'<span class="webhook-avatar">'+esc(String(g.guildName||'?').slice(0,1).toUpperCase())+'</span>';
           html+='<section class="webhook-guild"><div class="webhook-guild-head">'+icon+'<div class="grow"><b>'+esc(g.guildName||g.guildId)+'</b><small>'+esc(g.botName||g.bot||'CMD')+' · '+rows.length+' webhook(s)</small></div></div>';
@@ -347,7 +358,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         }
         list.innerHTML=html||'<div class="webhook-empty">Aucun webhook trouvé.</div>';
       }
-      draw();qs('#webhookSearch').oninput=e=>draw(e.target.value);qs('#webhookRefresh').onclick=openWebhookManager;
+      draw();qs('#webhookSearch').oninput=e=>draw(e.target.value);qs('#webhookMine').onclick=()=>{mineOnly=!mineOnly;qs('#webhookMine').classList.toggle('primary',mineOnly);draw(qs('#webhookSearch').value)};qs('#webhookRefresh').onclick=async()=>{qs('#webhookRefresh').disabled=true;try{await openWebhookManager();toast('Webhooks actualisés')}finally{const b=qs('#webhookRefresh');if(b)b.disabled=false}};
       if((d.errors||[]).length)toast((d.errors||[]).length+' serveur(s) non lisibles pour les webhooks',false);
     }catch(e){box.innerHTML='<h2>Webhooks Discord</h2><p>'+esc(e.message)+'</p>'}
   }
@@ -361,9 +372,9 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   async function importOne(id){try{await api('/api/native/import',{method:'POST',body:JSON.stringify({sourceGuildId:id})});closeAdd();await loadGuilds();toast('Discord importé dans CMD Sphere')}catch(x){toast(x.message,false)}}
   async function importAll(){try{const d=await api('/api/native/import-all',{method:'POST',body:'{}'});closeAdd();await loadGuilds();toast((d.imported||[]).length+' Discord propriétaire(s) importé(s)')}catch(x){toast(x.message,false)}}
   async function copyInvite(v){try{await navigator.clipboard.writeText(v);toast('Invitation copiée')}catch{prompt('Copie le lien',v)}}
-  if(qs('#refresh'))qs('#refresh').onclick=loadStructure;if(qs('#folderBtn'))qs('#folderBtn').onclick=()=>openFolderManager();if(qs('#folderClose'))qs('#folderClose').onclick=closeFolderManager;if(qs('#webhookBtn'))qs('#webhookBtn').onclick=openWebhookManager;if(qs('#webhookClose'))qs('#webhookClose').onclick=closeWebhookManager;if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));
+  if(qs('#refresh'))qs('#refresh').onclick=refreshEverything;if(qs('#folderBtn'))qs('#folderBtn').onclick=()=>openFolderManager();if(qs('#folderClose'))qs('#folderClose').onclick=closeFolderManager;if(qs('#webhookBtn'))qs('#webhookBtn').onclick=openWebhookManager;if(qs('#webhookClose'))qs('#webhookClose').onclick=closeWebhookManager;if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));
   `;
-  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12051f"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>CMD Sphere</title><style>'+style+'</style></head><body><div class="sphere-app"><aside class="server-rail"><a class="rail-home" href="/dashboard" title="CMD Sphere"><img src="/app-icon.webp?v=5" alt="CMD Sphere"></a><div class="rail-sep"></div><a class="rail-server rail-top" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener" title="CMD Top Serveur · Voter">🏆</a><div class="rail-sep"></div><div id="railGuilds" style="display:contents">'+nativeRailHtml+'</div><a class="rail-plus" id="railPlus" href="/servers/add" title="Créer ou rejoindre">＋</a></aside><div class="wrap"><div class="top"><div class="brand"><img src="/app-icon.webp?v=5" class="logo-img" alt="CMD Sphere"><div><h1 style="margin:0">CMD Sphere</h1><div class="muted">Communautés · Salons · Rôles · Invitations · Votes</div></div></div><div><span class="muted">'+user+'</span> <a class="btn" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mes Discord</a> <button class="btn" id="folderBtn">📁 Dossiers</button> <a class="btn" href="/messages">💬 Messages</a> <button class="btn" id="webhookBtn">🪝 Webhooks</button> <a class="btn" href="/shop">🛍️ Boutique gratuite</a> <a class="btn" href="/profile">Mon profil</a> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div><div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list">'+nativeListHtml+'</div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">CMD Sphere</h2><div id="gbots" class="muted"></div></div><button id="refresh" class="btn" disabled>Actualiser</button></div><div id="workspace" class="empty"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h2>Choisis un serveur dans la barre de gauche</h2><p>Ou appuie sur ＋ pour en créer/rejoindre un.</p><div class="card" style="margin:22px auto 0;max-width:640px;text-align:left;background:linear-gradient(135deg,#24102f,#15101f)"><div class="top"><div><div class="muted">🏆 CMD TOP SERVEUR</div><h2 style="margin:5px 0">Vote pour tes serveurs préférés</h2><p class="muted" style="margin:0">Classement par votes · 24 h / mois / total · 1 vote toutes les 2 heures.</p></div><a class="btn primary" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener">🗳️ VOTER</a></div></div></div></main></div></div></div><section id="channelOverlay" class="channel-overlay"><header class="channel-head"><button class="channel-back" type="button" onclick="closeDiscordChannel()">‹</button><div class="channel-head-main"><b id="channelTitle"># salon</b><small id="channelSubtitle">Discord</small></div><div class="channel-actions"><button class="btn" type="button" onclick="refreshDiscordMessages()">↻</button><button class="btn" type="button" onclick="loadDiscordMessages(false,true)">Tout</button></div></header><div id="channelMessages" class="channel-messages"></div><div class="channel-compose-wrap"><div id="replyBar" class="reply-bar"><span id="replyText"></span><button type="button" onclick="CHAT.replyTo=null;updateReplyBar()">×</button></div><form class="channel-composer" onsubmit="sendDiscordMessage(event)"><textarea id="channelInput" maxlength="2000" placeholder="Envoyer un message sur Discord…" disabled></textarea><button id="channelSend" disabled>Envoyer</button></form><div class="send-note">Le message est envoyé sur le vrai salon Discord via le bot CMD installé sur ce serveur.</div></div></section><div id="webhookModal" class="add-modal"><div class="add-card" style="width:min(820px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="webhookClose">✕</button></div><div id="webhookBody"><p class="muted">Chargement…</p></div></div></div><div id="folderModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="folderClose">✕</button></div><div id="folderBody"></div></div></div><div id="addModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="addClose">✕</button></div><div id="addBody"></div></div></div><div id="status" class="status"></div><script>'+script+'</script></body></html>';
+  return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12051f"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>CMD Sphere</title><style>'+style+'</style></head><body><div class="sphere-app"><aside class="server-rail"><a class="rail-home" href="/dashboard" title="CMD Sphere"><img src="/app-icon.webp?v=5" alt="CMD Sphere"></a><div class="rail-sep"></div><a class="rail-server rail-top" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener" title="CMD Top Serveur · Voter">🏆</a><div class="rail-sep"></div><div id="railGuilds" style="display:contents">'+nativeRailHtml+'</div><a class="rail-plus" id="railPlus" href="/servers/add" title="Créer ou rejoindre">＋</a></aside><div class="wrap"><div class="top"><div class="brand"><img src="/app-icon.webp?v=5" class="logo-img" alt="CMD Sphere"><div><h1 style="margin:0">CMD Sphere</h1><div class="muted">Communautés · Salons · Rôles · Invitations · Votes</div></div></div><div><span class="muted">'+user+'</span> <a class="btn" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mes Discord</a> <button class="btn" id="folderBtn">📁 Dossiers</button> <a class="btn" href="/messages">💬 Messages</a> <button class="btn" id="webhookBtn">🪝 Webhooks</button> <a class="btn" href="/shop">🛍️ Boutique gratuite</a> <a class="btn" href="/profile">Mon profil</a> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div><div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list">'+nativeListHtml+'</div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">CMD Sphere</h2><div id="gbots" class="muted"></div></div><button id="refresh" class="btn">↻ Actualiser</button></div><div id="workspace" class="empty"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h2>Choisis un serveur dans la barre de gauche</h2><p>Ou appuie sur ＋ pour en créer/rejoindre un.</p><div class="card" style="margin:22px auto 0;max-width:640px;text-align:left;background:linear-gradient(135deg,#24102f,#15101f)"><div class="top"><div><div class="muted">🏆 CMD TOP SERVEUR</div><h2 style="margin:5px 0">Vote pour tes serveurs préférés</h2><p class="muted" style="margin:0">Classement par votes · 24 h / mois / total · 1 vote toutes les 2 heures.</p></div><a class="btn primary" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener">🗳️ VOTER</a></div></div></div></main></div></div></div><section id="channelOverlay" class="channel-overlay"><header class="channel-head"><button class="channel-back" type="button" onclick="closeDiscordChannel()">‹</button><div class="channel-head-main"><b id="channelTitle"># salon</b><small id="channelSubtitle">Discord</small></div><div class="channel-actions"><button class="btn" type="button" onclick="refreshDiscordMessages()">↻</button><button class="btn" type="button" onclick="loadDiscordMessages(false,true)">Tout</button></div></header><div id="channelMessages" class="channel-messages"></div><div class="channel-compose-wrap"><div id="replyBar" class="reply-bar"><span id="replyText"></span><button type="button" onclick="CHAT.replyTo=null;updateReplyBar()">×</button></div><form class="channel-composer" onsubmit="sendDiscordMessage(event)"><textarea id="channelInput" maxlength="2000" placeholder="Envoyer un message sur Discord…" disabled></textarea><button id="channelSend" disabled>Envoyer</button></form><div class="send-note">Le message est envoyé sur le vrai salon Discord via le bot CMD installé sur ce serveur.</div></div></section><div id="webhookModal" class="add-modal"><div class="add-card" style="width:min(820px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="webhookClose">✕</button></div><div id="webhookBody"><p class="muted">Chargement…</p></div></div></div><div id="folderModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="folderClose">✕</button></div><div id="folderBody"></div></div></div><div id="addModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="addClose">✕</button></div><div id="addBody"></div></div></div><div id="status" class="status"></div><script>'+script+'</script></body></html>';
 }
 
 function bearerAuth(req){
@@ -1378,22 +1389,54 @@ async function resolveBot(auth,guildId,preferred){
 
 async function dashboardWebhooks(auth,guildId,preferred){
   requireGuild(auth,guildId);
-  const bot=await resolveBot(auth,guildId,preferred);
-  const [wh,st]=await Promise.all([backend(bot,"webhooks",{guildId}),backend(bot,"structure",{guildId}).catch(()=>({channels:[]}))]);
-  const channelMap=new Map((st.channels||[]).map(c=>[String(c.id),c.name]));
-  return {guildId:String(guildId),guildName:st.name||String(guildId),bot,botName:bots[bot].label,webhooks:(wh.webhooks||[]).map(w=>({id:String(w.id||''),guildId:String(w.guildId||guildId),channelId:w.channelId?String(w.channelId):null,channelName:channelMap.get(String(w.channelId||''))||null,name:String(w.name||'Webhook'),avatar:w.avatar||null,type:Number(w.type||1),applicationId:w.applicationId?String(w.applicationId):null,creator:w.creator?{id:String(w.creator.id||''),username:String(w.creator.username||'Discord'),avatar:w.creator.avatar||null}:null}))};
+  const all=await installedEverywhere(auth);
+  const guild=all.guilds.find(g=>String(g.id)===String(guildId));
+  if(!guild)throw new Error("Aucun bot CMD n'est installé sur ce Discord.");
+  const available=(guild.availableBots||[]).map(x=>x.id);
+  const order=[...new Set([preferred,...available].filter(Boolean))];
+  const merged=new Map(),errors=[];let structure=null,used=[];
+  for(const bot of order){
+    try{
+      const [wh,st]=await Promise.all([backend(bot,"webhooks",{guildId}),structure?Promise.resolve(null):backend(bot,"structure",{guildId}).catch(()=>null)]);
+      if(st&&!structure)structure=st;
+      used.push(bot);
+      for(const w of wh.webhooks||[]){
+        const id=String(w.id||'');if(!id)continue;
+        const prev=merged.get(id)||{};
+        merged.set(id,{...prev,...w,id,seenVia:[...new Set([...(prev.seenVia||[]),bot])]});
+      }
+    }catch(e){errors.push({bot,botName:bots[bot]?.label||bot,error:e.message})}
+  }
+  if(!used.length)throw new Error(errors.map(x=>x.botName+": "+x.error).join(" · ")||"Webhooks inaccessibles.");
+  if(!structure){
+    for(const bot of used){try{structure=await backend(bot,"structure",{guildId});break}catch{}}
+  }
+  const channelMap=new Map((structure?.channels||[]).map(c=>[String(c.id),c.name]));
+  const discordUserId=/^\d{15,22}$/.test(String(auth.user?.id||''))?String(auth.user.id):null;
+  const webhooks=[...merged.values()].map(w=>({
+    id:String(w.id||''),guildId:String(w.guildId||guildId),channelId:w.channelId?String(w.channelId):null,
+    channelName:channelMap.get(String(w.channelId||''))||null,name:String(w.name||'Webhook'),avatar:w.avatar||null,
+    type:Number(w.type||1),applicationId:w.applicationId?String(w.applicationId):null,
+    creator:w.creator?{id:String(w.creator.id||''),username:String(w.creator.username||'Discord'),avatar:w.creator.avatar||null}:null,
+    mine:Boolean(discordUserId&&w.creator?.id&&String(w.creator.id)===discordUserId),seenVia:w.seenVia||[]
+  })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  return {guildId:String(guildId),guildName:structure?.name||guild.name||String(guildId),guildIcon:guild.icon||null,bot:used[0],botName:used.map(b=>bots[b]?.label||b).join(' + '),botsUsed:used,webhooks,errors};
 }
 async function dashboardAllWebhooks(auth){
-  const all=await installedEverywhere(auth),guilds=all.guilds||[],out=[],errors=[];
+  const all=await installedEverywhere(auth),guilds=all.guilds||[],out=[],errors=[...(all.errors||[])];
   let index=0;
   async function worker(){
     while(index<guilds.length){
-      const g=guilds[index++];try{const d=await dashboardWebhooks(auth,g.id,g.availableBots?.[0]?.id);out.push({...d,guildName:g.name||d.guildName,guildIcon:g.icon||null})}catch(e){errors.push({guildId:g.id,guildName:g.name,error:e.message})}
+      const g=guilds[index++];try{
+        const d=await dashboardWebhooks(auth,g.id);
+        out.push({...d,guildName:g.name||d.guildName,guildIcon:g.icon||d.guildIcon||null});
+        for(const e of d.errors||[])errors.push({guildId:g.id,guildName:g.name,...e});
+      }catch(e){errors.push({guildId:g.id,guildName:g.name,error:e.message})}
     }
   }
   await Promise.all(Array.from({length:Math.min(4,guilds.length||1)},()=>worker()));
   out.sort((a,b)=>String(a.guildName||'').localeCompare(String(b.guildName||''),'fr'));
-  return {guilds:out,total:out.reduce((n,g)=>n+(g.webhooks||[]).length,0),errors};
+  return {guilds:out,total:out.reduce((n,g)=>n+(g.webhooks||[]).length,0),mine:out.reduce((n,g)=>n+(g.webhooks||[]).filter(w=>w.mine).length,0),errors};
 }
 
 async function actionTool(auth,args,action){
