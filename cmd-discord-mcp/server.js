@@ -163,4 +163,10 @@ const httpServer=createServer(async(req,res)=>{
   try{await server.connect(transport);await transport.handleRequest(req,res)}
   catch(e){console.error("MCP request failed",e);if(!res.headersSent)res.writeHead(500).end("Internal server error")}
 });
-httpServer.listen(port,"0.0.0.0",()=>console.log("CMD Discord MCP listening on port "+port));
+httpServer.listen(port,"0.0.0.0",async()=>{
+  console.log("CMD Discord MCP listening on port "+port);
+  for(const bot of Object.keys(bots)){
+    try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
+    catch(e){console.error("[selftest] "+bot+" backend FAILED: "+e.message)}
+  }
+});
