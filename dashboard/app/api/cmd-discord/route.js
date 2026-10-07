@@ -26,6 +26,12 @@ async function guilds(){
   return rows.map(g=>({id:String(g.id),name:g.name,icon:g.icon?('https://cdn.discordapp.com/icons/'+g.id+'/'+g.icon+'.webp?size=128'):null,memberCount:null})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
 }
 
+function botInvite(){
+  const clientId=String(process.env.CLIENT_ID||'');
+  if(!clientId)throw Object.assign(new Error('CLIENT_ID Discord absent'),{status:503});
+  return {bot:'extinction',name:'EXTINCTION ++ RSS',clientId,url:'https://discord.com/oauth2/authorize?client_id='+encodeURIComponent(clientId)+'&permissions=8&integration_type=0&scope=bot%20applications.commands'};
+}
+
 function avatarUrl(user){
   if(!user?.id||!user?.avatar)return null;
   const ext=String(user.avatar).startsWith('a_')?'gif':'webp';
@@ -172,6 +178,7 @@ export async function GET(req){
   try{
     auth(req);const u=new URL(req.url),op=u.searchParams.get('op')||'guilds';
     if(op==='guilds')return Response.json(await guilds(),{headers:{'Cache-Control':'no-store'}});
+    if(op==='invite')return Response.json(botInvite(),{headers:{'Cache-Control':'no-store'}});
     if(op==='structure')return Response.json(await structure(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
     if(op==='messages')return Response.json(await channelMessages(u.searchParams.get('guildId'),u.searchParams.get('channelId'),{before:u.searchParams.get('before')||'',limit:u.searchParams.get('limit')||100}),{headers:{'Cache-Control':'no-store'}});
     if(op==='webhooks')return Response.json(await guildWebhooks(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
