@@ -109,5 +109,11 @@ rep(`res.writeHead(200,{"content-type":"application/javascript","cache-control":
 `res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-store"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())await caches.delete(k);await self.clients.claim()})()));self.addEventListener('fetch',e=>{if(e.request.mode==='navigate')e.respondWith(fetch(e.request,{cache:'no-store'}));});");return;`,
 "PWA force refresh");
 
+
+/* photo source size limit removed: original files are accepted and compressed client-side */
+rep('Avatar · jusqu’à 2 Mo','Avatar',"avatar label no limit");
+rep('Bannière · jusqu’à 5 Mo','Bannière',"banner label no limit");
+rep('const max=kind==="banner"?5*1024*1024:2*1024*1024;if(file.size>max)throw new Error((kind==="banner"?"Bannière":"Avatar")+" trop lourd : maximum "+(kind==="banner"?"5 Mo":"2 Mo")+".");','',"remove source photo size check");
+
 fs.writeFileSync(p,s);
 console.log("[patch] total changes="+changed);
