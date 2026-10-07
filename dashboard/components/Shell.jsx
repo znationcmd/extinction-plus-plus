@@ -129,12 +129,29 @@ export default function Shell({ children }) {
     }).filter(([,items])=>items.length);
   },[menuQuery,t]);
 
+  async function installGuild(guild){
+    if(!guild?.inviteUrl)return;
+    const popup=window.open('about:blank','extinction-bot-install');
+    if(!popup){location.href=guild.inviteUrl;return}
+    try{popup.opener=null;popup.location.href=guild.inviteUrl}catch{}
+    const started=Date.now();
+    const timer=setInterval(async()=>{
+      if(Date.now()-started>120000){clearInterval(timer);return}
+      try{
+        const r=await fetch('/api/workspace',{cache:'no-store'}),body=await r.json();
+        const ready=(body.guilds||[]).find(g=>String(g.id)===String(guild.id)&&g.installed!==false);
+        if(!ready)return;
+        clearInterval(timer);
+        await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guildId:guild.id})});
+        try{popup.location.href=location.origin+'/?installedGuild='+encodeURIComponent(guild.id)}catch{}
+        location.reload();
+      }catch{}
+    },1500);
+  }
+
   async function selectGuild(guild){
     if(!guild)return;
-    if(guild.installed===false){
-      if(guild.inviteUrl)window.open(guild.inviteUrl,'_blank','noopener');
-      return;
-    }
+    if(guild.installed===false){await installGuild(guild);return}
     try{
       const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guildId:guild.id})});
       if(!r.ok)return;
@@ -147,6 +164,7 @@ export default function Shell({ children }) {
       <div className="fixed left-0 top-0 z-50 hidden h-screen w-20 flex-col items-center gap-3 overflow-y-auto border-r border-white/10 bg-[#161a1e]/95 px-2 py-5 lg:flex" aria-label="Discord installés sur ordinateur">
         {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 transition ${installed?'':'opacity-50 grayscale border-dashed hover:opacity-80 hover:grayscale-0'} ${selectedGuild?.id===g.id&&installed?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
           {g.icon?<img src={g.icon} alt="" className="h-full w-full object-cover"/>:<span className="text-xs font-black">{initials(g.name)}</span>}
+          {!installed&&<span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full border border-black/60 bg-[#252a2e] text-base font-black leading-none text-white">+</span>}
         </button>})}
       </div>
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
@@ -184,8 +202,9 @@ export default function Shell({ children }) {
       {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
-        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
+        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble relative ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
           {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
+          {!installed&&<span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full border border-black/60 bg-[#252a2e] text-base font-black leading-none text-white">+</span>}
         </button>})}
       </div>
 
