@@ -106,6 +106,10 @@ async function readFormBodyJson(req){
   const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>12*1024*1024)throw new Error("Requête trop volumineuse (12 Mo maximum).");chunks.push(chunk)}
   return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
 }
+async function readNativeMessageBodyJson(req){
+  const chunks=[];for await(const chunk of req)chunks.push(chunk);
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+}
 async function readForm(req){
   const chunks=[];let size=0;
   for await(const chunk of req){size+=chunk.length;if(size>65536)throw new Error("Requête OAuth trop volumineuse.");chunks.push(chunk)}
@@ -373,13 +377,13 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   function removePendingAttachment(i){CHAT.pendingAttachments.splice(Number(i),1);renderComposePreview()}
   async function fileToAttachment(file){
-    if(!file)return null;if(file.size>4*1024*1024)throw new Error('Fichier trop volumineux : 4 Mo maximum.');
+    if(!file)return null;
     const type=String(file.type||'application/octet-stream');if(!/^(image\/(png|jpeg|webp|gif)|audio\/(webm|mpeg|mp4)|application\/pdf|text\/plain)$/i.test(type))throw new Error('Format non pris en charge.');
     const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(new Error('Lecture du fichier impossible'));r.readAsDataURL(file)});
     return {filename:String(file.name||'fichier').slice(0,120),contentType:type,size:file.size,dataUrl};
   }
   async function addFiles(list){
-    try{for(const file of [...(list||[])].slice(0,4)){if(CHAT.pendingAttachments.length>=4)break;CHAT.pendingAttachments.push(await fileToAttachment(file))}renderComposePreview()}catch(e){toast(e.message,false)}
+    try{for(const file of [...(list||[])])CHAT.pendingAttachments.push(await fileToAttachment(file));renderComposePreview()}catch(e){toast(e.message,false)}
   }
   function openEmojiTab(tab='emoji'){
     const box=qs('#emojiContent');if(!box)return;
@@ -400,7 +404,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     try{
       const stream=await navigator.mediaDevices.getUserMedia({audio:true}),chunks=[],rec=new MediaRecorder(stream);CHAT.recorder=rec;CHAT.recording=true;qs('#channelMic').textContent='⏹️';toast('Enregistrement vocal en cours…');
       rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
-      rec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());CHAT.recording=false;CHAT.recorder=null;qs('#channelMic').textContent='🎙️';const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});if(blob.size>4*1024*1024){toast('Message vocal trop long.',false);return}const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result||''));fr.readAsDataURL(blob)});CHAT.pendingAttachments.push({filename:'vocal-'+Date.now()+'.webm',contentType:blob.type||'audio/webm',size:blob.size,dataUrl});renderComposePreview();toast('Message vocal prêt à envoyer')};
+      rec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());CHAT.recording=false;CHAT.recorder=null;qs('#channelMic').textContent='🎙️';const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result||''));fr.readAsDataURL(blob)});CHAT.pendingAttachments.push({filename:'vocal-'+Date.now()+'.webm',contentType:blob.type||'audio/webm',size:blob.size,dataUrl});renderComposePreview();toast('Message vocal prêt à envoyer')};
       rec.start();setTimeout(()=>{if(CHAT.recording&&CHAT.recorder?.state==='recording')CHAT.recorder.stop()},60000);
     }catch(e){toast('Microphone indisponible : '+e.message,false)}
   }
@@ -1737,12 +1741,11 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
 }
 
 function sanitizeNativeAttachments(v){
-  const arr=Array.isArray(v)?v:[],out=[];let total=0;
+  const arr=Array.isArray(v)?v:[],out=[];
   const allowed=/^data:(image\/(?:png|jpeg|webp|gif)|audio\/(?:webm|mpeg|mp4)|application\/pdf|text\/plain);base64,/i;
-  for(const raw of arr.slice(0,4)){
+  for(const raw of arr){
     const dataUrl=String(raw?.dataUrl||"");if(!allowed.test(dataUrl))continue;
-    const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);if(approx>4*1024*1024)throw new Error("Un fichier dépasse 4 Mo.");
-    total+=approx;if(total>8*1024*1024)throw new Error("Pièces jointes : 8 Mo maximum par message.");
+    const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);
     out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:safeText(raw?.contentType||"",80),size:approx,url:dataUrl});
   }
   return out;
@@ -2576,7 +2579,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{const body=await readFormBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
