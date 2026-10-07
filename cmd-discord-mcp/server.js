@@ -158,17 +158,18 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function iconUrl(g){if(!g||!g.icon)return '';if(/^https?:/.test(g.icon))return g.icon;if(/^\d{15,22}$/.test(String(g.id)))return 'https://cdn.discordapp.com/icons/'+g.id+'/'+g.icon+'.png?size=128';return ''}
   function iconHtml(g){const u=iconUrl(g);return u?'<img src="'+esc(u)+'" alt="">':'<span class="rail-initial">'+esc((g.name||'?').slice(0,2).toUpperCase())+'</span>'}
   async function loadGuilds(){
-    const [d,n,fd]=await Promise.all([api('/api/dashboard/guilds'),api('/api/native/guilds'),api('/api/folders')]);
+    const [d,n,fd,ld]=await Promise.all([api('/api/dashboard/guilds'),api('/api/native/guilds'),api('/api/folders'),api('/api/server-layout')]);
     const e=qs('#guilds'),rail=qs('#railGuilds');e.innerHTML='';rail.innerHTML='';
     const nativeGuilds=n.guilds||[],sourceIds=new Set(nativeGuilds.map(x=>String(x.source_discord_id||'')).filter(Boolean));
     const entries=[];
     for(const g of nativeGuilds)entries.push({key:'native:'+g.id,kind:'native',g});
     for(const g of d.guilds||[])if(!sourceIds.has(String(g.id)))entries.push({key:'discord:'+g.id,kind:'discord',g});
-    const byKey=new Map(entries.map(x=>[x.key,x])),foldered=new Set();
-    window.__cmdFolderState={folders:fd.folders||[],entries};
-    function railButton(entry){
+    const byKey=new Map(entries.map(x=>[x.key,x])),foldered=new Set(),folderMap=new Map();
+    window.__cmdFolderState={folders:fd.folders||[],entries,layout:ld.itemKeys||[]};
+    function railButton(entry,inFolder=false){
       const r=document.createElement('button');r.className='rail-server '+(entry.kind==='discord'&&!entry.g.installed?'off':'');r.title=entry.g.name;r.innerHTML=iconHtml(entry.g);
-      r.onclick=()=>entry.kind==='native'?selectNative(entry.g,r):selectGuild(entry.g,null,r);
+      if(inFolder)r.dataset.folderChildKey=entry.key;else r.dataset.layoutKey=entry.key;
+      r.onclick=()=>{if(Date.now()<(window.__suppressRailClick||0))return;entry.kind==='native'?selectNative(entry.g,r):selectGuild(entry.g,null,r)};
       return r;
     }
     function mini(entry){
@@ -177,22 +178,45 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const u=iconUrl(entry.g);if(u){const im=document.createElement('img');im.src=u;im.alt='';m.appendChild(im)}else m.textContent=(entry.g.name||'?').slice(0,1).toUpperCase();
       return m;
     }
-    for(const folder of fd.folders||[]){
-      const keys=(folder.serverKeys||[]).filter(k=>byKey.has(k));if(!keys.length)continue;
+    function makeFolder(folder){
+      const keys=(folder.serverKeys||[]).filter(k=>byKey.has(k));if(!keys.length)return null;
       keys.forEach(k=>foldered.add(k));
-      const wrap=document.createElement('div');wrap.className='rail-folder-wrap'+(folder.collapsed?'':' open');wrap.style.setProperty('--folder-color',folder.color||'#5865F2');
+      const wrap=document.createElement('div');wrap.className='rail-folder-wrap'+(folder.collapsed?'':' open');wrap.style.setProperty('--folder-color',folder.color||'#5865F2');wrap.dataset.layoutKey='folder:'+folder.id;wrap.dataset.folderId=folder.id;
       const b=document.createElement('button');b.className='rail-folder';b.title=folder.name+' · appuie pour ouvrir/fermer';
       for(let i=0;i<4;i++)b.appendChild(mini(byKey.get(keys[i])));
-      const children=document.createElement('div');children.className='rail-folder-servers';
-      keys.forEach(k=>children.appendChild(railButton(byKey.get(k))));
-      b.onclick=async()=>{wrap.classList.toggle('open');try{await api('/api/folders/collapse',{method:'POST',body:JSON.stringify({id:folder.id,collapsed:!wrap.classList.contains('open')})})}catch{}};
-      wrap.appendChild(b);wrap.appendChild(children);rail.appendChild(wrap);
+      const children=document.createElement('div');children.className='rail-folder-servers';children.dataset.folderId=folder.id;
+      keys.forEach(k=>children.appendChild(railButton(byKey.get(k),true)));
+      b.onclick=async()=>{if(Date.now()<(window.__suppressRailClick||0))return;wrap.classList.toggle('open');try{await api('/api/folders/collapse',{method:'POST',body:JSON.stringify({id:folder.id,collapsed:!wrap.classList.contains('open')})})}catch{}};
+      wrap.appendChild(b);wrap.appendChild(children);return wrap;
     }
-    for(const entry of entries)if(!foldered.has(entry.key))rail.appendChild(railButton(entry));
+    for(const folder of fd.folders||[]){const node=makeFolder(folder);if(node)folderMap.set('folder:'+folder.id,node)}
+    const nodes=new Map();
+    for(const entry of entries)if(!foldered.has(entry.key))nodes.set(entry.key,railButton(entry,false));
+    for(const [k,v] of folderMap)nodes.set(k,v);
+    const appended=new Set();
+    for(const key of ld.itemKeys||[]){const node=nodes.get(key);if(node&&!appended.has(key)){rail.appendChild(node);appended.add(key)}}
+    for(const [key,node] of nodes)if(!appended.has(key)){rail.appendChild(node);appended.add(key)}
+    setupRailReorder();
     for(const g of d.guilds||[]){
       const b=document.createElement('button');b.className='btn guild'+(g.installed?'':' off');b.innerHTML='<strong>'+esc(g.name)+'</strong><br><span class="muted">'+(g.installed?g.availableBots.map(x=>esc(x.name)).join(' · '):'Aucun bot CMD installé')+'</span>';b.onclick=()=>selectGuild(g,b);e.appendChild(b);
     }
     if(!e.children.length)e.innerHTML='<div class="empty">Tes Discord apparaîtront ici.</div>';
+  }
+  async function saveRailLayout(){
+    const keys=[...qs('#railGuilds').children].map(x=>x.dataset.layoutKey).filter(Boolean);
+    try{await api('/api/server-layout',{method:'POST',body:JSON.stringify({itemKeys:keys})})}catch(e){toast(e.message,false)}
+  }
+  function setupRailReorder(){
+    const rail=qs('#railGuilds');let drag=null,timer=null,startY=0,startX=0,moved=false;
+    rail.oncontextmenu=e=>{if(e.target.closest('[data-layout-key]'))e.preventDefault()};
+    rail.addEventListener('click',e=>{if(Date.now()<(window.__suppressRailClick||0)){e.preventDefault();e.stopPropagation()}},true);
+    const cancel=()=>{clearTimeout(timer);timer=null};
+    [...rail.children].filter(x=>x.dataset.layoutKey).forEach(el=>{
+      el.onpointerdown=ev=>{if(ev.pointerType==='mouse'&&ev.button!==0)return;cancel();startY=ev.clientY;startX=ev.clientX;moved=false;timer=setTimeout(()=>{drag=el;drag.classList.add('layout-dragging');window.__suppressRailClick=Date.now()+1200;try{el.setPointerCapture(ev.pointerId)}catch{};if(navigator.vibrate)navigator.vibrate(20)},380)};
+      el.onpointermove=ev=>{if(!drag){if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>9)cancel();return}ev.preventDefault();moved=true;const target=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('#railGuilds > [data-layout-key]');if(!target||target===drag)return;const r=target.getBoundingClientRect(),before=ev.clientY<r.top+r.height/2;rail.insertBefore(drag,before?target:target.nextSibling)};
+      el.onpointerup=async()=>{cancel();if(drag){drag.classList.remove('layout-dragging');drag=null;window.__suppressRailClick=Date.now()+700;await saveRailLayout();toast('Position des serveurs enregistrée')}};
+      el.onpointercancel=()=>{cancel();if(drag){drag.classList.remove('layout-dragging');drag=null}};
+    });
   }
   function closeFolderManager(){qs('#folderModal').classList.remove('on')}
   async function openFolderManager(folderId=''){
