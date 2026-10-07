@@ -75,7 +75,10 @@ function verifyDiscordBridge(value){
       displayName:String(data.user.displayName||data.user.name||"Discord").slice(0,100),
       avatar:data.user.avatar?String(data.user.avatar).slice(0,500):null,
       banner:data.user.banner?String(data.user.banner).slice(0,500):null,
-      accentColor:data.user.accentColor??null
+      accentColor:data.user.accentColor??null,
+      avatarDecorationData:data.user.avatarDecorationData||null,
+      collectibles:data.user.collectibles||null,
+      primaryGuild:data.user.primaryGuild||null
     },
     guildIds:[...new Set(guilds.map(g=>g.id))],
     guilds
@@ -670,7 +673,10 @@ function authFromAccount(account,identity){
       avatar:profile.avatar||null,
       banner:profile.banner||null,
       accentColor:profile.accentColor??null,
-      discordId:identity?.provider_user_id?String(identity.provider_user_id):null
+      discordId:identity?.provider_user_id?String(identity.provider_user_id):null,
+      avatarDecorationData:profile.avatarDecorationData||null,
+      collectibles:profile.collectibles||null,
+      primaryGuild:profile.primaryGuild||null
     },
     guildIds:[...new Set(guilds.map(g=>String(g.id||"")).filter(id=>/^\d{15,22}$/.test(id)))],
     guilds:guilds.map(g=>({id:String(g.id||""),name:String(g.name||g.id||"Discord").slice(0,100),icon:g.icon?String(g.icon).slice(0,300):null,owner:Boolean(g.owner),permissions:String(g.permissions||"0")})).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100)
@@ -715,7 +721,10 @@ async function resolveDiscordAccount(identity,linkAccountId=null){
     displayName:identity.user.displayName,
     avatar:identity.user.avatar,
     banner:identity.user.banner,
-    accentColor:identity.user.accentColor
+    accentColor:identity.user.accentColor,
+    avatarDecorationData:identity.user.avatarDecorationData||null,
+    collectibles:identity.user.collectibles||null,
+    primaryGuild:identity.user.primaryGuild||null
   };
   await pool.query(`INSERT INTO cmd_account_identities(account_id,provider,provider_user_id,profile,guilds)
     VALUES($1,'discord',$2,$3::jsonb,$4::jsonb)
