@@ -426,6 +426,14 @@ async function initNativeDb(){
     UNIQUE(user_id,server_key)
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_folder_items_user_idx ON cmd_server_folder_items(user_id,position)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_layout(
+    user_id TEXT NOT NULL,
+    item_key TEXT NOT NULL,
+    position INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,item_key)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_layout_user_pos_idx ON cmd_server_layout(user_id,position)');
   await initConnections(pool);
 
 }
@@ -890,6 +898,21 @@ async function allManagedGuilds(auth){
   return {guilds,errors:installed.errors||[]};
 }
 
+
+async function getServerLayout(auth){
+  const r=await pool.query('SELECT item_key,position FROM cmd_server_layout WHERE user_id=$1 ORDER BY position ASC,updated_at ASC',[String(auth.user.id)]);
+  return r.rows.map(x=>String(x.item_key));
+}
+async function saveServerLayout(auth,input){
+  const raw=[...new Set((Array.isArray(input.itemKeys)?input.itemKeys:[]).map(x=>String(x||'').trim()).filter(Boolean))].slice(0,400),userId=String(auth.user.id);
+  const folders=await pool.query('SELECT id FROM cmd_server_folders WHERE user_id=$1',[userId]),ownedFolders=new Set(folders.rows.map(x=>'folder:'+String(x.id)));
+  const servers=raw.filter(x=>!x.startsWith('folder:'));await validateFolderServerKeys(auth,servers);
+  for(const k of raw)if(k.startsWith('folder:')&&!ownedFolders.has(k))throw new Error('Dossier non autorisé.');
+  await pool.query('DELETE FROM cmd_server_layout WHERE user_id=$1',[userId]);
+  for(let i=0;i<raw.length;i++)await pool.query('INSERT INTO cmd_server_layout(user_id,item_key,position) VALUES($1,$2,$3)',[userId,raw[i],i]);
+  return {ok:true,itemKeys:raw};
+}
+
 async function getServerFolders(auth){
   const userId=String(auth.user.id);
   const [fr,ir]=await Promise.all([
@@ -1181,28 +1204,29 @@ async function joinNativeByCode(auth,code){
   return g.rows[0];
 }
 
-async function backend(bot,kind,{guildId,body}={}){
+async function backend(bot,kind,{guildId,channelId,before,limit,body}={}){
   const cfg=bots[bot];if(!cfg)throw new Error("Bot inconnu");
   let url=cfg.base;
   if(bot==="extinction"){
     if(kind==="guilds")url+="?op=guilds";
     else if(kind==="structure")url+="?op=structure&guildId="+encodeURIComponent(guildId);
+    else if(kind==="messages"){url+="?op=messages&guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
   }else{
     if(kind==="guilds")url+="/guilds";
     else if(kind==="structure")url+="/structure?guildId="+encodeURIComponent(guildId);
+    else if(kind==="messages"){url+="/messages?guildId="+encodeURIComponent(guildId)+"&channelId="+encodeURIComponent(channelId)+"&limit="+encodeURIComponent(limit||100);if(before)url+="&before="+encodeURIComponent(before)}
     else if(kind==="action")url+="/action";
   }
   let lastError=null;
-  for(let attempt=0;attempt<3;attempt++){
-    const res=await fetch(url,{method:kind==="action"?"POST":"GET",headers:{"x-cmd-mcp-secret":backendSecret,"content-type":"application/json"},body:kind==="action"?JSON.stringify(body||{}):undefined,signal:AbortSignal.timeout(20000),cache:"no-store"});
+  for(let attempt=0;attempt<4;attempt++){
+    const method=kind==="action"?"POST":"GET";
+    const res=await fetch(url,{method,headers:{"x-cmd-mcp-secret":backendSecret,"content-type":"application/json"},body:kind==="action"?JSON.stringify(body||{}):undefined,signal:AbortSignal.timeout(kind==="messages"?30000:20000),cache:"no-store"});
     const data=await res.json().catch(()=>({error:"Réponse backend invalide"}));
     if(res.ok)return data;
-    const msg=String(data.error||("HTTP "+res.status));
-    lastError=new Error(cfg.label+" : "+msg);
-    const rateLimited=res.status===429||/rate limit|too many requests/i.test(msg);
-    if(!rateLimited||attempt===2)throw lastError;
-    const waitMs=Math.min(5000,900*(attempt+1));
-    await new Promise(r=>setTimeout(r,waitMs));
+    const msg=String(data.error||("HTTP "+res.status));lastError=new Error(cfg.label+" : "+msg);
+    const retryable=res.status===429||res.status>=500||/rate limit|too many requests|temporaire/i.test(msg);
+    if(!retryable||attempt===3)throw lastError;
+    await new Promise(r=>setTimeout(r,Math.min(7000,900*(attempt+1))));
   }
   throw lastError||new Error(cfg.label+" indisponible");
 }
@@ -1402,6 +1426,14 @@ const httpServer=createServer(async(req,res)=>{
         html(res,profilePage(auth,profile,experience));
       }catch(e){html(res,"<h1>Profil indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/server-layout"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{itemKeys:await getServerLayout(auth)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/server-layout"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await saveServerLayout(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/folders"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,{folders:await getServerFolders(auth)})}catch(e){sendJson(res,400,{error:e.message})}return;
@@ -1558,6 +1590,13 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/dashboard/structure"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const guildId=url.searchParams.get("guildId"),bot=url.searchParams.get("bot")||undefined;requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,bot);sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...await backend(chosen,"structure",{guildId})})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/dashboard/messages"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const guildId=String(url.searchParams.get("guildId")||""),channelId=String(url.searchParams.get("channelId")||""),before=String(url.searchParams.get("before")||""),preferred=String(url.searchParams.get("bot")||"")||undefined,limit=Math.max(1,Math.min(100,Number(url.searchParams.get("limit")||100)));
+        requireGuild(auth,guildId);const bot=await resolveBot(auth,guildId,preferred);const data=await backend(bot,"messages",{guildId,channelId,before,limit});sendJson(res,200,{bot,botName:bots[bot].label,...data});
+      }catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
