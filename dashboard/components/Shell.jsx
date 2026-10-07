@@ -145,7 +145,7 @@ export default function Shell({ children }) {
   return (
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <div className="fixed left-0 top-0 z-50 hidden h-screen w-20 flex-col items-center gap-3 overflow-y-auto border-r border-white/10 bg-[#161a1e]/95 px-2 py-5 lg:flex" aria-label="Discord installés sur ordinateur">
-        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 transition ${installed?'':'opacity-45 grayscale-[.75] border-dashed hover:opacity-80 hover:grayscale-0'} ${selectedGuild?.id===g.id&&installed?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
+        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 transition ${installed?'':'opacity-50 grayscale border-dashed hover:opacity-80 hover:grayscale-0'} ${selectedGuild?.id===g.id&&installed?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
           {g.icon?<img src={g.icon} alt="" className="h-full w-full object-cover"/>:<span className="text-xs font-black">{initials(g.name)}</span>}
         </button>})}
       </div>
@@ -184,7 +184,7 @@ export default function Shell({ children }) {
       {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
-        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble ${installed?'':'opacity-45 grayscale-[.75] border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
+        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
           {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
         </button>})}
       </div>
