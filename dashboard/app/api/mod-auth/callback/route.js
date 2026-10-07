@@ -22,7 +22,7 @@ export async function GET(req) {
       const guilds=all.filter(canManage).slice(0,50).map(g=>({id:String(g.id),name:String(g.name||g.id).slice(0,100),icon:g.icon||null,owner:Boolean(g.owner),permissions:String(g.permissions||'0')}));
       const payload=Buffer.from(JSON.stringify({v:1,exp:Date.now()+5*60*1000,user:{id:String(user.id),name:String(user.username||'Discord').slice(0,100)},guilds})).toString('base64url');
       const sig=crypto.createHmac('sha256',secret).update(payload).digest('base64url');
-      const target=new URL('/auth/discord-bridge',saved.bridgeTarget);target.searchParams.set('token',payload+'.'+sig);
+      const target=new URL('/auth/discord-bridge',saved.bridgeTarget);target.searchParams.set('token',payload+'.'+sig);if(saved.bridgeState)target.searchParams.set('state',saved.bridgeState);
       return NextResponse.redirect(target);
     }
     const persistent = await createSession(token,user);
