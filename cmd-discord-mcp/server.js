@@ -351,6 +351,26 @@ async function initNativeDb(){
     installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(user_id,item_type,item_key)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_folders(
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL DEFAULT '#5865F2',
+    position INT NOT NULL DEFAULT 0,
+    collapsed BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_folders_user_pos_idx ON cmd_server_folders(user_id,position)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_folder_items(
+    folder_id UUID NOT NULL REFERENCES cmd_server_folders(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    server_key TEXT NOT NULL,
+    position INT NOT NULL DEFAULT 0,
+    PRIMARY KEY(folder_id,server_key),
+    UNIQUE(user_id,server_key)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_folder_items_user_idx ON cmd_server_folder_items(user_id,position)');
   await initConnections(pool);
 
 }
@@ -814,6 +834,68 @@ async function allManagedGuilds(auth){
   }).sort((a,b)=>a.name.localeCompare(b.name,"fr"));
   return {guilds,errors:installed.errors||[]};
 }
+
+async function getServerFolders(auth){
+  const userId=String(auth.user.id);
+  const [fr,ir]=await Promise.all([
+    pool.query('SELECT id,name,color,position,collapsed FROM cmd_server_folders WHERE user_id=$1 ORDER BY position ASC,created_at ASC',[userId]),
+    pool.query('SELECT folder_id,server_key,position FROM cmd_server_folder_items WHERE user_id=$1 ORDER BY position ASC',[userId])
+  ]);
+  const by=new Map();
+  for(const row of ir.rows){
+    const k=String(row.folder_id);const arr=by.get(k)||[];arr.push(String(row.server_key));by.set(k,arr);
+  }
+  return fr.rows.map(f=>({id:String(f.id),name:f.name,color:f.color||'#5865F2',position:Number(f.position||0),collapsed:Boolean(f.collapsed),serverKeys:by.get(String(f.id))||[]}));
+}
+async function validateFolderServerKeys(auth,keys){
+  const clean=[...new Set((Array.isArray(keys)?keys:[]).map(x=>String(x||'').trim()).filter(Boolean))].slice(0,200);
+  const userId=String(auth.user.id);
+  for(const key of clean){
+    if(key.startsWith('native:')){
+      const id=key.slice(7);
+      if(!/^[0-9a-f-]{36}$/i.test(id))throw new Error('Serveur CMD invalide.');
+      const r=await pool.query('SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1',[id,userId]);
+      if(!r.rows[0])throw new Error("Un serveur sélectionné n'appartient pas à ton compte.");
+    }else if(key.startsWith('discord:')){
+      const id=key.slice(8);
+      if(!/^\d{15,22}$/.test(id)||!auth.guildIds.map(String).includes(id))throw new Error("Un Discord sélectionné n'est pas autorisé.");
+    }else throw new Error('Type de serveur invalide.');
+  }
+  return clean;
+}
+async function saveServerFolder(auth,input){
+  const userId=String(auth.user.id),name=safeText(input.name,60);
+  if(!name)throw new Error('Nom du dossier requis.');
+  const color=/^#[0-9A-Fa-f]{6}$/.test(String(input.color||''))?String(input.color).toUpperCase():'#5865F2';
+  const keys=await validateFolderServerKeys(auth,input.serverKeys);
+  let id=String(input.id||'');
+  if(id){
+    const own=await pool.query('SELECT 1 FROM cmd_server_folders WHERE id=$1 AND user_id=$2 LIMIT 1',[id,userId]);
+    if(!own.rows[0])throw new Error('Dossier introuvable.');
+    await pool.query('UPDATE cmd_server_folders SET name=$3,color=$4,updated_at=NOW() WHERE id=$1 AND user_id=$2',[id,userId,name,color]);
+  }else{
+    id=crypto.randomUUID();
+    const pr=await pool.query('SELECT COALESCE(MAX(position),-1)+1 AS p FROM cmd_server_folders WHERE user_id=$1',[userId]);
+    await pool.query('INSERT INTO cmd_server_folders(id,user_id,name,color,position) VALUES($1,$2,$3,$4,$5)',[id,userId,name,color,Number(pr.rows[0]?.p||0)]);
+  }
+  await pool.query('DELETE FROM cmd_server_folder_items WHERE folder_id=$1 AND user_id=$2',[id,userId]);
+  if(keys.length){
+    await pool.query('DELETE FROM cmd_server_folder_items WHERE user_id=$1 AND server_key=ANY($2::text[])',[userId,keys]);
+    for(let i=0;i<keys.length;i++)await pool.query('INSERT INTO cmd_server_folder_items(folder_id,user_id,server_key,position) VALUES($1,$2,$3,$4)',[id,userId,keys[i],i]);
+  }
+  return {folder:(await getServerFolders(auth)).find(x=>x.id===id)};
+}
+async function deleteServerFolder(auth,id){
+  const r=await pool.query('DELETE FROM cmd_server_folders WHERE id=$1 AND user_id=$2 RETURNING id',[String(id),String(auth.user.id)]);
+  if(!r.rows[0])throw new Error('Dossier introuvable.');
+  return {ok:true};
+}
+async function setServerFolderCollapsed(auth,id,collapsed){
+  const r=await pool.query('UPDATE cmd_server_folders SET collapsed=$3,updated_at=NOW() WHERE id=$1 AND user_id=$2 RETURNING id,collapsed',[String(id),String(auth.user.id),Boolean(collapsed)]);
+  if(!r.rows[0])throw new Error('Dossier introuvable.');
+  return {id:String(r.rows[0].id),collapsed:Boolean(r.rows[0].collapsed)};
+}
+
 async function listNativeGuilds(auth){
   const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
     (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count
@@ -1264,6 +1346,22 @@ const httpServer=createServer(async(req,res)=>{
         const experience=await getProfileExperience(auth,url.searchParams.get("server")||"");
         html(res,profilePage(auth,profile,experience));
       }catch(e){html(res,"<h1>Profil indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/folders"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{folders:await getServerFolders(auth)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/folders/save"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await saveServerFolder(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/folders/delete"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await deleteServerFolder(auth,body.id))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/folders/collapse"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await setServerFolderCollapsed(auth,body.id,body.collapsed))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/shop"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
