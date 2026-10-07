@@ -58,9 +58,15 @@ function verifySigned(value,secret=oauthSecret){
 function verifyDiscordBridge(value){
   const data=verifySigned(value,discordBridgeSecret);
   if(data?.v!==1||!data?.user?.id||!Array.isArray(data.guilds))throw new Error("Connexion Discord invalide.");
+  const guilds=data.guilds.map(g=>({
+    id:String(g.id||""),
+    name:String(g.name||g.id||"Discord").slice(0,100),
+    icon:g.icon?String(g.icon).slice(0,300):null
+  })).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100);
   return {
     user:{id:String(data.user.id),name:String(data.user.name||"Discord").slice(0,100)},
-    guildIds:[...new Set(data.guilds.map(g=>String(g.id)).filter(id=>/^\d{15,22}$/.test(id)))].slice(0,100)
+    guildIds:[...new Set(guilds.map(g=>g.id))],
+    guilds
   };
 }
 function pkceS256(value){return crypto.createHash("sha256").update(String(value)).digest("base64url")}
@@ -161,6 +167,169 @@ function requireScope(auth,scope){
 }
 function requireGuild(auth,guildId){
   if(!auth.guildIds.includes(String(guildId)))throw new Error("Ce Discord n'est pas autorisé pour ce compte.");
+}
+
+async function initNativeDb(){
+  if(!pool)throw new Error("DATABASE_URL manquant");
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_guilds(
+    id UUID PRIMARY KEY,
+    owner_user_id TEXT NOT NULL,
+    source_discord_id TEXT,
+    name TEXT NOT NULL,
+    icon TEXT,
+    is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    invite_code TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(owner_user_id,source_discord_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    membership_role TEXT NOT NULL DEFAULT 'member',
+    profile_display_name TEXT,
+    profile_avatar_data_url TEXT,
+    profile_bio TEXT,
+    profile_status TEXT,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(guild_id,user_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channels(
+    id UUID PRIMARY KEY,
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    source_channel_id TEXT,
+    source_parent_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    topic TEXT,
+    position INT NOT NULL DEFAULT 0,
+    permission_overwrites JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(guild_id,source_channel_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_roles(
+    id UUID PRIMARY KEY,
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    source_role_id TEXT,
+    name TEXT NOT NULL,
+    color TEXT,
+    permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
+    position INT NOT NULL DEFAULT 0,
+    hoist BOOLEAN NOT NULL DEFAULT FALSE,
+    mentionable BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(guild_id,source_role_id)
+  )`);
+}
+function authGuildMeta(auth,id){
+  return (Array.isArray(auth.guilds)?auth.guilds:[]).find(g=>String(g.id)===String(id))||{id:String(id),name:String(id),icon:null};
+}
+function safeText(v,max=100){return String(v??"").trim().slice(0,max)}
+function safeAvatar(v){
+  v=String(v||"");
+  if(!v)return null;
+  if(!/^data:image\/(png|jpeg|webp);base64,/i.test(v))throw new Error("Format d'image non pris en charge.");
+  if(v.length>420000)throw new Error("Image trop lourde. Maximum environ 300 Ko.");
+  return v;
+}
+async function nativeMembership(userId,guildId){
+  const r=await pool.query('SELECT * FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1',[String(guildId),String(userId)]);
+  return r.rows[0]||null;
+}
+async function requireNativeMember(auth,guildId){
+  const m=await nativeMembership(auth.user.id,guildId);if(!m)throw new Error("Tu n'es pas membre de ce serveur CMD.");return m;
+}
+async function requireNativeAdmin(auth,guildId){
+  const m=await requireNativeMember(auth,guildId);if(!["owner","admin"].includes(m.membership_role))throw new Error("Permission administrateur requise.");return m;
+}
+async function allManagedGuilds(auth){
+  const installed=await installedEverywhere(auth);
+  const byId=new Map(installed.guilds.map(g=>[String(g.id),g]));
+  const guilds=auth.guildIds.map(id=>{
+    const meta=authGuildMeta(auth,id),hit=byId.get(String(id));
+    return {id:String(id),name:hit?.name||meta.name||String(id),icon:hit?.icon||meta.icon||null,memberCount:hit?.memberCount??null,availableBots:hit?.availableBots||[],installed:Boolean(hit)};
+  }).sort((a,b)=>a.name.localeCompare(b.name,"fr"));
+  return {guilds,errors:installed.errors||[]};
+}
+async function listNativeGuilds(auth){
+  const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
+    (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count
+    FROM cmd_native_guilds g JOIN cmd_native_members m ON m.guild_id=g.id
+    WHERE m.user_id=$1 ORDER BY g.updated_at DESC`,[String(auth.user.id)]);
+  return r.rows;
+}
+async function createNativeGuild(auth,input){
+  const name=safeText(input.name,100);if(!name)throw new Error("Nom du serveur requis.");
+  const id=crypto.randomUUID(),inviteCode=crypto.randomBytes(8).toString("base64url");
+  const r=await pool.query(`INSERT INTO cmd_native_guilds(id,owner_user_id,name,is_public,invite_code) VALUES($1,$2,$3,$4,$5) RETURNING *`,
+    [id,String(auth.user.id),name,Boolean(input.isPublic),inviteCode]);
+  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4)',[id,String(auth.user.id),'owner',safeText(auth.user.name,80)]);
+  await pool.query(`INSERT INTO cmd_native_roles(id,guild_id,name,color,permissions,position,hoist,mentionable)
+    VALUES($1,$2,'@everyone','#99AAB5',$3::jsonb,0,FALSE,FALSE)`,
+    [crypto.randomUUID(),id,JSON.stringify({viewChannels:true,sendMessages:true,readHistory:true,connect:true,speak:true})]);
+  const cat=crypto.randomUUID();
+  await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,'Informations','category',0)`,[cat,id]);
+  await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,topic,position,source_parent_id) VALUES($1,$2,'bienvenue-et-règles','text','Bienvenue sur ce serveur CMD Discord',1,$3)`,[crypto.randomUUID(),id,cat]);
+  await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,'général','text',2)`,[crypto.randomUUID(),id]);
+  return r.rows[0];
+}
+async function syncNativeFromDiscord(auth,sourceGuildId,preferredBot){
+  requireGuild(auth,sourceGuildId);
+  const bot=await resolveBot(auth,sourceGuildId,preferredBot);
+  const structure=await backend(bot,"structure",{guildId:sourceGuildId});
+  const meta=authGuildMeta(auth,sourceGuildId);
+  const installed=await installedEverywhere(auth);
+  const ig=installed.guilds.find(g=>String(g.id)===String(sourceGuildId));
+  const name=safeText(ig?.name||meta.name||("Discord "+sourceGuildId),100);
+  const icon=ig?.icon||meta.icon||null;
+  const existing=await pool.query('SELECT id,invite_code FROM cmd_native_guilds WHERE owner_user_id=$1 AND source_discord_id=$2 LIMIT 1',[String(auth.user.id),String(sourceGuildId)]);
+  const nativeId=existing.rows[0]?.id||crypto.randomUUID(),inviteCode=existing.rows[0]?.invite_code||crypto.randomBytes(8).toString("base64url");
+  await pool.query(`INSERT INTO cmd_native_guilds(id,owner_user_id,source_discord_id,name,icon,invite_code)
+    VALUES($1,$2,$3,$4,$5,$6)
+    ON CONFLICT(owner_user_id,source_discord_id) DO UPDATE SET name=EXCLUDED.name,icon=EXCLUDED.icon,updated_at=NOW()`,
+    [nativeId,String(auth.user.id),String(sourceGuildId),name,icon,inviteCode]);
+  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET membership_role=EXCLUDED.membership_role',[nativeId,String(auth.user.id),'owner',safeText(auth.user.name,80)]);
+  await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1',[nativeId]);
+  await pool.query('DELETE FROM cmd_native_roles WHERE guild_id=$1',[nativeId]);
+  for(const ch of Array.isArray(structure.channels)?structure.channels:[]){
+    await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)`,
+      [crypto.randomUUID(),nativeId,String(ch.id||crypto.randomUUID()),ch.parentId?String(ch.parentId):null,safeText(ch.name||'salon',100),safeText(ch.type||'text',30),ch.topic?safeText(ch.topic,1024):null,Number(ch.position||0),JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]);
+  }
+  for(const role of Array.isArray(structure.roles)?structure.roles:[]){
+    await pool.query(`INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable)
+      VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)`,
+      [crypto.randomUUID(),nativeId,String(role.id||crypto.randomUUID()),safeText(role.name||'rôle',100),role.color!=null?String(role.color):null,JSON.stringify(role.permissions||{}),Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]);
+  }
+  return {id:nativeId,name,sourceDiscordId:String(sourceGuildId),bot,botName:bots[bot].label,inviteUrl:baseUrl+"/invite/"+inviteCode};
+}
+async function nativeGuildDetail(auth,id){
+  const member=await requireNativeMember(auth,id);
+  const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
+  if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
+  const [channels,roles]=await Promise.all([
+    pool.query('SELECT * FROM cmd_native_channels WHERE guild_id=$1 ORDER BY position,name',[String(id)]),
+    pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 ORDER BY position DESC,name',[String(id)])
+  ]);
+  return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:baseUrl+"/invite/"+g.rows[0].invite_code};
+}
+async function updateNativeProfile(auth,input){
+  const guildId=String(input.guildId||"");await requireNativeMember(auth,guildId);
+  const displayName=safeText(input.displayName||auth.user.name,80),bio=safeText(input.bio,190),status=safeText(input.status,80),avatar=safeAvatar(input.avatarDataUrl);
+  const r=await pool.query(`UPDATE cmd_native_members SET profile_display_name=$3,profile_avatar_data_url=$4,profile_bio=$5,profile_status=$6
+    WHERE guild_id=$1 AND user_id=$2 RETURNING membership_role,profile_display_name,profile_avatar_data_url,profile_bio,profile_status`,
+    [guildId,String(auth.user.id),displayName,avatar,bio,status]);
+  return r.rows[0];
+}
+async function discoverNativeGuilds(){
+  const r=await pool.query(`SELECT g.id,g.name,g.icon,g.invite_code,g.updated_at,(SELECT COUNT(*)::int FROM cmd_native_members m WHERE m.guild_id=g.id) member_count
+    FROM cmd_native_guilds g WHERE g.is_public=TRUE ORDER BY member_count DESC,g.updated_at DESC LIMIT 100`);
+  return r.rows.map(x=>({...x,inviteUrl:baseUrl+"/invite/"+x.invite_code}));
+}
+async function joinNativeByCode(auth,code){
+  const g=await pool.query('SELECT id,name FROM cmd_native_guilds WHERE invite_code=$1 LIMIT 1',[safeText(code,80)]);if(!g.rows[0])throw new Error("Invitation CMD invalide.");
+  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO NOTHING',[g.rows[0].id,String(auth.user.id),'member',safeText(auth.user.name,80)]);
+  return g.rows[0];
 }
 
 async function backend(bot,kind,{guildId,body}={}){
@@ -324,7 +493,8 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);html(res,dashboardPage(auth));return;
     }
     if(req.method==="GET"&&url.pathname==="/dashboard-login"){
-      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000});
+      const next=safeText(url.searchParams.get("next")||"/dashboard",220);
+      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000,next});
       const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
     }
     if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
@@ -332,7 +502,38 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
-      try{sendJson(res,200,await installedEverywhere(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+      try{sendJson(res,200,await allManagedGuilds(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/guilds"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,200,{guilds:await listNativeGuilds(auth)})}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/guilds"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,201,{guild:await createNativeGuild(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/discover"){
+      try{sendJson(res,200,{guilds:await discoverNativeGuilds()})}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/import"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,{guild:await syncNativeFromDiscord(auth,String(body.sourceGuildId||""),body.bot||undefined)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/import-all"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{
+        const managed=await allManagedGuilds(auth),imported=[],skipped=[];
+        for(const g of managed.guilds){if(!g.installed){skipped.push({id:g.id,name:g.name,reason:"Aucun bot CMD installé"});continue}try{imported.push(await syncNativeFromDiscord(auth,g.id))}catch(e){skipped.push({id:g.id,name:g.name,reason:e.message})}}
+        sendJson(res,200,{imported,skipped});
+      }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname.startsWith("/api/native/guild/")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{sendJson(res,200,await nativeGuildDetail(auth,url.pathname.split("/").pop()))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/profile"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,{profile:await updateNativeProfile(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/structure"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
@@ -341,6 +542,24 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const raw=await readFormBodyJson(req),guildId=String(raw.guildId||"");requireGuild(auth,guildId);const chosen=await resolveBot(auth,guildId,raw.bot);const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions"]);if(!allowed.has(String(raw.action||"")))throw new Error("Action non autorisée.");const out=await backend(chosen,"action",{body:raw});sendJson(res,200,{bot:chosen,botName:bots[chosen].label,...out})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+
+    if(req.method==="GET"&&url.pathname.startsWith("/invite/")){
+      const code=safeText(url.pathname.split("/").pop(),80),auth=dashboardAuth(req);
+      if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/invite/"+code));return}
+      try{const g=await joinNativeByCode(auth,code);redirect(res,baseUrl+"/dashboard?native="+encodeURIComponent(g.id));}catch(e){html(res,'<!doctype html><meta charset="utf-8"><title>Invitation CMD</title><body style="font-family:system-ui;background:#090b12;color:white;padding:40px"><h1>Invitation CMD Discord</h1><p>'+safeText(e.message,200)+'</p><a href="/dashboard" style="color:#a78bfa">Retour</a></body>',400)}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
+      sendJson(res,200,{name:"CMD Discord",short_name:"CMD Discord",start_url:"/dashboard",display:"standalone",background_color:"#070910",theme_color:"#5865F2",icons:[{src:"/app-icon.png",sizes:"1024x1024",type:"image/png",purpose:"any maskable"}]},{"content-type":"application/manifest+json","cache-control":"public,max-age=3600"});return;
+    }
+    if(req.method==="GET"&&url.pathname==="/app-icon.png"){
+      if(!iconB64){res.writeHead(404).end("icon missing");return}res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=86400"});res.end(Buffer.from(iconB64,"base64"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/brand-logo.png"){
+      if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/sw.js"){
+      res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-cache"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',()=>{});");return;
     }
 
     if(req.method==="GET"&&url.pathname==="/health"){
@@ -380,8 +599,8 @@ const httpServer=createServer(async(req,res)=>{
         const tx=verifySigned(url.searchParams.get("state"));
         const identity=verifyDiscordBridge(url.searchParams.get("token"));
         if(tx.typ==="dashboard_tx"){
-          const session=signPayload({typ:"dashboard_session",exp:Date.now()+7*24*3600*1000,user:identity.user,guildIds:identity.guildIds});
-          res.writeHead(302,{Location:baseUrl+"/dashboard","set-cookie":dashboardCookie(session),"cache-control":"no-store"});res.end();return;
+          const session=signPayload({typ:"dashboard_session",exp:Date.now()+7*24*3600*1000,user:identity.user,guildIds:identity.guildIds,guilds:identity.guilds||[]});
+          res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store"});res.end();return;
         }
         if(tx.typ!=="oauth_tx")throw new Error("Transaction OAuth invalide.");
         const code=signPayload({typ:"auth_code",exp:Date.now()+90*1000,clientId:tx.clientId,redirectUri:tx.redirectUri,codeChallenge:tx.codeChallenge,scope:tx.scope,resource:tx.resource,user:identity.user,guildIds:identity.guildIds});
@@ -444,6 +663,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
+  try{await initNativeDb();console.log("[native] CMD Discord database ready")}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Discord MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
