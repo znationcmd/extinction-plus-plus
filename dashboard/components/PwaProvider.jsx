@@ -28,7 +28,7 @@ export default function PwaProvider({children}){
     if(!('serviceWorker' in navigator)||!window.isSecureContext)return null;
     let registration=registrationRef.current||await navigator.serviceWorker.getRegistration('/');
     if(!registration){
-      registration=await navigator.serviceWorker.register('/sw.js?v=5',{scope:'/',updateViaCache:'none'}).catch(()=>null);
+      registration=await navigator.serviceWorker.register('/sw.js?v=6',{scope:'/',updateViaCache:'none'}).catch(()=>null);
     }
     if(registration)registrationRef.current=registration;
     return registration;
