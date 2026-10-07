@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
+import pg from "pg";
 
 const port=Number(process.env.PORT||8787);
 const baseUrl=String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"");
@@ -10,6 +11,9 @@ const backendSecret=String(process.env.CMD_MCP_SECRET||"");
 const oauthSecret=String(process.env.OAUTH_SIGNING_SECRET||"");
 const discordBridgeSecret=String(process.env.DISCORD_BRIDGE_SECRET||"");
 const bridgeLoginUrl=String(process.env.DISCORD_ACCOUNT_BRIDGE_URL||"https://dashboard-production-e07b.up.railway.app/api/mod-auth/login");
+const databaseUrl=String(process.env.DATABASE_URL||"");
+const logoB64=String(process.env.CMD_DISCORD_LOGO_B64||"");
+const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
 if(backendSecret.length<32)throw new Error("CMD_MCP_SECRET must be at least 32 characters");
 if(oauthSecret.length<32)throw new Error("OAUTH_SIGNING_SECRET must be at least 32 characters");
