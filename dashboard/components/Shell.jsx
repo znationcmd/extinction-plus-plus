@@ -120,7 +120,7 @@ export default function Shell({ children }) {
     return()=>{cancelled=true};
   },[]);
 
-  const selectedGuild=workspace.guilds?.find(g=>g.id===workspace.selectedGuildId)||workspace.guilds?.[0]||null;
+  const selectedGuild=workspace.guilds?.find(g=>g.id===workspace.selectedGuildId&&g.installed!==false)||workspace.guilds?.find(g=>g.installed!==false)||workspace.guilds?.[0]||null;
   const visibleGroups=useMemo(()=>{
     const q=menuQuery.trim().toLowerCase();
     return groups.map(([title,hrefs])=>{
@@ -129,9 +129,14 @@ export default function Shell({ children }) {
     }).filter(([,items])=>items.length);
   },[menuQuery,t]);
 
-  async function selectGuild(guildId){
+  async function selectGuild(guild){
+    if(!guild)return;
+    if(guild.installed===false){
+      if(guild.inviteUrl)window.open(guild.inviteUrl,'_blank','noopener');
+      return;
+    }
     try{
-      const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guildId})});
+      const r=await fetch('/api/workspace',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({guildId:guild.id})});
       if(!r.ok)return;
       location.reload();
     }catch{}
@@ -140,9 +145,9 @@ export default function Shell({ children }) {
   return (
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <div className="fixed left-0 top-0 z-50 hidden h-screen w-20 flex-col items-center gap-3 overflow-y-auto border-r border-white/10 bg-[#161a1e]/95 px-2 py-5 lg:flex" aria-label="Discord installés sur ordinateur">
-        {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 ${selectedGuild?.id===g.id?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
+        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 transition ${installed?'':'opacity-45 grayscale-[.75] border-dashed hover:opacity-80 hover:grayscale-0'} ${selectedGuild?.id===g.id&&installed?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
           {g.icon?<img src={g.icon} alt="" className="h-full w-full object-cover"/>:<span className="text-xs font-black">{initials(g.name)}</span>}
-        </button>)}
+        </button>})}
       </div>
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
@@ -179,16 +184,16 @@ export default function Shell({ children }) {
       {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
-        {(workspace.guilds||[]).map(g=><button key={g.id} type="button" title={g.name} onClick={()=>selectGuild(g.id)} className={`ext-guild-bubble ${selectedGuild?.id===g.id?'active':''}`}>
+        {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble ${installed?'':'opacity-45 grayscale-[.75] border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
           {g.icon?<img src={g.icon} alt=""/>:<span>{initials(g.name)}</span>}
-        </button>)}
+        </button>})}
       </div>
 
       <aside className={`ext-module-panel lg:hidden ${menuOpen?'open':''}`}>
         <div className="ext-module-top">
           <div className="ext-server-context">
             {selectedGuild?.icon?<img src={selectedGuild.icon} alt=""/>:<div className="ext-server-fallback">{initials(selectedGuild?.name||'EX')}</div>}
-            <div><strong>{selectedGuild?.name||'EXTINCTION++ RSS'}</strong><small>{selectedGuild?'Bot installé':'Discord sélectionné'}</small></div>
+            <div><strong>{selectedGuild?.name||'EXTINCTION++ RSS'}</strong><small>{selectedGuild?(selectedGuild.installed===false?'Bot non installé':'Bot installé'):'Discord sélectionné'}</small></div>
           </div>
           <label className="ext-module-search"><Search size={21}/><input value={menuQuery} onChange={e=>setMenuQuery(e.target.value)} placeholder={t('Rechercher un module')}/></label>
         </div>
