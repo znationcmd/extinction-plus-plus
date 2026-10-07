@@ -1239,6 +1239,121 @@ function shopPreviewHtml(item){
   if(item.type==="decoration")return '<div class="art"><div class="shop-deco-wrap"><span class="shop-avatar big"><img src="/app-icon.webp?v=5" alt=""></span><span class="shop-deco-ring shop-deco-'+key+'"></span><span class="shop-deco-icon">'+icon+'</span></div></div>';
   return '<div class="art"><span class="shop-badge">'+icon+' <b>'+label+'</b></span></div>';
 }
+
+const PAYPAL_ME_URL="https://www.paypal.me/ZnationCmdofficiel";
+const PREMIUM_PLANS={
+  monthly:{id:"monthly_5",label:"Premium mensuel",price:5,days:31},
+  annual:{id:"annual_50",label:"Premium annuel",price:50,days:365}
+};
+function isCmdOwner(auth){
+  const ownerId=String(process.env.CMD_OWNER_USER_ID||"").trim();
+  const ownerName=String(process.env.CMD_OWNER_USERNAME||"cmd").trim().toLowerCase();
+  return Boolean((ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
+}
+function premiumItem(item){
+  if(!item)return false;
+  return (item.type==="frame"&&["royal","cyanfire","pinkfire"].includes(item.key))||
+    (item.type==="effect"&&["aurora","purplelightning","apocalypse"].includes(item.key))||
+    (item.type==="nameplate"&&["cosmic","aurora","midnight"].includes(item.key))||
+    (item.type==="decoration"&&["crystal","neon","halo"].includes(item.key));
+}
+async function getPremiumState(auth){
+  const owner=isCmdOwner(auth),uid=String(auth.user.id);
+  const sub=await pool.query("SELECT * FROM cmd_premium_subscriptions WHERE user_id=$1 LIMIT 1",[uid]);
+  const boosts=await pool.query("SELECT b.id::text,b.guild_id::text,g.name,g.icon,b.created_at FROM cmd_server_boosts b JOIN cmd_native_guilds g ON g.id=b.guild_id WHERE b.user_id=$1 AND b.active=TRUE ORDER BY b.created_at DESC",[uid]);
+  const row=sub.rows[0]||null,until=row?.current_period_end?new Date(row.current_period_end):null;
+  const active=owner||Boolean(row&&row.status==="active"&&until&&until.getTime()>Date.now());
+  return {owner,active,status:owner?"lifetime":(row?.status||"inactive"),planId:owner?"owner_lifetime":(row?.plan_id||null),currentPeriodEnd:owner?null:(row?.current_period_end||null),paymentReference:row?.payment_reference||null,boostLimit:owner?null:(active?3:0),boostUsed:boosts.rows.length,boosts:boosts.rows.map(r=>({id:String(r.id),guildId:String(r.guild_id),guildName:r.name,icon:r.icon||null,createdAt:r.created_at}))};
+}
+async function claimManualPremium(auth,input){
+  if(isCmdOwner(auth))return {ok:true,owner:true,state:await getPremiumState(auth)};
+  const plan=PREMIUM_PLANS[String(input.plan||"")];if(!plan)throw new Error("Offre Premium invalide.");
+  const ref=safeText(input.reference,180);if(!ref)throw new Error("Référence PayPal requise.");
+  const note=safeText(input.note,500);
+  await pool.query("INSERT INTO cmd_premium_subscriptions(user_id,provider,plan_id,status,payment_reference,payment_note,updated_at) VALUES($1,'paypal_manual',$2,'pending',$3,$4,NOW()) ON CONFLICT(user_id) DO UPDATE SET provider='paypal_manual',plan_id=EXCLUDED.plan_id,status='pending',payment_reference=EXCLUDED.payment_reference,payment_note=EXCLUDED.payment_note,updated_at=NOW()",[String(auth.user.id),plan.id,ref,note]);
+  return {ok:true,pending:true,plan};
+}
+async function listPendingPremium(auth){
+  if(!isCmdOwner(auth))return [];
+  const r=await pool.query("SELECT s.user_id,s.plan_id,s.payment_reference,s.payment_note,s.updated_at,a.username,a.display_name FROM cmd_premium_subscriptions s LEFT JOIN cmd_accounts a ON a.id::text=s.user_id WHERE s.status='pending' ORDER BY s.updated_at ASC LIMIT 200");
+  return r.rows.map(x=>({userId:String(x.user_id),username:x.username||"Utilisateur",displayName:x.display_name||x.username||"Utilisateur",planId:x.plan_id,reference:x.payment_reference,note:x.payment_note||"",updatedAt:x.updated_at}));
+}
+async function approveManualPremium(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Accès propriétaire requis.");
+  const uid=String(input.userId||"");if(!uid)throw new Error("Utilisateur requis.");
+  const r=await pool.query("SELECT plan_id,current_period_end FROM cmd_premium_subscriptions WHERE user_id=$1 AND status='pending' LIMIT 1",[uid]);
+  const row=r.rows[0],plan=Object.values(PREMIUM_PLANS).find(p=>p.id===String(row?.plan_id||""));if(!plan)throw new Error("Demande Premium introuvable.");
+  const base=row?.current_period_end&&new Date(row.current_period_end).getTime()>Date.now()?new Date(row.current_period_end).getTime():Date.now();
+  const until=new Date(base+plan.days*86400000);
+  await pool.query("UPDATE cmd_premium_subscriptions SET status='active',verified_at=NOW(),current_period_end=$2,updated_at=NOW() WHERE user_id=$1",[uid,until]);
+  return {ok:true,userId:uid,currentPeriodEnd:until.toISOString(),plan};
+}
+async function rejectManualPremium(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Accès propriétaire requis.");
+  const uid=String(input.userId||"");if(!uid)throw new Error("Utilisateur requis.");
+  await pool.query("UPDATE cmd_premium_subscriptions SET status='rejected',updated_at=NOW() WHERE user_id=$1 AND status='pending'",[uid]);
+  return {ok:true};
+}
+async function addServerBoost(auth,input){
+  const guildId=String(input.guildId||"");await requireNativeMember(auth,guildId);
+  const state=await getPremiumState(auth);if(!state.active)throw new Error("CMD Sphere Premium requis.");
+  if(!state.owner&&state.boostUsed>=3)throw new Error("Tes 3 boosts Premium sont déjà utilisés.");
+  const id=crypto.randomUUID();
+  await pool.query("INSERT INTO cmd_server_boosts(id,user_id,guild_id,active) VALUES($1,$2,$3,TRUE)",[id,String(auth.user.id),guildId]);
+  return {ok:true,id,state:await getPremiumState(auth)};
+}
+async function removeServerBoost(auth,input){
+  const id=String(input.id||"");if(!id)throw new Error("Boost requis.");
+  const r=await pool.query("UPDATE cmd_server_boosts SET active=FALSE WHERE id=$1 AND user_id=$2 AND active=TRUE RETURNING id",[id,String(auth.user.id)]);
+  if(!r.rows[0])throw new Error("Boost introuvable.");
+  return {ok:true,state:await getPremiumState(auth)};
+}
+function normalizeRewardCode(v){return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9-]/g,"")}
+async function generatePremiumCode(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Seul le propriétaire CMD peut générer des codes.");
+  const months=Number(input.months);if(![1,2,3].includes(months))throw new Error("Durée : 1, 2 ou 3 mois.");
+  const maxUses=Math.max(1,Math.min(10000,Number(input.maxUses)||1));
+  const custom=normalizeRewardCode(input.code);
+  let code=custom||("CMD-"+months+"M-"+crypto.randomBytes(5).toString("hex").toUpperCase());
+  if(code.length<6||code.length>40)throw new Error("Code invalide.");
+  const id=crypto.randomUUID(),expiresAt=input.expiresAt?new Date(input.expiresAt):null;
+  if(expiresAt&&isNaN(expiresAt.getTime()))throw new Error("Date d'expiration invalide.");
+  try{await pool.query("INSERT INTO cmd_premium_codes(id,code,months,max_uses,created_by,expires_at) VALUES($1,$2,$3,$4,$5,$6)",[id,code,months,maxUses,String(auth.user.id),expiresAt])}catch(e){if(String(e.code)==="23505")throw new Error("Ce code existe déjà.");throw e}
+  return {ok:true,code,months,maxUses,expiresAt:expiresAt?expiresAt.toISOString():null};
+}
+async function listPremiumCodes(auth){
+  if(!isCmdOwner(auth))return [];
+  const r=await pool.query("SELECT id::text,code,months,max_uses,uses,active,created_at,expires_at FROM cmd_premium_codes ORDER BY created_at DESC LIMIT 300");
+  return r.rows;
+}
+async function redeemPremiumCode(auth,input){
+  const code=normalizeRewardCode(input.code);if(!code)throw new Error("Code requis.");
+  const uid=String(auth.user.id);
+  const client=await pool.connect();
+  try{
+    await client.query("BEGIN");
+    const r=await client.query("SELECT * FROM cmd_premium_codes WHERE code=$1 FOR UPDATE",[code]);
+    const row=r.rows[0];if(!row||!row.active)throw new Error("Code invalide ou désactivé.");
+    if(row.expires_at&&new Date(row.expires_at).getTime()<Date.now())throw new Error("Ce code a expiré.");
+    if(Number(row.uses)>=Number(row.max_uses))throw new Error("Ce code a déjà atteint sa limite d'utilisation.");
+    const used=await client.query("SELECT 1 FROM cmd_premium_code_redemptions WHERE code_id=$1 AND user_id=$2",[row.id,uid]);
+    if(used.rows[0])throw new Error("Tu as déjà utilisé ce code.");
+    const sub=await client.query("SELECT current_period_end FROM cmd_premium_subscriptions WHERE user_id=$1 LIMIT 1",[uid]);
+    const current=sub.rows[0]?.current_period_end?new Date(sub.rows[0].current_period_end).getTime():0;
+    const base=Math.max(Date.now(),Number.isFinite(current)?current:0);
+    const until=new Date(base+Number(row.months)*31*86400000);
+    await client.query("INSERT INTO cmd_premium_subscriptions(user_id,provider,plan_id,status,verified_at,current_period_end,updated_at) VALUES($1,'reward_code',$2,'active',NOW(),$3,NOW()) ON CONFLICT(user_id) DO UPDATE SET provider='reward_code',plan_id=EXCLUDED.plan_id,status='active',verified_at=NOW(),current_period_end=EXCLUDED.current_period_end,updated_at=NOW()",[uid,"reward_"+row.months+"m",until]);
+    await client.query("INSERT INTO cmd_premium_code_redemptions(code_id,user_id) VALUES($1,$2)",[row.id,uid]);
+    await client.query("UPDATE cmd_premium_codes SET uses=uses+1 WHERE id=$1",[row.id]);
+    await client.query("COMMIT");
+    return {ok:true,months:Number(row.months),currentPeriodEnd:until.toISOString()};
+  }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+}
+async function disablePremiumCode(auth,input){
+  if(!isCmdOwner(auth))throw new Error("Seul le propriétaire CMD peut gérer les codes.");
+  const id=String(input.id||"");await pool.query("UPDATE cmd_premium_codes SET active=FALSE WHERE id=$1",[id]);return {ok:true};
+}
+
 function shopPage(auth,installed){
   const items=shopCatalog(),groups=[...new Set(items.map(x=>x.group))];
   const content=groups.map(group=>`<section><h2>${escHtml(group)}</h2><div class="grid">${items.filter(x=>x.group===group).map(x=>{
