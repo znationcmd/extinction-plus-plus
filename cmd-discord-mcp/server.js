@@ -1381,7 +1381,7 @@ async function dashboardWebhooks(auth,guildId,preferred){
   const bot=await resolveBot(auth,guildId,preferred);
   const [wh,st]=await Promise.all([backend(bot,"webhooks",{guildId}),backend(bot,"structure",{guildId}).catch(()=>({channels:[]}))]);
   const channelMap=new Map((st.channels||[]).map(c=>[String(c.id),c.name]));
-  return {guildId:String(guildId),guildName:st.name||String(guildId),bot,botName:bots[bot].label,webhooks:(wh.webhooks||[]).map(w=>({...w,channelName:channelMap.get(String(w.channelId||''))||null}))};
+  return {guildId:String(guildId),guildName:st.name||String(guildId),bot,botName:bots[bot].label,webhooks:(wh.webhooks||[]).map(w=>({id:String(w.id||''),guildId:String(w.guildId||guildId),channelId:w.channelId?String(w.channelId):null,channelName:channelMap.get(String(w.channelId||''))||null,name:String(w.name||'Webhook'),avatar:w.avatar||null,type:Number(w.type||1),applicationId:w.applicationId?String(w.applicationId):null,creator:w.creator?{id:String(w.creator.id||''),username:String(w.creator.username||'Discord'),avatar:w.creator.avatar||null}:null}))};
 }
 async function dashboardAllWebhooks(auth){
   const all=await installedEverywhere(auth),guilds=all.guilds||[],out=[],errors=[];
