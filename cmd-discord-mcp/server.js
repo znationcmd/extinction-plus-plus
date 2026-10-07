@@ -655,6 +655,31 @@ async function initNativeDb(){
     read_at TIMESTAMPTZ
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_dm_messages_thread_created_idx ON cmd_dm_messages(thread_id,created_at)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_friend_requests(
+    id UUID PRIMARY KEY,
+    requester_user_id TEXT NOT NULL,
+    target_user_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(requester_user_id,target_user_id)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_friend_requests_target_status_idx ON cmd_friend_requests(target_user_id,status,created_at DESC)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_friendships(
+    user_low TEXT NOT NULL,
+    user_high TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_low,user_high)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channel_reads(
+    user_id TEXT NOT NULL,
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    channel_id UUID NOT NULL REFERENCES cmd_native_channels(id) ON DELETE CASCADE,
+    last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,channel_id)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_channel_reads_user_guild_idx ON cmd_native_channel_reads(user_id,guild_id)');
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_shop_installs(
     user_id TEXT NOT NULL,
     item_type TEXT NOT NULL,
@@ -1076,6 +1101,121 @@ function shopPage(auth,installed){
   </script></body></html>`;
 }
 
+
+async function accountCardById(id){
+  const r=await pool.query(`SELECT a.id,a.username,a.display_name,g.avatar_data_url,g.status
+    FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text
+    WHERE a.id::text=$1 LIMIT 1`,[String(id)]);
+  const x=r.rows[0];if(!x)return null;
+  return {id:String(x.id),username:x.username,displayName:x.display_name||x.username,avatar:x.avatar_data_url||null,status:x.status||""};
+}
+function friendPair(a,b){return [String(a),String(b)].sort()}
+async function areFriends(a,b){
+  const [low,high]=friendPair(a,b);
+  const r=await pool.query('SELECT 1 FROM cmd_friendships WHERE user_low=$1 AND user_high=$2 LIMIT 1',[low,high]);
+  return Boolean(r.rows[0]);
+}
+async function listFriends(auth){
+  const me=String(auth.user.id);
+  const [incoming,outgoing,fr]=await Promise.all([
+    pool.query(`SELECT r.id,r.requester_user_id,r.created_at,a.username,a.display_name,g.avatar_data_url,g.status
+      FROM cmd_friend_requests r
+      LEFT JOIN cmd_accounts a ON a.id::text=r.requester_user_id
+      LEFT JOIN cmd_global_profiles g ON g.user_id=r.requester_user_id
+      WHERE r.target_user_id=$1 AND r.status='pending' ORDER BY r.created_at DESC`,[me]),
+    pool.query(`SELECT r.id,r.target_user_id,r.created_at,a.username,a.display_name,g.avatar_data_url,g.status
+      FROM cmd_friend_requests r
+      LEFT JOIN cmd_accounts a ON a.id::text=r.target_user_id
+      LEFT JOIN cmd_global_profiles g ON g.user_id=r.target_user_id
+      WHERE r.requester_user_id=$1 AND r.status='pending' ORDER BY r.created_at DESC`,[me]),
+    pool.query(`SELECT f.created_at,
+      CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END other_id,
+      a.username,a.display_name,g.avatar_data_url,g.status
+      FROM cmd_friendships f
+      LEFT JOIN cmd_accounts a ON a.id::text=(CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END)
+      LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text
+      WHERE f.user_low=$1 OR f.user_high=$1 ORDER BY COALESCE(a.display_name,a.username) ASC`,[me])
+  ]);
+  return {
+    incoming:incoming.rows.map(x=>({id:String(x.id),userId:String(x.requester_user_id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,status:x.status||"",createdAt:x.created_at})),
+    outgoing:outgoing.rows.map(x=>({id:String(x.id),userId:String(x.target_user_id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,status:x.status||"",createdAt:x.created_at})),
+    friends:fr.rows.map(x=>({userId:String(x.other_id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,status:x.status||"",createdAt:x.created_at}))
+  };
+}
+async function sendFriendRequest(auth,input){
+  const me=String(auth.user.id);
+  let target=null;
+  if(input.userId){
+    target=await accountCardById(input.userId);
+  }else{
+    const key=normalizeUsername(input.username).key;
+    const r=await pool.query('SELECT id FROM cmd_accounts WHERE username_key=$1 LIMIT 1',[key]);
+    if(r.rows[0])target=await accountCardById(r.rows[0].id);
+  }
+  if(!target)throw new Error("Utilisateur CMD Sphere introuvable.");
+  const other=String(target.id);if(other===me)throw new Error("Tu ne peux pas t’ajouter toi-même.");
+  if(await areFriends(me,other))return {ok:true,alreadyFriends:true,user:target};
+  const reverse=await pool.query("SELECT id FROM cmd_friend_requests WHERE requester_user_id=$1 AND target_user_id=$2 AND status='pending' LIMIT 1",[other,me]);
+  if(reverse.rows[0]){
+    const [low,high]=friendPair(me,other);
+    await pool.query('INSERT INTO cmd_friendships(user_low,user_high) VALUES($1,$2) ON CONFLICT DO NOTHING',[low,high]);
+    await pool.query("UPDATE cmd_friend_requests SET status='accepted',updated_at=NOW() WHERE id=$1",[reverse.rows[0].id]);
+    return {ok:true,accepted:true,user:target};
+  }
+  const id=crypto.randomUUID();
+  await pool.query(`INSERT INTO cmd_friend_requests(id,requester_user_id,target_user_id,status)
+    VALUES($1,$2,$3,'pending')
+    ON CONFLICT(requester_user_id,target_user_id) DO UPDATE SET status='pending',updated_at=NOW()`,[id,me,other]);
+  return {ok:true,pending:true,user:target};
+}
+async function respondFriendRequest(auth,input){
+  const me=String(auth.user.id),id=String(input.id||""),action=String(input.action||"");
+  const r=await pool.query("SELECT * FROM cmd_friend_requests WHERE id=$1 AND target_user_id=$2 AND status='pending' LIMIT 1",[id,me]);
+  const req=r.rows[0];if(!req)throw new Error("Demande d’ami introuvable.");
+  if(action==="accept"){
+    const [low,high]=friendPair(me,req.requester_user_id);
+    await pool.query('INSERT INTO cmd_friendships(user_low,user_high) VALUES($1,$2) ON CONFLICT DO NOTHING',[low,high]);
+    await pool.query("UPDATE cmd_friend_requests SET status='accepted',updated_at=NOW() WHERE id=$1",[id]);
+    return {ok:true,accepted:true};
+  }
+  if(action==="decline"){
+    await pool.query("UPDATE cmd_friend_requests SET status='declined',updated_at=NOW() WHERE id=$1",[id]);
+    return {ok:true,declined:true};
+  }
+  throw new Error("Action invalide.");
+}
+async function removeFriend(auth,input){
+  const me=String(auth.user.id),other=String(input.userId||"");if(!other)throw new Error("Ami requis.");
+  const [low,high]=friendPair(me,other);
+  await pool.query('DELETE FROM cmd_friendships WHERE user_low=$1 AND user_high=$2',[low,high]);
+  return {ok:true};
+}
+async function markNativeChannelRead(auth,guildId,channelId){
+  await pool.query(`INSERT INTO cmd_native_channel_reads(user_id,guild_id,channel_id,last_read_at,updated_at)
+    VALUES($1,$2,$3,NOW(),NOW())
+    ON CONFLICT(user_id,channel_id) DO UPDATE SET guild_id=EXCLUDED.guild_id,last_read_at=NOW(),updated_at=NOW()`,
+    [String(auth.user.id),String(guildId),String(channelId)]);
+}
+async function getUnreadSummary(auth){
+  const me=String(auth.user.id);
+  const [dm,native,fr]=await Promise.all([
+    pool.query(`SELECT COUNT(*)::int AS n FROM cmd_dm_messages m
+      JOIN cmd_dm_threads t ON t.id=m.thread_id
+      WHERE (t.user_low=$1 OR t.user_high=$1) AND m.sender_user_id<>$1 AND m.read_at IS NULL`,[me]),
+    pool.query(`SELECT m.guild_id::text AS guild_id,COUNT(*)::int AS n
+      FROM cmd_native_channel_messages m
+      JOIN cmd_native_members mem ON mem.guild_id=m.guild_id AND mem.user_id=$1
+      LEFT JOIN cmd_native_channel_reads r ON r.user_id=$1 AND r.channel_id=m.channel_id
+      WHERE m.sender_user_id<>$1 AND m.created_at>COALESCE(r.last_read_at,'1970-01-01'::timestamptz)
+      GROUP BY m.guild_id`,[me]),
+    pool.query("SELECT COUNT(*)::int AS n FROM cmd_friend_requests WHERE target_user_id=$1 AND status='pending'",[me])
+  ]);
+  const nativeByGuild={};let nativeTotal=0;
+  for(const row of native.rows){nativeByGuild[String(row.guild_id)]=Number(row.n||0);nativeTotal+=Number(row.n||0)}
+  const dmTotal=Number(dm.rows[0]?.n||0),friendRequests=Number(fr.rows[0]?.n||0);
+  return {dm:dmTotal,nativeTotal,friendRequests,total:dmTotal+nativeTotal+friendRequests,nativeByGuild};
+}
+
 async function getDmPreferences(auth){
   const r=await pool.query("SELECT allow_dms,allow_message_requests FROM cmd_user_preferences WHERE user_id=$1 LIMIT 1",[String(auth.user.id)]);
   return r.rows[0]||{allow_dms:true,allow_message_requests:true};
@@ -1293,7 +1433,10 @@ async function setServerFolderCollapsed(auth,id,collapsed){
 
 async function listNativeGuilds(auth){
   const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
-    (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count
+    (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count,
+    (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
+      LEFT JOIN cmd_native_channel_reads rd ON rd.user_id=$1 AND rd.channel_id=msg.channel_id
+      WHERE msg.guild_id=g.id AND msg.sender_user_id<>$1 AND msg.created_at>COALESCE(rd.last_read_at,'1970-01-01'::timestamptz)) AS unread_count
     FROM cmd_native_guilds g JOIN cmd_native_members m ON m.guild_id=g.id
     WHERE m.user_id=$1 ORDER BY g.updated_at DESC`,[String(auth.user.id)]);
   return r.rows;
@@ -1433,6 +1576,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
     attachments:[],embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
+  if(!before)await markNativeChannelRead(auth,guildId,ch.id);
   return {mode:"native",channel:{id:String(ch.id),name:ch.name,type:ch.type,topic:ch.topic||null},messages,hasMore:messages.length===n,nextBefore:messages.length?messages[messages.length-1].id:null};
 }
 async function sendNativeChannelMessage(auth,input){
@@ -1461,7 +1605,11 @@ async function nativeGuildDetail(auth,id){
   const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
   if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const [channels,roles]=await Promise.all([
-    pool.query('SELECT * FROM cmd_native_channels WHERE guild_id=$1 ORDER BY position,name',[String(id)]),
+    pool.query(`SELECT c.*,
+      (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
+        LEFT JOIN cmd_native_channel_reads rd ON rd.user_id=$2 AND rd.channel_id=msg.channel_id
+        WHERE msg.channel_id=c.id AND msg.sender_user_id<>$2 AND msg.created_at>COALESCE(rd.last_read_at,'1970-01-01'::timestamptz)) AS unread_count
+      FROM cmd_native_channels c WHERE c.guild_id=$1 ORDER BY c.position,c.name`,[String(id),String(auth.user.id)]),
     pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 ORDER BY position DESC,name',[String(id)])
   ]);
   return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:baseUrl+"/invite/"+g.rows[0].invite_code};
