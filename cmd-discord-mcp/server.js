@@ -1480,6 +1480,144 @@ async function dashboardAllWebhooks(auth){
   return {guilds:out,total:out.reduce((n,g)=>n+(g.webhooks||[]).length,0),mine:out.reduce((n,g)=>n+(g.webhooks||[]).filter(w=>w.mine).length,0),errors};
 }
 
+
+const mirrorRunning=new Set();
+function mirrorAuthSnapshot(auth){
+  return {user:{id:String(auth.user.id),name:String(auth.user.name||''),displayName:String(auth.user.displayName||''),avatar:auth.user.avatar||null,banner:auth.user.banner||null,accentColor:auth.user.accentColor??null,discordId:auth.user.discordId||null},
+    guildIds:(auth.guildIds||[]).map(String),guilds:Array.isArray(auth.guilds)?auth.guilds:[]};
+}
+async function mirrorIdentityProfile(auth){
+  const userId=String(auth.user.id);
+  let identity=null;
+  try{
+    const r=await pool.query("SELECT provider_user_id,profile,guilds FROM cmd_account_identities WHERE account_id=$1 AND provider='discord' LIMIT 1",[userId]);
+    identity=r.rows[0]||null;
+  }catch{}
+  const profile={...auth.user,discordProfile:identity?.profile||null};
+  await pool.query(`INSERT INTO cmd_discord_mirror_profile(user_id,discord_user_id,profile,guilds,synced_at)
+    VALUES($1,$2,$3::jsonb,$4::jsonb,NOW())
+    ON CONFLICT(user_id) DO UPDATE SET discord_user_id=EXCLUDED.discord_user_id,profile=EXCLUDED.profile,guilds=EXCLUDED.guilds,synced_at=NOW()`,
+    [userId,String(identity?.provider_user_id||auth.user.discordId||''),JSON.stringify(profile),JSON.stringify(identity?.guilds||auth.guilds||[])]);
+  const dp=identity?.profile||{};
+  const accent=dp.accentColor!=null?("#"+Number(dp.accentColor).toString(16).padStart(6,"0")):null;
+  await pool.query(`INSERT INTO cmd_global_profiles(user_id,display_name,avatar_data_url,banner_data_url,accent_color)
+    VALUES($1,$2,$3,$4,$5)
+    ON CONFLICT(user_id) DO UPDATE SET display_name=COALESCE(EXCLUDED.display_name,cmd_global_profiles.display_name),
+      avatar_data_url=COALESCE(EXCLUDED.avatar_data_url,cmd_global_profiles.avatar_data_url),
+      banner_data_url=COALESCE(EXCLUDED.banner_data_url,cmd_global_profiles.banner_data_url),
+      accent_color=COALESCE(EXCLUDED.accent_color,cmd_global_profiles.accent_color),updated_at=NOW()`,
+    [userId,safeText(dp.displayName||auth.user.displayName||auth.user.name,80)||null,dp.avatar||auth.user.avatar||null,dp.banner||auth.user.banner||null,accent]);
+}
+async function mirrorStoreGuild(auth,guildId,bot,snapshot){
+  await pool.query(`INSERT INTO cmd_discord_mirror_guilds(user_id,guild_id,bot,snapshot,synced_at)
+    VALUES($1,$2,$3,$4::jsonb,NOW())
+    ON CONFLICT(user_id,guild_id) DO UPDATE SET bot=EXCLUDED.bot,snapshot=EXCLUDED.snapshot,synced_at=NOW()`,
+    [String(auth.user.id),String(guildId),bot||null,JSON.stringify(snapshot||{})]);
+}
+async function mirrorStoreMessagePage(auth,guildId,channelId,messages){
+  if(!messages?.length)return 0;
+  const vals=[],args=[];let n=1;
+  for(const m of messages){
+    vals.push(`($${n++},$${n++},$${n++},$${n++},$${n++},$${n++}::jsonb,NOW())`);
+    args.push(String(auth.user.id),String(guildId),String(channelId),String(m.id),m.timestamp||null,JSON.stringify(m));
+  }
+  await pool.query(`INSERT INTO cmd_discord_mirror_messages(user_id,guild_id,channel_id,message_id,message_timestamp,data,synced_at)
+    VALUES ${vals.join(",")}
+    ON CONFLICT(user_id,message_id) DO UPDATE SET guild_id=EXCLUDED.guild_id,channel_id=EXCLUDED.channel_id,message_timestamp=EXCLUDED.message_timestamp,data=EXCLUDED.data,synced_at=NOW()`,args);
+  return messages.length;
+}
+async function mirrorJobUpdate(id,patch){
+  const fields=[],args=[];let n=1;
+  for(const [k,v] of Object.entries(patch)){
+    if(!["status","progress","summary","error","completed_at"].includes(k))continue;
+    fields.push(k+"=$"+(n++)+(["progress","summary"].includes(k)?"::jsonb":""));
+    args.push(["progress","summary"].includes(k)?JSON.stringify(v):v);
+  }
+  if(!fields.length)return;
+  fields.push("updated_at=NOW()");args.push(String(id));
+  await pool.query("UPDATE cmd_discord_mirror_jobs SET "+fields.join(",")+" WHERE id=$"+n,args);
+}
+async function runMirrorJob(jobId,auth){
+  if(mirrorRunning.has(jobId))return;mirrorRunning.add(jobId);
+  const summary={guilds:0,fullGuilds:0,shellGuilds:0,channels:0,messages:0,bots:0,integrations:0,webhooks:0,errors:[]};
+  try{
+    await mirrorJobUpdate(jobId,{status:"running",progress:{stage:"profile",label:"Synchronisation du profil Discord"}});
+    await mirrorIdentityProfile(auth);
+    const managed=await allManagedGuilds(auth),guilds=managed.guilds||[];summary.guilds=guilds.length;
+    for(let gi=0;gi<guilds.length;gi++){
+      const g=guilds[gi],gid=String(g.id);
+      await mirrorJobUpdate(jobId,{progress:{stage:"guild",guildIndex:gi+1,guildCount:guilds.length,guildId:gid,guildName:g.name,messages:summary.messages,label:"Récupération de "+g.name}});
+      if(!g.installed||!(g.availableBots||[]).length){
+        summary.shellGuilds++;
+        await mirrorStoreGuild(auth,gid,null,{meta:g,coverage:{full:false,reason:"Aucun bot CMD installé sur ce Discord"}});
+        continue;
+      }
+      const bot=g.availableBots[0].id;
+      try{
+        const [structure,extras,webhooks]=await Promise.all([
+          backend(bot,"structure",{guildId:gid}),
+          backend(bot,"extras",{guildId:gid}).catch(e=>({errors:{extras:e.message},threads:[],bots:[],integrations:[]})),
+          dashboardWebhooks(auth,gid,bot).catch(e=>({webhooks:[],errors:[{error:e.message}]}))
+        ]);
+        const snapshot={meta:g,structure,extras,webhooks:webhooks.webhooks||[],coverage:{full:true,bot,botName:bots[bot].label,syncedAt:new Date().toISOString()}};
+        await mirrorStoreGuild(auth,gid,bot,snapshot);summary.fullGuilds++;summary.bots+=(extras.bots||[]).length;summary.integrations+=(extras.integrations||[]).length;summary.webhooks+=(webhooks.webhooks||[]).length;
+        const channelMap=new Map();
+        for(const ch of structure.channels||[]){
+          const t=String(ch.type||"").toLowerCase();
+          if(["text","announcement","thread"].includes(t))channelMap.set(String(ch.id),ch);
+        }
+        for(const th of extras.threads||[])channelMap.set(String(th.id),th);
+        const channels=[...channelMap.values()];summary.channels+=channels.length;
+        for(let ci=0;ci<channels.length;ci++){
+          const ch=channels[ci];let before="",lastBefore=null,pages=0;
+          while(true){
+            const d=await backend(bot,"messages",{guildId:gid,channelId:String(ch.id),before,limit:100}).catch(e=>({error:e.message,messages:[],hasMore:false}));
+            if(d.error){summary.errors.push({guildId:gid,channelId:String(ch.id),error:d.error});break}
+            summary.messages+=await mirrorStoreMessagePage(auth,gid,String(ch.id),d.messages||[]);
+            pages++;
+            if(pages%10===0)await mirrorJobUpdate(jobId,{progress:{stage:"messages",guildIndex:gi+1,guildCount:guilds.length,guildId:gid,guildName:g.name,channelIndex:ci+1,channelCount:channels.length,channelName:ch.name||ch.id,messages:summary.messages,label:"Archivage des messages"}});
+            const next=String(d.nextBefore||"");if(!d.hasMore||!next||next===lastBefore)break;lastBefore=next;before=next;
+            await new Promise(r=>setTimeout(r,80));
+          }
+        }
+      }catch(e){
+        summary.errors.push({guildId:gid,guildName:g.name,error:e.message});
+        await mirrorStoreGuild(auth,gid,bot,{meta:g,coverage:{full:false,bot,error:e.message}});
+      }
+    }
+    await mirrorJobUpdate(jobId,{status:"complete",progress:{stage:"complete",label:"Sauvegarde Discord terminée",messages:summary.messages},summary,completed_at:new Date()});
+  }catch(e){
+    summary.errors.push({error:e.message});
+    await mirrorJobUpdate(jobId,{status:"failed",progress:{stage:"failed",label:"Échec de la sauvegarde"},summary,error:e.message,completed_at:new Date()}).catch(()=>{});
+  }finally{mirrorRunning.delete(jobId)}
+}
+async function startMirrorJob(auth){
+  const userId=String(auth.user.id);
+  const existing=await pool.query("SELECT * FROM cmd_discord_mirror_jobs WHERE user_id=$1 AND status IN ('queued','running') ORDER BY started_at DESC LIMIT 1",[userId]);
+  if(existing.rows[0]){
+    const j=existing.rows[0];if(!mirrorRunning.has(String(j.id)))setTimeout(()=>runMirrorJob(String(j.id),j.auth_snapshot||mirrorAuthSnapshot(auth)),20);
+    return {jobId:String(j.id),status:j.status,reused:true};
+  }
+  const id=crypto.randomUUID(),snap=mirrorAuthSnapshot(auth);
+  await pool.query("INSERT INTO cmd_discord_mirror_jobs(id,user_id,auth_snapshot,status,progress) VALUES($1,$2,$3::jsonb,'queued',$4::jsonb)",[id,userId,JSON.stringify(snap),JSON.stringify({stage:"queued",label:"Préparation de la sauvegarde Discord"})]);
+  setTimeout(()=>runMirrorJob(id,snap),20);
+  return {jobId:id,status:"queued",reused:false};
+}
+async function mirrorStatus(auth,jobId){
+  const userId=String(auth.user.id);
+  const args=[userId],where=["user_id=$1"];if(jobId){args.push(String(jobId));where.push("id=$2")}
+  const r=await pool.query("SELECT id,status,progress,summary,error,started_at,updated_at,completed_at FROM cmd_discord_mirror_jobs WHERE "+where.join(" AND ")+" ORDER BY started_at DESC LIMIT 1",args);
+  const counts=await pool.query(`SELECT
+    (SELECT COUNT(*)::int FROM cmd_discord_mirror_guilds WHERE user_id=$1) guilds,
+    (SELECT COUNT(*)::bigint FROM cmd_discord_mirror_messages WHERE user_id=$1) messages,
+    (SELECT MAX(synced_at) FROM cmd_discord_mirror_guilds WHERE user_id=$1) last_sync`,[userId]);
+  return {job:r.rows[0]||null,mirror:counts.rows[0]||{guilds:0,messages:0,last_sync:null}};
+}
+async function resumeMirrorJobs(){
+  const r=await pool.query("SELECT id,auth_snapshot FROM cmd_discord_mirror_jobs WHERE status IN ('queued','running') ORDER BY started_at ASC LIMIT 5");
+  for(const row of r.rows)setTimeout(()=>runMirrorJob(String(row.id),row.auth_snapshot),100);
+}
+
 async function actionTool(auth,args,action){
   requireScope(auth,writeScope);requireGuild(auth,args.guildId);
   const bot=await resolveBot(auth,args.guildId,args.bot);
