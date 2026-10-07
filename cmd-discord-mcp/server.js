@@ -789,7 +789,7 @@ async function updateNativeServerStyle(auth,input){
   if(!r.rows[0])throw new Error("Serveur CMD introuvable.");
   return r.rows[0];
 }
-async function discoverNativeGuilds(){async function discoverNativeGuilds(){
+async function discoverNativeGuilds(){
   const r=await pool.query(`SELECT g.id,g.name,g.icon,g.invite_code,g.updated_at,(SELECT COUNT(*)::int FROM cmd_native_members m WHERE m.guild_id=g.id) member_count
     FROM cmd_native_guilds g WHERE g.is_public=TRUE ORDER BY member_count DESC,g.updated_at DESC LIMIT 100`);
   return r.rows.map(x=>({...x,inviteUrl:baseUrl+"/invite/"+x.invite_code}));
