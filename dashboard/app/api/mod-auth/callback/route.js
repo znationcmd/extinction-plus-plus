@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { seal, unseal, origin, cookieOptions, discord, failure, createSession, sessionLifetime } from '../../../../lib/mod-auth';
@@ -13,6 +14,17 @@ export async function GET(req) {
     if (!reply.ok) throw new Error('Discord a refusé la connexion.');
     const token = await reply.json();
     const user = await discord('/users/@me', token.access_token);
+    if(saved.bridgeTarget){
+      const secret=String(process.env.DISCORD_BRIDGE_SECRET||'');
+      if(secret.length<32)throw new Error('DISCORD_BRIDGE_SECRET doit contenir au moins 32 caractères.');
+      const all=await discord('/users/@me/guilds',token.access_token);
+      const canManage=g=>{if(g?.owner)return true;try{const p=BigInt(g?.permissions||'0');return Boolean((p&8n)||(p&32n))}catch{return false}};
+      const guilds=all.filter(canManage).slice(0,100).map(g=>({id:String(g.id),name:String(g.name||g.id).slice(0,100),icon:g.icon||null,owner:Boolean(g.owner),permissions:String(g.permissions||'0')}));
+      const payload=Buffer.from(JSON.stringify({v:1,exp:Date.now()+5*60*1000,user:{id:String(user.id),name:String(user.username||'Discord').slice(0,100)},guilds})).toString('base64url');
+      const sig=crypto.createHmac('sha256',secret).update(payload).digest('base64url');
+      const target=new URL('/auth/discord-bridge',saved.bridgeTarget);target.searchParams.set('token',payload+'.'+sig);
+      return NextResponse.redirect(target);
+    }
     const persistent = await createSession(token,user);
     const res = NextResponse.redirect(`${origin()}${saved.returnTo==='/groups'?'/groups':'/select-discord'}`);
     res.cookies.set('extinction_mod_session', seal(persistent), { ...cookieOptions, maxAge:sessionLifetime });
