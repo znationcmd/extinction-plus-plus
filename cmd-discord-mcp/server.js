@@ -737,6 +737,30 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_frame TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS nameplate_style TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS badge_pack TEXT NOT NULL DEFAULT 'star'");
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_premium_subscriptions(
+    user_id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL DEFAULT 'paypal',
+    provider_subscription_id TEXT UNIQUE,
+    plan_id TEXT,
+    status TEXT NOT NULL DEFAULT 'inactive',
+    verified_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_boosts(
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_user_idx ON cmd_server_boosts(user_id,active)');
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_guild_idx ON cmd_server_boosts(guild_id,active)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_payment_config(
+    config_key TEXT PRIMARY KEY,
+    config_value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_user_preferences(
     user_id TEXT PRIMARY KEY,
     allow_dms BOOLEAN NOT NULL DEFAULT TRUE,
