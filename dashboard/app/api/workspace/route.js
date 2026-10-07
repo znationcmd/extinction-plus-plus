@@ -39,12 +39,18 @@ export async function GET(){
     const all=await discord('/users/@me/guilds',s.token);
     const installed=await knownGuildIds();
     const guilds=[];
+    const clientId=String(process.env.CLIENT_ID||'');
+    const inviteFor=id=>clientId?`https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=268454928&integration_type=0&scope=bot%20applications.commands&guild_id=${encodeURIComponent(id)}&disable_guild_select=true`:null;
     for(const g of all){
-      if(installed.size&&!installed.has(String(g.id)))continue;
-      if(canManageGuild(g))guilds.push({id:g.id,name:g.name,icon:iconUrl(g),owner:Boolean(g.owner),manager:true,installed:true});
-      else try{
+      const isInstalled=installed.has(String(g.id));
+      if(canManageGuild(g)){
+        guilds.push({id:g.id,name:g.name,icon:iconUrl(g),owner:Boolean(g.owner),manager:true,installed:isInstalled,inviteUrl:isInstalled?null:inviteFor(g.id)});
+        continue;
+      }
+      if(!isInstalled)continue;
+      try{
         await authorize(g.id,false,{session:s,guilds:all});
-        guilds.push({id:g.id,name:g.name,icon:iconUrl(g),owner:false,manager:false,installed:true});
+        guilds.push({id:g.id,name:g.name,icon:iconUrl(g),owner:false,manager:false,installed:true,inviteUrl:null});
       }catch(e){if(e.status!==403)throw e}
     }
     const selectedGuildId=(await cookies()).get('extinction_guild')?.value||null;
