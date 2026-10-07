@@ -138,7 +138,7 @@ function html(res,body,status=200,headers={}){
 function dashboardPage(auth){
   const user=String(auth?.user?.name||"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch]));
   const style='*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:radial-gradient(circle at 20% 0,#2b1c55 0,#0b0d15 38%,#05070b 100%);color:#fff;min-height:100vh}a{color:inherit}.wrap{max-width:1180px;margin:auto;padding:24px}.top{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap}.brand{display:flex;gap:12px;align-items:center}.logo{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,#7c3aed,#ec4899);display:grid;place-items:center;font-weight:1000;box-shadow:0 10px 35px #7c3aed44}.muted{color:#aeb4c0}.btn{border:1px solid #ffffff22;background:#ffffff0d;color:#fff;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}.btn:hover{background:#ffffff17}.primary{background:linear-gradient(135deg,#7c3aed,#db2777);border:0}.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:24px}.card{background:#10131bcc;border:1px solid #ffffff14;border-radius:18px;padding:16px;box-shadow:0 16px 50px #0005;backdrop-filter:blur(10px)}label{display:grid;gap:6px;font-size:13px;color:#c9ced8;margin-bottom:12px}input,select,textarea{width:100%;background:#080a10;border:1px solid #ffffff1d;color:#fff;border-radius:11px;padding:11px;font:inherit}textarea{min-height:84px;resize:vertical}.guild{width:100%;text-align:left;margin:7px 0}.guild.active{outline:2px solid #a78bfa}.bot{display:inline-flex;padding:3px 7px;border-radius:999px;background:#ffffff12;font-size:11px;margin-right:5px}.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.section{margin-top:16px}.list{display:grid;gap:8px;max-height:460px;overflow:auto}.row{padding:10px 12px;border:1px solid #ffffff12;background:#ffffff08;border-radius:12px}.row small{color:#9aa1ad}.status{position:fixed;right:18px;bottom:18px;max-width:360px;padding:12px 15px;border-radius:12px;background:#111827;border:1px solid #ffffff22;display:none}.status.show{display:block}.hero{padding:70px 20px;text-align:center}.hero h1{font-size:clamp(38px,7vw,72px);margin:0 0 12px}.hero p{font-size:18px;color:#b9bfca;max-width:720px;margin:0 auto 24px}.empty{padding:30px;text-align:center;color:#aeb4c0}.sphere-app{min-height:100dvh;padding-left:82px}.server-rail{position:fixed;z-index:15;left:0;top:0;bottom:0;width:82px;background:#0d0a11;border-right:1px solid #ffffff10;padding:10px 9px;display:flex;flex-direction:column;align-items:center;gap:9px;overflow-y:auto}.server-rail::-webkit-scrollbar{display:none}.rail-home,.rail-server,.rail-plus{width:56px;height:56px;min-height:56px;border:0;border-radius:19px;background:#24172d;color:#fff;display:grid;place-items:center;overflow:hidden;position:relative;transition:.16s}.rail-home:hover,.rail-server:hover,.rail-server.active,.rail-plus:hover{border-radius:15px;background:#5865f2}.rail-home img,.rail-server img{width:100%;height:100%;object-fit:cover}.rail-server.off{opacity:.4;filter:grayscale(.5)}.rail-server.off:after{content:"+";position:absolute;right:0;bottom:0;width:20px;height:20px;border-radius:50%;background:#5865f2;border:3px solid #0d0a11;display:grid;place-items:center;font-size:13px;font-weight:1000}.rail-initial{font-weight:950}.rail-sep{width:36px;height:2px;border-radius:3px;background:#ffffff17}.rail-plus{margin-top:auto;font-size:31px;color:#aab5ff}.rail-top{background:linear-gradient(135deg,#5b21b6,#db2777);font-size:27px;text-decoration:none}.rail-top:after{content:\"VOTE\";position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:7px;font-weight:1000;background:#09070dcb;padding:1px 4px;border-radius:4px}.logo-img{width:58px;height:58px;border-radius:16px;object-fit:cover;box-shadow:0 10px 35px #5b21b655}.brand-logo{width:min(560px,92vw);display:block;margin:0 auto 20px;border-radius:24px;box-shadow:0 24px 70px #0009}.add-modal{display:none;position:fixed;z-index:30;inset:0;background:#000b;align-items:center;justify-content:center;padding:18px}.add-modal.on{display:flex}.add-card{width:min(620px,100%);max-height:88dvh;overflow:auto;background:#1b1221;border:1px solid #ffffff16;border-radius:22px;padding:20px;box-shadow:0 28px 80px #000c}.add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.add-choice{min-height:90px;text-align:left}.add-card input{width:100%;background:#09070d;border:1px solid #ffffff1c;border-radius:11px;padding:12px;color:#fff}.native-box{padding:13px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff07;margin-top:10px}.native-box strong,.native-box small{display:block}.native-box small{color:#aeb4c0}.hidden{display:none!important}@media(max-width:850px){.sphere-app{padding-left:72px}.server-rail{width:72px;padding-inline:7px}.rail-home,.rail-server,.rail-plus{width:52px;height:52px;min-height:52px}.grid{grid-template-columns:1fr}.grid>aside.card{display:none}.cols{grid-template-columns:1fr}.wrap{padding:14px}.top{align-items:flex-start}.brand>div:not(.logo-img){min-width:0}.add-grid{grid-template-columns:1fr}}';
-  if(!auth)return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>CMD Sphere</title><meta name="theme-color" content="#9b4dff"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><style>'+style+'</style></head><body><div class="hero"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h1>CMD Sphere</h1><p>Configure gratuitement tes catégories, salons et rôles avec DAYZ GATE, BOT ARK ou EXTINCTION ++ RSS. Aucun abonnement supplémentaire.</p><a class="btn primary" href="/dashboard-login">Connexion Discord</a></div></body></html>';
+  if(!auth)return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>CMD Sphere</title><meta name="theme-color" content="#9b4dff"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><style>'+style+'.authbox{width:min(920px,94vw);margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left}.authpanel{background:#121019dd;border:1px solid #ffffff14;border-radius:20px;padding:18px}.authpanel h2{margin-top:0}.authpanel .btn{width:100%;justify-content:center}.authpanel input{margin-bottom:10px}.or{text-align:center;color:#8e8795;margin:14px 0}@media(max-width:720px){.authbox{grid-template-columns:1fr}}</style></head><body><div class="hero" style="padding-bottom:22px"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h1>CMD Sphere</h1><p>Un seul compte CMD Sphere. Tu peux te connecter avec Discord ou avec un compte créé directement ici.</p></div><div class="authbox"><div class="authpanel"><h2>Continuer avec Discord</h2><p class="muted">Ton compte Discord devient automatiquement un compte CMD Sphere et garde tes serveurs accessibles.</p><a class="btn primary" href="/dashboard-login">💬 Continuer avec Discord</a><div class="or">ou</div><h2>Se connecter</h2><form id="nativeLogin"><input name="username" autocomplete="username" placeholder="Identifiant CMD Sphere" required minlength="3" maxlength="32"><input name="password" autocomplete="current-password" type="password" placeholder="Mot de passe" required minlength="8" maxlength="128"><button class="btn" type="submit">Connexion CMD Sphere</button></form></div><div class="authpanel"><h2>Créer un compte CMD Sphere</h2><p class="muted">Pas besoin de Discord. Tu pourras le lier plus tard au même compte.</p><form id="nativeSignup"><input name="displayName" autocomplete="name" placeholder="Nom affiché" maxlength="80"><input name="username" autocomplete="username" placeholder="Identifiant (3 à 32 caractères)" required minlength="3" maxlength="32"><input name="password" autocomplete="new-password" type="password" placeholder="Mot de passe (8 caractères minimum)" required minlength="8" maxlength="128"><button class="btn primary" type="submit">Créer mon compte</button></form><p id="authMsg" class="muted"></p></div></div><script>async function account(url,form){const msg=document.getElementById("authMsg");msg.textContent="";const body=Object.fromEntries(new FormData(form));const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Erreur");location.href="/dashboard"}document.getElementById("nativeLogin").onsubmit=async e=>{e.preventDefault();try{await account("/api/account/login",e.currentTarget)}catch(x){document.getElementById("authMsg").textContent=x.message}};document.getElementById("nativeSignup").onsubmit=async e=>{e.preventDefault();try{await account("/api/account/signup",e.currentTarget)}catch(x){document.getElementById("authMsg").textContent=x.message}}</script></body></html>';
   const script=`
   const S={guild:null,bot:null,structure:null};const qs=s=>document.querySelector(s);
   function esc(v){return String(v||'').replace(/[&<>]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[x]))}
@@ -262,6 +262,27 @@ async function initNativeDb(){
     theme TEXT NOT NULL DEFAULT 'purple',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_accounts(
+    id UUID PRIMARY KEY,
+    username TEXT NOT NULL,
+    username_key TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    password_salt TEXT,
+    password_hash TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_account_identities(
+    account_id UUID NOT NULL REFERENCES cmd_accounts(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    provider_user_id TEXT NOT NULL,
+    profile JSONB NOT NULL DEFAULT '{}'::jsonb,
+    guilds JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(provider,provider_user_id),
+    UNIQUE(account_id,provider)
+  )`);
   await pool.query('ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_banner_data_url TEXT');
   await pool.query('ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_accent_color TEXT');
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_theme TEXT NOT NULL DEFAULT 'purple'");
@@ -271,6 +292,123 @@ function authGuildMeta(auth,id){
   return (Array.isArray(auth.guilds)?auth.guilds:[]).find(g=>String(g.id)===String(id))||{id:String(id),name:String(id),icon:null};
 }
 function safeText(v,max=100){return String(v??"").trim().slice(0,max)}
+function normalizeUsername(v){
+  const raw=String(v||"").trim();
+  if(!/^[A-Za-z0-9._-]{3,32}$/.test(raw))throw new Error("Identifiant : 3 à 32 caractères, lettres, chiffres, point, tiret ou underscore.");
+  return {username:raw,key:raw.toLowerCase()};
+}
+function passwordParts(password,saltHex){
+  const p=String(password||"");
+  if(p.length<8||p.length>128)throw new Error("Le mot de passe doit contenir entre 8 et 128 caractères.");
+  const salt=saltHex?Buffer.from(saltHex,"hex"):crypto.randomBytes(16);
+  const hash=crypto.scryptSync(p,salt,64);
+  return {salt:salt.toString("hex"),hash:hash.toString("hex")};
+}
+function passwordMatches(password,saltHex,hashHex){
+  try{
+    const got=passwordParts(password,saltHex).hash;
+    const a=Buffer.from(got,"hex"),b=Buffer.from(String(hashHex||""),"hex");
+    return a.length===b.length&&crypto.timingSafeEqual(a,b);
+  }catch{return false}
+}
+function sessionPayload(authData){
+  return signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user:authData.user,guildIds:authData.guildIds||[],guilds:authData.guilds||[]});
+}
+async function accountById(id){
+  const r=await pool.query('SELECT * FROM cmd_accounts WHERE id=$1 LIMIT 1',[String(id)]);
+  return r.rows[0]||null;
+}
+async function discordIdentityForAccount(accountId){
+  const r=await pool.query("SELECT * FROM cmd_account_identities WHERE account_id=$1 AND provider='discord' LIMIT 1",[String(accountId)]);
+  return r.rows[0]||null;
+}
+function authFromAccount(account,identity){
+  const profile=identity?.profile&&typeof identity.profile==="object"?identity.profile:{};
+  const guilds=Array.isArray(identity?.guilds)?identity.guilds:[];
+  return {
+    user:{
+      id:String(account.id),
+      name:String(account.username||profile.name||"CMD"),
+      displayName:String(account.display_name||profile.displayName||account.username||"CMD"),
+      avatar:profile.avatar||null,
+      banner:profile.banner||null,
+      accentColor:profile.accentColor??null,
+      discordId:identity?.provider_user_id?String(identity.provider_user_id):null
+    },
+    guildIds:[...new Set(guilds.map(g=>String(g.id||"")).filter(id=>/^\d{15,22}$/.test(id)))],
+    guilds:guilds.map(g=>({id:String(g.id||""),name:String(g.name||g.id||"Discord").slice(0,100),icon:g.icon?String(g.icon).slice(0,300):null})).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100)
+  };
+}
+async function migrateLegacyDiscordUser(discordId,accountId){
+  const oldId=String(discordId),newId=String(accountId);
+  if(oldId===newId)return;
+  await pool.query(`INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name,profile_avatar_data_url,profile_banner_data_url,profile_bio,profile_status,profile_accent_color,profile_theme,joined_at)
+    SELECT guild_id,$2,membership_role,profile_display_name,profile_avatar_data_url,profile_banner_data_url,profile_bio,profile_status,profile_accent_color,profile_theme,joined_at
+    FROM cmd_native_members WHERE user_id=$1 ON CONFLICT(guild_id,user_id) DO NOTHING`,[oldId,newId]);
+  await pool.query('DELETE FROM cmd_native_members WHERE user_id=$1',[oldId]);
+  await pool.query(`INSERT INTO cmd_global_profiles(user_id,display_name,avatar_data_url,banner_data_url,bio,status,accent_color,theme,updated_at)
+    SELECT $2,display_name,avatar_data_url,banner_data_url,bio,status,accent_color,theme,updated_at FROM cmd_global_profiles WHERE user_id=$1
+    ON CONFLICT(user_id) DO NOTHING`,[oldId,newId]);
+  await pool.query('DELETE FROM cmd_global_profiles WHERE user_id=$1',[oldId]);
+  try{await pool.query('UPDATE cmd_native_guilds SET owner_user_id=$2 WHERE owner_user_id=$1',[oldId,newId])}catch{}
+}
+async function resolveDiscordAccount(identity,linkAccountId=null){
+  const did=String(identity.user.id);
+  const found=await pool.query("SELECT account_id FROM cmd_account_identities WHERE provider='discord' AND provider_user_id=$1 LIMIT 1",[did]);
+  let accountId=found.rows[0]?.account_id||null;
+  if(linkAccountId){
+    if(accountId&&String(accountId)!==String(linkAccountId))throw new Error("Ce compte Discord est déjà lié à un autre compte CMD Sphere.");
+    accountId=String(linkAccountId);
+  }
+  if(!accountId){
+    accountId=crypto.randomUUID();
+    const base=("discord_"+did.slice(-8)).toLowerCase();
+    let username=base,key=base,n=0;
+    while(true){
+      const exists=await pool.query('SELECT 1 FROM cmd_accounts WHERE username_key=$1 LIMIT 1',[key]);
+      if(!exists.rows[0])break;
+      n++;username=base+"_"+n;key=username;
+    }
+    await pool.query('INSERT INTO cmd_accounts(id,username,username_key,display_name) VALUES($1,$2,$3,$4)',[accountId,username,key,safeText(identity.user.displayName||identity.user.name,80)]);
+  }
+  const account=await accountById(accountId);
+  if(!account)throw new Error("Compte CMD Sphere introuvable.");
+  const profile={
+    name:identity.user.name,
+    displayName:identity.user.displayName,
+    avatar:identity.user.avatar,
+    banner:identity.user.banner,
+    accentColor:identity.user.accentColor
+  };
+  await pool.query(`INSERT INTO cmd_account_identities(account_id,provider,provider_user_id,profile,guilds)
+    VALUES($1,'discord',$2,$3::jsonb,$4::jsonb)
+    ON CONFLICT(provider,provider_user_id) DO UPDATE SET account_id=EXCLUDED.account_id,profile=EXCLUDED.profile,guilds=EXCLUDED.guilds,updated_at=NOW()`,
+    [String(accountId),did,JSON.stringify(profile),JSON.stringify(identity.guilds||[])]);
+  await migrateLegacyDiscordUser(did,accountId);
+  return authFromAccount(account,{provider_user_id:did,profile,guilds:identity.guilds||[]});
+}
+async function createNativeAccount(input){
+  const {username,key}=normalizeUsername(input.username);
+  const displayName=safeText(input.displayName||username,80)||username;
+  const pw=passwordParts(input.password);
+  const id=crypto.randomUUID();
+  try{
+    await pool.query('INSERT INTO cmd_accounts(id,username,username_key,display_name,password_salt,password_hash) VALUES($1,$2,$3,$4,$5,$6)',[id,username,key,displayName,pw.salt,pw.hash]);
+  }catch(e){
+    if(String(e.code)==="23505")throw new Error("Cet identifiant est déjà utilisé.");
+    throw e;
+  }
+  return authFromAccount(await accountById(id),null);
+}
+async function loginNativeAccount(input){
+  const {key}=normalizeUsername(input.username);
+  const r=await pool.query('SELECT * FROM cmd_accounts WHERE username_key=$1 LIMIT 1',[key]);
+  const account=r.rows[0];
+  if(!account||!account.password_hash||!passwordMatches(input.password,account.password_salt,account.password_hash))throw new Error("Identifiant ou mot de passe incorrect.");
+  const identity=await discordIdentityForAccount(account.id);
+  return authFromAccount(account,identity);
+}
+
 function safeImageData(v,maxChars,label){
   v=String(v||"");
   if(!v)return null;
@@ -319,7 +457,7 @@ function profilePage(auth,profile){
   const status=escHtml(profile.status||"En ligne");
   const bg=banner?("background-image:linear-gradient(180deg,rgba(25,0,38,.08),rgba(24,0,36,.78)),url('"+banner+"')"):"background:linear-gradient(135deg,#46145f,#8b37d6 55%,#32103f)";
   return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="'+accent+'"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>'+name+' · CMD Sphere</title><style>'+
-  '*{box-sizing:border-box}body{margin:0;background:#050306;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial}.page{min-height:100vh;background:radial-gradient(circle at 50% 0,'+accent+'33,transparent 42%),linear-gradient(#070407,#120716 45%,#070407)}.shell{max-width:720px;margin:auto;padding:30px 22px 120px}.back{display:inline-flex;color:#eee;text-decoration:none;font-weight:800;margin-bottom:16px}.card{overflow:hidden;border-radius:26px;background:linear-gradient(180deg,#25102d,#130817 70%);border:1px solid #ffffff12;box-shadow:0 30px 80px #0008}.banner{height:250px;background-size:cover!important;background-position:center!important;position:relative}.avatarWrap{position:relative;height:76px}.avatar{position:absolute;left:28px;top:-72px;width:144px;height:144px;border-radius:50%;object-fit:cover;border:9px solid #25102d;background:#111;box-shadow:0 12px 32px #0009}.online{position:absolute;left:136px;top:35px;width:34px;height:34px;border-radius:50%;background:#23a559;border:7px solid #25102d}.body{padding:14px 28px 32px}.display{font-size:31px;font-weight:950;letter-spacing:-.03em}.handle{margin-top:7px;color:#d5c7da;font-size:17px}.badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.badge{padding:7px 10px;border-radius:10px;background:#ffffff12;border:1px solid #ffffff10}.edit{width:100%;border:0;border-radius:14px;background:'+accent+';color:white;padding:16px;font-size:18px;font-weight:900;margin:16px 0;cursor:pointer}.tabs{display:flex;gap:36px;border-bottom:1px solid #ffffff14;margin:10px 0 26px}.tab{padding:13px 0;font-weight:800}.tab.active{border-bottom:3px solid #fff}.section{margin-top:24px}.section h3{margin:0 0 12px;font-size:18px}.bio{font-size:17px;line-height:1.55;white-space:pre-wrap;color:#f2eef4}.status{display:inline-flex;margin-top:10px;padding:7px 10px;background:#ffffff0e;border-radius:10px}.modal{display:none;position:fixed;inset:0;background:#000a;z-index:10;align-items:flex-end;justify-content:center}.modal.on{display:flex}.sheet{width:min(720px,100%);background:#17121b;border-radius:24px 24px 0 0;padding:22px;max-height:92vh;overflow:auto}.sheet h2{margin-top:0}label{display:grid;gap:7px;margin:12px 0;color:#d7cbdc}input,textarea,select{width:100%;background:#0c0910;border:1px solid #ffffff1a;color:#fff;border-radius:12px;padding:12px;font:inherit}textarea{min-height:100px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.save{width:100%;border:0;border-radius:12px;background:'+accent+';color:#fff;font-weight:900;padding:14px}.close{width:100%;margin-top:8px;background:#ffffff0d;color:#fff;border:1px solid #ffffff16;border-radius:12px;padding:12px}@media(max-width:560px){.shell{padding:0 0 110px}.card{border-radius:0}.banner{height:205px}.avatar{width:126px;height:126px;top:-63px;left:22px}.online{left:119px;top:32px}.body{padding:12px 22px 26px}.display{font-size:27px}.back{position:fixed;z-index:5;left:14px;top:14px;background:#0008;padding:9px 12px;border-radius:999px}.row{grid-template-columns:1fr}}</style></head><body><div class="page"><div class="shell"><a class="back" href="/dashboard">← CMD Sphere</a><div class="card"><div class="banner" style="'+bg+'"></div><div class="avatarWrap"><img class="avatar" src="'+avatar+'" alt=""><span class="online"></span></div><div class="body"><div class="display">'+name+'</div><div class="handle">'+username+'</div><div class="badges"><span class="badge">👑 CMD</span><span class="badge">💎 Fondateur</span><span class="badge">🌐 '+status+'</span></div><button class="edit" id="edit">✎ Modifier le profil</button><div class="tabs"><div class="tab active">Principal</div><div class="tab">Tableau</div><div class="tab">Serveurs</div></div><div class="section"><h3>Bio</h3><div class="bio">'+bio+'</div></div></div></div></div></div>'+
+  '*{box-sizing:border-box}body{margin:0;background:#050306;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial}.page{min-height:100vh;background:radial-gradient(circle at 50% 0,'+accent+'33,transparent 42%),linear-gradient(#070407,#120716 45%,#070407)}.shell{max-width:720px;margin:auto;padding:30px 22px 120px}.back{display:inline-flex;color:#eee;text-decoration:none;font-weight:800;margin-bottom:16px}.card{overflow:hidden;border-radius:26px;background:linear-gradient(180deg,#25102d,#130817 70%);border:1px solid #ffffff12;box-shadow:0 30px 80px #0008}.banner{height:250px;background-size:cover!important;background-position:center!important;position:relative}.avatarWrap{position:relative;height:76px}.avatar{position:absolute;left:28px;top:-72px;width:144px;height:144px;border-radius:50%;object-fit:cover;border:9px solid #25102d;background:#111;box-shadow:0 12px 32px #0009}.online{position:absolute;left:136px;top:35px;width:34px;height:34px;border-radius:50%;background:#23a559;border:7px solid #25102d}.body{padding:14px 28px 32px}.display{font-size:31px;font-weight:950;letter-spacing:-.03em}.handle{margin-top:7px;color:#d5c7da;font-size:17px}.badges{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.badge{padding:7px 10px;border-radius:10px;background:#ffffff12;border:1px solid #ffffff10}.edit{width:100%;border:0;border-radius:14px;background:'+accent+';color:white;padding:16px;font-size:18px;font-weight:900;margin:16px 0;cursor:pointer}.tabs{display:flex;gap:36px;border-bottom:1px solid #ffffff14;margin:10px 0 26px}.tab{padding:13px 0;font-weight:800}.tab.active{border-bottom:3px solid #fff}.section{margin-top:24px}.section h3{margin:0 0 12px;font-size:18px}.bio{font-size:17px;line-height:1.55;white-space:pre-wrap;color:#f2eef4}.status{display:inline-flex;margin-top:10px;padding:7px 10px;background:#ffffff0e;border-radius:10px}.modal{display:none;position:fixed;inset:0;background:#000a;z-index:10;align-items:flex-end;justify-content:center}.modal.on{display:flex}.sheet{width:min(720px,100%);background:#17121b;border-radius:24px 24px 0 0;padding:22px;max-height:92vh;overflow:auto}.sheet h2{margin-top:0}label{display:grid;gap:7px;margin:12px 0;color:#d7cbdc}input,textarea,select{width:100%;background:#0c0910;border:1px solid #ffffff1a;color:#fff;border-radius:12px;padding:12px;font:inherit}textarea{min-height:100px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.save{width:100%;border:0;border-radius:12px;background:'+accent+';color:#fff;font-weight:900;padding:14px}.close{width:100%;margin-top:8px;background:#ffffff0d;color:#fff;border:1px solid #ffffff16;border-radius:12px;padding:12px}@media(max-width:560px){.shell{padding:0 0 110px}.card{border-radius:0}.banner{height:205px}.avatar{width:126px;height:126px;top:-63px;left:22px}.online{left:119px;top:32px}.body{padding:12px 22px 26px}.display{font-size:27px}.back{position:fixed;z-index:5;left:14px;top:14px;background:#0008;padding:9px 12px;border-radius:999px}.row{grid-template-columns:1fr}}</style></head><body><div class="page"><div class="shell"><a class="back" href="/dashboard">← CMD Sphere</a><div class="card"><div class="banner" style="'+bg+'"></div><div class="avatarWrap"><img class="avatar" src="'+avatar+'" alt=""><span class="online"></span></div><div class="body"><div class="display">'+name+'</div><div class="handle">'+username+'</div><div class="badges"><span class="badge">👑 CMD</span><span class="badge">💎 Fondateur</span><span class="badge">🌐 '+status+'</span>'+(auth.user?.discordId?'<span class="badge">✓ Discord lié</span>':'<a class="badge" href="/dashboard-login?link=1&next=/profile" style="color:white;text-decoration:none">🔗 Associer Discord</a>')+'</div><button class="edit" id="edit">✎ Modifier le profil</button><div class="tabs"><div class="tab active">Principal</div><div class="tab">Tableau</div><div class="tab">Serveurs</div></div><div class="section"><h3>Bio</h3><div class="bio">'+bio+'</div></div></div></div></div></div>'+
   '<div class="modal" id="modal"><form class="sheet" id="form"><h2>Modifier le profil CMD</h2><label>Nom affiché<input name="displayName" maxlength="80" value="'+name+'"></label><label>Bio<textarea name="bio" maxlength="500">'+bio+'</textarea></label><label>Statut<input name="status" maxlength="80" value="'+status+'"></label><div class="row"><label>Couleur du thème<input name="accentColor" type="color" value="'+accent+'"></label><label>Thème<select name="theme"><option value="purple">Violet</option><option value="midnight">Minuit</option><option value="dark">Sombre</option><option value="blue">Bleu</option></select></label></div><label>Avatar · jusqu’à 2 Mo<input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"></label><label>Bannière · jusqu’à 5 Mo<input id="bannerFile" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="save">Enregistrer</button><button class="close" type="button" id="close">Annuler</button></form></div>'+
   '<script>const m=document.getElementById("modal"),f=document.getElementById("form");document.getElementById("edit").onclick=()=>m.classList.add("on");document.getElementById("close").onclick=()=>m.classList.remove("on");async function dataUrl(id,kind){const file=document.getElementById(id).files[0];if(!file)return null;const max=kind==="banner"?5*1024*1024:2*1024*1024;if(file.size>max)throw new Error((kind==="banner"?"Bannière":"Avatar")+" trop lourd : maximum "+(kind==="banner"?"5 Mo":"2 Mo")+".");const img=await new Promise((r,j)=>{const u=URL.createObjectURL(file),im=new Image;im.onload=()=>{URL.revokeObjectURL(u);r(im)};im.onerror=()=>{URL.revokeObjectURL(u);j(new Error("Image invalide"))};im.src=u});const cap=kind==="banner"?1600:768;let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>cap){const s=cap/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;canvas.getContext("2d").drawImage(img,0,0,w,h);let quality=.88,out=canvas.toDataURL("image/webp",quality),target=kind==="banner"?1800000:850000;while(out.length>target&&quality>.48){quality-=.08;out=canvas.toDataURL("image/webp",quality)}return out}f.onsubmit=async e=>{e.preventDefault();try{const body=Object.fromEntries(new FormData(f));body.avatarDataUrl=await dataUrl("avatarFile","avatar");body.bannerDataUrl=await dataUrl("bannerFile","banner");const r=await fetch("/api/profile",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur");location.reload()}catch(e){alert(e.message)}};if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script></body></html>';
 }
@@ -600,9 +738,24 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,{profile:await updateGlobalProfile(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/account/signup"){
+      try{
+        const body=await readFormBodyJson(req),authData=await createNativeAccount(body),session=sessionPayload(authData);
+        sendJson(res,201,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});
+      }catch(e){sendJson(res,400,{error:e.message})}
+      return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/account/login"){
+      try{
+        const body=await readFormBodyJson(req),authData=await loginNativeAccount(body),session=sessionPayload(authData);
+        sendJson(res,200,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});
+      }catch(e){sendJson(res,401,{error:e.message})}
+      return;
+    }
     if(req.method==="GET"&&url.pathname==="/dashboard-login"){
       const next=safeText(url.searchParams.get("next")||"/dashboard",220);
-      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000,next});
+      const current=dashboardAuth(req),link=url.searchParams.get("link")==="1";
+      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000,next,linkAccountId:(link&&current?.user?.id)?String(current.user.id):null});
       const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
     }
     if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
@@ -713,11 +866,13 @@ const httpServer=createServer(async(req,res)=>{
         const tx=verifySigned(url.searchParams.get("state"));
         const identity=verifyDiscordBridge(url.searchParams.get("token"));
         if(tx.typ==="dashboard_tx"){
-          const session=signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user:identity.user,guildIds:identity.guildIds,guilds:identity.guilds||[]});
+          const authData=await resolveDiscordAccount(identity,tx.linkAccountId||null);
+          const session=sessionPayload(authData);
           res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0"});res.end();return;
         }
         if(tx.typ!=="oauth_tx")throw new Error("Transaction OAuth invalide.");
-        const code=signPayload({typ:"auth_code",exp:Date.now()+90*1000,clientId:tx.clientId,redirectUri:tx.redirectUri,codeChallenge:tx.codeChallenge,scope:tx.scope,resource:tx.resource,user:identity.user,guildIds:identity.guildIds});
+        const authData=await resolveDiscordAccount(identity,null);
+        const code=signPayload({typ:"auth_code",exp:Date.now()+90*1000,clientId:tx.clientId,redirectUri:tx.redirectUri,codeChallenge:tx.codeChallenge,scope:tx.scope,resource:tx.resource,user:authData.user,guildIds:authData.guildIds});
         const callback=new URL(tx.redirectUri);callback.searchParams.set("code",code);if(tx.oauthState)callback.searchParams.set("state",tx.oauthState);callback.searchParams.set("iss",issuer);redirect(res,callback);
       }catch(e){sendJson(res,400,{error:"oauth_bridge_failed",error_description:e.message})}
       return;
