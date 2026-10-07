@@ -77,6 +77,42 @@ async function guildWebhooks(guildId){
   const rows=await discord('/guilds/'+guildId+'/webhooks');
   return {guildId:String(guildId),webhooks:(rows||[]).map(serializeWebhook)};
 }
+
+async function optionalDiscord(path,fallback){
+  try{return await discord(path)}catch{return fallback}
+}
+async function guildExtras(guildId){
+  if(!/^\d{15,22}$/.test(String(guildId||'')))throw Object.assign(new Error('Discord invalide'),{status:400});
+  const [guild,integrations,autoModeration,scheduledEvents,emojis,stickers,activeThreads]=await Promise.all([
+    discord('/guilds/'+guildId+'?with_counts=true'),
+    optionalDiscord('/guilds/'+guildId+'/integrations',[]),
+    optionalDiscord('/guilds/'+guildId+'/auto-moderation/rules',[]),
+    optionalDiscord('/guilds/'+guildId+'/scheduled-events?with_user_count=true',[]),
+    optionalDiscord('/guilds/'+guildId+'/emojis',[]),
+    optionalDiscord('/guilds/'+guildId+'/stickers',[]),
+    optionalDiscord('/guilds/'+guildId+'/threads/active',{threads:[]})
+  ]);
+  const rows=(integrations||[]).map(i=>({id:String(i.id||''),name:String(i.name||''),type:String(i.type||''),enabled:i.enabled!==false,roleId:i.role_id?String(i.role_id):null,
+    user:i.user?{id:String(i.user.id||''),username:String(i.user.global_name||i.user.username||'Utilisateur'),bot:Boolean(i.user.bot)}:null,
+    application:i.application?{id:String(i.application.id||''),name:String(i.application.name||''),bot:i.application.bot?{id:String(i.application.bot.id||''),username:String(i.application.bot.username||''),avatar:avatarUrl(i.application.bot)}:null}:null,
+    scopes:Array.isArray(i.scopes)?i.scopes:[]}));
+  const botIds=[...new Set(rows.flatMap(i=>[i.user?.bot&&i.user.id,i.application?.bot?.id]).filter(Boolean).map(String))],bots=[];
+  for(const id of botIds){
+    const m=await optionalDiscord('/guilds/'+guildId+'/members/'+id,null);if(!m)continue;
+    bots.push({id,username:String(m.user?.global_name||m.user?.username||id),avatar:avatarUrl(m.user),nickname:m.nick||null,roles:(m.roles||[]).map(String),permissions:m.permissions||null});
+  }
+  return {
+    guild:{id:String(guild.id),name:String(guild.name||guild.id),description:guild.description||null,icon:guild.icon?('https://cdn.discordapp.com/icons/'+guild.id+'/'+guild.icon+'.webp?size=256'):null,
+      banner:guild.banner?('https://cdn.discordapp.com/banners/'+guild.id+'/'+guild.banner+'.webp?size=1024'):null,splash:guild.splash?('https://cdn.discordapp.com/splashes/'+guild.id+'/'+guild.splash+'.webp?size=1024'):null,
+      ownerId:guild.owner_id?String(guild.owner_id):null,memberCount:Number(guild.approximate_member_count||0),verificationLevel:Number(guild.verification_level||0),preferredLocale:guild.preferred_locale||null,
+      premiumTier:Number(guild.premium_tier||0),features:Array.isArray(guild.features)?guild.features:[]},
+    integrations:rows,bots,autoModeration:(autoModeration||[]),scheduledEvents:(scheduledEvents||[]),
+    emojis:(emojis||[]).map(e=>({id:String(e.id),name:e.name||null,animated:Boolean(e.animated),url:'https://cdn.discordapp.com/emojis/'+e.id+'.'+(e.animated?'gif':'webp')+'?size=128'})),
+    stickers:(stickers||[]).map(st=>({id:String(st.id),name:st.name,description:st.description||null,tags:st.tags||null,format:Number(st.format_type||0),url:'https://media.discordapp.net/stickers/'+st.id+'.webp'})),
+    threads:(activeThreads?.threads||[]).map(t=>({id:String(t.id),name:String(t.name||t.id),type:'thread',typeId:Number(t.type||0),parentId:t.parent_id||null,ownerId:t.owner_id||null,archived:Boolean(t.thread_metadata?.archived),locked:Boolean(t.thread_metadata?.locked),autoArchiveDuration:t.thread_metadata?.auto_archive_duration??null,archiveTimestamp:t.thread_metadata?.archive_timestamp||null}))
+  };
+}
+
 async function structure(guildId){
   if(!/^\d{15,22}$/.test(String(guildId||'')))throw Object.assign(new Error('Discord invalide'),{status:400});
   const [channels,roles,me]=await Promise.all([discord('/guilds/'+guildId+'/channels'),discord('/guilds/'+guildId+'/roles'),discord('/users/@me')]);
@@ -139,6 +175,7 @@ export async function GET(req){
     if(op==='structure')return Response.json(await structure(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
     if(op==='messages')return Response.json(await channelMessages(u.searchParams.get('guildId'),u.searchParams.get('channelId'),{before:u.searchParams.get('before')||'',limit:u.searchParams.get('limit')||100}),{headers:{'Cache-Control':'no-store'}});
     if(op==='webhooks')return Response.json(await guildWebhooks(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
+    if(op==='extras')return Response.json(await guildExtras(u.searchParams.get('guildId')),{headers:{'Cache-Control':'no-store'}});
     throw Object.assign(new Error('Opération inconnue'),{status:400});
   }catch(e){return fail(e)}
 }
