@@ -4,6 +4,7 @@ export const config={runtime:'nodejs',matcher:['/((?!_next/static|_next/image|fa
 export function middleware(req) {
   const path=req.nextUrl.pathname;
   if(path==='/api/game-bridge'&&req.method==='POST')return NextResponse.next(); // The handler requires a server HMAC signature.
+  if(path==='/api/cmd-discord')return NextResponse.next(); // Protected by x-cmd-mcp-secret in the route handler.
   const readOnly=req.method==='GET'||req.method==='HEAD';
   if(readOnly && (path==='/public'||path==='/help'||path==='/groups'||path==='/api/public/maps'||path==='/api/public/atlas'||path==='/dayz-data-license.txt'||path==='/ark-data-license.txt'||path==='/ark-spawn-license.txt'||path==='/aniimo-production-license.txt'||path==='/ark-recipes-license.txt'||path==='/dayz-image-license.txt'||path==='/conan-data-license.txt'||path==='/pal-data-license.txt'||path==='/ark-spawn-license.txt'||path==='/pal-data-license.txt'||/^\/explorer\/(ark|palworld|aniimo|dayz|conan|arma)$/.test(path)||path.startsWith('/api/public/map-images/')))return NextResponse.next();
   if(['/login','/install','/offline.html','/shop'].includes(path) || path.startsWith('/api/mod-auth/'))return NextResponse.next();
