@@ -50,8 +50,8 @@ rep(`html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/"
 const injectCode = `
 function injectCmdSphereUi(body){
   if(typeof body!=="string"||body.indexOf("<body")<0)return body;
-  const toolbar='<div id="cmd-sphere-tools" style="position:fixed;z-index:99999;right:10px;top:max(10px,env(safe-area-inset-top));display:flex;gap:7px;align-items:center;background:#0b0810e8;border:1px solid #ffffff1b;border-radius:14px;padding:6px;backdrop-filter:blur(14px)">'+
-    '<select id="cmd-sphere-language" aria-label="Langue" style="max-width:155px;background:#17101e;color:#fff;border:1px solid #ffffff1c;border-radius:9px;padding:8px 7px;font-weight:800">'+
+  const toolbar='<div id="cmd-sphere-tools" style="position:fixed;z-index:99999;right:8px;top:max(8px,env(safe-area-inset-top));display:flex;gap:5px;align-items:center;background:#0b0810e8;border:1px solid #ffffff1b;border-radius:12px;padding:4px;backdrop-filter:blur(14px);box-shadow:0 8px 24px #0006">'+
+    '<select id="cmd-sphere-language" aria-label="Langue" title="Langue" style="width:64px;max-width:64px;background:#17101e;color:#fff;border:1px solid #ffffff1c;border-radius:8px;padding:7px 4px;font-size:16px;font-weight:800">'+
     '<option value="fr">🇫🇷 Français</option>'+
     '<option value="en">🇬🇧 English</option>'+
     '<option value="us">🇺🇸 English (US)</option>'+
@@ -82,7 +82,7 @@ function injectCmdSphereUi(body){
   'function t(lang,key){const canonical=reverse[key]||key;if(lang==="fr")return dict.fr[canonical]||canonical;return (dict[lang]&&dict[lang][canonical])||dict.en[canonical]||canonical}'+
   'function translate(lang){if(!languages.includes(lang))lang="fr";localStorage.setItem("cmd-sphere-language",lang);document.documentElement.lang=lang==="us"?"en-US":lang;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);nodes.forEach(n=>{const raw=n.nodeValue,trim=raw.trim();if(!trim)return;const out=t(lang,trim);if(out!==trim)n.nodeValue=raw.replace(trim,out)});document.querySelectorAll("input[placeholder],textarea[placeholder]").forEach(e=>{const out=t(lang,e.placeholder);if(out!==e.placeholder)e.placeholder=out})}'+
   'async function forceRefresh(){const b=document.getElementById("cmd-sphere-refresh");if(b){b.disabled=true;b.textContent="…"}try{if("caches" in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)))}if("serviceWorker" in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.update().catch(()=>{})))}}catch(e){}location.reload()}'+
-  'function boot(){const tools=document.getElementById("cmd-sphere-tools");if(tools&&location.pathname.startsWith("/native/")&&matchMedia("(max-width:720px)").matches){tools.style.top="auto";tools.style.bottom="70px";tools.style.right="8px";tools.style.transform="scale(.88)";tools.style.transformOrigin="bottom right"}let language=localStorage.getItem("cmd-sphere-language")||"fr";if(!languages.includes(language))language="fr";const sel=document.getElementById("cmd-sphere-language");if(sel){sel.value=language;sel.onchange=e=>translate(e.target.value)}document.getElementById("cmd-sphere-refresh")?.addEventListener("click",forceRefresh);translate(language);'+
+  'function boot(){const tools=document.getElementById("cmd-sphere-tools");if(tools&&matchMedia("(max-width:720px)").matches){tools.style.transform="scale(.92)";tools.style.transformOrigin="top right"}let language=localStorage.getItem("cmd-sphere-language")||"fr";if(!languages.includes(language))language="fr";const sel=document.getElementById("cmd-sphere-language");if(sel){sel.value=language;sel.onchange=e=>translate(e.target.value)}document.getElementById("cmd-sphere-refresh")?.addEventListener("click",forceRefresh);translate(language);'+
   'const loginPage=!document.querySelector(".sphere-app")&&(location.pathname==="/"||location.pathname==="/dashboard");const token=localStorage.getItem("cmd_sphere_session");if(loginPage&&token&&!sessionStorage.getItem("cmd_sphere_restore")){sessionStorage.setItem("cmd_sphere_restore","1");document.cookie="cmd_sphere_session="+encodeURIComponent(token)+"; Path=/; Max-Age=31536000; SameSite=Lax; Secure";location.replace("/dashboard?restore=1");return}if(document.querySelector(".sphere-app"))sessionStorage.removeItem("cmd_sphere_restore");if(loginPage&&new URLSearchParams(location.search).get("restore")==="1"){localStorage.removeItem("cmd_sphere_session");sessionStorage.removeItem("cmd_sphere_restore")}document.querySelectorAll("a[href=\"/dashboard-logout\"]").forEach(a=>a.addEventListener("click",()=>localStorage.removeItem("cmd_sphere_session")));'+
   'let timer;new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>translate(localStorage.getItem("cmd-sphere-language")||"fr"),50)}).observe(document.body,{childList:true,subtree:true})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",boot):boot();})();<\\/script>';
 
@@ -108,6 +108,52 @@ rep(`res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-cont
 rep(`res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-cache"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',()=>{});");return;`,
 `res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-store"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())await caches.delete(k);await self.clients.claim()})()));self.addEventListener('fetch',e=>{if(e.request.mode==='navigate')e.respondWith(fetch(e.request,{cache:'no-store'}));});");return;`,
 "PWA force refresh");
+
+/* CMD Sphere no-bot mode: owned/manageable Discords stay usable even when DAYZ GATE,
+   BOT ARK and EXTINCTION ++ RSS are not installed on that Discord. */
+rep(`  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET membership_role=EXCLUDED.membership_role',[nativeId,String(auth.user.id),'owner',safeText(auth.user.displayName||auth.user.name,80)]);
+  return {id:nativeId,name,icon,sourceDiscordId:sourceId,full:false,inviteUrl:baseUrl+"/invite/"+inviteCode};
+}`,
+`  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET membership_role=EXCLUDED.membership_role',[nativeId,String(auth.user.id),'owner',safeText(auth.user.displayName||auth.user.name,80)]);
+  const cc=await pool.query('SELECT COUNT(*)::int AS n FROM cmd_native_channels WHERE guild_id=$1',[nativeId]);
+  if(Number(cc.rows[0]?.n||0)===0){
+    const cat=crypto.randomUUID();
+    await pool.query("INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,'CMD Sphere','category',0)",[cat,nativeId]);
+    await pool.query("INSERT INTO cmd_native_channels(id,guild_id,name,type,topic,position,source_parent_id) VALUES($1,$2,'général','text','Salon local CMD Sphere — utilisable sans bot Discord',1,$3)",[crypto.randomUUID(),nativeId,cat]);
+  }
+  const rc=await pool.query('SELECT COUNT(*)::int AS n FROM cmd_native_roles WHERE guild_id=$1',[nativeId]);
+  if(Number(rc.rows[0]?.n||0)===0){
+    await pool.query("INSERT INTO cmd_native_roles(id,guild_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,'@everyone','#99AAB5',$3::jsonb,0,FALSE,FALSE)",[crypto.randomUUID(),nativeId,JSON.stringify({viewChannels:true,sendMessages:true,readHistory:true,connect:true,speak:true})]);
+  }
+  return {id:nativeId,name,icon,sourceDiscordId:sourceId,full:false,botless:true,inviteUrl:baseUrl+"/invite/"+inviteCode};
+}`,
+"botless shell local structure");
+
+rep(`async function syncNativeGuildById(auth,nativeGuildId){
+  await requireNativeAdmin(auth,nativeGuildId);
+  const r=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[String(nativeGuildId)]);
+  const sourceId=String(r.rows[0]?.source_discord_id||"");
+  if(!/^\\d{15,22}$/.test(sourceId))throw new Error("Ce serveur n'est pas relié à un Discord.");
+  const bot=await resolveBot(auth,sourceId);
+  return syncNativeFromDiscord(auth,sourceId,bot);
+}`,
+`async function syncNativeGuildById(auth,nativeGuildId){
+  await requireNativeAdmin(auth,nativeGuildId);
+  const r=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[String(nativeGuildId)]);
+  const sourceId=String(r.rows[0]?.source_discord_id||"");
+  if(!/^\\d{15,22}$/.test(sourceId))throw new Error("Ce serveur n'est pas relié à un Discord.");
+  try{
+    const bot=await resolveBot(auth,sourceId);
+    return syncNativeFromDiscord(auth,sourceId,bot);
+  }catch(e){
+    const metas=await linkedDiscordGuilds(auth);
+    const meta=metas.find(g=>String(g.id)===sourceId)||{id:sourceId,name:"Discord "+sourceId,icon:null};
+    const shell=await importDiscordShell(auth,meta);
+    return {...shell,bot:null,botName:"CMD Sphere sans bot",botless:true,warning:"Synchronisation locale active. Le nom et l’icône viennent de Discord; catégories/salons/rôles restent gérés dans CMD Sphere tant qu’aucun bot CMD n’est installé."};
+  }
+}`,
+"botless sync fallback");
+
 
 
 /* photo source size limit removed: original files are accepted and compressed client-side */
