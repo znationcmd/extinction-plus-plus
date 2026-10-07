@@ -321,6 +321,36 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_frame TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS nameplate_style TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS badge_pack TEXT NOT NULL DEFAULT 'star'");
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_user_preferences(
+    user_id TEXT PRIMARY KEY,
+    allow_dms BOOLEAN NOT NULL DEFAULT TRUE,
+    allow_message_requests BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_dm_threads(
+    id UUID PRIMARY KEY,
+    user_low TEXT NOT NULL,
+    user_high TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_low,user_high)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_dm_messages(
+    id UUID PRIMARY KEY,
+    thread_id UUID NOT NULL REFERENCES cmd_dm_threads(id) ON DELETE CASCADE,
+    sender_user_id TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    read_at TIMESTAMPTZ
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_dm_messages_thread_created_idx ON cmd_dm_messages(thread_id,created_at)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_shop_installs(
+    user_id TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_key TEXT NOT NULL,
+    installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,item_type,item_key)
+  )`);
   await initConnections(pool);
 
 }
@@ -608,6 +638,131 @@ function profilePage(auth,profile,experience={guilds:[],selected:null,detail:nul
   'document.getElementById("saveRoleStyle")?.addEventListener("click",async()=>{try{const body={guildId:'+JSON.stringify(selectedId)+',roleId:document.getElementById("styleRoleId").value,visualStyle:document.getElementById("roleVisualStyle").value,roleIcon:document.getElementById("roleIcon").value,gradientStart:document.getElementById("roleGradientStart").value,gradientEnd:document.getElementById("roleGradientEnd").value};const r=await fetch("/api/native/role-style",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}),d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur");alert("Style du rôle enregistré gratuitement.");location.reload()}catch(x){alert(x.message)}});'+
   'form.onsubmit=async e=>{e.preventDefault();const b=Object.fromEntries(new FormData(form));b.badges=Array.from(form.querySelectorAll("[data-badge]:checked")).map(x=>x.value);try{b.avatarDataUrl=await imgData("avatarFile","avatar");b.bannerDataUrl=await imgData("bannerFile","banner");const server='+JSON.stringify(serverMode)+';let r=await fetch(server?"/api/native/profile":"/api/profile",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}),d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur");if(server&&(b.serverTag!==undefined||b.serverTagIcon!==undefined)){r=await fetch("/api/native/server-style",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:b.guildId,serverTag:b.serverTag,serverTagIcon:b.serverTagIcon,badgePack:b.badgePack})});d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur tag")}location.reload()}catch(x){alert(x.message)}};if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});</script></body></html>';
 }
+function shopCatalog(){
+  return [
+    ...Object.entries(PROFILE_FRAMES).filter(([k])=>k!=="none").map(([key,v])=>({type:"frame",key,label:v.label,icon:v.icon,group:"Cadres de profil"})),
+    ...Object.entries(PROFILE_EFFECTS).filter(([k])=>k!=="none").map(([key,v])=>({type:"effect",key,label:v.label,icon:v.icon,group:"Effets de profil"})),
+    ...Object.entries(NAMEPLATES).filter(([k])=>k!=="none").map(([key,v])=>({type:"nameplate",key,label:v.label,icon:v.icon,group:"Plaques nominatives"})),
+    ...[["colosseum","Avatar de colisée","🏛️"],["crystal","Cristaux","💠"],["fire","Flammes","🔥"],["halo","Halo","🌟"],["flowers","Fleurs","🌸"],["neon","Néon","⚡"],["viking","Viking","🪓"],["skull","Crâne","💀"],["radioactive","Radioactif","☢️"]].map(([key,label,icon])=>({type:"decoration",key,label,icon,group:"Décorations d’avatar"})),
+    ...Object.entries(FREE_BADGES).map(([key,v])=>({type:"badge",key,label:v.label,icon:v.icon,group:"Badges"}))
+  ];
+}
+
+async function installedShopItems(auth){
+  const r=await pool.query("SELECT item_type,item_key FROM cmd_shop_installs WHERE user_id=$1 ORDER BY installed_at DESC",[String(auth.user.id)]);
+  return new Set(r.rows.map(x=>x.item_type+":"+x.item_key));
+}
+
+async function installShopItem(auth,input){
+  const type=String(input.type||""),key=String(input.key||"");
+  const item=shopCatalog().find(x=>x.type===type&&x.key===key);
+  if(!item)throw new Error("Élément de boutique inconnu.");
+  const p=await getGlobalProfile(auth);
+  const patch={displayName:p.displayName,bio:p.bio,status:p.status,pronouns:p.pronouns,accentColor:p.accentColor,theme:p.theme,nameStyle:p.nameStyle,badges:p.badges,avatarDecoration:p.avatarDecoration,profileEffect:p.profileEffect,profileFrame:p.profileFrame,nameplateStyle:p.nameplateStyle,featuredTagGuildId:p.featuredTagGuildId};
+  if(type==="frame")patch.profileFrame=key;
+  else if(type==="effect")patch.profileEffect=key;
+  else if(type==="nameplate")patch.nameplateStyle=key;
+  else if(type==="decoration")patch.avatarDecoration=key;
+  else if(type==="badge")patch.badges=[...new Set([...(p.badges||[]),key])];
+  await updateGlobalProfile(auth,patch);
+  await pool.query("INSERT INTO cmd_shop_installs(user_id,item_type,item_key) VALUES($1,$2,$3) ON CONFLICT(user_id,item_type,item_key) DO UPDATE SET installed_at=NOW()",[String(auth.user.id),type,key]);
+  return {ok:true,item};
+}
+
+function shopPage(auth,installed){
+  const items=shopCatalog(),groups=[...new Set(items.map(x=>x.group))];
+  const content=groups.map(group=>`<section><h2>${escHtml(group)}</h2><div class="grid">${items.filter(x=>x.group===group).map(x=>{
+    const yes=installed.has(x.type+":"+x.key);
+    return `<article class="item"><div class="art">${escHtml(x.icon)}</div><b>${escHtml(x.label)}</b><small>GRATUIT</small><button data-type="${escHtml(x.type)}" data-key="${escHtml(x.key)}">${yes?"Réinstaller":"Installer gratuitement"}</button></article>`;
+  }).join("")}</div></section>`).join("");
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Boutique · CMD Sphere</title><style>
+  *{box-sizing:border-box}body{margin:0;background:#111214;color:#fff;font-family:system-ui}.top{position:sticky;top:0;background:#1e1f22ee;padding:16px;display:flex;gap:12px;align-items:center;z-index:3}.top a{color:#fff;text-decoration:none;font-size:30px}.wrap{max-width:980px;margin:auto;padding:16px 16px 80px}.hero{background:linear-gradient(135deg,#4c1d95,#7e22ce,#1d4ed8);padding:22px;border-radius:20px}.hero h1{margin:0 0 8px}.hero p{margin:0}.free{display:inline-block;margin-top:12px;background:#052e16;color:#86efac;padding:7px 10px;border-radius:999px;font-weight:900}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.item{background:#232428;border:1px solid #ffffff12;border-radius:15px;padding:12px;display:grid;gap:8px}.art{height:110px;border-radius:12px;background:linear-gradient(145deg,#35183e,#16161a);display:grid;place-items:center;font-size:48px}.item small{color:#86efac;font-weight:900}.item button{border:0;border-radius:10px;background:#5865f2;color:#fff;padding:11px;font-weight:900}.toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;padding:12px 16px;border-radius:12px}.toast.on{display:block}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:420px){.grid{grid-template-columns:1fr}}
+  </style></head><body><div class="top"><a href="/dashboard">×</a><b>🛍️ Boutique CMD Sphere</b><a href="/profile" style="margin-left:auto;font-size:18px">Profil</a></div><main class="wrap"><div class="hero"><h1>Tout est gratuit</h1><p>Choisis ce que tu veux et installe-le directement sur ton profil.</p><span class="free">✓ Aucun paiement · Aucun boost</span></div>${content}</main><div id="toast" class="toast"></div><script>
+  const toast=document.getElementById("toast");function say(t){toast.textContent=t;toast.classList.add("on");setTimeout(()=>toast.classList.remove("on"),1800)}
+  document.querySelectorAll(".item button").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await fetch("/api/shop/install",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:b.dataset.type,key:b.dataset.key})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur");b.textContent="Installé ✓";say(d.item.label+" installé.")}catch(e){say(e.message)}finally{b.disabled=false}});
+  </script></body></html>`;
+}
+
+async function getDmPreferences(auth){
+  const r=await pool.query("SELECT allow_dms,allow_message_requests FROM cmd_user_preferences WHERE user_id=$1 LIMIT 1",[String(auth.user.id)]);
+  return r.rows[0]||{allow_dms:true,allow_message_requests:true};
+}
+
+async function updateDmPreferences(auth,input){
+  const d=input.allowDms!==false,q=input.allowMessageRequests!==false;
+  await pool.query("INSERT INTO cmd_user_preferences(user_id,allow_dms,allow_message_requests) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET allow_dms=EXCLUDED.allow_dms,allow_message_requests=EXCLUDED.allow_message_requests,updated_at=NOW()",[String(auth.user.id),d,q]);
+  return getDmPreferences(auth);
+}
+
+async function searchDmUsers(auth,q){
+  q=safeText(q,80);if(!q)return [];
+  const r=await pool.query("SELECT a.id,a.username,a.display_name,g.avatar_data_url FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text WHERE a.id::text<>$1 AND (a.username_key LIKE $2 OR LOWER(COALESCE(a.display_name,'')) LIKE $2) ORDER BY a.username_key LIMIT 20",[String(auth.user.id),"%"+q.toLowerCase()+"%"]);
+  return r.rows.map(x=>({id:String(x.id),username:x.username,displayName:x.display_name||x.username,avatar:x.avatar_data_url||null}));
+}
+
+async function findDmThread(auth,id){
+  const r=await pool.query("SELECT * FROM cmd_dm_threads WHERE id=$1 AND (user_low=$2 OR user_high=$2) LIMIT 1",[String(id),String(auth.user.id)]);
+  if(!r.rows[0])throw new Error("Conversation introuvable.");
+  return r.rows[0];
+}
+
+async function startDmThread(auth,input){
+  const key=normalizeUsername(input.username).key;
+  const r=await pool.query("SELECT id,username,display_name FROM cmd_accounts WHERE username_key=$1 LIMIT 1",[key]);
+  const target=r.rows[0];if(!target)throw new Error("Utilisateur introuvable.");
+  const me=String(auth.user.id),other=String(target.id);if(me===other)throw new Error("Impossible de t’écrire à toi-même.");
+  const p=await pool.query("SELECT allow_dms FROM cmd_user_preferences WHERE user_id=$1",[other]);
+  if(p.rows[0]?.allow_dms===false)throw new Error("Cette personne n’accepte pas les messages privés.");
+  const [low,high]=[me,other].sort(),id=crypto.randomUUID();
+  const t=await pool.query("INSERT INTO cmd_dm_threads(id,user_low,user_high) VALUES($1,$2,$3) ON CONFLICT(user_low,user_high) DO UPDATE SET updated_at=NOW() RETURNING id",[id,low,high]);
+  return {id:String(t.rows[0].id)};
+}
+
+async function listDmThreads(auth){
+  const me=String(auth.user.id);
+  const r=await pool.query(`SELECT t.id,t.updated_at,CASE WHEN t.user_low=$1 THEN t.user_high ELSE t.user_low END other_id,a.username,a.display_name,g.avatar_data_url,
+    (SELECT body FROM cmd_dm_messages m WHERE m.thread_id=t.id ORDER BY m.created_at DESC LIMIT 1) last_message,
+    (SELECT COUNT(*)::int FROM cmd_dm_messages m WHERE m.thread_id=t.id AND m.sender_user_id<>$1 AND m.read_at IS NULL) unread
+    FROM cmd_dm_threads t
+    LEFT JOIN cmd_accounts a ON a.id::text=(CASE WHEN t.user_low=$1 THEN t.user_high ELSE t.user_low END)
+    LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text
+    WHERE t.user_low=$1 OR t.user_high=$1 ORDER BY t.updated_at DESC LIMIT 100`,[me]);
+  return r.rows.map(x=>({id:String(x.id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,lastMessage:x.last_message||"",unread:Number(x.unread||0)}));
+}
+
+async function getDmMessages(auth,id){
+  const t=await findDmThread(auth,id),me=String(auth.user.id),other=t.user_low===me?t.user_high:t.user_low;
+  await pool.query("UPDATE cmd_dm_messages SET read_at=NOW() WHERE thread_id=$1 AND sender_user_id<>$2 AND read_at IS NULL",[t.id,me]);
+  const m=await pool.query("SELECT id,sender_user_id,body,created_at FROM cmd_dm_messages WHERE thread_id=$1 ORDER BY created_at ASC LIMIT 500",[t.id]);
+  const u=await pool.query("SELECT username,display_name FROM cmd_accounts WHERE id::text=$1 LIMIT 1",[other]);
+  return {threadId:String(t.id),other:{id:other,username:u.rows[0]?.username||"utilisateur",displayName:u.rows[0]?.display_name||u.rows[0]?.username||"Utilisateur"},messages:m.rows.map(x=>({id:String(x.id),senderUserId:String(x.sender_user_id),body:x.body,createdAt:x.created_at}))};
+}
+
+async function sendDmMessage(auth,input){
+  const t=await findDmThread(auth,input.threadId),me=String(auth.user.id),other=t.user_low===me?t.user_high:t.user_low;
+  const p=await pool.query("SELECT allow_dms FROM cmd_user_preferences WHERE user_id=$1",[other]);
+  if(p.rows[0]?.allow_dms===false)throw new Error("Cette personne n’accepte pas les messages privés.");
+  const body=safeText(input.body,4000);if(!body)throw new Error("Message vide.");
+  const id=crypto.randomUUID();const r=await pool.query("INSERT INTO cmd_dm_messages(id,thread_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,t.id,me,body]);
+  await pool.query("UPDATE cmd_dm_threads SET updated_at=NOW() WHERE id=$1",[t.id]);
+  return {id,body,createdAt:r.rows[0].created_at,senderUserId:me};
+}
+
+function messagesPage(auth,threads,prefs){
+  const rows=threads.map(t=>`<button class="thread" data-id="${escHtml(t.id)}"><span class="av">${t.avatar?`<img src="${escHtml(t.avatar)}">`:"💬"}</span><span class="main"><b>${escHtml(t.displayName)}</b><small>${escHtml(t.lastMessage||"Nouvelle conversation")}</small></span>${t.unread?`<i>${t.unread}</i>`:""}</button>`).join("")||`<div class="empty">Aucune conversation.</div>`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Messages · CMD Sphere</title><style>
+  *{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#341044,#5b176d,#281032);color:#fff;font-family:system-ui;height:100dvh;overflow:hidden}.app{display:grid;grid-template-columns:340px 1fr;height:100dvh}.side{background:#1e1f22e8;border-right:1px solid #ffffff12;display:flex;flex-direction:column}.head{padding:15px;border-bottom:1px solid #ffffff10}.bar{display:flex;align-items:center;gap:10px}.bar a{color:#fff;text-decoration:none}.search{display:flex;gap:8px;margin-top:10px}.search input{flex:1;background:#111214;border:1px solid #ffffff18;color:#fff;border-radius:10px;padding:10px}.search button{width:44px;border:0;border-radius:10px;background:#5865f2;color:#fff;font-size:22px}.results{display:none;background:#111214;border-radius:10px;margin-top:8px;overflow:hidden}.results.on{display:block}.result{display:block;width:100%;background:transparent;border:0;border-bottom:1px solid #ffffff10;color:#fff;text-align:left;padding:10px}.threads{overflow:auto;padding:8px}.thread{width:100%;display:flex;gap:10px;align-items:center;border:0;background:transparent;color:#fff;padding:10px;border-radius:11px;text-align:left}.thread:hover,.thread.active{background:#ffffff12}.av{width:44px;height:44px;border-radius:50%;background:#35373c;display:grid;place-items:center;overflow:hidden;flex:none}.av img{width:100%;height:100%;object-fit:cover}.main{min-width:0;flex:1}.main b,.main small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.main small{color:#b5bac1}.thread i{background:#ed4245;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-style:normal;font-size:11px}.prefs{margin-top:auto;border-top:1px solid #ffffff10;padding:10px}.pref{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin:8px 0}.chat{display:flex;flex-direction:column;background:#211126aa}.chatHead{height:64px;padding:0 18px;display:flex;align-items:center;border-bottom:1px solid #ffffff10;font-weight:900}.msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:9px}.bubble{max-width:80%;padding:10px 12px;border-radius:15px;background:#35373c;white-space:pre-wrap;word-break:break-word}.bubble.me{align-self:flex-end;background:#5865f2}.composer{display:flex;gap:8px;padding:12px}.composer input{flex:1;background:#383a40;border:0;color:#fff;border-radius:11px;padding:12px}.composer button{border:0;border-radius:11px;background:#5865f2;color:#fff;font-weight:900;padding:0 16px}.empty{padding:18px;color:#b5bac1}@media(max-width:720px){.app{grid-template-columns:1fr}.chat{display:none;position:fixed;inset:0;z-index:5}.app.open .side{display:none}.app.open .chat{display:flex}.chatHead{cursor:pointer}}
+  </style></head><body><div class="app" id="app"><aside class="side"><div class="head"><div class="bar"><a href="/dashboard">✕</a><b style="font-size:24px">Messages</b><a href="/shop" style="margin-left:auto">🛍️</a></div><div class="search"><input id="q" placeholder="Rechercher un utilisateur"><button>＋</button></div><div id="results" class="results"></div></div><div id="threads" class="threads">${rows}</div><div class="prefs"><label class="pref">Messages privés <input id="allowDms" type="checkbox" ${prefs.allow_dms!==false?"checked":""}></label><label class="pref">Demandes de message <input id="allowReq" type="checkbox" ${prefs.allow_message_requests!==false?"checked":""}></label></div></aside><main class="chat"><div id="chatHead" class="chatHead">Conversation privée</div><div id="msgs" class="msgs"><div class="empty">Choisis une conversation.</div></div><form id="form" class="composer"><input id="msg" maxlength="4000" placeholder="Envoyer un message privé…" disabled><button id="send" disabled>Envoyer</button></form></main></div><script>
+  const ME=${JSON.stringify(String(auth.user.id))},app=document.getElementById("app"),msgs=document.getElementById("msgs"),msg=document.getElementById("msg"),send=document.getElementById("send");let active=null;
+  function e(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+  async function openThread(id){active=id;const r=await fetch("/api/dm/thread/"+encodeURIComponent(id)),d=await r.json();if(!r.ok){alert(d.error||"Erreur");return}document.getElementById("chatHead").textContent=d.other.displayName;msgs.innerHTML=d.messages.map(m=>'<div class="bubble '+(m.senderUserId===ME?"me":"")+'">'+e(m.body)+'</div>').join("")||'<div class="empty">Commence la conversation.</div>';msgs.scrollTop=msgs.scrollHeight;msg.disabled=false;send.disabled=false;app.classList.add("open")}
+  document.querySelectorAll(".thread").forEach(b=>b.onclick=()=>openThread(b.dataset.id));document.getElementById("chatHead").onclick=()=>app.classList.remove("open");
+  document.getElementById("form").onsubmit=async ev=>{ev.preventDefault();if(!active||!msg.value.trim())return;const body=msg.value;msg.value="";const r=await fetch("/api/dm/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({threadId:active,body})}),d=await r.json();if(!r.ok){alert(d.error||"Erreur");msg.value=body;return}openThread(active)};
+  let timer;document.getElementById("q").oninput=ev=>{clearTimeout(timer);timer=setTimeout(async()=>{const q=ev.target.value.trim(),box=document.getElementById("results");if(!q){box.classList.remove("on");return}const r=await fetch("/api/dm/search?q="+encodeURIComponent(q)),d=await r.json();box.innerHTML=(d.users||[]).map(u=>'<button class="result" data-user="'+e(u.username)+'"><b>'+e(u.displayName)+'</b> · @'+e(u.username)+'</button>').join("")||'<div class="empty">Aucun utilisateur</div>';box.classList.add("on");box.querySelectorAll(".result").forEach(b=>b.onclick=async()=>{const rr=await fetch("/api/dm/start",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({username:b.dataset.user})}),dd=await rr.json();if(!rr.ok){alert(dd.error||"Erreur");return}location.href="/messages?open="+encodeURIComponent(dd.thread.id)})},250)};
+  async function prefs(){await fetch("/api/dm/preferences",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({allowDms:document.getElementById("allowDms").checked,allowMessageRequests:document.getElementById("allowReq").checked})})}document.getElementById("allowDms").onchange=prefs;document.getElementById("allowReq").onchange=prefs;const o=new URLSearchParams(location.search).get("open");if(o)openThread(o);
+  </script></body></html>`;
+}
+
 function serverAddPage(auth,publicGuilds=[]){
   const publicHtml=(publicGuilds||[]).map(g=>'<div class="serverCard"><div><b>'+escHtml(g.name||"Serveur")+'</b><small>'+Number(g.member_count||0)+' membre(s)</small></div><a class="btn" href="'+escHtml(g.inviteUrl||"#")+'">Rejoindre</a></div>').join("")||'<div class="empty">Aucun serveur public pour le moment.</div>';
   return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1e1f22"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>Ajouter un serveur · CMD Sphere</title><style>*{box-sizing:border-box}body{margin:0;background:#0d0b10;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial}.wrap{max-width:720px;margin:auto;padding:22px 16px 100px}.head{display:flex;align-items:center;gap:12px;margin-bottom:18px}.head a{color:#fff;text-decoration:none;font-size:28px}.head h1{font-size:24px;margin:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{background:#1b1820;border:1px solid #ffffff12;border-radius:18px;padding:16px}.card h2{margin-top:0}.muted{color:#aaa2b0}.btn{display:inline-flex;justify-content:center;align-items:center;text-decoration:none;border:0;border-radius:10px;background:#5865f2;color:#fff;padding:11px 14px;font-weight:900;cursor:pointer}.btn.gray{background:#3b3d44}.wide{width:100%}input{width:100%;background:#0f0d12;color:#fff;border:1px solid #ffffff18;border-radius:10px;padding:12px;font:inherit;margin:7px 0 12px}.check{display:flex;gap:8px;align-items:center;margin:8px 0 14px}.check input{width:auto;margin:0}.serverCard{display:flex;align-items:center;gap:12px;justify-content:space-between;border:1px solid #ffffff10;background:#ffffff07;border-radius:12px;padding:12px;margin:8px 0}.serverCard b,.serverCard small{display:block}.serverCard small{color:#aaa2b0;margin-top:4px}.empty{padding:16px;color:#aaa2b0}@media(max-width:650px){.grid{grid-template-columns:1fr}}</style></head><body><main class="wrap"><div class="head"><a href="/dashboard">←</a><h1>Ajouter un serveur</h1></div><div class="grid"><section class="card"><h2>＋ Créer un serveur</h2><p class="muted">Crée un nouvel espace CMD Sphere.</p><form method="post" action="/servers/create"><input name="name" required maxlength="100" placeholder="Nom du serveur"><label class="check"><input type="checkbox" name="isPublic" value="1"> Visible dans Découvrir</label><button class="btn wide" type="submit">Créer le serveur</button></form></section><section class="card"><h2>🔗 Rejoindre</h2><p class="muted">Utilise un lien ou un code d’invitation CMD Sphere.</p><form method="post" action="/servers/join"><input name="invite" required maxlength="400" placeholder="Lien ou code d’invitation"><button class="btn wide" type="submit">Rejoindre</button></form></section><section class="card"><h2>⬇ Importer Discord</h2><p class="muted">Récupère tous les Discord gérables de ton compte, puis les synchronise.</p><a class="btn wide" href="/dashboard-login?link=1&next=/dashboard?sync=1">Synchroniser mon Discord</a><form method="post" action="/servers/import" style="margin-top:10px"><button class="btn gray wide" type="submit">Forcer l’import maintenant</button></form></section><section class="card"><h2>◎ Découvrir</h2><p class="muted">Serveurs CMD Sphere publics.</p>'+publicHtml+'</section></div></main></body></html>';
