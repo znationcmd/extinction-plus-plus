@@ -9,66 +9,66 @@ function rep(a,b,label){
 
 // Keep session cookie compact enough for iPhone/Safari.
 rep(
-\`function sessionPayload(authData){
+`function sessionPayload(authData){
   return signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user:authData.user,guildIds:authData.guildIds||[],guilds:authData.guilds||[]});
-}\`,
-\`function sessionPayload(authData){
+}`,
+`function sessionPayload(authData){
   const u=authData.user||{};
   const user={id:String(u.id||""),name:String(u.name||"CMD").slice(0,100),displayName:String(u.displayName||u.name||"CMD").slice(0,100),discordId:u.discordId?String(u.discordId):null};
   return signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user,guildIds:(authData.guildIds||[]).map(String).slice(0,100)});
-}\`,
+}`,
 "compact session"
 );
 
 // Use a conservative persistent cookie lifetime and no oversized metadata.
 rep(
-\`function dashboardCookie(value,maxAge=10*365*24*3600){
+`function dashboardCookie(value,maxAge=10*365*24*3600){
   return "cmd_sphere_session="+encodeURIComponent(value)+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge+"; Expires="+new Date(Date.now()+maxAge*1000).toUTCString();
-}\`,
-\`function dashboardCookie(value,maxAge=365*24*3600){
+}`,
+`function dashboardCookie(value,maxAge=365*24*3600){
   return "cmd_sphere_session="+encodeURIComponent(value)+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
-}\`,
+}`,
 "cookie lifetime"
 );
 
 // Return the token to native account login so the browser can keep a local first-party fallback.
 rep(
-\`sendJson(res,201,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});\`,
-\`sendJson(res,201,{ok:true,user:authData.user,session},{"set-cookie":dashboardCookie(session)});\`,
+`sendJson(res,201,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});`,
+`sendJson(res,201,{ok:true,user:authData.user,session},{"set-cookie":dashboardCookie(session)});`,
 "signup session fallback"
 );
 rep(
-\`sendJson(res,200,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});\`,
-\`sendJson(res,200,{ok:true,user:authData.user,session},{"set-cookie":dashboardCookie(session)});\`,
+`sendJson(res,200,{ok:true,user:authData.user},{"set-cookie":dashboardCookie(session)});`,
+`sendJson(res,200,{ok:true,user:authData.user,session},{"set-cookie":dashboardCookie(session)});`,
 "login session fallback"
 );
 
 // Persist native-login token to localStorage + JS cookie before entering the dashboard.
 rep(
-\`if(!r.ok)throw new Error(d.error||"Erreur");location.href="/dashboard"}\`,
-\`if(!r.ok)throw new Error(d.error||"Erreur");if(d.session){localStorage.setItem("cmd_sphere_session",d.session);document.cookie="cmd_sphere_session="+encodeURIComponent(d.session)+"; Path=/; Max-Age=31536000; SameSite=Lax; Secure"}location.href="/dashboard"}\`,
+`if(!r.ok)throw new Error(d.error||"Erreur");location.href="/dashboard"}`,
+`if(!r.ok)throw new Error(d.error||"Erreur");if(d.session){localStorage.setItem("cmd_sphere_session",d.session);document.cookie="cmd_sphere_session="+encodeURIComponent(d.session)+"; Path=/; Max-Age=31536000; SameSite=Lax; Secure"}location.href="/dashboard"}`,
 "native login persistence"
 );
 
 // Discord OAuth: set both server cookie and a first-party JS/localStorage fallback.
 rep(
-\`res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0"});res.end();return;\`,
-\`const target=(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard");
+`res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0"});res.end();return;`,
+`const target=(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard");
           const cookie=dashboardCookie(session);
           const page='<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CMD Sphere</title><body style="margin:0;background:#08060d;color:white;font-family:system-ui;display:grid;place-items:center;min-height:100vh"><div style="text-align:center"><h2>CMD Sphere</h2><p>Connexion en cours…</p></div><script>try{localStorage.setItem("cmd_sphere_session",'+JSON.stringify(session)+');document.cookie="cmd_sphere_session="+encodeURIComponent('+JSON.stringify(session)+')+"; Path=/; Max-Age=31536000; SameSite=Lax; Secure"}catch(e){}location.replace('+JSON.stringify(target)+');<\\/script></body>';
-          html(res,page,200,{"set-cookie":cookie,"cache-control":"no-store, no-cache, must-revalidate"});return;\`,
+          html(res,page,200,{"set-cookie":cookie,"cache-control":"no-store, no-cache, must-revalidate"});return;`,
 "discord persistence"
 );
 
 // Clear local fallback on explicit logout.
 rep(
-\`html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookies()});return;\`,
-\`html(res,'<!doctype html><meta charset="utf-8"><script>try{localStorage.removeItem("cmd_sphere_session");sessionStorage.removeItem("cmd_restore_try")}catch(e){}location.replace("/")<\\/script>',200,{"set-cookie":clearDashboardCookies()});return;\`,
+`html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookies()});return;`,
+`html(res,'<!doctype html><meta charset="utf-8"><script>try{localStorage.removeItem("cmd_sphere_session");sessionStorage.removeItem("cmd_restore_try")}catch(e){}location.replace("/")<\\/script>',200,{"set-cookie":clearDashboardCookies()});return;`,
 "logout local cleanup"
 );
 
 // Global language + refresh controls, and localStorage session recovery.
-const injectFn = String.raw\`
+const injectFn = String.raw`
 function injectUi(body){
   if(typeof body!=="string"||!/<body/i.test(body))return body;
   const ui='<div id="cmd-global-tools" style="position:fixed;z-index:99999;right:10px;top:max(10px,env(safe-area-inset-top));display:flex;gap:7px;align-items:center;background:#0b0810dd;border:1px solid #ffffff1b;border-radius:14px;padding:6px;backdrop-filter:blur(14px)">'+
@@ -95,22 +95,22 @@ function injectUi(body){
   'let timer;new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(()=>applyLang(localStorage.getItem("cmd_lang")||"fr"),30)}).observe(document.body,{childList:true,subtree:true});}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",start):start();})();<\\/script>';
   return body.replace(/<body([^>]*)>/i,function(m,a){return m+ui}).replace(/<\\/body>/i,js+"</body>");
 }
-\`;
+`;
 
 if(!s.includes("function injectUi(body){")){
   s=s.replace("function html(res,body,status=200,headers={}){",injectFn+"\nfunction html(res,body,status=200,headers={}){");
   n++;
 }
 rep(
-\`res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);\`,
-\`res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(injectUi(body));\`,
+`res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);`,
+`res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(injectUi(body));`,
 "global ui injection"
 );
 
 // Make service worker aggressively take the new version and never serve cached HTML.
 rep(
-\`res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-cache"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',()=>{});");return;\`,
-\`res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-store"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())await caches.delete(k);await self.clients.claim()})()));self.addEventListener('fetch',e=>{if(e.request.mode==='navigate')e.respondWith(fetch(e.request,{cache:'no-store'}));});");return;\`,
+`res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-cache"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',()=>{});");return;`,
+`res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-store"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())await caches.delete(k);await self.clients.claim()})()));self.addEventListener('fetch',e=>{if(e.request.mode==='navigate')e.respondWith(fetch(e.request,{cache:'no-store'}));});");return;`,
 "PWA cache refresh"
 );
 
