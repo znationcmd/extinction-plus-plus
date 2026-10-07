@@ -63,7 +63,9 @@ function verifyDiscordBridge(value){
   const guilds=data.guilds.map(g=>({
     id:String(g.id||""),
     name:String(g.name||g.id||"Discord").slice(0,100),
-    icon:g.icon?String(g.icon).slice(0,300):null
+    icon:g.icon?String(g.icon).slice(0,300):null,
+    owner:Boolean(g.owner),
+    permissions:String(g.permissions||"0")
   })).filter(g=>/^\d{15,22}$/.test(g.id)).slice(0,100);
   return {
     user:{
