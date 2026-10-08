@@ -2597,6 +2597,19 @@ async function startDiscordSyncJob(auth){
   setImmediate(()=>runDiscordSyncJob(auth,id).catch(e=>console.error("[sync-job]",e.message)));
   return {ok:true,job:await discordSyncJobStatus(auth),started:true};
 }
+async function resumeDiscordSyncJobs(){
+  const r=await pool.query("SELECT id::text,user_id FROM cmd_discord_sync_jobs WHERE status IN ('queued','running') AND updated_at > NOW() - INTERVAL '30 minutes' ORDER BY started_at DESC LIMIT 5");
+  const users=new Set();
+  for(const item of r.rows){
+    if(users.has(String(item.user_id)))continue;
+    users.add(String(item.user_id));
+    try{
+      const account=await accountById(item.user_id),identity=await discordIdentityForAccount(item.user_id);
+      if(account&&identity){await runDiscordSyncJob(authFromAccount(account,identity),item.id)}
+      else await pool.query("UPDATE cmd_discord_sync_jobs SET status='failed',summary=$2::jsonb,updated_at=NOW(),completed_at=NOW() WHERE id=$1",[item.id,JSON.stringify({error:"Compte Discord non disponible, reconnecte-toi."})]);
+    }catch(e){console.error("[discord-sync] resume failed:",e.message)}
+  }
+}
 async function backfillOwnedDiscordGuilds(){
   const r=await pool.query(`SELECT a.*,i.provider_user_id,i.profile,i.guilds
     FROM cmd_accounts a JOIN cmd_account_identities i ON i.account_id=a.id
@@ -3881,7 +3894,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>backfillOwnedDiscordGuilds().catch(e=>console.error("[owned-import] startup failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
