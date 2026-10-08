@@ -3862,11 +3862,13 @@ const httpServer=createServer(async(req,res)=>{
         const nativeId=url.pathname.split("/").pop();
         let detail=await nativeGuildDetail(auth,nativeId);
         if((detail.channels||[]).length===0&&/^\d{15,22}$/.test(String(detail.guild?.source_discord_id||""))){
+          // Keep imported CMD servers usable even if Discord is unavailable.
+          // Restore saved channels locally instead of blocking navigation on an external bot.
           try{
-            await syncNativeGuildById(auth,nativeId);
+            await ensureArchivedChannelsForNativeGuild(auth,nativeId);
             detail=await nativeGuildDetail(auth,nativeId);
-            console.log("[native-auto-sync] "+nativeId+" channels="+detail.channels.length+" roles="+detail.roles.length);
-          }catch(syncErr){console.log("[native-auto-sync] "+nativeId+" skipped: "+syncErr.message)}
+            console.log("[native-local-restore] "+nativeId+" channels="+detail.channels.length+" roles="+detail.roles.length);
+          }catch(restoreErr){console.warn("[native-local-restore] "+nativeId+": "+restoreErr.message)}
         }
         const next=new URL(baseUrl+"/dashboard");next.searchParams.set("openNative",String(detail.guild.id));
         if(url.searchParams.get("channel"))next.searchParams.set("openChannel",url.searchParams.get("channel"));
