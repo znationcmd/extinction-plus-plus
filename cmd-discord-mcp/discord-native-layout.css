@@ -437,3 +437,32 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
     font-size:12px!important;
   }
 }
+
+/* CMD Round Icon Fallback 20261008: prevent cropped logos and missing icons. */
+.sphere-app .server-rail .rail-server,
+.sphere-app .server-rail .rail-home,
+.sphere-app .server-rail .rail-folder .mini{
+  position:relative!important;border-radius:50%!important;overflow:hidden!important;
+  aspect-ratio:1/1!important;box-sizing:border-box!important;
+}
+.sphere-app .server-rail .rail-server>img,
+.sphere-app .server-rail .rail-home>img{
+  display:block!important;width:calc(100% - 6px)!important;height:calc(100% - 6px)!important;
+  max-width:calc(100% - 6px)!important;max-height:calc(100% - 6px)!important;
+  margin:3px!important;border-radius:50%!important;object-fit:contain!important;
+  object-position:center!important;
+}
+.sphere-app .server-rail .cmd-icon-fallback{display:none!important}
+.sphere-app .server-rail .cmd-icon-failed>img{display:none!important}
+.sphere-app .server-rail .cmd-icon-failed>.cmd-icon-fallback{
+  display:flex!important;align-items:center;justify-content:center;
+  position:absolute;inset:0;max-width:100%;color:#fff;font-weight:800;
+  text-align:center;line-height:1;
+}
+.sphere-app.cmd-native-selected .cmd-server-heading>img{width:42px;height:42px;border-radius:50%!important;object-fit:contain!important}
+#cmd-sphere-tools{max-width:calc(100vw - 16px)!important}
+#cmd-sphere-language{width:138px!important;min-width:115px!important;max-width:138px!important;line-height:1.2!important;cursor:pointer}
+@media(max-width:850px){
+  #cmd-sphere-tools{top:calc(6px + env(safe-area-inset-top,0px))!important;right:6px!important;max-width:calc(100vw - 12px)!important}
+  #cmd-sphere-language{width:125px!important;max-width:125px!important;font-size:13px!important}
+}
