@@ -286,6 +286,11 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       qs('#workspace').className='';
       qs('#workspace').innerHTML='<div class="card"><h2>'+esc(d.guild.name)+'</h2><p class="muted">'+Number(d.guild.member_count||1)+' membre(s) · fonctionne sans aucun bot Discord</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="copyInvite(\''+esc(d.inviteUrl)+'\')">Copier invitation</button><a class="btn" href="/profile?server='+encodeURIComponent(String(g.id))+'">Profil du serveur</a></div></div>'+create+'<div class="section"><h3>Catégories & salons</h3><p class="muted">Les messages CMD Sphere fonctionnent directement avec ton compte, sans bot.</p><div class="discord-channel-list">'+cats.map(c=>'<div class="channel-category"><div class="category-title">⌄ '+esc(c.name)+'</div>'+chs.filter(x=>String(x.source_parent_id||'')===String(c.source_channel_id||c.id)).map(x=>nativeChannelListItem(g.id,x)).join('')+'</div>').join('')+chs.filter(x=>!x.source_parent_id).map(x=>nativeChannelListItem(g.id,x)).join('')+'</div></div><div class="section"><h3>Rôles</h3><div class="list">'+(d.roles||[]).map(r=>'<div class="row"><strong>'+esc(r.name)+'</strong> <small>position '+Number(r.position||0)+'</small></div>').join('')+'</div></div>';
       if(admin){qs('#nativeCatForm').onsubmit=e=>nativeSubmit(e,'create_category',g.id);qs('#nativeChForm').onsubmit=e=>nativeSubmit(e,'create_channel',g.id)}
+      const query=new URLSearchParams(location.search),channelId=query.get('openChannel');
+      if(channelId&&String(query.get('openNative'))===String(g.id)&&!window.__openedNativeChannelFromQuery){
+        const target=chs.find(x=>String(x.id)===String(channelId)&&['text','announcement','forum'].includes(String(x.type||'')));
+        if(target){window.__openedNativeChannelFromQuery=true;await openNativeChannel(g.id,target.id,target.name)}
+      }
     }catch(e){toast(e.message,false)}
   }
   async function loadStructure(){try{const d=await api('/api/dashboard/structure?guildId='+encodeURIComponent(S.guild.id)+(S.bot?'&bot='+encodeURIComponent(S.bot):''));S.structure=d;render()}catch(e){toast(e.message,false)}}
@@ -2734,6 +2739,15 @@ async function sendNativeChannelMessage(auth,input){
     LEFT JOIN cmd_accounts a ON a.id::text=m.sender_user_id
     WHERE m.id=$1 LIMIT 1`,[id]);
   const row=r.rows[0];
+  const recipients=await pool.query("SELECT user_id FROM cmd_native_members WHERE guild_id=$1 AND user_id<>$2 LIMIT 500",[guildId,String(auth.user.id)]);
+  if(recipients.rows.length){
+    const name=String(row.author_name||auth.user.displayName||auth.user.name||"Utilisateur");
+    const preview=body||(attachments.length?"📎 Pièce jointe":"📊 Sondage");
+    notifyUsers(recipients.rows.map(x=>x.user_id),{
+      kind:"message",title:name+" · #"+String(ch.name||"salon"),
+      body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
+    });
+  }
   return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
