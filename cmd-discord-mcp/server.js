@@ -851,6 +851,10 @@ async function initNativeDb(){
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(owner_user_id,source_discord_id)
   )`);
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS server_description TEXT");
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS default_notifications TEXT NOT NULL DEFAULT 'mentions'");
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS show_boost_bar BOOLEAN NOT NULL DEFAULT TRUE");
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS welcome_message BOOLEAN NOT NULL DEFAULT TRUE");
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL,
@@ -2902,6 +2906,26 @@ async function sendNativeChannelMessage(auth,input){
   return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
+async function updateNativeOverview(auth,input){
+  const id=String(input.nativeGuildId||"");await requireNativeAdmin(auth,id);
+  const name=String(input.name||"").trim().slice(0,100);
+  if(!name)throw new Error("Le nom du serveur est requis.");
+  const description=String(input.description||"").trim().slice(0,300);
+  const notifications=["all","mentions"].includes(String(input.defaultNotifications))?String(input.defaultNotifications):"mentions";
+  const row=await pool.query(`UPDATE cmd_native_guilds SET name=$2,server_description=$3,default_notifications=$4,show_boost_bar=$5,welcome_message=$6,updated_at=NOW() WHERE id=$1 RETURNING id,name,server_description,default_notifications,show_boost_bar,welcome_message`,
+    [id,name,description,notifications,Boolean(input.showBoostBar),Boolean(input.welcomeMessage)]);
+  if(!row.rows.length)throw new Error("Serveur introuvable.");
+  return {ok:true,guild:row.rows[0],scope:"cmd_sphere_only"};
+}
+async function nativeMemberList(auth,guildId){
+  await requireNativeMember(auth,guildId);
+  const rows=await pool.query(`SELECT m.user_id,m.membership_role,m.joined_at,
+    COALESCE(NULLIF(m.profile_display_name,''),NULLIF(p.display_name,''),'Membre') AS display_name,
+    COALESCE(NULLIF(m.profile_avatar_data_url,''),NULLIF(p.avatar_data_url,'')) AS avatar
+    FROM cmd_native_members m LEFT JOIN cmd_global_profiles p ON p.user_id=m.user_id
+    WHERE m.guild_id=$1 ORDER BY CASE m.membership_role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,m.joined_at LIMIT 1000`,[String(guildId)]);
+  return {members:rows.rows};
+}
 async function nativeGuildDetail(auth,id){
   const member=await requireNativeMember(auth,id);
   const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
@@ -3904,6 +3928,16 @@ const httpServer=createServer(async(req,res)=>{
         const out=await importOwnedDiscordGuilds(auth);
         sendJson(res,200,{imported:out.imported,skipped:out.failed,ownedCount:out.ownedCount});
       }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/members"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await nativeMemberList(auth,url.searchParams.get("guildId")))}
+      catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/server-overview"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await updateNativeOverview(auth,body))}
+      catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname.startsWith("/api/native/guild/")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
