@@ -151,6 +151,7 @@ function clearDashboardCookies(){
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008f"></head>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008n"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008n"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -3033,6 +3034,22 @@ async function updateNativeProfile(auth,input){
     [guildId,String(auth.user.id),displayName,avatar,banner,bio,status,accent,theme,pronouns,nameStyle,roleId,JSON.stringify(badges),avatarDecoration,profileEffect,profileFrame,nameplateStyle]);
   return r.rows[0];
 }
+async function updateNativeServerIdentity(auth,input){
+  const guildId=String(input.guildId||"");
+  await requireNativeOwner(auth,guildId);
+  const name=safeText(input.name,100);
+  if(!name)throw new Error("Nom du serveur requis.");
+  const description=safeText(input.description||"",1000);
+  const image=input.iconDataUrl?safeImageData(input.iconDataUrl,2800000,"Icône"):null;
+  const notifications=input.defaultNotifications==="all"?"all":"mentions";
+  const r=await pool.query(
+    "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=$4,icon=COALESCE($5,icon),default_notifications=$6,welcome_message=$7,updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,source_discord_id",
+    [guildId,name,description,Boolean(input.isPublic),image,notifications,Boolean(input.welcomeMessage)]
+  );
+  if(!r.rows[0])throw new Error("Serveur CMD Sphere introuvable.");
+  return {server:r.rows[0],synced:false};
+}
+
 async function updateNativeServerStyle(auth,input){
   const guildId=String(input.guildId||"");await requireNativeOwner(auth,guildId);
   const tag=safeText(input.serverTag,12).replace(/[\r\n]/g,"");
@@ -3974,6 +3991,11 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,{profile:await updateNativeProfile(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/native/server-identity"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await updateNativeServerIdentity(auth,body))}
+      catch(e){sendJson(res,400,{error:e.message})}return;
+    }
     if(req.method==="POST"&&url.pathname==="/api/native/server-style"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,{server:await updateNativeServerStyle(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
@@ -4107,6 +4129,14 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,result);
       }catch(e){sendJson(res,400,{error:"La demande n’a pas pu être traitée."})}
       return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-server-manager.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-server-manager.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-server-manager.css"){
+      res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-server-manager.css",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/discord-native-layout.css"){
       res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
