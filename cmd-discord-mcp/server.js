@@ -149,7 +149,7 @@ function clearDashboardCookies(){
 }
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008e"></head>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008f"></head>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -325,6 +325,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         link.addEventListener('click',async e=>{
           e.preventDefault();
           if(link.dataset.opening==='1')return;
+          qs('#workspace')?.querySelectorAll('.cmd-channel-row.active').forEach(row=>row.classList.remove('active'));
           link.dataset.opening='1';link.classList.add('active');
           try{await openNativeChannel(g.id,link.dataset.nativeChannel,link.dataset.nativeName||'salon')}
           catch(err){toast('Ouverture du salon : '+err.message,false);location.assign(link.href)}
@@ -368,8 +369,16 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     for(const em of m.embeds||[]){out+='<div class="msg-embed">'+(em.author?.name?'<small>'+esc(em.author.name)+'</small>':'')+(em.title?'<b>'+esc(em.title)+'</b>':'')+(em.description?'<div>'+esc(em.description).replace(/\n/g,'<br>')+'</div>':'')+(em.fields||[]).map(f=>'<div class="embed-field"><strong>'+esc(f.name)+'</strong><span>'+esc(f.value).replace(/\n/g,'<br>')+'</span></div>').join('')+(em.image?.url&&/^https:\/\//i.test(em.image.url)?'<img class="msg-image" src="'+esc(em.image.url)+'" alt="">':'')+'</div>'}
     if((m.stickers||[]).length)out+='<div class="msg-stickers">'+m.stickers.map(st=>'🏷️ '+esc(st.name||'Sticker')).join(' · ')+'</div>';
     if((m.reactions||[]).length)out+='<div class="msg-reactions">'+m.reactions.map(r=>'<span>'+esc(r.emoji?.name||'⭐')+' '+Number(r.count||0)+'</span>').join('')+'</div>';
-    if(!out)out='<div class="msg-empty">Message sans contenu visible.</div>';
+    if(!out){
+      const remote=CHAT.mode==='discord'||CHAT.mode==='archive',system=Number(m.type||0)!==0;
+      const gid=CHAT.mode==='discord'?String(CHAT.guildId||''):'',cid=CHAT.mode==='discord'?String(CHAT.channelId||''):'',mid=String(m.id||'');
+      const url=/^\d{15,22}$/.test(gid)&&/^\d{15,22}$/.test(cid)&&/^\d{15,22}$/.test(mid)?'https://discord.com/channels/'+gid+'/'+cid+'/'+mid:'';
+      out='<div class="msg-empty">'+(system?'Événement système Discord.':remote?'Discord ne transmet pas le contenu de ce message au bot CMD.':'Message sans texte ni fichier.')+(url?'<a class="cmd-view-discord" href="'+url+'" target="_blank" rel="noopener noreferrer">Voir sur Discord ↗</a>':'')+'</div>';
+    }
     return out;
+  }
+  function hasDiscordMessageContent(m){
+    return Boolean(String(m?.content||'').trim()||(m?.attachments||[]).length||(m?.embeds||[]).length||(m?.stickers||[]).length||(m?.components||[]).length||m?.poll||m?.metadata?.poll);
   }
   function renderChannelMessages(scrollBottom=false){
     const box=qs('#channelMessages');if(!box)return;
@@ -382,13 +391,18 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const av=m.author?.avatar&&/^https:\/\//i.test(m.author.avatar)?'<img src="'+esc(m.author.avatar)+'" alt="">':'<span>'+esc(String(authorName).slice(0,1).toUpperCase())+'</span>';
       return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time><button class="reply-mini" onclick="replyDiscordMessage('+JSON.stringify(String(m.id))+','+JSON.stringify(String(authorName))+','+JSON.stringify(String(m.content||'').slice(0,120))+')">↩</button></div>'+messageBody(m)+'</div></article>';
     }).join('');
-    box.innerHTML=(CHAT.hasMore?'<div class="history-tools"><button class="btn" id="loadMoreMessages">↑ Charger 100 messages plus anciens</button><button class="btn" id="loadAllMessages">⇧ Tout récupérer</button></div>':'')+(rendered||'<div class="channel-empty">Aucun message visible dans ce salon.</div>');
+    const normal=rows.filter(m=>Number(m.type||0)===0),empty=normal.filter(m=>!hasDiscordMessageContent(m));
+    const inaccessible=(CHAT.mode==='discord'||CHAT.mode==='archive')&&normal.length>0&&empty.length>=Math.min(2,normal.length)&&empty.length/normal.length>=.8;
+    const warning=inaccessible?'<div class="cmd-message-warning">⚠️ Discord renvoie les auteurs et les dates, mais pas le contenu de '+empty.length+' message(s). Le bot n’a probablement pas accès au <b>Message Content Intent</b>. Pour voir le texte, les images et les fichiers, active cette autorisation pour le bot dans le <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">Portail des développeurs Discord</a> → Bot → Privileged Gateway Intents, puis recharge le salon. Une approbation Discord peut être nécessaire.</div>':'';
+    box.innerHTML=warning+(CHAT.hasMore?'<div class="history-tools"><button class="btn" id="loadMoreMessages">↑ Charger 100 messages plus anciens</button><button class="btn" id="loadAllMessages">⇧ Tout récupérer</button></div>':'')+(rendered||'<div class="channel-empty">Aucun message visible dans ce salon.</div>');
     if(qs('#loadMoreMessages'))qs('#loadMoreMessages').onclick=()=>loadDiscordMessages(false,false);
     if(qs('#loadAllMessages'))qs('#loadAllMessages').onclick=()=>loadDiscordMessages(false,true);
     if(scrollBottom)requestAnimationFrame(()=>box.scrollTop=box.scrollHeight);
   }
   function mergeChannelMessages(list){
-    const map=new Map(CHAT.messages.map(m=>[String(m.id),m]));for(const m of list||[])map.set(String(m.id),m);CHAT.messages=[...map.values()];
+    const map=new Map(CHAT.messages.map(m=>[String(m.id),m]));
+    for(const m of list||[]){const prev=map.get(String(m.id));map.set(String(m.id),prev&&hasDiscordMessageContent(prev)&&!hasDiscordMessageContent(m)?prev:m)}
+    CHAT.messages=[...map.values()];
   }
   async function openArchivedDiscordChannel(guildId,id,name){
     qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();
