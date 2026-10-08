@@ -156,9 +156,55 @@ function discoveryView(){
   card("Liens",link("Catalogue","/apps/directory")+" "+link("Tester l’invitation","/apps/choose?client_id="+encodeURIComponent(current.id))));
 }
 function webhooksView(){
- return wrapper("Webhooks","Les webhooks de salons CMD Sphere sont gérés dans les paramètres de chaque serveur.",
-   card("Serveurs autorisés",'<div id="dev-webhook-guilds">Chargement…</div>')+
-   card("Sécurité",'<p>Les secrets des webhooks ne doivent jamais être publiés dans GitHub ou dans un lien public.</p>'));
+ return wrapper("Webhooks","Crée et gère des webhooks dans les salons CMD Sphere des serveurs où tu es administrateur.",
+  card("Sélection du serveur",'<div id="dev-webhook-guilds">Chargement des serveurs installés…</div>')+
+  card("Créer un webhook",'<form id="dev-webhook-create">'+
+    '<label class="dev-field">Serveur CMD Sphere<select name="guildId" id="dev-hook-guild" required><option value="">Choisir un serveur</option></select></label>'+
+    '<label class="dev-field">Salon texte<select name="channelId" id="dev-hook-channel" required><option value="">Choisir un salon</option></select></label>'+
+    fld("Nom du webhook","name","","required maxlength=\"80\" placeholder=\"Notifications CMD\"")+
+    '<button type="submit" class="dev-btn primary">Créer le webhook</button></form>'+
+    '<div class="dev-alert good" id="dev-hook-secret" hidden></div>'+
+    '<p>L’URL secrète n’est affichée qu’à sa création. Conserve-la dans un endroit sûr.</p>')+
+  card("Webhooks du serveur",'<div id="dev-hook-list">Sélectionne un serveur pour voir ses webhooks.</div>'));
+}
+async function loadWebhookList(gid){
+ const box=$("#dev-hook-list");if(!box||!gid)return;
+ box.textContent="Chargement…";
+ try{
+  const r=await api("/api/native/webhooks?guildId="+encodeURIComponent(gid));
+  if(!$("#dev-hook-list")||tab!=="webhooks")return;
+  box.innerHTML=(r.webhooks||[]).length?r.webhooks.map(hook=>
+    '<div class="dev-item"><div class="dev-row"><div style="flex:1"><b>'+h(hook.name)+'</b><small>'+h(hook.channelName||"Salon")+'</small></div>'+
+    '<button class="dev-btn danger" type="button" data-delete-hook="'+h(hook.id)+'">Révoquer</button></div></div>').join(""):'<p>Aucun webhook pour ce serveur.</p>';
+  box.querySelectorAll("[data-delete-hook]").forEach(button=>button.addEventListener("click",async()=>{
+    if(!confirm("Révoquer définitivement ce webhook CMD Sphere ? Son ancienne URL ne fonctionnera plus."))return;
+    try{await api("/api/native/webhooks/delete",{guildId:gid,id:button.dataset.deleteHook});await loadWebhookList(gid);notify("Webhook révoqué.")}catch(e){notify(e.message,true)}
+  }));
+ }catch(e){box.textContent="Lecture des webhooks impossible : "+e.message}
+}
+async function loadWebhookChannels(gid){
+ const target=$("#dev-hook-channel");if(!target||!gid)return;
+ target.innerHTML='<option value="">Chargement…</option>';
+ try{
+  const r=await api("/api/native/guild/"+encodeURIComponent(gid));
+  if(!$("#dev-hook-channel")||tab!=="webhooks")return;
+  const ch=(r.channels||[]).filter(c=>["text","announcement","forum"].includes(c.type));
+  target.innerHTML='<option value="">Choisir un salon</option>'+ch.map(c=>'<option value="'+h(c.id)+'">'+h(c.name)+'</option>').join("");
+  await loadWebhookList(gid);
+ }catch(e){target.innerHTML='<option value="">Salons indisponibles</option>';notify(e.message,true)}
+}
+async function loadWebhookGuilds(){
+ const box=$("#dev-webhook-guilds");if(!box||!current)return;
+ try{
+  const [owned,installs]=await Promise.all([api("/api/native/guilds"),api(root+current.id+"/installations")]);
+  if(!$("#dev-webhook-guilds")||tab!=="webhooks")return;
+  const authorized=new Set((installs.installations||[]).map(x=>String(x.guild_id)));
+  const guilds=(owned.guilds||[]).filter(x=>authorized.has(String(x.id))&&["owner","admin"].includes(String(x.membership_role)));
+  const select=$("#dev-hook-guild");
+  select.innerHTML='<option value="">Choisir un serveur autorisé</option>'+guilds.map(g=>'<option value="'+h(g.id)+'">'+h(g.name)+'</option>').join("");
+  box.innerHTML=guilds.length?'<p>'+guilds.length+' serveur(s) CMD Sphere disponibles pour gérer les webhooks.</p>':
+   '<p>Installe d’abord l’application sur un serveur CMD Sphere que tu administres, depuis la rubrique Installation.</p>';
+ }catch(e){box.textContent="Liste des serveurs indisponible : "+e.message}
 }
 async function loadPeople(kind){
  const container=$("#dev-people-list");if(!container||!current)return;
@@ -173,16 +219,6 @@ async function loadPeople(kind){
     try{await api(root+current.id+"/people",{kind,operation:"remove",userId:button.dataset.removePerson});await loadPeople(kind);notify("Accès retiré.")}catch(e){notify(e.message,true)}
   }));
  }catch(e){if($("#dev-people-list"))$("#dev-people-list").textContent=e.message}
-}
-async function loadWebhookGuilds(){
- const container=$("#dev-webhook-guilds");if(!container||!current)return;
- try{
-  const r=await api(root+current.id+"/installations");
-  if(!$("#dev-webhook-guilds")||tab!=="webhooks")return;
-  container.innerHTML=(r.installations||[]).length?r.installations.map(x=>
-    '<div class="dev-item"><b>'+h(x.guild_name)+'</b><p>Les webhooks et les salons sont configurés par les administrateurs du serveur.</p>'+
-    link("Ouvrir le serveur","/native/"+encodeURIComponent(x.guild_id))+'</div>').join(""):'<p>Aucun serveur autorisé pour cette application.</p>';
- }catch(e){if($("#dev-webhook-guilds"))$("#dev-webhook-guilds").textContent=e.message}
 }
 function upcoming(which){
  const data={
@@ -290,6 +326,19 @@ function wire(){
       link.addEventListener("click",()=>{all.push({id:created.id,name:data.get("name")});tab="overview";reloadApp(created.id)});
       secret.appendChild(link);
     }
+   }catch(e){notify(e.message,true)}
+ });
+ const hookGuild=$("#dev-hook-guild");
+ if(hookGuild)hookGuild.addEventListener("change",()=>loadWebhookChannels(hookGuild.value));
+ const hookForm=$("#dev-webhook-create");if(hookForm)hookForm.addEventListener("submit",async ev=>{
+   ev.preventDefault();const values=new FormData(hookForm);
+   try{
+     const gid=String(values.get("guildId")||"");
+     const out=await api("/api/native/webhooks",{guildId:gid,channelId:values.get("channelId"),name:values.get("name")});
+     const area=$("#dev-hook-secret");
+     area.hidden=false;area.textContent="Nouvelle URL secrète (copie maintenant) : ";
+     const code=document.createElement("code");code.className="dev-code";code.textContent=out.webhook.url;area.appendChild(code);
+     await loadWebhookList(gid);notify("Webhook créé dans le serveur CMD Sphere.");
    }catch(e){notify(e.message,true)}
  });
  const peopleForm=$("#dev-people-form");if(peopleForm)peopleForm.addEventListener("submit",async event=>{
