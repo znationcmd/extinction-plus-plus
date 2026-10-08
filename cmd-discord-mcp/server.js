@@ -149,6 +149,7 @@ function clearDashboardCookies(){
 }
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008e"></head>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -299,6 +300,37 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const adminTools=admin?'<details class="cmd-native-tools"><summary>⚙ Gestion du serveur (catégories et salons)</summary>'+create+'<h3>Rôles du serveur</h3>'+(d.roles||[]).map(r=>'<p>'+esc(r.name)+'</p>').join('')+'</details>':'';
       qs('#workspace').innerHTML='<div class="cmd-server-panel">'+heading+'<nav class="cmd-server-channels" aria-label="Salons du serveur"><a class="cmd-server-quick" href="#cmdChannelSearch" id="cmdSearchShortcut">⌕ Chercher des salons</a>'+categories+ungrouped+(!categories&&!ungrouped?'<p class="cmd-channel-search-empty">Aucun salon synchronisé.</p>':'')+adminTools+'</nav></div>';
       if(admin){qs('#nativeCatForm').onsubmit=e=>nativeSubmit(e,'create_category',g.id);qs('#nativeChForm').onsubmit=e=>nativeSubmit(e,'create_channel',g.id)}
+      qs('#cmdInviteCopy')?.addEventListener('click',()=>copyInvite(d.inviteUrl));
+      qs('#cmdSearchShortcut')?.addEventListener('click',e=>{e.preventDefault();qs('#cmdChannelSearch')?.focus()});
+      qs('#cmdChannelSearch')?.addEventListener('input',e=>{
+        const q=String(e.target.value||'').toLocaleLowerCase('fr').trim();
+        qs('#workspace').querySelectorAll('.cmd-server-section').forEach(section=>{
+          const title=section.querySelector('.cmd-category-toggle')?.textContent?.toLocaleLowerCase('fr')||'';
+          const categoryMatch=title.includes(q);
+          let matches=0;
+          section.querySelectorAll('.cmd-channel-row').forEach(row=>{
+            const ok=!q||categoryMatch||row.textContent.toLocaleLowerCase('fr').includes(q);
+            row.hidden=!ok;if(ok)matches++;
+          });
+          section.hidden=!!q&&!categoryMatch&&!matches;
+          if(q&&matches){section.classList.remove('collapsed');section.querySelector('.cmd-category-toggle')?.setAttribute('aria-expanded','true')}
+        });
+        qs('#workspace').querySelectorAll('.cmd-server-channels>.cmd-channel-row').forEach(row=>row.hidden=!!q&&!row.textContent.toLocaleLowerCase('fr').includes(q));
+      });
+      qs('#workspace').querySelectorAll('.cmd-category-toggle').forEach(btn=>btn.addEventListener('click',()=>{
+        const section=btn.closest('.cmd-server-section');section.classList.toggle('collapsed');
+        btn.setAttribute('aria-expanded',String(!section.classList.contains('collapsed')));
+      }));
+      qs('#workspace').querySelectorAll('a.cmd-channel-row[data-native-channel]').forEach(link=>{
+        link.addEventListener('click',async e=>{
+          e.preventDefault();
+          if(link.dataset.opening==='1')return;
+          link.dataset.opening='1';link.classList.add('active');
+          try{await openNativeChannel(g.id,link.dataset.nativeChannel,link.dataset.nativeName||'salon')}
+          catch(err){toast('Ouverture du salon : '+err.message,false);location.assign(link.href)}
+          finally{link.dataset.opening='0'}
+        });
+      });
       const query=new URLSearchParams(location.search),channelId=query.get('openChannel');
       if(channelId&&String(query.get('openNative'))===String(g.id)&&!window.__openedNativeChannelFromQuery){
         const target=chs.find(x=>String(x.id)===String(channelId)&&['text','announcement','forum'].includes(String(x.type||'')));
@@ -3986,6 +4018,10 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,result);
       }catch(e){sendJson(res,400,{error:"La demande n’a pas pu être traitée."})}
       return;
+    }
+    if(req.method==="GET"&&url.pathname==="/discord-native-layout.css"){
+      res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./discord-native-layout.css",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-settings.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./settings-ui.js",import.meta.url),"utf8"));return;
