@@ -844,6 +844,17 @@ async function initNativeDb(){
     config_value TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_discord_sync_jobs(
+    id UUID PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    progress JSONB NOT NULL DEFAULT '{}'::jsonb,
+    summary JSONB NOT NULL DEFAULT '{}'::jsonb,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_discord_sync_jobs_user_idx ON cmd_discord_sync_jobs(user_id,started_at DESC)');
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_premium_codes(
     id UUID PRIMARY KEY,
     code TEXT NOT NULL UNIQUE,
@@ -2514,6 +2525,54 @@ async function importOwnedDiscordGuilds(auth){
     fullCount:imported.filter(g=>g.full).length,shellCount:imported.filter(g=>!g.full).length,
     failed,warnings,botErrors:installed.errors||[]};
 }
+
+async function discordSyncJobStatus(auth){
+  const r=await pool.query("SELECT id::text,status,progress,summary,started_at,updated_at,completed_at FROM cmd_discord_sync_jobs WHERE user_id=$1 ORDER BY started_at DESC LIMIT 1",[String(auth.user.id)]);
+  return r.rows[0]||null;
+}
+async function runDiscordSyncJob(auth,jobId){
+  const uid=String(auth.user.id),p={index:0,total:0,name:"",full:0,shell:0,failed:0},summary={imported:[],failed:[],warnings:[],botErrors:[]};
+  const save=async(status,done=false)=>pool.query("UPDATE cmd_discord_sync_jobs SET status=$2,progress=$3::jsonb,summary=$4::jsonb,updated_at=NOW(),completed_at=CASE WHEN $5 THEN NOW() ELSE NULL END WHERE id=$1 AND user_id=$6",[jobId,status,JSON.stringify(p),JSON.stringify(summary),done,uid]);
+  try{
+    await save("running");
+    auth=await currentLinkedDiscordAuth(auth);
+    if(!auth.user.discordId)throw new Error("Compte Discord non associé. Reconnecte Discord.");
+    const metas=(await linkedDiscordGuilds(auth)).filter(g=>/^\d{15,22}$/.test(String(g.id||"")));
+    p.total=metas.length;
+    if(!p.total)throw new Error("Aucun serveur Discord accessible. Reconnecte ton compte et vérifie les autorisations.");
+    let installed={guilds:[],errors:[]};
+    try{installed=await installedEverywhere(auth)}catch(e){summary.botErrors.push({error:e.message})}
+    summary.botErrors.push(...(installed.errors||[]));
+    const botsMap=new Map(installed.guilds.map(g=>[String(g.id),g]));
+    for(const meta of metas){
+      const id=String(meta.id||"");p.name=String(meta.name||id);
+      try{
+        const hit=botsMap.get(id);
+        if(hit){
+          try{
+            const r=await syncNativeFromDiscord(auth,id,hit.availableBots?.[0]?.id);
+            summary.imported.push({id:String(r.id),name:r.name,full:true,owner:Boolean(meta.owner)});
+            p.full++;continue;
+          }catch(e){summary.warnings.push({id,name:p.name,error:e.message})}
+        }
+        const r=await importDiscordShell(auth,meta);
+        summary.imported.push({id:String(r.id),name:r.name,full:false,owner:Boolean(meta.owner)});p.shell++;
+      }catch(e){p.failed++;summary.failed.push({id,name:p.name,error:e.message})}
+      finally{p.index++;await save("running")}
+    }
+    p.name="";await save("complete",true);
+  }catch(e){p.name="";summary.error=e.message;try{await save("failed",true)}catch(err){console.error("[sync-job] error writing status:",err.message)}}
+}
+async function startDiscordSyncJob(auth){
+  auth=await currentLinkedDiscordAuth(auth);
+  if(!auth.user.discordId)return {ok:false,needsLink:true,error:"Connecte ton compte Discord d'abord."};
+  const uid=String(auth.user.id),old=await discordSyncJobStatus(auth);
+  if(old&&["queued","running"].includes(old.status)&&Date.now()-new Date(old.updated_at).getTime()<15*60*1000)return {ok:true,job:old,started:false};
+  const id=crypto.randomUUID();
+  await pool.query("INSERT INTO cmd_discord_sync_jobs(id,user_id,status) VALUES($1,$2,'queued')",[id,uid]);
+  setImmediate(()=>runDiscordSyncJob(auth,id).catch(e=>console.error("[sync-job]",e.message)));
+  return {ok:true,job:await discordSyncJobStatus(auth),started:true};
+}
 async function backfillOwnedDiscordGuilds(){
   const r=await pool.query(`SELECT a.*,i.provider_user_id,i.profile,i.guilds
     FROM cmd_accounts a JOIN cmd_account_identities i ON i.account_id=a.id
@@ -3540,16 +3599,13 @@ const httpServer=createServer(async(req,res)=>{
           ownerCount:metas.filter(g=>g.owner).length,discordId:fresh.user.discordId||null});
       }catch(e){sendJson(res,500,{error:e.message})}return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/discord/sync-job"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{job:await discordSyncJobStatus(auth)})}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
     if(req.method==="POST"&&url.pathname==="/api/discord/sync"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{
-        const fresh=await currentLinkedDiscordAuth(auth);
-        if(!fresh.user.discordId){sendJson(res,409,{error:"Associe d'abord ton compte Discord pour récupérer ses serveurs.",needsLink:true});return}
-        const outcome=await importOwnedDiscordGuilds(fresh);
-        sendJson(res,200,{ok:true,...outcome,linked:true,
-          message:outcome.imported.length+" serveurs importés sur "+outcome.manageableCount+" serveurs Discord accessibles, dont "+outcome.fullCount+" avec salons. "+
-            (outcome.shellCount?outcome.shellCount+" sans bot CMD (nom et icône uniquement).":"")});
-      }catch(e){sendJson(res,500,{error:e.message})}return;
+      try{const result=await startDiscordSyncJob(auth);sendJson(res,result.needsLink?409:202,result)}catch(e){sendJson(res,500,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
