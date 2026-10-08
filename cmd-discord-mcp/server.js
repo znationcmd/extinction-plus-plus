@@ -280,7 +280,9 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function nativeChannelListItem(gid,x){
     const openable=['text','announcement','forum'].includes(String(x.type||'')),unread=Number(x.unread_count||0);
     const badge=unread?'<span class="cmd-channel-badge">'+Math.min(99,unread)+'</span>':'';
-    return openable?'<a class="cmd-channel-row" href="/native/'+encodeURIComponent(String(gid))+'?channel='+encodeURIComponent(String(x.id))+'" data-native-channel="'+esc(String(x.id))+'" data-native-name="'+esc(String(x.name||'salon'))+'"><span class="cmd-channel-icon">#</span><span class="cmd-channel-title">'+esc(x.name)+'</span>'+badge+'</a>':'<div class="cmd-channel-row static" aria-disabled="true"><span class="cmd-channel-icon">'+((x.type==='voice')?'🔊':'#')+'</span><span class="cmd-channel-title">'+esc(x.name)+'</span></div>';
+    const archiveCount=Number(x.archived_count||0);
+    const archived=archiveCount?'<span class="cmd-channel-archive-count" title="'+archiveCount+' messages archivés">📜 '+(archiveCount>=1000?Math.round(archiveCount/100)/10+'k':archiveCount)+'</span>':'';
+    return openable?'<a class="cmd-channel-row" href="/native/'+encodeURIComponent(String(gid))+'?channel='+encodeURIComponent(String(x.id))+'" data-native-channel="'+esc(String(x.id))+'" data-native-name="'+esc(String(x.name||'salon'))+'"><span class="cmd-channel-icon">#</span><span class="cmd-channel-title">'+esc(x.name)+'</span>'+badge+archived+'</a>':'<div class="cmd-channel-row static" aria-disabled="true"><span class="cmd-channel-icon">'+((x.type==='voice')?'🔊':'#')+'</span><span class="cmd-channel-title">'+esc(x.name)+'</span></div>';
   }
   async function nativeSubmit(ev,action,gid){
     ev.preventDefault();const f=new FormData(ev.currentTarget),body={action,nativeGuildId:gid};for(const [k,v] of f)body[k]=v;
@@ -336,13 +338,19 @@ function dashboardPage(auth,initialNativeGuilds=[]){
           if(link.dataset.opening==='1')return;
           qs('#workspace')?.querySelectorAll('.cmd-channel-row.active').forEach(row=>row.classList.remove('active'));
           link.dataset.opening='1';link.classList.add('active');
-          try{await openNativeChannel(g.id,link.dataset.nativeChannel,link.dataset.nativeName||'salon')}
+          try{await openNativeChannel(g.id,link.dataset.nativeChannel,link.dataset.nativeName||'salon');try{sessionStorage.setItem('cmd-last-channel-'+g.id,String(link.dataset.nativeChannel))}catch{}}
           catch(err){toast('Ouverture du salon : '+err.message,false);location.assign(link.href)}
           finally{link.dataset.opening='0'}
         });
       });
       if(admin)qs('#workspace').querySelectorAll('[data-native-channel]').forEach(row=>{const gear=document.createElement('button');gear.type='button';gear.className='cmd-channel-settings';gear.dataset.csmChannelSettings=row.dataset.nativeChannel;gear.setAttribute('aria-label','Modifier le salon '+row.dataset.nativeName);gear.textContent='⚙';row.insertAdjacentElement('afterend',gear)});
       const query=new URLSearchParams(location.search),channelId=query.get('openChannel');
+      if(!channelId&&window.matchMedia?.('(max-width:850px)').matches){
+        const textChannels=chs.filter(x=>['text','announcement','forum'].includes(String(x.type||'')));
+        let last='';try{last=sessionStorage.getItem('cmd-last-channel-'+g.id)||''}catch{}
+        const selected=textChannels.find(x=>String(x.id)===last)||textChannels.slice().sort((a,b)=>Number(b.archived_count||0)-Number(a.archived_count||0))[0];
+        if(selected)await openNativeChannel(g.id,selected.id,selected.name);
+      }
       if(channelId&&String(query.get('openNative'))===String(g.id)&&!window.__openedNativeChannelFromQuery){
         const target=chs.find(x=>String(x.id)===String(channelId)&&['text','announcement','forum'].includes(String(x.type||'')));
         if(target){window.__openedNativeChannelFromQuery=true;await openNativeChannel(g.id,target.id,target.name)}
@@ -3214,6 +3222,18 @@ async function nativeGuildDetail(auth,id){
       FROM cmd_native_channels c WHERE c.guild_id=$1 ORDER BY c.position,c.name`,[String(id),String(auth.user.id)]),
     pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 ORDER BY position DESC,name',[String(id)])
   ]);
+
+  if(String(member.membership_role)==="owner"&&/^\d{15,22}$/.test(String(g.rows[0].source_discord_id||""))){
+    try{
+      const archived=await pool.query(
+        "SELECT channel_id,COUNT(*)::int AS total FROM cmd_discord_mirror_messages "+
+        "WHERE user_id=$1 AND guild_id=$2 GROUP BY channel_id",
+        [String(auth.user.id),String(g.rows[0].source_discord_id)]
+      );
+      const counts=new Map(archived.rows.map(row=>[String(row.channel_id),Number(row.total||0)]));
+      for(const ch of channels.rows)ch.archived_count=counts.get(String(ch.source_channel_id||""))||0;
+    }catch(error){console.warn("[archive-count] "+error.message)}
+  }
   return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:baseUrl+"/invite/"+g.rows[0].invite_code};
 }
 async function nativeSourceId(guildId,kind,id){
