@@ -154,7 +154,7 @@ function clearDashboardCookies(){
 }
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008i18nauto3"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008fullcircle4"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261008"></script></body>');
 
