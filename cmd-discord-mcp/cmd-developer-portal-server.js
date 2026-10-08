@@ -8,10 +8,13 @@ export async function initDeveloperPortalDb(pool){
   await pool.query("CREATE TABLE IF NOT EXISTS cmd_developer_app_settings(app_id UUID PRIMARY KEY REFERENCES cmd_developer_apps(id) ON DELETE CASCADE,config JSONB NOT NULL DEFAULT '{}'::jsonb,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
   await pool.query("CREATE TABLE IF NOT EXISTS cmd_developer_commands(id UUID PRIMARY KEY,app_id UUID NOT NULL REFERENCES cmd_developer_apps(id) ON DELETE CASCADE,name VARCHAR(32) NOT NULL,description VARCHAR(100) NOT NULL,options JSONB NOT NULL DEFAULT '[]'::jsonb,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(app_id,name))");
   await pool.query("CREATE INDEX IF NOT EXISTS cmd_developer_commands_app ON cmd_developer_commands(app_id)");
+  await pool.query("CREATE TABLE IF NOT EXISTS cmd_developer_app_people(app_id UUID NOT NULL REFERENCES cmd_developer_apps(id) ON DELETE CASCADE,user_id TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('team','tester')),role TEXT NOT NULL DEFAULT 'tester',created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(app_id,user_id,kind))");
+  await pool.query("CREATE INDEX IF NOT EXISTS cmd_developer_app_people_user ON cmd_developer_app_people(user_id)");
+  await pool.query("CREATE TABLE IF NOT EXISTS cmd_developer_app_visibility(app_id UUID PRIMARY KEY REFERENCES cmd_developer_apps(id) ON DELETE CASCADE,published BOOLEAN NOT NULL DEFAULT TRUE,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
 }
 async function owned(pool,user,id){
   if(!UUID.test(id))throw Error("Identifiant de l'application incorrect");
-  const r=await pool.query("SELECT a.id,a.name,a.description,a.discord_client_id,a.created_at,COALESCE(s.config,'{}'::jsonb) AS config,(SELECT COUNT(*)::int FROM cmd_native_app_installs i WHERE i.app_id=a.id) AS installed_count,(SELECT COUNT(*)::int FROM cmd_developer_commands c WHERE c.app_id=a.id) AS command_count FROM cmd_developer_apps a LEFT JOIN cmd_developer_app_settings s ON s.app_id=a.id WHERE a.id=$1 AND a.owner_user_id=$2 LIMIT 1",[id,user]);
+  const r=await pool.query("SELECT a.id,a.owner_user_id,a.name,a.description,a.discord_client_id,a.created_at,COALESCE(s.config,'{}'::jsonb) AS config,(SELECT COUNT(*)::int FROM cmd_native_app_installs i WHERE i.app_id=a.id) AS installed_count,(SELECT COUNT(*)::int FROM cmd_developer_commands c WHERE c.app_id=a.id) AS command_count,COALESCE(v.published,TRUE) AS published,(CASE WHEN a.owner_user_id=$2 THEN 'owner' ELSE (SELECT p.role FROM cmd_developer_app_people p WHERE p.app_id=a.id AND p.user_id=$2 AND p.kind='team') END) AS developer_role FROM cmd_developer_apps a LEFT JOIN cmd_developer_app_settings s ON s.app_id=a.id LEFT JOIN cmd_developer_app_visibility v ON v.app_id=a.id WHERE a.id=$1 AND (a.owner_user_id=$2 OR EXISTS(SELECT 1 FROM cmd_developer_app_people pp WHERE pp.app_id=a.id AND pp.user_id=$2 AND pp.kind='team')) LIMIT 1",[id,user]);
   if(!r.rows[0])throw Error("Cette application ne fait pas partie de ton compte CMD Sphere");
   return r.rows[0];
 }
@@ -22,13 +25,20 @@ export async function developerPortalRoute(req,res,url,ctx){
   const send=(status,data)=>sendJson(res,status,data);
   try{
     if(!auth){send(401,{error:"Connexion CMD Sphere requise"});return true}
-    const route=p.match(/^\/api\/developer\/portal\/apps\/([0-9a-f-]{36})(?:\/(settings|rotate|commands|installations)(?:\/([0-9a-f-]{36})\/delete)?)?$/i);
+    const route=p.match(/^\/api\/developer\/portal\/apps\/([0-9a-f-]{36})(?:\/(settings|rotate|commands|installations|people|visibility)(?:\/([0-9a-f-]{36})\/delete)?)?$/i);
     if(!route){send(404,{error:"Route inconnue"});return true}
     const id=route[1],action=route[2],commandId=route[3],user=String(auth.user.id),app=await owned(pool,user,id);
     if(req.method==="GET"&&!action){send(200,{app});return true}
     if(req.method==="GET"&&action==="installations"){
       const r=await pool.query("SELECT i.guild_id,g.name AS guild_name,i.permissions,i.installed_at FROM cmd_native_app_installs i JOIN cmd_native_guilds g ON g.id=i.guild_id WHERE i.app_id=$1 ORDER BY i.installed_at DESC LIMIT 100",[id]);
       send(200,{installations:r.rows});return true;
+    }
+    if(req.method==="GET"&&action==="people"){
+      const r=await pool.query("SELECT p.user_id,p.kind,p.role,p.created_at,COALESCE(a.display_name,a.username,p.user_id) AS display_name,a.username FROM cmd_developer_app_people p LEFT JOIN cmd_accounts a ON a.id::text=p.user_id WHERE p.app_id=$1 ORDER BY p.kind,p.created_at",[id]);
+      send(200,{people:r.rows,canManage:app.developer_role==="owner"});return true;
+    }
+    if(req.method==="GET"&&action==="visibility"){
+      send(200,{published:app.published,canManage:app.developer_role==="owner"});return true;
     }
     if(req.method==="GET"&&action==="commands"){
       const r=await pool.query("SELECT id,name,description,options,created_at FROM cmd_developer_commands WHERE app_id=$1 ORDER BY created_at DESC",[id]);
@@ -37,16 +47,46 @@ export async function developerPortalRoute(req,res,url,ctx){
     if(req.method!=="POST"){send(405,{error:"Méthode non autorisée"});return true}
     originCheck(req,baseUrl);
     const body=await readBody(req);
+    if(action==="people"){
+      if(app.developer_role!=="owner")throw Error("Seul le propriétaire peut gérer les membres et testeurs.");
+      const kind=String(body.kind||""),operation=String(body.operation||"add");
+      if(!["team","tester"].includes(kind)||!["add","remove"].includes(operation))throw Error("Action incorrecte");
+      let userId=String(body.userId||"");
+      if(operation==="add"){
+        const username=clean(body.username,80);
+        if(!username)throw Error("Saisis le pseudo CMD Sphere de cette personne.");
+        const matched=await pool.query("SELECT id::text AS id FROM cmd_accounts WHERE username_key=LOWER($1) LIMIT 1",[username.trim()]);
+        if(!matched.rows[0])throw Error("Utilisateur CMD Sphere introuvable.");
+        userId=matched.rows[0].id;
+        if(userId===String(app.owner_user_id))throw Error("Le propriétaire a déjà tous les droits.");
+        const role=kind==="team"&&body.role==="editor"?"editor":kind==="team"?"viewer":"tester";
+        const count=await pool.query("SELECT COUNT(*)::int n FROM cmd_developer_app_people WHERE app_id=$1 AND kind=$2",[id,kind]);
+        if(Number(count.rows[0].n)>=40)throw Error("Limite de 40 membres par rubrique.");
+        await pool.query("INSERT INTO cmd_developer_app_people(app_id,user_id,kind,role) VALUES($1,$2,$3,$4) ON CONFLICT(app_id,user_id,kind) DO UPDATE SET role=EXCLUDED.role",[id,userId,kind,role]);
+        send(200,{ok:true,userId,kind,role});return true;
+      }
+      if(!userId||userId.length>100)throw Error("Utilisateur invalide.");
+      await pool.query("DELETE FROM cmd_developer_app_people WHERE app_id=$1 AND user_id=$2 AND kind=$3",[id,userId,kind]);
+      send(200,{ok:true});return true;
+    }
+    if(action==="visibility"){
+      if(app.developer_role!=="owner")throw Error("Seul le propriétaire peut publier l'application.");
+      if(typeof body.published!=="boolean")throw Error("Indique le statut de publication.");
+      await pool.query("INSERT INTO cmd_developer_app_visibility(app_id,published) VALUES($1,$2) ON CONFLICT(app_id) DO UPDATE SET published=EXCLUDED.published,updated_at=NOW()",[id,body.published]);
+      send(200,{ok:true,published:body.published});return true;
+    }
+    if(!["owner","editor"].includes(app.developer_role))throw Error("Accès en lecture seule : modification non autorisée.");
     if(action==="settings"){
       const name=clean(body.name,80),description=clean(body.description,500),did=clean(body.discordClientId,22);
       if(name.length<2)throw Error("Nom de deux caractères minimum");
       if(did&&!/^\d{15,22}$/.test(did))throw Error("ID Discord non valide");
       const config=asConfig(body.config);
-      await pool.query("UPDATE cmd_developer_apps SET name=$3,description=$4,discord_client_id=$5 WHERE id=$1 AND owner_user_id=$2",[id,user,name,description,did||null]);
+      await pool.query("UPDATE cmd_developer_apps SET name=$3,description=$4,discord_client_id=$5 WHERE id=$1 AND ($2=owner_user_id OR EXISTS(SELECT 1 FROM cmd_developer_app_people pp WHERE pp.app_id=$1 AND pp.user_id=$2 AND pp.kind='team' AND pp.role='editor'))",[id,user,name,description,did||null]);
       await pool.query("INSERT INTO cmd_developer_app_settings(app_id,config) VALUES($1,$2::jsonb) ON CONFLICT(app_id) DO UPDATE SET config=EXCLUDED.config,updated_at=NOW()",[id,JSON.stringify(config)]);
       send(200,{ok:true,app:await owned(pool,user,id)});return true;
     }
     if(action==="rotate"){
+      if(app.developer_role!=="owner")throw Error("Seul le propriétaire peut régénérer la clé API.");
       const token=crypto.randomBytes(32).toString("base64url"),hash=crypto.createHash("sha256").update(token).digest("hex");
       await pool.query("UPDATE cmd_developer_apps SET token_hash=$3 WHERE id=$1 AND owner_user_id=$2",[id,user,hash]);
       send(200,{ok:true,token,warning:"L'ancienne clé est révoquée; conserve la nouvelle en lieu sûr."});return true;
