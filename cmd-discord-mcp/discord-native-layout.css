@@ -355,3 +355,15 @@ html,body{max-width:100%;overflow-x:clip}
  .sphere-app .user-dock .user-dock-main{min-width:0}
  .sphere-app .user-dock .user-dock-main>*{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
+
+/* The global language toolbar must not cover chat controls or full-screen dialogs. */
+body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools,
+body:has(#cmd-bulk-sync:not([hidden])) #cmd-sphere-tools,
+body:has(#serverSettingsModal.on) #cmd-sphere-tools{display:none!important}
+@media(max-width:850px){
+ .sphere-app #channelOverlay .channel-title,
+ .sphere-app #channelOverlay #channelTitle{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+ .sphere-app #channelOverlay .msg-file,
+ .sphere-app #channelOverlay .msg-image,
+ .sphere-app #channelOverlay .msg-embed{max-width:100%!important;min-width:0!important;overflow-wrap:anywhere}
+}
