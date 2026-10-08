@@ -1367,7 +1367,9 @@ const PREMIUM_PLANS={
 function isCmdOwner(auth){
   const ownerId=String(process.env.CMD_OWNER_USER_ID||"").trim();
   const ownerName=String(process.env.CMD_OWNER_USERNAME||"cmd").trim().toLowerCase();
-  return Boolean((ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
+  const discordId=String(auth?.user?.discordId||"").trim();
+  const founderIds=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(x=>x.trim()).filter(x=>/^\d{15,22}$/.test(x)));
+  return Boolean((discordId&&founderIds.has(discordId))||(ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
 }
 function premiumItem(item){
   if(!item)return false;
