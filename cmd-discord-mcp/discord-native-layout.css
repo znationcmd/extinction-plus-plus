@@ -314,3 +314,44 @@ html,body{max-width:100%;overflow-x:clip}
   .sphere-app #channelOverlay .channel-composer textarea{flex:1 1 0!important;width:0!important;min-width:0!important}
   .sphere-app #channelOverlay .channel-composer button{flex:0 0 auto!important;max-width:64px!important}
 }
+
+/* 2026-10-08: preserve full mobile width in all dashboard views and the translation actions. */
+.sphere-app,.sphere-app *{box-sizing:border-box}
+.sphere-app .wrap,.sphere-app .top,.sphere-app .grid,.sphere-app .card,.sphere-app #workspace,.sphere-app .cmd-server-panel{min-width:0;max-width:100%}
+.sphere-app .grid{grid-template-columns:minmax(0,320px) minmax(0,1fr)}
+.sphere-app #workspace,.sphere-app .cmd-server-channels,.sphere-app .cmd-category-children,.sphere-app .cmd-channel-row{min-width:0;overflow-wrap:anywhere}
+.sphere-app .cmd-channel-row,.sphere-app .cmd-server-heading{max-width:100%;box-sizing:border-box}
+.sphere-app .server-rail .rail-server>img,.sphere-app .server-rail .rail-folder img{object-fit:contain!important;object-position:center center!important;max-height:100%;max-width:100%}
+.sphere-app #channelOverlay .msg-main{min-width:0;flex:1 1 0;overflow-wrap:anywhere}
+.sphere-app #channelOverlay .msg-translation-output{max-width:100%;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.sphere-app #channelOverlay .cmd-translation-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-height:28px;padding:4px 0}
+.sphere-app #channelOverlay .cmd-translation-tools button{border:0;background:transparent;padding:5px 7px 5px 0;color:#b9a9ff;font-size:12px;font-weight:650;cursor:pointer;max-width:100%}
+.sphere-app #channelOverlay .cmd-translation-tools button:hover{text-decoration:underline}
+.sphere-app #channelOverlay .cmd-translation-tools button[hidden]{display:none!important}
+.sphere-app #channelOverlay .cmd-translation-output{background:#2c2a39;border-left:3px solid #9e7dd2;border-radius:5px;padding:9px 12px;margin:6px 0 10px;line-height:1.45;color:#f4eaff}
+.sphere-app #channelOverlay .cmd-translation-output[hidden]{display:none!important}
+.sphere-app #channelOverlay .cmd-translation-output[data-state=error]{border-color:#ff8a8a;color:#ffc7c7}
+@media(max-width:850px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ .sphere-app{width:100%;max-width:100%;min-width:0;padding-left:72px!important;overflow-x:hidden}
+ .sphere-app .server-rail{left:0!important;width:72px!important;max-width:72px!important}
+ .sphere-app .wrap{width:100%!important;max-width:100%!important;margin:0!important;padding:10px!important;overflow-x:hidden}
+ .sphere-app .grid,.sphere-app .cols{grid-template-columns:minmax(0,1fr)!important;max-width:100%!important;min-width:0!important}
+ .sphere-app .top{max-width:100%!important;min-width:0!important}
+ .sphere-app .brand{min-width:0!important;max-width:100%;flex-wrap:wrap}
+ .sphere-app .brand>div{min-width:0!important;max-width:100%}
+ .sphere-app #workspace{width:100%!important;max-width:100%!important;min-width:0!important}
+ .sphere-app #channelOverlay.on{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;max-width:100%!important;margin:0!important;transform:none!important;z-index:11000!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr) auto!important}
+ .sphere-app #channelOverlay .channel-head{flex-wrap:wrap!important;max-width:100%!important}
+ .sphere-app #channelOverlay .channel-head-main{flex:1 1 0!important;max-width:calc(100% - 44px)!important;min-width:0!important}
+ .sphere-app #channelOverlay .channel-actions{width:100%!important;flex:1 1 100%!important;min-width:0!important;max-width:100%!important;padding:0 0 0 40px!important;overflow-x:auto}
+ .sphere-app #channelOverlay .channel-messages{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:hidden!important;overflow-y:auto!important}
+ .sphere-app #channelOverlay .discord-message{width:100%;max-width:100%;min-width:0}
+ .sphere-app #channelOverlay .msg-text{max-width:100%!important;word-break:break-word!important;overflow-wrap:anywhere!important}
+ .sphere-app #channelOverlay .channel-compose-wrap{width:100%;min-width:0;max-width:100%;padding-left:6px!important;padding-right:6px!important}
+ .sphere-app #channelOverlay .channel-composer{width:100%;min-width:0;max-width:100%;overflow:hidden}
+ .sphere-app #channelOverlay .channel-composer textarea{min-width:0!important;width:0!important;flex:1 1 0!important}
+ .sphere-app .user-dock{left:80px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;width:calc(100% - 90px)!important;max-width:320px!important}
+ .sphere-app .user-dock .user-dock-main{min-width:0}
+ .sphere-app .user-dock .user-dock-main>*{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
