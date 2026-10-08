@@ -153,6 +153,7 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
+    if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008q"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008a"></script></body>');
