@@ -59,7 +59,8 @@
     badge().classList.add("loading");
     try{
       if(typeof window.refreshEverything==="function"){
-        await window.refreshEverything();
+        const ok=await window.refreshEverything();
+        if(ok===false)throw new Error("Chargement des données impossible");
       }else{
         const btn=document.querySelector("#refresh");
         if(btn&&!btn.disabled){
