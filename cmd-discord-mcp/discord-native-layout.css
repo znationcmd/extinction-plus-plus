@@ -646,3 +646,9 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
   object-fit:cover!important;
   object-position:center!important;
 }
+
+/* CMD Sphere Developer portal shortcut in server rail. */
+.sphere-app .server-rail .rail-developers{display:grid!important;place-items:center!important;flex:0 0 52px!important;width:52px!important;height:52px!important;min-width:52px!important;min-height:52px!important;max-width:52px!important;max-height:52px!important;border-radius:50%!important;border:1px solid #8d76bb66!important;background:#302040!important;color:#faf6ff!important;font-size:25px!important;text-decoration:none!important;box-sizing:border-box!important;overflow:hidden!important;line-height:1!important}
+.sphere-app .server-rail .rail-developers:hover,.sphere-app .server-rail .rail-developers:focus-visible{background:#61439e!important;outline:2px solid #a99bed;outline-offset:2px}
+.sphere-app .cmd-developer-entry{white-space:normal;max-width:100%;text-align:center}
+@media(max-width:850px){.sphere-app .server-rail .rail-developers{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;max-width:48px!important;max-height:48px!important;font-size:23px!important}}
