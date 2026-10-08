@@ -108,8 +108,40 @@ async function requestServer(message,target){
  if(!data.translatedText)throw Error("Traduction indisponible");
  return data;
 }
-/* No automatic unbounded browser fallback: it would bypass server limits
-   and could overload the public provider after a Railway 503. */
+/* Public-service fallback through the reader's browser. Only try well-recognized
+   French/English source pairs and never guess an unknown source language. */
+async function browserFallback(message,target,manual){
+ const source=clue(message);
+ if(source==="auto"||source===target)return null;
+ const chunks=[],encoder=new TextEncoder();
+ let current="";
+ for(const ch of message){
+  if(encoder.encode(current+ch).length>420){if(current)chunks.push(current);current=ch}
+  else current+=ch;
+ }
+ if(current)chunks.push(current);
+ if(!chunks.length||chunks.length>(manual?5:1))return null;
+ const results=[];
+ for(const chunk of chunks){
+  const url="https://api.mymemory.translated.net/get?"+new URLSearchParams({q:chunk,langpair:source+"|"+target});
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),5500);
+  try{
+   const r=await fetch(url,{mode:"cors",cache:"no-store",signal:controller.signal,headers:{accept:"application/json"}});
+   if(!r.ok)return null;
+   const data=await r.json();
+   let value=String(data?.responseData?.translatedText||"");
+   if(Number(data?.responseStatus)!==200||!value||/^MYMEMORY WARNING/i.test(value))return null;
+   const box=document.createElement("textarea");box.innerHTML=value;
+   value=box.value;
+   results.push(value);
+  }catch{return null}
+  finally{clearTimeout(timer)}
+ }
+ const translatedText=results.join(" ").trim();
+ return translatedText&&translatedText!==message.trim()?{translatedText,sourceLanguage:source,targetLanguage:target,provider:"MyMemory (navigateur)"}:null;
+}
+
 async function doTranslate(row,manual=false){
  if(!row?.isConnected)return;
  const target=actualLang(),text=originalText(row),key=cacheKey(text,target);
@@ -125,7 +157,13 @@ async function doTranslate(row,manual=false){
  const button=row.querySelector(".cmd-translate-action");
  if(button){button.disabled=true;if(manual)button.textContent="Traduction…"}
  try{
-  const result=await requestServer(text,target);
+  let result;
+  try{result=await requestServer(text,target)}
+  catch(primary){
+   // Browser backup is rate-limited by the same queue; never retry 429 automatically.
+   result=primary.status===429?null:await browserFallback(text,target,manual);
+   if(!result)throw primary;
+  }
   remember(key,result);
   if(revision===epoch)loadTranslated(row,result,target);
  }catch(e){
