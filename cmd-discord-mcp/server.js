@@ -1933,6 +1933,101 @@ async function sendDmMessage(auth,input){
 }
 
 
+
+function validCmdUuid(v){
+  const str=String(v||"");if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str))throw new Error("Identifiant invalide.");return str;
+}
+async function createGroupDm(auth,input){
+  const me=String(auth.user.id),name=safeText(input.name||"Groupe CMD",100)||"Groupe CMD";
+  const usernames=[...new Set((Array.isArray(input.usernames)?input.usernames:[]).map(v=>normalizeUsername(v).key))].slice(0,24);
+  if(!usernames.length)throw new Error("Ajoute au moins une personne au groupe.");
+  const a=await pool.query("SELECT id,username FROM cmd_accounts WHERE username_key=ANY($1::text[])",[usernames]);
+  if(a.rows.length!==usernames.length)throw new Error("Un des membres CMD Sphere est introuvable.");
+  const ids=[...new Set(a.rows.map(r=>String(r.id)))].filter(id=>id!==me);
+  if(!ids.length)throw new Error("Ajoute une autre personne.");
+  const prefs=await pool.query("SELECT user_id,allow_dms FROM cmd_user_preferences WHERE user_id=ANY($1::text[])",[ids]);
+  if(prefs.rows.some(x=>x.allow_dms===false))throw new Error("Une personne n'accepte pas les messages privés.");
+  const client=await pool.connect(),id=crypto.randomUUID();
+  try{await client.query("BEGIN");await client.query("INSERT INTO cmd_group_dms(id,name,owner_user_id) VALUES($1,$2,$3)",[id,name,me]);for(const uid of [me,...ids])await client.query("INSERT INTO cmd_group_dm_members(group_id,user_id) VALUES($1,$2)",[id,uid]);await client.query("COMMIT")}
+  catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+  return {id,name,members:ids.length+1};
+}
+async function requireGroupDm(auth,id){
+  const groupId=validCmdUuid(id);
+  const r=await pool.query("SELECT g.id,g.name,g.owner_user_id FROM cmd_group_dms g JOIN cmd_group_dm_members m ON m.group_id=g.id AND m.user_id=$2 WHERE g.id=$1 LIMIT 1",[groupId,String(auth.user.id)]);
+  if(!r.rows[0])throw new Error("Tu n'es pas membre de ce groupe.");return r.rows[0];
+}
+async function listGroupDms(auth){
+  const r=await pool.query("SELECT g.id,g.name,g.updated_at,(SELECT body FROM cmd_group_dm_messages m WHERE m.group_id=g.id ORDER BY created_at DESC LIMIT 1) AS last_message,(SELECT COUNT(*)::int FROM cmd_group_dm_members mm WHERE mm.group_id=g.id) AS member_count FROM cmd_group_dms g JOIN cmd_group_dm_members gm ON gm.group_id=g.id AND gm.user_id=$1 ORDER BY g.updated_at DESC LIMIT 100",[String(auth.user.id)]);
+  return r.rows.map(g=>({id:String(g.id),name:g.name,lastMessage:g.last_message||"",memberCount:Number(g.member_count||0)}));
+}
+async function getGroupDmMessages(auth,id){
+  const g=await requireGroupDm(auth,id);
+  const [messages,members]=await Promise.all([
+    pool.query("SELECT m.id,m.sender_user_id,m.body,m.created_at,a.username,a.display_name,p.avatar_data_url FROM cmd_group_dm_messages m LEFT JOIN cmd_accounts a ON a.id::text=m.sender_user_id LEFT JOIN cmd_global_profiles p ON p.user_id=m.sender_user_id WHERE m.group_id=$1 ORDER BY m.created_at DESC LIMIT 500",[g.id]),
+    pool.query("SELECT m.user_id,a.username,a.display_name FROM cmd_group_dm_members m LEFT JOIN cmd_accounts a ON a.id::text=m.user_id WHERE m.group_id=$1 ORDER BY m.joined_at",[g.id])
+  ]);
+  return {groupId:String(g.id),name:g.name,other:{displayName:g.name},members:members.rows.map(m=>({userId:m.user_id,username:m.username||"Utilisateur",displayName:m.display_name||m.username||"Utilisateur"})),messages:messages.rows.reverse().map(m=>({id:String(m.id),senderUserId:String(m.sender_user_id),senderName:m.display_name||m.username||"Utilisateur",avatar:m.avatar_data_url||null,body:m.body,createdAt:m.created_at}))};
+}
+async function sendGroupDmMessage(auth,input){
+  const g=await requireGroupDm(auth,input.groupId),body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
+  const id=crypto.randomUUID(),uid=String(auth.user.id),r=await pool.query("INSERT INTO cmd_group_dm_messages(id,group_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,g.id,uid,body]);
+  await pool.query("UPDATE cmd_group_dms SET updated_at=NOW() WHERE id=$1",[g.id]);return {id,body,senderUserId:uid,createdAt:r.rows[0].created_at};
+}
+async function addGroupDmMember(auth,input){
+  const g=await requireGroupDm(auth,input.groupId);
+  if(String(g.owner_user_id)!==String(auth.user.id))throw new Error("Seul le créateur peut ajouter des membres.");
+  const key=normalizeUsername(input.username).key,r=await pool.query("SELECT id FROM cmd_accounts WHERE username_key=$1 LIMIT 1",[key]);
+  if(!r.rows[0])throw new Error("Utilisateur CMD Sphere introuvable.");
+  const uid=String(r.rows[0].id),prefs=await pool.query("SELECT allow_dms FROM cmd_user_preferences WHERE user_id=$1",[uid]);
+  if(prefs.rows[0]?.allow_dms===false)throw new Error("Cette personne n'accepte pas les messages privés.");
+  const count=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_group_dm_members WHERE group_id=$1",[g.id]);
+  if(Number(count.rows[0]?.n||0)>=25)throw new Error("Capacité maximale atteinte.");
+  await pool.query("INSERT INTO cmd_group_dm_members(group_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[g.id,uid]);return {ok:true};
+}
+function parseCallRoom(room){
+  const key=String(room||""),match=/^(dm|group):([0-9a-f-]{36})$/i.exec(key);if(!match)return null;validCmdUuid(match[2]);return {key,type:match[1],id:match[2]};
+}
+async function requireCallRoom(auth,room){
+  const r=parseCallRoom(room);if(!r)throw new Error("Salon d'appel invalide.");if(r.type==="dm")await findDmThread(auth,r.id);else await requireGroupDm(auth,r.id);return r;
+}
+async function callPresenceList(room){
+  const r=await pool.query("SELECT peer_id::text,user_id,display_name,video_on FROM cmd_call_presence WHERE room_key=$1 AND last_seen>NOW()-INTERVAL '25 seconds' ORDER BY joined_at",[room]);
+  return r.rows.map(p=>({peerId:String(p.peer_id),userId:p.user_id,name:p.display_name,videoOn:p.video_on}));
+}
+async function joinCallRoom(auth,input){
+  const room=(await requireCallRoom(auth,input.room)).key,peer=validCmdUuid(input.peerId),name=safeText(auth.user.displayName||auth.user.name||"CMD",80);
+  await pool.query("DELETE FROM cmd_call_presence WHERE last_seen<NOW()-INTERVAL '45 seconds'");
+  await pool.query("DELETE FROM cmd_call_signals WHERE created_at<NOW()-INTERVAL '10 minutes'");
+  await pool.query("INSERT INTO cmd_call_presence(room_key,peer_id,user_id,display_name,video_on) VALUES($1,$2,$3,$4,$5) ON CONFLICT(room_key,peer_id) DO UPDATE SET user_id=EXCLUDED.user_id,display_name=EXCLUDED.display_name,video_on=EXCLUDED.video_on,last_seen=NOW()",[room,peer,String(auth.user.id),name,Boolean(input.video)]);
+  return {ok:true,peers:await callPresenceList(room)};
+}
+async function pollCallRoom(auth,input){
+  const room=(await requireCallRoom(auth,input.room)).key,peer=validCmdUuid(input.peerId),uid=String(auth.user.id);
+  const own=await pool.query("UPDATE cmd_call_presence SET last_seen=NOW(),video_on=$4 WHERE room_key=$1 AND peer_id=$2 AND user_id=$3 RETURNING peer_id",[room,peer,uid,Boolean(input.video)]);
+  if(!own.rows[0])throw new Error("Tu n'as pas rejoint cet appel.");
+  const after=Math.max(0,Number(input.after)||0);
+  const signals=await pool.query("SELECT id,from_peer::text AS from_peer,signal_type,payload FROM cmd_call_signals WHERE room_key=$1 AND to_peer=$2 AND id>$3 ORDER BY id ASC LIMIT 150",[room,peer,after]);
+  return {ok:true,peers:(await callPresenceList(room)).filter(p=>p.peerId!==peer),signals:signals.rows.map(r=>({id:Number(r.id),from:r.from_peer,type:r.signal_type,payload:r.payload}))};
+}
+async function signalCallRoom(auth,input){
+  const room=(await requireCallRoom(auth,input.room)).key,from=validCmdUuid(input.peerId),to=validCmdUuid(input.toPeer),uid=String(auth.user.id),type=String(input.type||"");
+  if(!["offer","answer","ice"].includes(type))throw new Error("Signal inconnu.");
+  const json=JSON.stringify(input.payload||{});if(json.length>30000)throw new Error("Signal WebRTC trop volumineux.");
+  const active=await pool.query("SELECT peer_id::text FROM cmd_call_presence WHERE room_key=$1 AND ((peer_id=$2 AND user_id=$4) OR peer_id=$3) AND last_seen>NOW()-INTERVAL '30 seconds'",[room,from,to,uid]);
+  if(!active.rows.some(x=>x.peer_id===from)||!active.rows.some(x=>x.peer_id===to))throw new Error("Participant indisponible.");
+  await pool.query("INSERT INTO cmd_call_signals(room_key,from_peer,to_peer,signal_type,payload) VALUES($1,$2,$3,$4,$5::jsonb)",[room,from,to,type,json]);return {ok:true};
+}
+async function leaveCallRoom(auth,input){
+  const room=(await requireCallRoom(auth,input.room)).key,peer=validCmdUuid(input.peerId);
+  await pool.query("DELETE FROM cmd_call_presence WHERE room_key=$1 AND peer_id=$2 AND user_id=$3",[room,peer,String(auth.user.id)]);return {ok:true};
+}
+async function activeCallRooms(auth){
+  const uid=String(auth.user.id);
+  const r=await pool.query("SELECT p.room_key,COUNT(*)::int AS participants FROM cmd_call_presence p WHERE p.last_seen>NOW()-INTERVAL '25 seconds' AND ((p.room_key LIKE 'dm:%' AND EXISTS (SELECT 1 FROM cmd_dm_threads t WHERE p.room_key='dm:'||t.id::text AND (t.user_low=$1 OR t.user_high=$1))) OR (p.room_key LIKE 'group:%' AND EXISTS (SELECT 1 FROM cmd_group_dm_members m WHERE p.room_key='group:'||m.group_id::text AND m.user_id=$1))) GROUP BY p.room_key ORDER BY p.room_key LIMIT 100",[uid]);
+  return {rooms:r.rows.map(x=>({room:x.room_key,participants:Number(x.participants)}))};
+}
+
 function messagesPage(auth,threads,prefs,nav={native:[],discord:[],folders:[],layout:[]},friends={incoming:[],outgoing:[],friends:[]},meProfile={}){
   const native=Array.isArray(nav.native)?nav.native:[],sourceIds=new Set(native.map(g=>String(g.source_discord_id||"")).filter(Boolean));
   const discord=(Array.isArray(nav.discord)?nav.discord:[]).filter(g=>!sourceIds.has(String(g.id||"")));
