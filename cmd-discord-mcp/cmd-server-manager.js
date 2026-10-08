@@ -82,7 +82,7 @@ function roles(){
 }
 function other(){
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations Discord sont générées depuis Discord.'))+toDiscord();
- if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks Discord','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div><section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
+ if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+(isNative()?'<a class="csm-btn primary" href="/apps/directory">＋ Inviter un bot CMD Sphere</a><a class="csm-btn" href="/developers">CMD Sphere Développeur</a>':'')+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks Discord','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div>'+(isNative()?'<section id="csm-installed-cmd-apps" aria-live="polite">'+info('Chargement des bots CMD Sphere installés…')+'</section>':'')+'<section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
  if(currentTab==='appearance')return intro('Personnalisation','Icône, description et identité du serveur.')+btn('Modifier la vue d’ensemble','overview','primary')+(isNative()?'<a class="csm-btn" href="/profile?server='+safe(id())+'">Profil du serveur ↗</a>':'')+toDiscord();
  if(currentTab==='members')return intro('Membres','Vue et gestion des membres.')+info('Membres du serveur : '+String(ctx.data.guild.member_count||ctx.data.guild.memberCount||0)+'. La gestion avancée des membres et de leurs rôles Discord doit être faite depuis Discord.')+toDiscord();
  if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité Discord restent dans Discord.')+toDiscord();
@@ -103,8 +103,41 @@ function render(){
  box.querySelector('#csm-icon-input')?.addEventListener('change',readIcon);
  box.querySelectorAll('[data-csm-edit-channel]').forEach(e=>e.addEventListener('click',()=>editChannel(e.dataset.csmEditChannel)));
  box.querySelectorAll('[data-csm-edit-role]').forEach(e=>e.addEventListener('click',()=>editRole(e.dataset.csmEditRole)));
- if(currentTab==='integrations'){loadNativeWebhooks();loadWebhooks()}
+ if(currentTab==='integrations'){loadInstalledCMDApps();loadNativeWebhooks();loadWebhooks()}
  const active=box.querySelector('.csm-nav button.chosen');if(active&&window.matchMedia?.('(max-width:760px)').matches)active.scrollIntoView({block:'nearest',inline:'center'});
+}
+async function loadInstalledCMDApps(){
+ const container=$('#csm-installed-cmd-apps'),context=ctx;
+ if(!container||!isNative())return;
+ try{
+  const data=await request('/api/cmd-apps/installed?guildId='+safe(id()));
+  if(ctx!==context||!container.isConnected)return;
+  const apps=Array.isArray(data.apps)?data.apps:[];
+  const labels={view_channels:'Voir les salons',read_messages:'Lire les messages',send_messages:'Envoyer des messages'};
+  container.innerHTML='<h3>Bots et applications CMD Sphere</h3>'+
+   '<p class="csm-lead">Ces bots sont autorisés sur CMD Sphere sans modifier Discord. Un bot doit utiliser l’API CMD Sphere pour répondre.</p>'+
+   (apps.length?'<div class="csm-lines">'+apps.map(app=>{
+    const scopes=Array.isArray(app.permissions)?app.permissions:[];
+    return '<div class="csm-line"><span>🤖</span><div><strong>'+escapeHtml(app.name||'Application CMD')+'</strong>'+
+      '<small>'+escapeHtml(scopes.length?scopes.map(p=>labels[p]||p).join(' · '):'Aucune permission accordée')+'</small></div>'+
+      (canEdit()?'<button class="csm-btn danger" type="button" data-csm-uninstall-app="'+escapeHtml(app.id)+'">Retirer</button>':'')+'</div>';
+   }).join('')+'</div>':info('Aucun bot CMD Sphere installé sur ce serveur.'))+
+   '<div class="csm-actions"><a class="csm-btn primary" href="/apps/directory">Installer un bot CMD Sphere</a>'+
+    (canEdit()?'<a class="csm-btn" href="/developers">Créer mon propre bot</a>':'')+'</div>';
+  container.querySelectorAll('[data-csm-uninstall-app]').forEach(button=>button.addEventListener('click',async()=>{
+    const appId=button.dataset.csmUninstallApp,app=apps.find(x=>String(x.id)===String(appId));
+    if(!canEdit()||!app)return;
+    if(!confirm('Retirer « '+app.name+' » de ce serveur CMD Sphere ? Les permissions de cette application seront révoquées immédiatement, sans modifier Discord.'))return;
+    button.disabled=true;
+    try{
+      await request('/api/cmd-apps/remove',{guildId:id(),clientId:appId});
+      notify('Bot CMD Sphere retiré. Ses permissions sont révoquées.');
+      await loadInstalledCMDApps();
+    }catch(error){notify('Impossible de retirer le bot : '+error.message,false);button.disabled=false}
+  }));
+ }catch(error){
+   if(ctx===context&&container.isConnected)container.innerHTML='<h3>Applications CMD Sphere</h3>'+info('Lecture indisponible : '+error.message);
+ }
 }
 async function loadNativeWebhooks(){
  const box=$('#csm-native-webhooks'),context=ctx;if(!box||!isNative())return;
