@@ -4584,6 +4584,14 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/bulk-sync.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./bulk-sync.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-developer-portal-client.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-developer-portal-client.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-developer-portal.css"){
+      res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-developer-portal.css",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-developer.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-developer.js",import.meta.url),"utf8"));return;
