@@ -4139,9 +4139,39 @@ const httpServer=createServer(async(req,res)=>{
           discordMessageFallbackCache.set(cacheKey,{until:Date.now()+(chosen===first?120000:600000)});
           if(discordMessageFallbackCache.size>1000)discordMessageFallbackCache.clear();
         }
-        let archiveWarning=null;
+        // Restore readable archived content when a bot returns redacted messages.
+        // Read only the requesting user's saved copy, and never change the Discord source.
+        let recoveredFromArchive=0,archiveWarning=null;
+        if(pool)try{
+          const ids=(data.messages||[]).map(m=>String(m.id||"")).filter(x=>/^\d{15,22}$/.test(x));
+          if(ids.length){
+            const saved=await pool.query(
+              "SELECT message_id,data FROM cmd_discord_mirror_messages WHERE user_id=$1 AND guild_id=$2 AND channel_id=$3 AND message_id=ANY($4::text[])",
+              [String(auth.user.id),guildId,channelId,ids]
+            );
+            const archived=new Map(saved.rows.map(r=>[String(r.message_id),r.data]));
+            data.messages=(data.messages||[]).map(m=>{
+              const old=archived.get(String(m.id));
+              if(!readable(m)&&old&&readable(old)){recoveredFromArchive++;return {...m,...old,id:String(m.id)}}
+              return m;
+            });
+          }
+          // If the bot sees no messages but an archive exists, show the saved page
+          // instead of a blank view. This applies only to the first page.
+          if(!before&&!(data.messages||[]).length){
+            const saved=await pool.query(
+              "SELECT data,message_id FROM cmd_discord_mirror_messages WHERE user_id=$1 AND guild_id=$2 AND channel_id=$3 ORDER BY message_timestamp DESC NULLS LAST,message_id DESC LIMIT $4",
+              [String(auth.user.id),guildId,channelId,limit+1]
+            );
+            if(saved.rows.length){
+              const page=saved.rows.slice(0,limit);
+              data={...data,messages:page.map(r=>({...r.data,id:String(r.message_id)})),hasMore:saved.rows.length>limit,nextBefore:page.length?String(page[page.length-1].message_id):null,archiveFallback:true};
+              recoveredFromArchive=page.filter(r=>readable(r.data)).length;
+            }
+          }
+        }catch(e){archiveWarning="Archive Discord impossible à consulter : "+e.message}
         if(pool)try{await mirrorStoreMessagePage(auth,guildId,channelId,data.messages||[])}catch(e){archiveWarning="Messages affichés, mais sauvegarde CMD Sphere indisponible."}
-        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),archiveWarning,...data});
+        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),archiveWarning,recoveredFromArchive,...data});
       }catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
