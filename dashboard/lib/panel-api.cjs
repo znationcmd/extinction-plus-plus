@@ -6,7 +6,7 @@ async function request(db,s,operation,action,fetcher=fetch){validate(s);let url,
  if(s.apiType==='cmdhosting'){
  if(!configured(s))throw new Error('Clé CMD Hosting manquante. Crée-la dans CMD Hosting.');
  const root='https://cmd-hosting-web-production.up.railway.app';
- url=root+(operation==='status'?'/api/integrations/pc/status?serverId='+encodeURIComponent(s.panelServerId):'/api/integrations/pc/command');
+ url=root+(operation==='status'?'/api/pc/i/status?serverId='+encodeURIComponent(s.panelServerId):'/api/pc/i/command');
  headers={Authorization:'Bearer '+secure.decrypt(s.panelApiKey),Accept:'application/json','Content-Type':'application/json'};
  if(operation==='power')body={serverId:s.panelServerId,action};
  }
