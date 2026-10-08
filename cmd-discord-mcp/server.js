@@ -380,7 +380,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     if((m.stickers||[]).length)out+='<div class="msg-stickers">'+m.stickers.map(st=>'🏷️ '+esc(st.name||'Sticker')).join(' · ')+'</div>';
     if((m.reactions||[]).length)out+='<div class="msg-reactions">'+m.reactions.map(r=>'<span>'+esc(r.emoji?.name||'⭐')+' '+Number(r.count||0)+'</span>').join('')+'</div>';
     if(!out){
-      const remote=CHAT.mode==='discord'||CHAT.mode==='archive',system=Number(m.type||0)!==0;
+      const remote=CHAT.mode==='discord'||CHAT.mode==='archive'||m.source==='discord_archive',system=Number(m.type||0)!==0;
       const gid=CHAT.mode==='discord'?String(CHAT.guildId||''):'',cid=CHAT.mode==='discord'?String(CHAT.channelId||''):'',mid=String(m.id||'');
       const url=/^\d{15,22}$/.test(gid)&&/^\d{15,22}$/.test(cid)&&/^\d{15,22}$/.test(mid)?'https://discord.com/channels/'+gid+'/'+cid+'/'+mid:'';
       out='<div class="msg-empty">'+(system?'Événement système Discord.':remote?'Discord ne transmet pas le contenu de ce message au bot CMD.':'Message sans texte ni fichier.')+(url?'<a class="cmd-view-discord" href="'+url+'" target="_blank" rel="noopener noreferrer">Voir sur Discord ↗</a>':'')+'</div>';
@@ -399,10 +399,10 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const divider=day&&day!==lastDay?'<div class="message-day">'+esc(day)+'</div>':'';if(day)lastDay=day;
       const authorName=m.author?.displayName||m.author?.globalName||m.author?.username||'Utilisateur';
       const av=m.author?.avatar&&/^https:\/\//i.test(m.author.avatar)?'<img src="'+esc(m.author.avatar)+'" alt="">':'<span>'+esc(String(authorName).slice(0,1).toUpperCase())+'</span>';
-      return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time><button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button></div>'+messageBody(m)+(String(m.content||'').trim()?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
+      return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+(m.source==='discord_archive'?'<span class="bot-badge">DISCORD</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time>'+(m.source==='discord_archive'?'':'<button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button>')+'</div>'+messageBody(m)+(String(m.content||'').trim()?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
     }).join('');
     const normal=rows.filter(m=>Number(m.type||0)===0),empty=normal.filter(m=>!hasDiscordMessageContent(m));
-    const inaccessible=(CHAT.mode==='discord'||CHAT.mode==='archive')&&normal.length>0&&empty.length>=Math.min(2,normal.length)&&empty.length/normal.length>=.8;
+    const inaccessible=(CHAT.mode==='discord'||CHAT.mode==='archive'||CHAT.mode==='combined')&&normal.length>0&&empty.length>=Math.min(2,normal.length)&&empty.length/normal.length>=.8;
     const warning=inaccessible?'<div class="cmd-message-warning">⚠️ Discord renvoie les auteurs et les dates, mais pas le contenu de '+empty.length+' message(s). Le bot n’a probablement pas accès au <b>Message Content Intent</b>. Pour voir le texte, les images et les fichiers, active cette autorisation pour le bot dans le <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">Portail des développeurs Discord</a> → Bot → Privileged Gateway Intents, puis recharge le salon. Une approbation Discord peut être nécessaire.</div>':'';
     box.innerHTML=warning+(CHAT.hasMore?'<div class="history-tools"><button class="btn" id="loadMoreMessages">↑ Charger 100 messages plus anciens</button><button class="btn" id="loadAllMessages">⇧ Tout récupérer</button></div>':'')+(rendered||'<div class="channel-empty">Aucun message visible dans ce salon.</div>');
     box.querySelectorAll('[data-reply-message]').forEach(b=>b.addEventListener('click',()=>{const m=CHAT.messages.find(x=>String(x.id)===b.dataset.replyMessage);if(m)replyDiscordMessage(m.id,m.author?.displayName||m.author?.globalName||m.author?.username||'Utilisateur',String(m.content||'').slice(0,120))}));
@@ -416,7 +416,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     CHAT.messages=[...map.values()];
   }
   async function openArchivedDiscordChannel(guildId,id,name){
-    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();
+    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();qs('#cmdLiveMessagesToggle')?.remove();
     CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;qs('#channelMessages').textContent='Chargement des messages…';CHAT.open=true;CHAT.mode='archive';CHAT.guildId=String(guildId);CHAT.bot=null;CHAT.channelId=String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;
     qs('#channelTitle').textContent='# '+CHAT.name;qs('#channelSubtitle').textContent='Archive Discord · lecture seule';
     qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=true;qs('#channelSend').disabled=true;
@@ -426,32 +426,37 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
     await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=null;
   }
-  async function openNativeChannel(guildId,id,name,localOnly=false,sourceMode='archive'){
+  async function openNativeChannel(guildId,id,name,localOnly=false,sourceMode='combined'){
     const chBtn=document.querySelector('[data-native-channel="'+CSS.escape(String(id))+'"]');
     chBtn?.querySelector('.channelUnread')?.remove();
     const ch=S.nativeChannels?.get(String(id)),sourceId=String(S.nativeGuild?.source_discord_id||'');
     const managed=(window.__discordManagedGuilds||[]).find(g=>String(g.id)===sourceId);
     const linked=Boolean(S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||'')));
     const live=Boolean(!localOnly&&linked&&sourceMode==='discord'&&managed?.installed&&(managed.availableBots||[]).length);
-    const archive=Boolean(!localOnly&&linked&&!live);
-    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;CHAT.open=true;CHAT.mode=archive?'archive':live?'discord':'native';
+    const combined=Boolean(!localOnly&&linked&&!live&&sourceMode==='combined');
+    const archive=Boolean(!localOnly&&linked&&!live&&!combined);
+    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;CHAT.open=true;CHAT.mode=combined?'combined':archive?'archive':live?'discord':'native';
     CHAT.guildId=live?sourceId:String(guildId);CHAT.bot=live?managed.availableBots[0].id:null;
     CHAT.channelId=live?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');
     CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
     qs('#channelMessages').textContent='Chargement des messages…';
     qs('#channelTitle').textContent='# '+CHAT.name;
-    qs('#channelSubtitle').textContent=archive?'Historique Discord sauvegardé · lecture seule':live?'Messages Discord en direct':'Messages CMD Sphere';
+    qs('#channelSubtitle').textContent=combined?'Messages CMD Sphere + archives Discord':archive?'Historique Discord sauvegardé · lecture seule':live?'Messages Discord en direct':'Messages CMD Sphere';
     qs('#channelOverlay').classList.add('on');
     qs('#channelInput').disabled=archive;qs('#channelSend').disabled=archive;
     updateReplyBar();
-    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();
+    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();qs('#cmdLiveMessagesToggle')?.remove();
     const addSwitch=(label,fn,buttonId)=>{
       const b=document.createElement('button');b.type='button';b.className='btn';b.id=buttonId;
       b.style.cssText='font-size:12px;padding:6px 9px;margin:4px 3px;max-width:100%;white-space:normal';
       b.textContent=label;b.onclick=fn;
       qs('#channelSubtitle')?.insertAdjacentElement('afterend',b);
     };
-    if(archive){
+    if(combined){
+      addSwitch('Archive Discord seule',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
+      addSwitch('Messages CMD Sphere seuls',()=>openNativeChannel(guildId,id,name,true),'cmdChannelSourceToggle');
+      if(managed?.installed&&(managed.availableBots||[]).length)addSwitch('Discord en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdLiveMessagesToggle');
+    }else if(archive){
       addSwitch('Messages CMD Sphere',()=>openNativeChannel(guildId,id,name,true),'cmdChannelSourceToggle');
       if(managed?.installed&&(managed.availableBots||[]).length)
         addSwitch('Messages Discord en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdArchiveHistoryToggle');
@@ -489,7 +494,48 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),5000);
   }
   function closeDiscordChannel(){CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;CHAT.open=false;clearInterval(CHAT.poll);CHAT.poll=null;qs('#channelOverlay').classList.remove('on');qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove()}
+
+  // Merges the reader's CMD posts and their previously authorized Discord archive.
+  // Independent pagination for each source, no copying or changing original content.
+  async function loadCombinedMessages(reset=false,all=false){
+    if(CHAT.loading||!CHAT.open)return;
+    const version=CHAT.version;CHAT.loading=true;
+    if(reset||!CHAT.combinedCursors)CHAT.combinedCursors={native:{before:"",done:false},archive:{before:"",done:false}};
+    const urlFor=(mode,before)=>"/api/native/"+(mode==="native"?"messages":"history")+
+      "?guildId="+encodeURIComponent(CHAT.guildId)+"&channelId="+encodeURIComponent(CHAT.channelId)+
+      "&limit=100"+(before?"&before="+encodeURIComponent(before):"");
+    let pages=0;
+    try{
+      do{
+        const active=Object.entries(CHAT.combinedCursors).filter(([mode,c])=>!c.done);
+        if(!active.length)break;
+        const results=await Promise.allSettled(active.map(([mode,c])=>api(urlFor(mode,c.before))));
+        if(version!==CHAT.version||!CHAT.open)return;
+        const warnings=[];let received=0;
+        active.forEach(([mode,c],i)=>{
+          const result=results[i];
+          if(result.status!=="fulfilled"){warnings.push(mode+": "+String(result.reason?.message||result.reason));c.done=true;return}
+          const d=result.value,msg=Array.isArray(d.messages)?d.messages:[];
+          received+=msg.length;
+          mergeChannelMessages(msg.map(m=>({...m,source:mode==="archive"?"discord_archive":"cmd"})));
+          c.before=String(d.nextBefore||"");c.done=!d.hasMore||!c.before;
+        });
+        CHAT.hasMore=Object.values(CHAT.combinedCursors).some(c=>!c.done);
+        CHAT.nextBefore=CHAT.hasMore?"next":null;
+        renderChannelMessages(reset&&pages===0);
+        qs("#channelSubtitle").textContent=CHAT.messages.length+" message(s) · CMD Sphere + archives Discord"+
+          (warnings.length?" · Lecture partielle : "+warnings.join(" ; "):"");
+        pages++;
+        // Avoid huge DOM loads on phones, even if the user presses "Tout récupérer".
+        if(!all||pages>=3||!received)break;
+      }while(CHAT.hasMore&&version===CHAT.version&&CHAT.open);
+    }catch(e){
+      if(version===CHAT.version){toast("Lecture des messages : "+e.message,false);qs("#channelSubtitle").textContent=e.message}
+    }finally{if(version===CHAT.version)CHAT.loading=false}
+  }
+
   async function loadDiscordMessages(reset=false,all=false){
+    if(CHAT.mode==='combined')return loadCombinedMessages(reset,all);
     if(CHAT.loading||!CHAT.open)return;const version=CHAT.version;CHAT.loading=true;const moreBtn=qs('#loadAllMessages');if(moreBtn&&all)moreBtn.textContent='Récupération…';
     try{
       let keep=true,first=true,total=0;
@@ -512,6 +558,18 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   async function refreshDiscordMessages(){
     if(!CHAT.open||CHAT.loading)return;const version=CHAT.version;
+    if(CHAT.mode==='combined'){
+      try{
+        const modes=['native','archive'];
+        const fetched=await Promise.allSettled(modes.map(mode=>api('/api/native/'+(mode==='native'?'messages':'history')+
+          '?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100')));
+        if(version!==CHAT.version||!CHAT.open)return;
+        const previous=CHAT.messages.length;
+        fetched.forEach((out,i)=>{if(out.status==='fulfilled')mergeChannelMessages((out.value.messages||[]).map(m=>({...m,source:modes[i]==='native'?'cmd':'discord_archive'})))});
+        if(previous!==CHAT.messages.length)renderChannelMessages(false);
+      }catch{}
+      return;
+    }
     try{const u=CHAT.mode==='native'?'/api/native/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':CHAT.mode==='archive'?'/api/native/history?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':'/api/dashboard/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&bot='+encodeURIComponent(CHAT.bot)+'&limit=100';const d=await api(u);if(version!==CHAT.version||!CHAT.open)return;const before=CHAT.messages.length,previous=JSON.stringify(CHAT.messages);mergeChannelMessages(d.messages||[]);if(JSON.stringify(CHAT.messages)!==previous){renderChannelMessages(CHAT.messages.length>before);qs('#channelSubtitle').textContent=CHAT.messages.length+' message(s) · actualisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}}catch{}
   }
   function replyDiscordMessage(id,author,content){CHAT.replyTo=String(id);qs('#replyText').textContent='Répondre à '+author+(content?' · '+content:'');updateReplyBar()}
@@ -541,13 +599,13 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   function insertChannelEmoji(v){const input=qs('#channelInput');input.value=(input.value||'')+String(v||'');input.focus()}
   function createChannelPoll(){
-    if(CHAT.mode!=='native'){toast('Les sondages CMD Sphere sont disponibles dans les salons CMD.',false);return}
+    if(CHAT.mode!=='native'&&CHAT.mode!=='combined'){toast('Les sondages CMD Sphere sont disponibles dans les salons CMD.',false);return}
     const question=prompt('Question du sondage ?');if(!question)return;const raw=prompt('Choix séparés par |','Oui | Non');if(!raw)return;
     const options=raw.split('|').map(x=>x.trim()).filter(Boolean).slice(0,10);if(options.length<2){toast('Ajoute au moins 2 choix.',false);return}
     CHAT.pendingPoll={question:String(question).slice(0,300),options};renderComposePreview();closeComposeSheets()
   }
   async function toggleVoiceRecording(){
-    if(CHAT.mode!=='native'){toast('Le vocal direct est disponible dans les salons CMD Sphere.',false);return}
+    if(CHAT.mode!=='native'&&CHAT.mode!=='combined'){toast('Le vocal direct est disponible dans les salons CMD Sphere.',false);return}
     if(CHAT.recording&&CHAT.recorder){CHAT.recorder.stop();return}
     try{
       const stream=await navigator.mediaDevices.getUserMedia({audio:true}),chunks=[],rec=new MediaRecorder(stream);CHAT.recorder=rec;CHAT.recording=true;qs('#channelMic').textContent='⏹️';toast('Enregistrement vocal en cours…');
@@ -560,12 +618,12 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     ev.preventDefault();const input=qs('#channelInput'),content=String(input.value||'').trim(),attachments=[...(CHAT.pendingAttachments||[])],metadata=CHAT.pendingPoll?{poll:CHAT.pendingPoll}:{};if((!content&&!attachments.length&&!CHAT.pendingPoll)||!CHAT.open)return;const old=input.value;input.value='';qs('#channelSend').disabled=true;
     try{
       let out;
-      if(CHAT.mode==='native')out=await api('/api/native/messages',{method:'POST',body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined,attachments,metadata})});
+      if(CHAT.mode==='native'||CHAT.mode==='combined')out=await api('/api/native/messages',{method:'POST',body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined,attachments,metadata})});
       else{
         if(attachments.length||CHAT.pendingPoll)throw new Error('Pour un vrai salon Discord, les pièces jointes passent encore par Discord. Utilise un salon CMD Sphere pour les envoyer directement ici.');
         out=await api('/api/dashboard/action',{method:'POST',body:JSON.stringify({action:'send_message',guildId:CHAT.guildId,bot:CHAT.bot,channelId:CHAT.channelId,content,replyTo:CHAT.replyTo||undefined})});
       }
-      if(out.bot)CHAT.bot=out.bot;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;renderComposePreview();updateReplyBar();closeComposeSheets();toast(CHAT.mode==='native'?'Message envoyé avec ton compte CMD Sphere':'Message envoyé via '+(out.botName||'CMD'));await refreshDiscordMessages()
+      if(out.bot)CHAT.bot=out.bot;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;renderComposePreview();updateReplyBar();closeComposeSheets();toast(CHAT.mode==='native'||CHAT.mode==='combined'?'Message envoyé avec ton compte CMD Sphere':'Message envoyé via '+(out.botName||'CMD'));await refreshDiscordMessages()
     }catch(e){input.value=old;toast(e.message,false)}finally{qs('#channelSend').disabled=false;input.focus()}
   }
   async function submit(e,action){e.preventDefault();if(!confirm('Appliquer cette modification au serveur Discord via le bot autorisé ?'))return;const f=new FormData(e.currentTarget),body={action,guildId:S.guild.id,bot:S.bot};for(const [k,v] of f)body[k]=v;if(action==='create_role'){body.hoist=e.currentTarget.hoist.checked;body.mentionable=e.currentTarget.mentionable.checked}try{await api('/api/dashboard/action',{method:'POST',body:JSON.stringify(body)});toast('Modification appliquée sur Discord');e.currentTarget.reset();await loadStructure()}catch(x){toast(x.message,false)}}
