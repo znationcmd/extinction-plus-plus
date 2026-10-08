@@ -5,7 +5,7 @@ let timer=null,busy=false,visible=false;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function request(path,body){const r=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(d.needsLink){location.href='/dashboard-login?link=1&next='+encodeURIComponent('/dashboard?sync=1');return null}if(!r.ok)throw Error(d.error||'Synchronisation indisponible');return d}
 const panel=document.createElement('section');panel.id='cmd-bulk-sync';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Tout synchroniser');
-panel.innerHTML='<div class="cmd-bulk-card"><header><h2>Tout synchroniser</h2><button type="button" data-close aria-label="Fermer">×</button></header><p>Serveurs, catégories, salons, rôles, bots, webhooks et historique accessibles aux bots autorisés.</p><div data-progress role="status" aria-live="polite"></div><div class="cmd-bulk-actions"><button type="button" data-start>Lancer / reprendre</button><button type="button" data-check>Actualiser</button></div><p>La récupération continue sur le serveur après fermeture de cette fenêtre. Les réglages privés des bots tiers ne sont pas exportés par Discord.</p></div>';
+panel.innerHTML='<div class="cmd-bulk-card"><header><h2>Tout synchroniser</h2><button type="button" data-close aria-label="Fermer">×</button></header><p>Serveurs, catégories, salons, rôles, bots, webhooks et historique accessibles aux bots autorisés.</p><div data-progress role="status" aria-live="polite"></div><div class="cmd-bulk-actions"><button type="button" data-start>Lancer / reprendre</button><button type="button" data-check>Actualiser</button><button type="button" data-restore>Afficher mes archives dans CMD Sphere</button></div><p>La récupération continue sur le serveur après fermeture de cette fenêtre. Les réglages privés des bots tiers ne sont pas exportés par Discord.</p></div>';
 const style=document.createElement('style');style.textContent='#cmd-bulk-sync[hidden]{display:none}#cmd-bulk-sync{position:fixed;inset:0;z-index:110010;background:#090610d9;display:grid;place-items:center;padding:12px;box-sizing:border-box}#cmd-bulk-sync *{box-sizing:border-box}.cmd-bulk-card{width:min(620px,100%);max-height:calc(100dvh - 24px);overflow:auto;background:#25212e;color:#f5f0ff;border:1px solid #8e65c8;border-radius:18px;padding:20px;overflow-wrap:anywhere}.cmd-bulk-card header{display:flex;gap:10px;align-items:center}.cmd-bulk-card h2{flex:1;margin:0;font-size:22px}.cmd-bulk-card p{line-height:1.5;font-size:14px}.cmd-bulk-card button{background:#6742a3;color:white;border:0;border-radius:9px;padding:11px;cursor:pointer}.cmd-bulk-card button:disabled{opacity:.6}.cmd-bulk-actions{display:flex;gap:10px;flex-wrap:wrap}.cmd-bulk-card progress{width:100%;accent-color:#ac7cf4}.cmd-bulk-card li{margin:6px 0}.cmd-bulk-rail{flex:none;min-height:52px;width:52px;border-radius:50%;background:#6742a3;color:white;border:0;cursor:pointer;font-weight:800;font-size:12px}';document.head.append(style);document.body.append(panel);
 const status=panel.querySelector('[data-progress]'),startButton=panel.querySelector('[data-start]');
 function show(){visible=true;panel.hidden=false}
@@ -35,7 +35,23 @@ async function check(){
  }catch(e){draw('Suivi indisponible',e.message+' La fermeture du suivi ne stoppe pas le travail serveur.',0);startButton.disabled=false}
 }
 async function start(){if(busy)return;busy=true;show();startButton.disabled=true;draw('Démarrage','Recherche des serveurs accessibles…',0);try{await request('/api/discord/sync',{});await check()}catch(e){draw('Impossible de démarrer',e.message,0);startButton.disabled=false}finally{busy=false}}
-panel.querySelector('[data-close]').onclick=stop;panel.querySelector('[data-start]').onclick=start;panel.querySelector('[data-check]').onclick=check;
+
+async function restoreArchive(){
+  const button=panel.querySelector('[data-restore]');
+  if(button.disabled)return;
+  show();button.disabled=true;draw('Restauration des archives','Reconstitution des serveurs, catégories, salons et rôles à partir de la copie déjà enregistrée. Aucune action sur Discord.',40);
+  try{
+    const r=await request('/api/native/restore-mirror',{});
+    const errors=(r.errors||[]).slice(0,20).map(x=>(x.guild||'Serveur')+' : '+x.error);
+    draw('Archives restaurées dans CMD Sphere',
+      Number(r.restored||0)+' serveurs · '+Number(r.channels||0)+' salons et catégories · '+Number(r.roles||0)+' rôles repris. Actualise le tableau de bord pour voir les salons.',
+      100,errors);
+    const btn=document.createElement('button');btn.type='button';btn.textContent='Ouvrir les serveurs restaurés';btn.onclick=()=>location.assign('/dashboard?restored=1');
+    status.appendChild(btn);
+  }catch(err){draw('Restauration non terminée',err.message+' · Tes données précédentes sont conservées.',0)}
+  finally{button.disabled=false}
+}
+panel.querySelector('[data-close]').onclick=stop;panel.querySelector('[data-start]').onclick=start;panel.querySelector('[data-check]').onclick=check;panel.querySelector('[data-restore]').onclick=restoreArchive;
 const rail=document.querySelector('.server-rail');if(rail){const button=document.createElement('button');button.className='cmd-bulk-rail';button.type='button';button.title='Tout synchroniser';button.setAttribute('aria-label','Tout synchroniser');button.textContent='↻ Tout';button.onclick=start;rail.prepend(button)}
 const old=document.querySelector('#syncDiscordBtn');if(old){old.textContent='↻ Tout synchroniser';old.onclick=start}
 window.cmdSphereBulkSync={start,open:()=>{show();return check()}};
