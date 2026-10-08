@@ -46,7 +46,7 @@ document.addEventListener("click",async ev=>{
   ev.preventDefault();
   const article=row(btn);if(!article)return;
   const hideBtn=article.querySelector(".cmd-original-action");
-  const original=article.querySelector(".msg-text,.dm-text");
+  const original=article.querySelector(".msg-text,.dm-text,.msg-embed");
   if(!original?.textContent.trim()){show(article,"Ce message ne contient pas de texte à traduire.","error");return}
   const chosen=article.querySelector(".cmd-translation-target")?.value;
   const lang=supported[chosen]?chosen:language(),name=supported[lang]||lang;
@@ -77,6 +77,19 @@ document.addEventListener("click",ev=>{
   btn.hidden=true;const translate=article.querySelector(".cmd-translate-action");if(translate)translate.hidden=false;
 });
 
+// Reset stale translations when each reader changes the target language.
+document.addEventListener("change",event=>{
+  if(event.target?.id!=="cmd-sphere-language")return;
+  visibleTranslations.clear();
+  document.querySelectorAll(".discord-message,.bubble").forEach(article=>{
+    const output=article.querySelector(".cmd-translation-output");
+    if(output)output.hidden=true;
+    const button=article.querySelector(".cmd-translate-action");
+    if(button)button.hidden=false;
+    const revert=article.querySelector(".cmd-original-action");
+    if(revert)revert.hidden=true;
+  });
+});
 // A new message can cause the conversation to re-render. Keep previously requested
 // translations visible without a second external request or saving private text to disk.
 function restoreVisibleTranslations(){
@@ -85,7 +98,7 @@ function restoreVisibleTranslations(){
   for(const article of box.querySelectorAll("article.discord-message[data-message-id]")){
     const state=visibleTranslations.get(String(article.dataset.messageId||""));
     if(!state||state.lang!==language())continue;
-    const original=article.querySelector(".msg-text");
+    const original=article.querySelector(".msg-text,.msg-embed");
     if(!original||original.textContent!==state.original)continue;
     const translated=article.querySelector(".cmd-translation-output");
     if(!translated||translated.hidden||translated.textContent!==state.translation){
