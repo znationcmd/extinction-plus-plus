@@ -5,7 +5,7 @@ import games from '../lib/games.cjs';
 export default function ServerActions(){
  const [servers,setServers]=useState([]),[serverId,setId]=useState(''),[command,setCommand]=useState(''),[message,setMessage]=useState(''),[jobs,setJobs]=useState([]),[busy,setBusy]=useState(false);
  const server=servers.find(s=>s.id===serverId),panel=hosting.panelUrl(server),nitrado=hosting.isNitrado(server)&&games.games[server?.game]?.hosting!==false&&!!(server?.nitradoServiceId||server?.nitradoId);
- const power=nitrado||!!(server?.apiType==='pterodactyl'&&server.panelConfigured&&server.panelServerId);
+ const power=nitrado||!!(server?.apiType==='cmdhosting'&&server.panelConfigured&&server.panelServerId)||!!(server?.apiType==='pterodactyl'&&server.panelConfigured&&server.panelServerId);
  const rcon=!!server&&!!(games.games[server.game]?.rcon||(server.game==='arma'&&server.rconProtocol==='battleye'))&&!!(server.rconHost||server.rcon_host||server.host||server.ip)&&!!(server.rconPort||server.rcon_port||server.rcon||server.port)&&server.rconConfigured;
  async function load(){try{const r=await fetch('/api/servers',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Chargement impossible.');setServers(d.servers||[]);setId(old=>d.servers.some(s=>s.id===old)?old:d.servers[0]?.id||'');}catch(e){setMessage(e.message);}}
  useEffect(()=>{load();window.addEventListener('servers-updated',load);return()=>window.removeEventListener('servers-updated',load);},[]);
