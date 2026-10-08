@@ -3164,6 +3164,50 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,await installShopItem(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/groups/create"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,201,{group:await createGroupDm(auth,await readFormBodyJson(req))})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/groups"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{groups:await listGroupDms(auth)})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname.startsWith("/api/groups/thread/")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await getGroupDmMessages(auth,url.pathname.split("/").pop()))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/groups/send"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{message:await sendGroupDmMessage(auth,await readNativeMessageBodyJson(req))})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/groups/add"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await addGroupDmMember(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/calls/active"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await activeCallRooms(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/calls/join"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await joinCallRoom(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/calls/poll"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await pollCallRoom(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/calls/signal"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await signalCallRoom(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/calls/leave"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await leaveCallRoom(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/call"){
+      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/call?room="+(url.searchParams.get("room")||"")));return}
+      try{const room=await requireCallRoom(auth,url.searchParams.get("room"));html(res,callPage(auth,room))}catch(e){html(res,"<h1>Appel indisponible</h1><p>"+escHtml(e.message)+"</p>",400)}return;
+    }
     if(req.method==="GET"&&url.pathname==="/messages"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
