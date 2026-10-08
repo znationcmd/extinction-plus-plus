@@ -2,7 +2,7 @@ export default function manifest() {
   return {
     id: '/',
     name: 'CMD EXTINCTION++ RSS',
-    short_name: 'CMD Extinction++',
+    short_name: 'CMD Extinction++ RSS',
     description: 'Tes serveurs, les mods DayZ et les outils Extinction++ sur mobile.',
     lang: 'fr',
     start_url: '/?source=app',
