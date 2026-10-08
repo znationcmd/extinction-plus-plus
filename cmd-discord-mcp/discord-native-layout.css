@@ -505,3 +505,40 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
   place-items:center!important;
   border-radius:50%!important;
 }
+
+/* CMD Sphere touch-refresh: mobile-only gesture and trimmed server home */
+#cmd-pull-refresh-indicator{
+  display:none;
+  position:fixed;
+  z-index:11900;
+  left:50%;
+  top:max(12px,env(safe-area-inset-top,12px));
+  transform:translate(-50%,calc(-70px + var(--pull-distance,0px)));
+  opacity:0;
+  max-width:calc(100vw - 34px);
+  padding:10px 16px;
+  border-radius:999px;
+  border:1px solid #a785de88;
+  background:#211632ee;
+  box-shadow:0 14px 38px #0009;
+  color:#fff;
+  font:700 13px system-ui,sans-serif;
+  text-align:center;
+  pointer-events:none;
+  transition:transform .2s ease,opacity .2s ease;
+}
+@media(max-width:850px) and (pointer:coarse){
+  /* Phones refresh by pulling down; desktop keeps both refresh controls. */
+  #refresh,#cmd-sphere-refresh{display:none!important}
+  #cmd-pull-refresh-indicator{display:block}
+  #cmd-pull-refresh-indicator.visible{
+    opacity:1;
+    transform:translate(-50%,var(--pull-distance,0px));
+  }
+  #cmd-pull-refresh-indicator.ready{border-color:#c3a6fd}
+  .sphere-app #workspace.empty{
+    padding:8px 4px 20px!important;
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+}
