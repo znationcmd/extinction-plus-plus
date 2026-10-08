@@ -59,7 +59,7 @@
 .csm-server-menu-body button:hover{background:#ffffff16}
 .csm-server-menu-handle{display:none}
 .sphere-app .server-rail .rail-server,.sphere-app .server-rail .rail-home{border-radius:50%!important;overflow:hidden!important;aspect-ratio:1!important}
-.sphere-app .server-rail .rail-server img,.sphere-app .server-rail .rail-home img{width:100%!important;height:100%!important;object-fit:contain!important;border-radius:50%!important;display:block!important}
+.sphere-app .server-rail .rail-server img,.sphere-app .server-rail .rail-home img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:50%!important;display:block!important}
 @media(max-width:760px){
  #serverSettingsModal.csm-open>.add-card{width:100%!important}
  .csm-header{min-height:62px;padding:9px 12px}
@@ -97,3 +97,17 @@
  .csm-sub{padding:12px}
  .csm-line>div{flex-basis:calc(100% - 46px)}
 }
+
+/* Prevent the manager stylesheet from shrinking the full-size guild image. */
+.sphere-app .server-rail .rail-server,
+.sphere-app .server-rail .rail-home{position:relative!important;border-radius:50%!important;overflow:hidden!important;padding:0!important}
+.sphere-app .server-rail .rail-server>img,
+.sphere-app .server-rail .rail-home>img{
+ position:absolute!important;inset:0!important;display:block!important;
+ width:100%!important;height:100%!important;max-width:none!important;
+ max-height:none!important;object-fit:cover!important;object-position:center!important;
+ border-radius:50%!important;margin:0!important;padding:0!important
+}
+.sphere-app .server-rail .rail-server>.cmd-icon-fallback{display:none!important}
+.sphere-app .server-rail .rail-server.cmd-icon-failed>img{display:none!important}
+.sphere-app .server-rail .rail-server.cmd-icon-failed>.cmd-icon-fallback{display:grid!important;place-items:center!important;width:100%!important;height:100%!important}
