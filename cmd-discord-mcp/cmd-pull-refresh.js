@@ -27,7 +27,7 @@
     if(!el||typeof el.closest!=="function")return false;
     if(el.closest("input,textarea,select,button,a,[contenteditable=true],"+
        ".server-rail,.rail-folder-wrap,.channel-messages,.channel-overlay,"+
-       ".cmd-server-channels,.user-dock,[role=dialog],"+
+       ".user-dock,[role=dialog],"+
        ".cmd-modal,.add-modal"))return false;
     return scrollTop(el);
   }
