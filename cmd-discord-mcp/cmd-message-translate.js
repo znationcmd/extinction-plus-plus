@@ -33,6 +33,41 @@ function addTargetPickers(root){
   }
 }
 
+/* If Railway cannot contact the free provider, try its documented CORS API directly
+   from the reader's browser after an explicit tap. No translation is sent without consent. */
+async function browserFreeTranslate(message,target){
+ const tl=target==="us"?"en":target;
+ const matches=(re)=>((message.toLowerCase().match(re))||[]).length;
+ const french=matches(/\b(bonjour|merci|vous|avec|pour|dans|une|salut|comment|le|les)\b/g);
+ const english=matches(/\b(hello|thanks|you|your|please|what|with|this|have|good|the|and)\b/g);
+ const source=english>french?"en":french>english?"fr":tl==="fr"?"en":"fr";
+ const chunks=[];
+ // MyMemory accepts a maximum of 500 UTF-8 bytes. Slice along Unicode code points.
+ let current="";
+ for(const character of String(message)){
+   if(new TextEncoder().encode(current+character).length>440){
+     if(current)chunks.push(current);
+     current=character;
+   }else current+=character;
+ }
+ if(current)chunks.push(current);
+ if(!chunks.length||chunks.length>8)throw Error("Message trop long pour la traduction gratuite directe.");
+ const results=[];
+ for(const chunk of chunks){
+   const url="https://api.mymemory.translated.net/get?"+new URLSearchParams({q:chunk,langpair:source+"|"+tl});
+   const r=await fetch(url,{method:"GET",mode:"cors",cache:"no-store",headers:{accept:"application/json"}});
+   if(!r.ok)throw Error("Service public injoignable (HTTP "+r.status+").");
+   const data=await r.json();
+   const value=String(data?.responseData?.translatedText||"").trim();
+   if(Number(data?.responseStatus)!==200||!value||/MYMEMORY WARNING/i.test(value))throw Error("La langue "+tl+" est indisponible sur le service gratuit.");
+   const dom=document.createElement("textarea");dom.innerHTML=value;
+   results.push(dom.value);
+ }
+ const translatedText=results.join(" ").trim();
+ if(!translatedText||translatedText===message.trim())throw Error("Aucune traduction différente du texte original.");
+ return {translatedText,sourceLanguage:source,targetLanguage:tl,provider:"MyMemory direct"};
+}
+
 function row(btn){return btn.closest(".discord-message,.bubble")}
 function show(original,txt,type){
   let translation=original.querySelector(".cmd-translation-output");
@@ -56,8 +91,11 @@ document.addEventListener("click",async ev=>{
   show(article,"Traduction en "+name+" en cours…","loading");
   try{
     const res=await fetch("/api/cmd/translate-message",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"content-type":"application/json"},body:JSON.stringify({text:content,target:lang,source:"auto"})});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok||!data.translatedText)throw Error(data.error||"Service de traduction indisponible");
+    let data=await res.json().catch(()=>({}));
+    if(!res.ok||!data.translatedText){
+      try{data=await browserFreeTranslate(content,lang)}
+      catch(fallbackError){throw Error((data.error||"Serveur de traduction indisponible")+" ; accès direct : "+fallbackError.message)}
+    }
     show(article,data.translatedText,"translated");
     const id=String(article.dataset.messageId||"");
     if(id){
