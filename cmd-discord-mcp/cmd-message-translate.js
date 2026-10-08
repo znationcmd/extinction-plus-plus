@@ -3,10 +3,10 @@
 "use strict";
 const supported={fr:"Français",en:"English",us:"English (US)",de:"Deutsch",es:"Español",it:"Italiano",ru:"Русский",ko:"한국어",ja:"日本語",zh:"中文",co:"Corsu",pt:"Português"};
 function language(){try{const e=document.querySelector("#cmd-sphere-language");return supported[e?.value]?e.value:supported[localStorage.getItem("cmd-sphere-language")]?localStorage.getItem("cmd-sphere-language"):"fr"}catch{return"fr"}}
-function row(btn){return btn.closest(".discord-message")}
+function row(btn){return btn.closest(".discord-message,.bubble")}
 function show(original,txt,type){
   let translation=original.querySelector(".cmd-translation-output");
-  if(!translation){translation=document.createElement("div");translation.className="cmd-translation-output";const area=original.querySelector(".msg-main");area?.appendChild(translation)}
+  if(!translation){translation=document.createElement("div");translation.className="cmd-translation-output";const area=original.querySelector(".msg-main")||original;area?.appendChild(translation)}
   translation.hidden=false;translation.textContent=txt;translation.dataset.state=type;
   return translation;
 }
@@ -16,7 +16,7 @@ document.addEventListener("click",async ev=>{
   ev.preventDefault();
   const article=row(btn);if(!article)return;
   const hideBtn=article.querySelector(".cmd-original-action");
-  const original=article.querySelector(".msg-text");
+  const original=article.querySelector(".msg-text,.dm-text");
   if(!original?.textContent.trim()){show(article,"Ce message ne contient pas de texte à traduire.","error");return}
   const lang=language(),name=supported[lang]||lang;
   const content=original.textContent;
@@ -39,4 +39,32 @@ document.addEventListener("click",ev=>{
   const output=article.querySelector(".cmd-translation-output");if(output)output.hidden=true;
   btn.hidden=true;const translate=article.querySelector(".cmd-translate-action");if(translate)translate.hidden=false;
 });
+
+// Private/group CMD conversations share the same explicit translation controls.
+// Keep re-rendering inexpensive: only decorate new DOM nodes.
+function decoratePrivateMessages(){
+  const container=document.querySelector("#msgs");if(!container)return;
+  for(const item of container.querySelectorAll(".bubble:not([data-cmd-translatable])")){
+    item.dataset.cmdTranslatable="1";
+    const node=[...item.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());
+    if(!node)continue;
+    const content=document.createElement("span");content.className="dm-text";
+    node.parentNode.replaceChild(content,node);content.appendChild(node);
+    const tools=document.createElement("div");tools.className="cmd-translation-tools";
+    const button=document.createElement("button");button.type="button";button.className="cmd-translate-action";button.textContent="🌐 Traduire";button.title="Traduction gratuite à la demande : le texte est envoyé au service de traduction externe";
+    const original=document.createElement("button");original.type="button";original.className="cmd-original-action";original.hidden=true;original.textContent="Voir l’original";
+    tools.append(button,original);item.appendChild(tools);
+  }
+}
+function bootPrivate(){
+  const box=document.querySelector("#msgs");if(!box)return;
+  const style=document.createElement("style");
+  style.textContent=".bubble .dm-text{white-space:pre-wrap;overflow-wrap:anywhere}.bubble .cmd-translation-tools{display:flex;gap:8px;flex-wrap:wrap;max-width:100%;margin-top:7px}.bubble .cmd-translation-tools button{font-size:12px;color:#ead6ff;background:#5c458f;border:0;border-radius:7px;padding:6px 9px}.bubble .cmd-translation-tools button[hidden],.bubble .cmd-translation-output[hidden]{display:none!important}.bubble .cmd-translation-output{margin-top:8px;max-width:100%;overflow-wrap:anywhere;border-left:3px solid #c1a4ff;background:#221a36;padding:8px;border-radius:5px}.bubble .cmd-translation-output[data-state=error]{color:#ffcece;border-color:#ff7878}";
+  document.head.appendChild(style);
+  decoratePrivateMessages();
+  const observer=new MutationObserver(()=>decoratePrivateMessages());
+  observer.observe(box,{childList:true});
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootPrivate,{once:true});else bootPrivate();
+
 })();
