@@ -573,8 +573,12 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       if(all&&!CHAT.hasMore)toast('Tout l’historique accessible a été récupéré : '+CHAT.messages.length+' message(s)');
     }catch(e){if(version===CHAT.version){toast(e.message,false);qs('#channelSubtitle').textContent='Impossible de charger ce salon : '+e.message;qs('#channelMessages').textContent='Messages indisponibles : '+e.message}}finally{if(version===CHAT.version)CHAT.loading=false}
   }
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&CHAT.open&&!CHAT.loading)refreshDiscordMessages().catch(()=>{});
+  });
   async function refreshDiscordMessages(){
-    if(!CHAT.open||CHAT.loading)return;const version=CHAT.version;
+    // Sleep the chat refresh loop when the browser tab or PWA is not visible.
+    if(document.hidden||!CHAT.open||CHAT.loading)return;const version=CHAT.version;
     if(CHAT.mode==='combined'){
       try{
         const modes=['native','archive'];
