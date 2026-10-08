@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
 import crypto from "node:crypto";
+import {initDeveloperDb,developerRoute} from "./cmd-developer-api.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
@@ -3563,6 +3564,27 @@ const httpServer=createServer(async(req,res)=>{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
 
+    if(req.method==="GET"&&url.pathname==="/robots.txt"){
+      res.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"max-age=3600"});
+      res.end("User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /dashboard\nDisallow: /dashboard-login\nDisallow: /oauth/\nDisallow: /native/\nDisallow: /profile\nDisallow: /developers\nDisallow: /apps/invite\nSitemap: "+baseUrl+"/sitemap.xml\n");return;
+    }
+    if(req.method==="GET"&&url.pathname==="/sitemap.xml"){
+      const urls=["/cmd-sphere","/cmd-sphere-developpeur"].map(path=>"<url><loc>"+baseUrl+path+"</loc><changefreq>weekly</changefreq><priority>"+(path==="/cmd-sphere"?"1.0":"0.8")+"</priority></url>").join("");
+      res.writeHead(200,{"content-type":"application/xml; charset=utf-8","cache-control":"max-age=3600"});
+      res.end('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls+'</urlset>');return;
+    }
+    if(req.method==="GET"&&(url.pathname==="/cmd-sphere"||url.pathname==="/cmd-sphere-developpeur")){
+      const dev=url.pathname==="/cmd-sphere-developpeur";
+      const path=dev?"/cmd-sphere-developpeur":"/cmd-sphere";
+      const title=dev?"CMD Sphere Développeur — Créer des bots et applications":"CMD Sphere — Serveurs, salons et messages";
+      const description=dev?"CMD Sphere Développeur : créez des bots et applications pour vos communautés CMD Sphere, avec clés API et permissions par serveur, sans compte Discord obligatoire.":"CMD Sphere est une plateforme communautaire indépendante : serveurs, salons, messagerie, profils et applications CMD.";
+      const t=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+      const features=dev?"Créez et gérez vos applications, obtenez une clé API CMD Sphere et choisissez les permissions nécessaires pour installer vos bots.":"Échangez des messages, créez des catégories et salons, rejoignez des communautés et personnalisez vos profils.";
+      const ld=JSON.stringify({"@context":"https://schema.org","@type":"SoftwareApplication",name:dev?"CMD Sphere Développeur":"CMD Sphere",applicationCategory:dev?"DeveloperApplication":"CommunicationApplication",operatingSystem:"Web, Android, iOS, Windows, macOS",url:baseUrl+path,description});
+      html(res,'<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+t(title)+'</title><meta name="description" content="'+t(description)+'"><meta name="robots" content="index,follow"><link rel="canonical" href="'+baseUrl+path+'"><meta property="og:title" content="'+t(title)+'"><meta property="og:description" content="'+t(description)+'"><meta property="og:url" content="'+baseUrl+path+'"><meta property="og:type" content="website"><meta name="theme-color" content="#291849"><script type="application/ld+json">'+ld+'</script><style>*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,#2c1752,#0c0b15 67%);color:white;font:16px system-ui}main{width:min(980px,92vw);margin:7vh auto;padding-bottom:80px}h1{font-size:clamp(32px,6vw,62px);line-height:1.1}p{color:#d2c5df;line-height:1.6;font-size:18px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}a{color:#e4cbff}.actions a{padding:14px 20px;border-radius:12px;background:#6c4fb7;color:white;text-decoration:none;font-weight:750}.card{padding:25px;background:#241b36;border:1px solid #ffffff33;border-radius:17px}nav{display:flex;gap:20px;flex-wrap:wrap}nav a{font-weight:750}</style></head><body><main><nav><a href="/cmd-sphere">CMD Sphere</a><a href="/cmd-sphere-developpeur">CMD Sphere Développeur</a></nav><h1>'+t(dev?"Développeur CMD Sphere":"CMD Sphere")+'</h1><p>'+t(description)+'</p><div class="card"><h2>'+t(dev?"Développez vos bots CMD Sphere":"Votre communauté sur CMD Sphere")+'</h2><p>'+t(features)+'</p><div class="actions"><a href="'+(dev?"/developers":"/dashboard")+'">'+t(dev?"Accéder au portail Développeur":"Ouvrir CMD Sphere")+'</a><a href="/apps/directory">Voir les applications</a></div></div></main></body></html>');
+      return;
+    }
+    if(await developerRoute(req,res,url,{pool,auth:dashboardAuth(req),baseUrl,sendJson,html,readBody:readFormBodyJson,requireNativeAdmin,requireNativeMember}))return;
     if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/dashboard")){
       const auth=dashboardAuth(req);
       if(url.pathname==="/"&&auth){redirect(res,baseUrl+"/dashboard");return}
@@ -4231,6 +4253,10 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/bulk-sync.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./bulk-sync.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-developer.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-developer.js",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-server-manager.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-server-manager.js",import.meta.url),"utf8"));return;
@@ -4355,7 +4381,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();await initDeveloperDb(pool);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
