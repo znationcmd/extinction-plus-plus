@@ -79,7 +79,7 @@ export async function developerRoute(req,res,url,ctx){
   if(!auth){send(401,{error:"Connexion CMD Sphere requise"});return true}
   const user=String(auth.user.id);
   if(m==="GET"&&p==="/api/developer/apps"){
-   const r=await pool.query("SELECT id,name,description,discord_client_id,created_at FROM cmd_developer_apps WHERE owner_user_id=$1 ORDER BY created_at DESC",[user]);send(200,{apps:r.rows});return true;
+   const r=await pool.query("SELECT DISTINCT a.id,a.name,a.description,a.discord_client_id,a.created_at,(CASE WHEN a.owner_user_id=$1 THEN 'owner' ELSE p.role END) AS developer_role FROM cmd_developer_apps a LEFT JOIN cmd_developer_app_people p ON p.app_id=a.id AND p.user_id=$1 AND p.kind='team' WHERE a.owner_user_id=$1 OR p.user_id=$1 ORDER BY a.created_at DESC",[user]);send(200,{apps:r.rows});return true;
   }
   if(m==="POST"&&p==="/api/developer/apps"){
    const b=await readBody(req),name=clean(b.name,80),did=clean(b.discordClientId,22);
@@ -92,16 +92,22 @@ export async function developerRoute(req,res,url,ctx){
   if(m==="GET"&&p==="/api/cmd-apps/catalog"){
    const id=String(url.searchParams.get("clientId")||""),did=String(url.searchParams.get("discordClientId")||"");
    let r;
-   if(id){if(!idRe.test(id))throw Error("Application inconnue.");r=await pool.query("SELECT id,name,description,discord_client_id FROM cmd_developer_apps WHERE id=$1",[id])}
-   else if(did){if(!/^\d{15,22}$/.test(did))throw Error("Identifiant Discord invalide.");r=await pool.query("SELECT id,name,description,discord_client_id FROM cmd_developer_apps WHERE discord_client_id=$1",[did])}
-   else r=await pool.query("SELECT id,name,description,discord_client_id FROM cmd_developer_apps ORDER BY created_at DESC LIMIT 100");
+   const visible="(COALESCE(v.published,TRUE)=TRUE OR a.owner_user_id=$1 OR EXISTS(SELECT 1 FROM cmd_developer_app_people p WHERE p.app_id=a.id AND p.user_id=$1))";
+   const from=" FROM cmd_developer_apps a LEFT JOIN cmd_developer_app_visibility v ON v.app_id=a.id WHERE "+visible;
+   if(id){
+     if(!idRe.test(id))throw Error("Application inconnue.");
+     r=await pool.query("SELECT a.id,a.name,a.description,a.discord_client_id"+from+" AND a.id=$2",[user,id]);
+   }else if(did){
+     if(!/^\d{15,22}$/.test(did))throw Error("Identifiant Discord invalide.");
+     r=await pool.query("SELECT a.id,a.name,a.description,a.discord_client_id"+from+" AND a.discord_client_id=$2",[user,did]);
+   }else r=await pool.query("SELECT a.id,a.name,a.description,a.discord_client_id"+from+" ORDER BY a.created_at DESC LIMIT 100",[user]);
    send(200,{apps:r.rows});return true;
   }
   if(m==="POST"&&p==="/api/cmd-apps/install"){
    const b=await readBody(req),gid=String(b.guildId||""),id=String(b.clientId||"");
    if(!idRe.test(gid)||!idRe.test(id))throw Error("Serveur ou bot invalide.");
    await requireNativeAdmin(auth,gid);
-   const a=await pool.query("SELECT id FROM cmd_developer_apps WHERE id=$1",[id]);if(!a.rows[0])throw Error("Bot CMD inconnu.");
+   const a=await pool.query("SELECT a.id FROM cmd_developer_apps a LEFT JOIN cmd_developer_app_visibility v ON v.app_id=a.id WHERE a.id=$1 AND (COALESCE(v.published,TRUE) OR a.owner_user_id=$2 OR EXISTS(SELECT 1 FROM cmd_developer_app_people p WHERE p.app_id=a.id AND p.user_id=$2))",[id,user]);if(!a.rows[0])throw Error("Application privée : invitation réservée au propriétaire, à l'équipe et aux testeurs.");
    const rights=perms(b.permissions);
    await pool.query("INSERT INTO cmd_native_app_installs(guild_id,app_id,installed_by,permissions) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT(guild_id,app_id) DO UPDATE SET installed_by=EXCLUDED.installed_by,permissions=EXCLUDED.permissions",[gid,id,user,JSON.stringify(rights)]);
    send(200,{ok:true,permissions:rights});return true;
