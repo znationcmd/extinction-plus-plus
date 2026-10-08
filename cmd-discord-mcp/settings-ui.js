@@ -7,6 +7,11 @@
     style.id='cmd-settings-style';
     style.textContent=[
       'body.cmd-settings-locked{overflow:hidden!important}',
+      'body.cmd-settings-locked #cmd-sphere-tools{display:none!important}',
+      '.cmd-settings-title-row{min-width:0}',
+      '.cmd-settings-header h2{min-width:0;overflow-wrap:anywhere}',
+      '.cmd-settings-local-language{flex:none;width:136px;min-width:108px;max-width:35vw;border:1px solid #666175;background:#19141f;color:white;border-radius:10px;padding:9px 6px;font-weight:700;font-size:13px;min-height:39px}',
+      '@media(max-width:520px){.cmd-settings-title-row{gap:8px!important}.cmd-settings-local-language{width:112px;max-width:36vw;font-size:12px;padding:7px 4px}.cmd-settings-back,.cmd-settings-close{width:30px;min-width:30px}}',
       '.sphere-app .cmd-head-legacy{display:none!important}',
       '.sphere-app .cmd-app-controls{display:flex;align-items:center;gap:9px;margin-left:auto}',
       '.sphere-app .cmd-open-settings{display:inline-flex;align-items:center;gap:8px;justify-content:center;border:1px solid #ffffff22;background:#23232c;color:#f5f5f7;border-radius:13px;padding:11px 15px;font-size:14px;font-weight:750;cursor:pointer;white-space:nowrap}',
@@ -82,7 +87,7 @@
     layer.id='cmdSettingsLayer';layer.className='cmd-settings-layer';layer.setAttribute('aria-hidden','true');
     layer.innerHTML='<div class="cmd-settings-panel" role="dialog" aria-modal="true" aria-label="Paramètres CMD Sphere">'
       +'<header class="cmd-settings-header"><div class="cmd-settings-title-row"><button type="button" class="cmd-settings-back" id="cmdSettingsBack" aria-label="Retour" hidden>‹</button>'
-      +'<button type="button" class="cmd-settings-close" id="cmdSettingsClose" aria-label="Fermer">×</button><h2 id="cmdSettingsTitle">Paramètres</h2><span class="cmd-settings-head-mark">CMD Sphere</span></div>'
+      +'<button type="button" class="cmd-settings-close" id="cmdSettingsClose" aria-label="Fermer">×</button><h2 id="cmdSettingsTitle">Paramètres</h2><select id="cmdSettingsLanguagePicker" class="cmd-settings-local-language" aria-label="Choisir la langue des paramètres"><option value="fr">🇫🇷 Français</option><option value="en">🇬🇧 English</option><option value="us">🇺🇸 English (US)</option><option value="es">🇪🇸 Español</option><option value="de">🇩🇪 Deutsch</option><option value="it">🇮🇹 Italiano</option><option value="ru">🇷🇺 Русский</option><option value="co">𓂆 Corsu</option><option value="ko">🇰🇷 한국어</option><option value="ja">🇯🇵 日本語</option><option value="zh">🇨🇳 中文</option></select></div>'
       +'<label class="cmd-settings-search" id="cmdSettingsSearchWrap">'+glyph('search')+'<input type="search" id="cmdSettingsSearch" placeholder="Rechercher" autocomplete="off" aria-label="Rechercher un paramètre"></label></header>'
       +'<main class="cmd-settings-content" id="cmdSettingsContent" tabindex="-1"></main></div>';
     document.body.appendChild(layer);
@@ -182,6 +187,7 @@
     function settingsLocale(){var selected=activeSettingsLanguage();return cmdSettingsLocales[selected==='us'?'en':selected]||null}
     function localizeSettings(){
       var L=settingsLocale(),language=activeSettingsLanguage();
+      var picker=layer.querySelector('#cmdSettingsLanguagePicker');if(picker&&picker.value!==language)picker.value=language;
       title.textContent=L?L.title:'Paramètres';
       search.placeholder=L?L.search:'Rechercher';
       var groupsEls=view.querySelectorAll('.cmd-settings-category');
@@ -223,6 +229,15 @@
       localizeSettings();
       view.querySelectorAll('.cmd-settings-category').forEach(function(section){section.dataset.cmdLang=code});
     }
+    layer.querySelector('#cmdSettingsLanguagePicker').addEventListener('change',function(e){
+      var code=e.target.value;if(!cmdSettingsNativeNames[code])code='fr';
+      settingsChosenLanguage=code;lastAppliedLanguage='';
+      try{localStorage.setItem('cmd-sphere-language',code)}catch(err){}
+      var globalPicker=document.querySelector('#cmd-sphere-language');
+      if(globalPicker){globalPicker.value=code;globalPicker.dispatchEvent(new Event('change',{bubbles:true}))}
+      syncSettingsLanguage(code);
+      window.dispatchEvent(new CustomEvent('cmd-sphere-language-change',{detail:{language:code}}));
+    });
     document.addEventListener('input',function(e){
       if(e.target&&e.target.id==='cmd-sphere-language')syncSettingsLanguage(e.target.value);
     });
