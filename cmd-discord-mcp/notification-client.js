@@ -40,7 +40,7 @@
    const call=n.kind==="call";popup.classList.toggle("is-call",call);popup.style.display="block";
    document.getElementById("cmdNotifyTitle").textContent=(call?"📞 ":"💬 ")+n.title;
    document.getElementById("cmdNotifyBody").textContent=n.body;document.getElementById("cmdNotifyAvatar").src=n.icon||"/app-icon.webp?v=5";
-   answer.href=n.href||"/messages";answer.textContent=call?"📞 Accepter":"Ouvrir";
+   answer.href=n.href||"/messages";if(call){const target=new URL(answer.href,location.origin);target.searchParams.set("answer","1");answer.href=target.href}answer.textContent=call?"📞 Accepter":"Ouvrir";
    dismiss.textContent=call?"✕ Refuser":"Fermer";
    if(call){bell();navigator.vibrate?.([350,180,350,180,350])}
    clearTimeout(timeout);timeout=setTimeout(()=>popup.style.display="none",call?45000:9500);
