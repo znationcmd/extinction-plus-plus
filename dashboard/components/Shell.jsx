@@ -103,6 +103,20 @@ const bottomLinks = [
 const byHref=new globalThis.Map(links.map(x=>[x[0],x]));
 const initials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';
 
+function GuildAvatar({guild}) {
+  const raw=String(guild?.icon||'').trim();
+  const [ready,setReady]=useState(true);
+  useEffect(()=>setReady(true),[raw]);
+  const link=/^https:\/\//i.test(raw)||/^\/[^/]/.test(raw)||/^data:image\//i.test(raw)
+    ?raw
+    :/^\d{15,22}$/.test(String(guild?.id||''))&&/^[a-z0-9_]{12,100}$/i.test(raw)
+    ?'https://cdn.discordapp.com/icons/'+guild.id+'/'+raw+'.webp?size=256'
+    :'';
+  return ready&&link
+    ?<img src={link} alt="" className="block h-full w-full rounded-full object-cover" onError={()=>setReady(false)} loading="lazy"/>
+    :<span className="grid h-full w-full place-items-center rounded-full bg-purple-900/40 text-xs font-black">{initials(guild?.name)}</span>;
+}
+
 export default function Shell({ children }) {
   const { t } = useLanguage();
   const {refreshApp,refreshing}=usePwa();
@@ -163,13 +177,13 @@ export default function Shell({ children }) {
     <main className="dashboard-motion-bg min-h-screen bg-extinction-bg pb-28 text-white">
       <div className="fixed left-0 top-0 z-50 hidden h-screen w-20 flex-col items-center gap-3 overflow-y-auto border-r border-white/10 bg-[#161a1e]/95 px-2 py-5 lg:flex" aria-label="Discord installés sur ordinateur">
         {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`relative grid h-14 w-14 min-h-14 place-items-center overflow-hidden rounded-full border-2 transition ${installed?'':'opacity-50 grayscale border-dashed hover:opacity-80 hover:grayscale-0'} ${selectedGuild?.id===g.id&&installed?'border-purple-400 shadow-[0_0_0_3px_rgba(167,139,250,.18)]':'border-transparent bg-white/10'}`}>
-          {g.icon?<img src={g.icon} alt="" className="h-full w-full object-cover"/>:<span className="text-xs font-black">{initials(g.name)}</span>}
+          <GuildAvatar guild={g}/>
           {!installed&&<span className="absolute bottom-0 right-0 grid h-5 w-5 place-items-center rounded-full border border-black/60 bg-[#252a2e] text-base font-black leading-none text-white">+</span>}
         </button>})}
       </div>
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
-          <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
+          <img src="/extinction-logo.png?v=20261008" alt="CMD Extinction++ RSS" className="mx-auto mb-4 h-28 w-28 rounded-full object-cover" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
           <h1 className="text-2xl font-black text-purple-400">CMD EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
@@ -193,7 +207,7 @@ export default function Shell({ children }) {
 
       <header className="ext-draft-header lg:hidden">
         <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
-        <img src="/extinction-logo.png" alt="EXTINCTION++ RSS"/>
+        <img src="/extinction-logo.png?v=20261008" alt="CMD Extinction++ RSS" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
         <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" title="CMD Officiel" className="grid h-8 w-8 place-items-center rounded-full border border-purple-400/35 bg-purple-500/10"><img src="/cmd-official.svg?v=20261008" alt="CMD" className="h-6 w-6"/></a>
         <div className="ext-header-actions">
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
