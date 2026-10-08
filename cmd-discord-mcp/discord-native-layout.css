@@ -576,3 +576,73 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
   .sphere-app .server-rail .rail-server,
   .sphere-app .server-rail .rail-home{width:52px!important;height:52px!important;min-height:52px!important;max-width:52px!important}
 }
+
+
+/* CMD Sphere 2026-10-08 — full-bleed round Discord icons; hide unused fallback.
+   Keep the rail scrollable and the unread/notification badges visible.
+   These rules must follow earlier object-fit:contain overrides. */
+.sphere-app .server-rail .rail-server,
+.sphere-app.cmd-native-selected .server-rail .rail-server,
+.sphere-app .server-rail .rail-home,
+.sphere-app.cmd-native-selected .server-rail .rail-home{
+  position:relative!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  padding:0!important;
+  border:0!important;
+  box-sizing:border-box!important;
+  aspect-ratio:1/1!important;
+  flex:none!important;
+  isolation:isolate;
+}
+.sphere-app .server-rail .rail-server > img,
+.sphere-app.cmd-native-selected .server-rail .rail-server img,
+.sphere-app .server-rail .rail-home > img,
+.sphere-app.cmd-native-selected .server-rail .rail-home img{
+  position:absolute!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  transform:none!important;
+}
+.sphere-app .server-rail .rail-server > .cmd-icon-fallback,
+.sphere-app .server-rail .rail-home > .cmd-icon-fallback {
+  display:none!important;
+}
+.sphere-app .server-rail .rail-server.cmd-icon-failed > img,
+.sphere-app .server-rail .rail-home.cmd-icon-failed > img {
+  display:none!important;
+}
+.sphere-app .server-rail .rail-server.cmd-icon-failed > .cmd-icon-fallback,
+.sphere-app .server-rail .rail-home.cmd-icon-failed > .cmd-icon-fallback {
+  display:grid!important;
+  place-items:center!important;
+  width:100%!important;
+  height:100%!important;
+  position:relative!important;
+}
+/* Logos inside server headings and installation dialogs use the same crop. */
+.sphere-app .cmd-server-heading img,
+.sphere-app .server-list img:not(.avatar),
+.csm-header-icon img,.csm-icon-preview img{
+  object-fit:cover!important;
+  border-radius:50%!important;
+}
+/* The original rail / folder screenshots also use embedded mini-icons. */
+.sphere-app .server-rail .rail-folder .mini img{
+  object-fit:cover!important;
+  object-position:center!important;
+}
