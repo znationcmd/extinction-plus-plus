@@ -893,6 +893,13 @@ async function initNativeDb(){
     unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(user_id,item_type,item_key)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_diamond_favorites(
+    user_id TEXT NOT NULL,
+    item_type TEXT NOT NULL,
+    item_key TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(user_id,item_type,item_key)
+  )`);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_diamond_wallets(
     user_id TEXT PRIMARY KEY,
     balance BIGINT NOT NULL DEFAULT 0 CHECK(balance >= 0),
@@ -1472,6 +1479,18 @@ const DIAMOND_PRICES={
   premium_3d:1400,premium_1m:12000,pack_infinite:8900
 };
 function diamondPriceFor(item){return Number(DIAMOND_PRICES[item?.type]||3500)}
+async function getDiamondFavorites(auth){
+  const r=await pool.query("SELECT item_type,item_key FROM cmd_diamond_favorites WHERE user_id=$1 ORDER BY created_at DESC",[String(auth.user.id)]);
+  return new Set(r.rows.map(x=>String(x.item_type)+":"+String(x.item_key)));
+}
+async function setDiamondFavorite(auth,input){
+  const type=String(input.type||""),key=String(input.key||""),item=shopCatalog().find(x=>x.type===type&&x.key===key);
+  if(!item)throw new Error("Objet inconnu.");
+  const uid=String(auth.user.id),favorite=Boolean(input.favorite);
+  if(favorite)await pool.query("INSERT INTO cmd_diamond_favorites(user_id,item_type,item_key) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",[uid,type,key]);
+  else await pool.query("DELETE FROM cmd_diamond_favorites WHERE user_id=$1 AND item_type=$2 AND item_key=$3",[uid,type,key]);
+  return {ok:true,favorite};
+}
 async function getDiamondUnlocks(auth){
   const r=await pool.query("SELECT item_type,item_key FROM cmd_shop_unlocks WHERE user_id=$1",[String(auth.user.id)]);
   return new Set(r.rows.map(x=>String(x.item_type)+":"+String(x.item_key)));
@@ -3080,11 +3099,15 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,await setServerFolderCollapsed(auth,body.id,body.collapsed))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/diamonds/favorite"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await setDiamondFavorite(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/diamonds"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/diamonds"));return}
       try{
-        const [installed,unlocks,diamond,premium,offers]=await Promise.all([installedShopItems(auth),getDiamondUnlocks(auth),getDiamondState(auth),getPremiumState(auth),listRewardOffers(auth,true)]);
-        html(res,diamondsPage(auth,installed,unlocks,diamond,premium,offers));
+        const [installed,unlocks,diamond,premium,offers,favorites]=await Promise.all([installedShopItems(auth),getDiamondUnlocks(auth),getDiamondState(auth),getPremiumState(auth),listRewardOffers(auth,true),getDiamondFavorites(auth)]);
+        html(res,diamondsPage(auth,installed,unlocks,diamond,premium,offers,favorites));
       }catch(e){html(res,"<h1>Boutique Diamants indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/shop"){
