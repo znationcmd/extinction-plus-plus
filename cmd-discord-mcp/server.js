@@ -4,6 +4,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import pg from "pg";
+import { readFileSync } from "node:fs";
+import { setupNotifications,pushPublicKey,subscribePush,unsubscribePush,pollNotifications,notifyUsers } from "./notifications.js";
 import { initConnections, getConnections, saveConnection, removeConnection, connectionsPage, profileConnectionsHtml, statusConnection } from "./connections.js";
 import { renderNativeGuildPage } from "./native-ui.js";
 import { callPage } from "./call-ui.js";
@@ -145,6 +147,9 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
+  if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
+    body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
+  }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
 function dashboardPage(auth,initialNativeGuilds=[]){
@@ -656,7 +661,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     }catch(e){toast('Suivi Discord : '+e.message,false)}
     finally{discordSyncPolling=false;if(btn){btn.disabled=false;btn.textContent='↻ Synchroniser mes Discord'}}
   }
-  async function syncMyDiscord(showAlert=false,reauthorize=true){
+  async function syncMyDiscord(showAlert=false,reauthorize=false){
     const btn=qs('#syncDiscordBtn');
     if(reauthorize){
       if(btn){btn.disabled=true;btn.textContent='🔗 Connexion à Discord…'}
@@ -686,7 +691,7 @@ if(qs('#toolApps'))qs('#toolApps').onclick=()=>{closeComposeSheets();openBotsMan
 if(qs('#channelPhotoInput'))qs('#channelPhotoInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 if(qs('#channelFileInput'))qs('#channelFileInput').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 document.querySelectorAll('[data-emoji-tab]').forEach(b=>b.onclick=()=>openEmojiTab(b.dataset.emojiTab));
-if(qs('#syncDiscordBtn'))qs('#syncDiscordBtn').onclick=()=>syncMyDiscord(true);if(qs('#refresh'))qs('#refresh').onclick=refreshEverything;if(qs('#dockMenuBtn'))qs('#dockMenuBtn').onclick=toggleMiniProfile;if(qs('#dockNotifBtn'))qs('#dockNotifBtn').onclick=toggleDockNotifications;if(qs('#serverSettingsBtn'))qs('#serverSettingsBtn').onclick=openServerSettings;if(qs('#serverSettingsClose'))qs('#serverSettingsClose').onclick=closeServerSettings;if(qs('#folderBtn'))qs('#folderBtn').onclick=()=>openFolderManager();if(qs('#folderClose'))qs('#folderClose').onclick=closeFolderManager;if(qs('#webhookBtn'))qs('#webhookBtn').onclick=openWebhookManager;if(qs('#webhookClose'))qs('#webhookClose').onclick=closeWebhookManager;if(qs('#botsBtn'))qs('#botsBtn').onclick=openBotsManager;if(qs('#botsClose'))qs('#botsClose').onclick=closeBotsManager;if(qs('#mirrorBtn'))qs('#mirrorBtn').onclick=openMirrorManager;if(qs('#mirrorClose'))qs('#mirrorClose').onclick=closeMirrorManager;if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));if(new URLSearchParams(location.search).get('sync')==='1'){history.replaceState({},'', '/dashboard');setTimeout(()=>syncMyDiscord(true,false),350)}else{setTimeout(async()=>{try{const d=await api('/api/discord/sync-job');if(['queued','running'].includes(d.job?.status))followDiscordSyncJob(false)}catch{}},800)}setInterval(()=>refreshUnread().catch(()=>{}),10000);
+if(qs('#syncDiscordBtn'))qs('#syncDiscordBtn').onclick=()=>syncMyDiscord(true,false);if(qs('#refresh'))qs('#refresh').onclick=refreshEverything;if(qs('#dockMenuBtn'))qs('#dockMenuBtn').onclick=toggleMiniProfile;if(qs('#dockNotifBtn'))qs('#dockNotifBtn').onclick=toggleDockNotifications;if(qs('#serverSettingsBtn'))qs('#serverSettingsBtn').onclick=openServerSettings;if(qs('#serverSettingsClose'))qs('#serverSettingsClose').onclick=closeServerSettings;if(qs('#folderBtn'))qs('#folderBtn').onclick=()=>openFolderManager();if(qs('#folderClose'))qs('#folderClose').onclick=closeFolderManager;if(qs('#webhookBtn'))qs('#webhookBtn').onclick=openWebhookManager;if(qs('#webhookClose'))qs('#webhookClose').onclick=closeWebhookManager;if(qs('#botsBtn'))qs('#botsBtn').onclick=openBotsManager;if(qs('#botsClose'))qs('#botsClose').onclick=closeBotsManager;if(qs('#mirrorBtn'))qs('#mirrorBtn').onclick=openMirrorManager;if(qs('#mirrorClose'))qs('#mirrorClose').onclick=closeMirrorManager;if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});loadGuilds().catch(e=>toast(e.message,false));if(new URLSearchParams(location.search).get('sync')==='1'){history.replaceState({},'', '/dashboard');setTimeout(()=>syncMyDiscord(true,false),350)}else{setTimeout(async()=>{try{const d=await api('/api/discord/sync-job');if(['queued','running'].includes(d.job?.status))followDiscordSyncJob(false)}catch{}},800)}setInterval(()=>refreshUnread().catch(()=>{}),10000);
   `;
   return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12051f"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/app-icon.webp?v=5"><title>CMD Sphere</title><style>'+style+'</style></head><body><div class="sphere-app"><aside class="server-rail"><a class="rail-home" href="/dashboard" title="CMD Sphere"><img src="/app-icon.webp?v=5" alt="CMD Sphere"></a><a class="rail-messages" id="railMessages" href="/messages" title="Messages privés">💬</a><div class="rail-sep"></div><a class="rail-server rail-top" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener" title="CMD Top Serveur · Voter">🏆</a><div class="rail-sep"></div><div id="railGuilds" style="display:contents">'+nativeRailHtml+'</div><a class="rail-plus" id="railPlus" href="/servers/add" title="Créer ou rejoindre">＋</a></aside><div class="wrap"><div class="top"><div class="brand"><img src="/app-icon.webp?v=5" class="logo-img" alt="CMD Sphere"><div><h1 style="margin:0">CMD Sphere</h1><div class="muted">Communautés · Salons · Rôles · Invitations · Votes</div></div></div><div><span class="muted">'+user+'</span> <button class="btn" type="button" id="syncDiscordBtn">↻ Synchroniser mes Discord</button> <a class="btn" href="/dashboard-login?link=1&next=/dashboard?sync=1" id="relinkDiscordBtn" title="Reconnecter Discord pour mettre à jour tes autorisations">🔗 Reconnecter Discord</a> <button class="btn" id="folderBtn">📁 Dossiers</button> <a class="btn" href="/messages">💬 Messages</a> <button class="btn" id="webhookBtn">🪝 Webhooks</button> <button class="btn" id="botsBtn">🤖 Bots</button> <button class="btn" id="mirrorBtn">🛡 Sauvegarde Discord</button> <a class="btn" href="/shop">🛍️ Boutique</a> <a class="btn" href="/diamonds">💎 Quêtes et diamants</a> <a href="/diamonds/account" title="Mon compte Diamants" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #a78bfa66;border-radius:12px;padding:9px 12px;background:#261631;color:#fff;text-decoration:none;font-weight:900">💎 <span id="cmdDiamondBalance">…</span></a><script>(async()=>{const el=document.getElementById("cmdDiamondBalance");if(!el)return;try{const r=await fetch("/api/diamonds/status",{cache:"no-store"});if(!r.ok)return;const d=await r.json();el.textContent=d.owner?"∞":Number(d.balance||0).toLocaleString("fr-FR")}catch{el.textContent="—"}})();</script> <a class="btn" href="/profile">Mon profil</a> <a class="btn" href="/dashboard-logout">Déconnexion</a></div></div><div class="grid"><aside class="card"><h2>Mes Discord</h2><div id="guilds" class="list">'+nativeListHtml+'</div></aside><main class="card"><div class="top"><div><h2 id="gtitle" style="margin:0">CMD Sphere</h2><div id="gbots" class="muted"></div></div><div style="display:flex;gap:8px"><button id="serverSettingsBtn" class="btn" disabled>⚙️ Paramètres</button><button id="refresh" class="btn">↻ Actualiser</button></div></div><div id="workspace" class="empty"><img class="brand-logo" src="/brand-logo.webp?v=5" alt="CMD Sphere"><h2>Choisis un serveur dans la barre de gauche</h2><p>Ou appuie sur ＋ pour en créer/rejoindre un.</p><div class="card" style="margin:22px auto 0;max-width:640px;text-align:left;background:linear-gradient(135deg,#24102f,#15101f)"><div class="top"><div><div class="muted">🏆 CMD TOP SERVEUR</div><h2 style="margin:5px 0">Vote pour tes serveurs préférés</h2><p class="muted" style="margin:0">Classement par votes · 24 h / mois / total · 1 vote toutes les 2 heures.</p></div><a class="btn primary" href="https://cmd-top-serveur-production.up.railway.app" target="_blank" rel="noopener">🗳️ VOTER</a></div></div></div></main></div></div><div class="user-dock"><img class="user-dock-avatar" id="dockProfileAvatar" src="'+userAvatar+'" alt="" style="cursor:pointer"><div class="user-dock-main" id="dockProfileMain" style="cursor:pointer"><b>'+userDisplay+'</b><small>● En ligne · CMD Sphere</small></div><div class="user-dock-actions"><button id="dockNotifBtn" title="Notifications">🔔<span id="dockNotifCount" class="dock-count"></span></button><a href="/messages" title="Messages">💬</a><a href="/profile" title="Paramètres">⚙️</a><button id="dockMenuBtn" title="Profil">•••</button></div></div><div id="miniProfileCard" class="dashboard-profile-pop"><div id="miniProfileBody"><p class="muted" style="padding:14px">Profil…</p></div></div><div id="dockNotifPop" class="dashboard-notif-pop"><div id="dockNotifBody">Notifications…</div></div><div id="dockPresenceSheet" class="dock-presence-overlay"><div class="dock-presence-card"><div class="dock-presence-handle"></div><div class="dock-presence-head"><h3>Changer le statut en ligne</h3><button type="button" id="dockPresenceClose" title="Fermer">✕</button></div><div class="dock-presence-modes"><button type="button" data-presence-mode="online"><i style="background:#23a55a"></i> En ligne <span>◯</span></button><button type="button" data-presence-mode="idle"><i style="background:#f0b132"></i> Inactif <span>◯</span></button><button type="button" data-presence-mode="dnd"><i style="background:#ed4245"></i> Ne pas déranger <span>◯</span></button><button type="button" data-presence-mode="invisible"><i style="background:#949ba4"></i> Invisible <span>◯</span></button></div><label for="dockCustomStatus">Statut personnalisé</label><input id="dockCustomStatus" maxlength="180" placeholder="Que fais-tu en ce moment ?"><label for="dockStatusExpiry">Effacer le statut</label><select id="dockStatusExpiry"><option value="never">Ne pas supprimer</option><option value="hour">Après 1 heure</option><option value="day">Après 1 jour</option><option value="week">Après 1 semaine</option></select><button id="dockPresenceSave" type="button">Enregistrer</button><a href="/profile" class="dock-presence-link">Modifier le profil complet ↗</a></div></div></div><div id="serverSettingsModal" class="add-modal"><div class="add-card" style="width:min(760px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="serverSettingsClose">✕</button></div><div id="serverSettingsBody"></div></div></div><section id="channelOverlay" class="channel-overlay"><header class="channel-head"><button class="channel-back" type="button" onclick="closeDiscordChannel()">‹</button><div class="channel-head-main"><b id="channelTitle"># salon</b><small id="channelSubtitle">Discord</small></div><div class="channel-actions"><button class="btn" type="button" onclick="refreshDiscordMessages()">↻</button><button class="btn" type="button" onclick="loadDiscordMessages(false,true)">Tout</button></div></header><div id="channelMessages" class="channel-messages"></div><div class="channel-compose-wrap"><div id="replyBar" class="reply-bar"><span id="replyText"></span><button type="button" onclick="CHAT.replyTo=null;updateReplyBar()">×</button></div><div id="composePreview" class="compose-preview"></div><form class="channel-composer" onsubmit="sendDiscordMessage(event)"><button id="channelPlus" type="button" title="Ajouter">＋</button><textarea id="channelInput" placeholder="Envoyer un message…" disabled></textarea><button id="channelEmoji" type="button" title="Emoji">🙂</button><button id="channelMic" type="button" title="Message vocal">🎙️</button><button id="channelSend" disabled>Envoyer</button></form><input id="channelPhotoInput" type="file" accept="image/*" multiple hidden><input id="channelFileInput" type="file" accept=".pdf,.txt,image/*,audio/*" multiple hidden><div id="channelToolSheet" class="compose-sheet"><div class="compose-sheet-grid"><button class="compose-tool" id="toolPhotos"><b>📷</b><span>Photos</span></button><button class="compose-tool" id="toolPoll"><b>📊</b><span>Sondage</span></button><button class="compose-tool" id="toolThread"><b>🧵</b><span>Fil</span></button><button class="compose-tool" id="toolApps"><b>🧩</b><span>Applications</span></button><button class="compose-tool" id="toolFiles"><b>📎</b><span>Fichiers</span></button></div></div><div id="channelEmojiSheet" class="emoji-sheet"><div class="emoji-tabs"><button type="button" data-emoji-tab="emoji">Émoji</button><button type="button" data-emoji-tab="gif">GIF</button><button type="button" data-emoji-tab="sticker">Autocollants</button></div><div id="emojiContent"></div></div><div class="send-note">Photos, fichiers, sondages, emoji et vocal sont disponibles directement dans les salons CMD Sphere.</div></div></section><div id="botsModal" class="add-modal"><div class="add-card" style="width:min(900px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="botsClose">✕</button></div><div id="botsBody"><p class="muted">Chargement…</p></div></div></div><div id="mirrorModal" class="add-modal"><div class="add-card" style="width:min(760px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="mirrorClose">✕</button></div><div id="mirrorBody"><p class="muted">Chargement…</p></div></div></div><div id="webhookModal" class="add-modal"><div class="add-card" style="width:min(820px,100%)"><div style="display:flex;justify-content:flex-end"><button class="btn" id="webhookClose">✕</button></div><div id="webhookBody"><p class="muted">Chargement…</p></div></div></div><div id="folderModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="folderClose">✕</button></div><div id="folderBody"></div></div></div><div id="addModal" class="add-modal"><div class="add-card"><div style="display:flex;justify-content:flex-end"><button class="btn" id="addClose">✕</button></div><div id="addBody"></div></div></div><div id="status" class="status"></div><script>'+script+'</script></body></html>';
 }
@@ -2129,6 +2134,7 @@ async function sendDmMessage(auth,input){
   const body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
   const id=crypto.randomUUID();const r=await pool.query("INSERT INTO cmd_dm_messages(id,thread_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,t.id,me,body]);
   await pool.query("UPDATE cmd_dm_threads SET updated_at=NOW() WHERE id=$1",[t.id]);
+  notifyUsers([other],{kind:"message",title:"Message de "+String(auth.user.displayName||auth.user.name||"CMD Sphere"),body,href:"/messages?open="+encodeURIComponent(String(t.id)),room:String(t.id)});
   return {id,body,createdAt:r.rows[0].created_at,senderUserId:me};
 }
 
@@ -2172,7 +2178,10 @@ async function getGroupDmMessages(auth,id){
 async function sendGroupDmMessage(auth,input){
   const g=await requireGroupDm(auth,input.groupId),body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
   const id=crypto.randomUUID(),uid=String(auth.user.id),r=await pool.query("INSERT INTO cmd_group_dm_messages(id,group_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,g.id,uid,body]);
-  await pool.query("UPDATE cmd_group_dms SET updated_at=NOW() WHERE id=$1",[g.id]);return {id,body,senderUserId:uid,createdAt:r.rows[0].created_at};
+  await pool.query("UPDATE cmd_group_dms SET updated_at=NOW() WHERE id=$1",[g.id]);
+  const members=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[g.id,uid]);
+  notifyUsers(members.rows.map(x=>x.user_id),{kind:"message",title:"Message · "+g.name,body:String(auth.user.displayName||auth.user.name||"Membre")+": "+body,href:"/messages?open=group:"+encodeURIComponent(String(g.id)),room:"group:"+String(g.id)});
+  return {id,body,senderUserId:uid,createdAt:r.rows[0].created_at};
 }
 async function addGroupDmMember(auth,input){
   const g=await requireGroupDm(auth,input.groupId);
@@ -2199,7 +2208,20 @@ async function joinCallRoom(auth,input){
   const room=(await requireCallRoom(auth,input.room)).key,peer=validCmdUuid(input.peerId),name=safeText(auth.user.displayName||auth.user.name||"CMD",80);
   await pool.query("DELETE FROM cmd_call_presence WHERE last_seen<NOW()-INTERVAL '45 seconds'");
   await pool.query("DELETE FROM cmd_call_signals WHERE created_at<NOW()-INTERVAL '10 minutes'");
+  const before=await callPresenceList(room);
   await pool.query("INSERT INTO cmd_call_presence(room_key,peer_id,user_id,display_name,video_on) VALUES($1,$2,$3,$4,$5) ON CONFLICT(room_key,peer_id) DO UPDATE SET user_id=EXCLUDED.user_id,display_name=EXCLUDED.display_name,video_on=EXCLUDED.video_on,last_seen=NOW()",[room,peer,String(auth.user.id),name,Boolean(input.video)]);
+  if(!before.some(p=>String(p.userId)===String(auth.user.id))){
+    const parsed=parseCallRoom(room),uid=String(auth.user.id);
+    let ids=[];
+    if(parsed.type==="dm"){
+      const thread=await findDmThread(auth,parsed.id);
+      ids=[thread.user_low===uid?thread.user_high:thread.user_low];
+    }else{
+      const members=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[parsed.id,uid]);
+      ids=members.rows.map(x=>x.user_id);
+    }
+    notifyUsers(ids,{kind:"call",title:name+" t'appelle",body:Boolean(input.video)?"Appel vidéo entrant sur CMD Sphere":"Appel vocal entrant sur CMD Sphere",href:"/call?room="+encodeURIComponent(room)+"&video="+(input.video?"1":"0"),room});
+  }
   return {ok:true,peers:await callPresenceList(room)};
 }
 async function pollCallRoom(auth,input){
@@ -3499,6 +3521,22 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await addGroupDmMember(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/push/key"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      sendJson(res,200,{publicKey:pushPublicKey()});return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/push/subscribe"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await subscribePush(auth.user.id,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/push/unsubscribe"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await unsubscribePush(auth.user.id,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/notifications/poll"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await pollNotifications(auth.user.id,url.searchParams.get("after")||0))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/calls/active"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await activeCallRooms(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
@@ -3787,7 +3825,10 @@ const httpServer=createServer(async(req,res)=>{
       if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
     }
     if(req.method==="GET"&&url.pathname==="/sw.js"){
-      res.writeHead(200,{"content-type":"application/javascript","cache-control":"no-cache"});res.end("self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',()=>{});");return;
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./notification-sw.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/notification-client.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./notification-client.js",import.meta.url),"utf8"));return;
     }
 
     if(req.method==="GET"&&url.pathname==="/health"){
@@ -3895,7 +3936,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();console.log("[native] CMD Sphere database ready");setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
