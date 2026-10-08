@@ -39,9 +39,9 @@ const writeSecurity=[{type:"oauth2",scopes:[writeScope]}];
 
 const discordMessageFallbackCache=new Map();
 const bots={
-  dayz:{label:"DAYZ GATE",base:String(process.env.DAYZ_ADMIN_URL||"")},
-  ark:{label:"BOT ARK",base:String(process.env.ARK_ADMIN_URL||"")},
-  extinction:{label:"EXTINCTION ++ RSS",base:String(process.env.EXT_ADMIN_URL||"")}
+  dayz:{label:"CMD DayZ Gate",base:String(process.env.DAYZ_ADMIN_URL||"")},
+  ark:{label:"CMD BOT ARK",base:String(process.env.ARK_ADMIN_URL||"")},
+  extinction:{label:"CMD Extinction ++ RSS",base:String(process.env.EXT_ADMIN_URL||"")}
 };
 for(const [k,v] of Object.entries(bots))if(!/^https:\/\//.test(v.base))throw new Error("Missing "+k+" backend URL");
 
