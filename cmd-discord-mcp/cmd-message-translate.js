@@ -289,6 +289,8 @@ document.addEventListener("change",ev=>{
 window.addEventListener("storage",ev=>{
  if(ev.key==="cmd-sphere-language"||ev.key==="cmd-sphere-auto-translate")changed();
 });
+window.addEventListener("cmd-sphere-language-change",changed);
+window.addEventListener("cmd-sphere-auto-translate-change",changed);
 function boot(){
  const css=document.createElement("style");css.id="cmd-auto-translate-css";
  css.textContent='.discord-message .msg-text[hidden],.bubble .dm-text[hidden],.cmd-translation-output[hidden],.cmd-translation-tools button[hidden]{display:none!important}'+
