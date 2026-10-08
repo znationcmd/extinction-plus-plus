@@ -4734,7 +4734,19 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initDeveloperDb(pool);await initCmdOAuthDb(pool);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+  try{await initNativeDb();await initDeveloperDb(pool);await initCmdOAuthDb(pool);
+    try{
+      const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
+      const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
+      if(user==='cmd'&&password.length>=6){
+        const found=await pool.query('SELECT id FROM cmd_accounts WHERE username_key=$1 LIMIT 1',[user]);
+        if(!found.rows.length){
+          await createNativeAccount({username:user,displayName:String(process.env.CMD_FOUNDER_DISPLAY_NAME||'corsu2A'),password});
+          console.log('[founder] Native founder username provisioned');
+        }else console.log('[founder] Native founder username already exists, no password was changed');
+      }
+    }catch(err){console.error('[founder] Founder account provisioning failed: '+err.message)}
+    console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
