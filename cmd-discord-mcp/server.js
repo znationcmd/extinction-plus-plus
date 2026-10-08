@@ -733,6 +733,8 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS profile_frame TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS nameplate_style TEXT NOT NULL DEFAULT 'none'");
   await pool.query('ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS featured_tag_guild_id TEXT');
+  await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS presence_mode TEXT NOT NULL DEFAULT 'online'");
+  await pool.query('ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS status_expires_at TIMESTAMPTZ');
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS avatar_decoration TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_effect TEXT NOT NULL DEFAULT 'none'");
   await pool.query("ALTER TABLE cmd_native_members ADD COLUMN IF NOT EXISTS profile_frame TEXT NOT NULL DEFAULT 'none'");
@@ -1168,7 +1170,7 @@ async function loginNativeAccount(input){
 function safeImageData(v,maxChars,label){
   v=String(v||"");
   if(!v)return null;
-  if(!/^data:image\/(png|jpeg|webp);base64,/i.test(v))throw new Error("Format d'image non pris en charge.");
+  if(!/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v))throw new Error("Format d'image non pris en charge.");
   if(v.length>maxChars)throw new Error(label+" trop lourde après compression.");
   return v;
 }
@@ -1202,7 +1204,9 @@ async function getGlobalProfile(auth){
     avatar:saved.avatar_data_url||auth.user.avatar||null,
     banner:saved.banner_data_url||auth.user.banner||null,
     bio:saved.bio||"",
-    status:saved.status||"",
+    status:saved.status_expires_at&&new Date(saved.status_expires_at).getTime()<Date.now()?"":(saved.status||""),
+    presenceMode:["online","idle","dnd","invisible"].includes(saved.presence_mode)?saved.presence_mode:"online",
+    statusExpiresAt:saved.status_expires_at||null,
     accentColor:saved.accent_color||((auth.user.accentColor!=null)?("#"+Number(auth.user.accentColor).toString(16).padStart(6,"0")):"#9b4dff"),
     theme:saved.theme||"purple",
     pronouns:saved.pronouns||"",
@@ -1214,6 +1218,30 @@ async function getGlobalProfile(auth){
     nameplateStyle:normalizeNameplate(saved.nameplate_style),
     featuredTagGuildId:String(saved.featured_tag_guild_id||"")
   };
+}
+async function updateProfilePresence(auth,input){
+  const mode=String(input.mode||"online");
+  if(!["online","idle","dnd","invisible"].includes(mode))throw new Error("Statut de présence non reconnu.");
+  const status=String(input.customStatus??"").trim().slice(0,180);
+  const expiry=String(input.expires||"never"),allowed={hour:3600000,day:86400000,week:604800000,never:0};
+  if(!Object.prototype.hasOwnProperty.call(allowed,expiry))throw new Error("Durée non reconnue.");
+  const until=status&&allowed[expiry]?new Date(Date.now()+allowed[expiry]):null;
+  await pool.query("INSERT INTO cmd_global_profiles(user_id,presence_mode,status,status_expires_at) VALUES($1,$2,$3,$4) ON CONFLICT(user_id) DO UPDATE SET presence_mode=$2,status=$3,status_expires_at=$4,updated_at=NOW()",[String(auth.user.id),mode,status,until]);
+  return getGlobalProfile(auth);
+}
+async function removeProfileMedia(auth,input){
+  const what=String(input.what||"");if(!["avatar","banner"].includes(what))throw new Error("Image inconnue.");
+  const col=what==="avatar"?"avatar_data_url":"banner_data_url";
+  const guildId=String(input.guildId||"");
+  if(guildId){
+    await requireNativeMember(auth,guildId);
+    const field=what==="avatar"?"profile_avatar_data_url":"profile_banner_data_url";
+    await pool.query("UPDATE cmd_native_members SET "+field+"=NULL WHERE guild_id=$1 AND user_id=$2",[guildId,String(auth.user.id)]);
+  }else{
+    await pool.query("INSERT INTO cmd_global_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING",[String(auth.user.id)]);
+    await pool.query("UPDATE cmd_global_profiles SET "+col+"=NULL,updated_at=NOW() WHERE user_id=$1",[String(auth.user.id)]);
+  }
+  return {ok:true};
 }
 async function updateGlobalProfile(auth,input){
   const displayName=safeText(input.displayName||auth.user.displayName||auth.user.name,80);
@@ -3374,6 +3402,14 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/profile"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,{profile:await getGlobalProfile(auth)})}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/profile/presence"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{profile:await updateProfilePresence(auth,await readFormBodyJson(req))})}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/profile/media/remove"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await removeProfileMedia(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/profile"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
