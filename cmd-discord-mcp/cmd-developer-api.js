@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import {developerPortalPage} from "./cmd-developer-portal-page.js";
+import {initDeveloperPortalDb,developerPortalRoute} from "./cmd-developer-portal-server.js";
 const idRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const scopeList=["view_channels","read_messages","send_messages"];
 const perms=items=>[...new Set((Array.isArray(items)?items:[]).filter(v=>scopeList.includes(v)))];
@@ -7,6 +9,7 @@ const hashed=v=>crypto.createHash("sha256").update(v).digest("hex");
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const siteStyle="*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 5% 0,#29194b,#100d18 68%);color:#f7f2ff;font:15px system-ui}main{width:min(950px,96vw);margin:auto;padding:25px 12px 90px}nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap}nav b{flex:1;font-size:22px}h1{font-size:clamp(28px,5vw,40px)}h2{font-size:19px}p{color:#c9bdd9;line-height:1.55}a{color:#d9b6ff}section{background:#242034;border:1px solid #76539677;border-radius:17px;margin:19px 0;padding:20px}label{display:grid;gap:7px;margin:13px 0}input,textarea,select{background:#13101e;border:1px solid #8b71b5;border-radius:9px;color:white;font:inherit;min-height:40px;padding:10px;width:100%}button,.button{font:inherit;cursor:pointer;border:0;border-radius:10px;background:#674bb3;padding:11px 16px;color:#fff;text-decoration:none;display:inline-flex}button:disabled{opacity:.5}.item{padding:14px;margin:10px 0;border:1px solid #ffffff18;border-radius:10px;background:#ffffff0c}.row{display:flex;gap:13px;flex-wrap:wrap}.check{display:flex;gap:9px;align-items:center}.check input{width:auto}.token{display:block;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#10101c;border:1px solid #9774ca;border-radius:10px}";
 function page(kind){
+ if(kind==="developers")return developerPortalPage();
  const dev=kind==="developers";
  const title=dev?"CMD Sphere Développeur":kind==="choose"?"Inviter un bot":kind==="invite"?"Autoriser un bot":"Applications CMD Sphere";
  const intro=dev?'<h1>CMD Sphere Développeur</h1><p>Crée tes propres bots et applications directement sur CMD Sphere, sans passer par Discord.</p><section><h2>Créer une application</h2><form id="cmd-create-app"><label>Nom du bot<input name="name" minlength="2" maxlength="80" required></label><label>Description<textarea name="description" maxlength="500"></textarea></label><label>Identifiant Discord facultatif (pour une invitation sur les deux plateformes)<input name="discordClientId" pattern="[0-9]{15,22}"></label><button>Créer le bot</button></form><div id="cmd-token-area" hidden><p>Clé privée : copie-la maintenant, elle ne sera affichée qu’une fois.</p><code class="token" id="cmd-token"></code></div></section><section><h2>Mes applications</h2><div id="cmd-app-list"></div></section><section><h2>API pour les bots CMD</h2><p>Une clé API et des permissions par serveur permettent de lire les salons et les messages ou d’écrire dans les salons autorisés.</p><code class="token">Authorization: Bearer CLE_PRIVEE\nGET /api/cmd-bot/guilds\nGET /api/cmd-bot/channels?guildId=...\nGET /api/cmd-bot/messages?guildId=...&channelId=...\nPOST /api/cmd-bot/messages</code><p>Les bots Discord tiers devront être adaptés à cette API pour fonctionner sans Discord.</p></section>'
@@ -19,6 +22,7 @@ export async function initDeveloperDb(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_developer_apps(id UUID PRIMARY KEY,owner_user_id TEXT NOT NULL,name TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',discord_client_id TEXT,token_hash TEXT NOT NULL,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_developer_apps_owner ON cmd_developer_apps(owner_user_id)");
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_native_app_installs(guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,app_id UUID NOT NULL REFERENCES cmd_developer_apps(id) ON DELETE CASCADE,installed_by TEXT NOT NULL,permissions JSONB NOT NULL DEFAULT '[]'::jsonb,installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(guild_id,app_id))");
+ await initDeveloperPortalDb(pool);
 }
 async function botAuth(pool,req){
  const token=String(req.headers.authorization||"").replace(/^Bearer\s+/i,"");
@@ -38,6 +42,7 @@ export async function developerRoute(req,res,url,ctx){
  const {pool,auth,baseUrl,sendJson,html,readBody,requireNativeAdmin,requireNativeMember}=ctx;
  const send=(code,data)=>sendJson(res,code,data);
  try{
+  if(await developerPortalRoute(req,res,url,ctx))return true;
   if(m==="GET"&&["/developers","/apps/directory","/apps/choose","/apps/invite"].includes(p)){
    if(!auth){res.writeHead(302,{Location:baseUrl+"/dashboard-login?next="+encodeURIComponent(p+url.search)});res.end();return true}
    html(res,page(p.split("/").pop()));return true;
