@@ -1,185 +1,247 @@
-/* One tap / one message. Original text is never replaced or stored as a translation. */
+/* CMD Sphere: translate incoming visible messages automatically into each reader's
+   chosen language. Keep the original in the DOM, never overwrite the original
+   in the database or modify any Discord server. External free providers may fail. */
 (function(){
 "use strict";
-const visibleTranslations=new Map();
-const supported={fr:"Français",en:"English",us:"English (US)",de:"Deutsch",es:"Español",it:"Italiano",ru:"Русский",ko:"한국어",ja:"日本語",zh:"中文",co:"Corsu",pt:"Português"};
-function language(){try{const e=document.querySelector("#cmd-sphere-language");return supported[e?.value]?e.value:supported[localStorage.getItem("cmd-sphere-language")]?localStorage.getItem("cmd-sphere-language"):"fr"}catch{return"fr"}}
-
-const targetOptions=Object.entries(supported);
-function addTargetPickers(root){
-  if(!root)return;
-  const tools=root.querySelectorAll(".cmd-translation-tools:not([data-language-picker-ready])");
-  for(const group of tools){
-    group.dataset.languagePickerReady="1";
-    const button=group.querySelector(".cmd-translate-action");
-    if(!button)continue;
-    const select=document.createElement("select");
-    select.className="cmd-translation-target";
-    select.setAttribute("aria-label","Langue de traduction du message");
-    select.title="Choisir la langue de traduction";
-    for(const [code,label] of targetOptions){
-      const o=document.createElement("option");o.value=code;o.textContent=label;select.appendChild(o);
-    }
-    select.value=language();
-    select.addEventListener("change",()=>{
-      try{localStorage.setItem("cmd-sphere-language",select.value)}catch{}
-      const global=document.querySelector("#cmd-sphere-language");
-      if(global){global.value=select.value;global.dispatchEvent(new Event("change",{bubbles:true}))}
-      root.querySelectorAll(".cmd-translation-target").forEach(picker=>{
-        if(picker!==select)picker.value=select.value;
-      });
-    });
-    group.insertBefore(select,button);
-  }
+const names={fr:"Français",en:"English",us:"English (US)",de:"Deutsch",es:"Español",it:"Italiano",ru:"Русский",ko:"한국어",ja:"日本語",zh:"中文",co:"Corsu"};
+const cache=new Map(),pending=new Set(),visible=new Map();
+const MAX=1700,WAIT=4200,CONCURRENT=1;
+let queue=[],running=0,lastRequest=0,suspendedUntil=0,scanTimer=0;
+const firstSource=txt=>{
+ const t=String(txt||"").toLowerCase();
+ if(/[\u0400-\u052f]/.test(t))return"ru";
+ if(/[\uac00-\ud7af]/.test(t))return"ko";
+ if(/[\u3040-\u30ff]/.test(t))return"ja";
+ if(/[\u3400-\u9fff]/.test(t))return"zh";
+ const count=re=>(t.match(re)||[]).length;
+ const fr=count(/\b(bonjour|salut|merci|vous|avec|pour|dans|est|une|comment|ça|des|le|les|je|suis)\b/g);
+ const en=count(/\b(hello|thanks|please|you|your|with|this|there|the|and|good|what|how|are|can)\b/g);
+ const es=count(/\b(hola|gracias|buenos|buenas|como|estás|por|favor)\b/g);
+ const it=count(/\b(ciao|grazie|buongiorno|come|prego|buonasera)\b/g);
+ const de=count(/\b(hallo|danke|guten|morgen|wie|bitte|tschüss)\b/g);
+ const vals={fr,en,es,it,de};const max=Math.max(...Object.values(vals));
+ return max?Object.keys(vals).find(k=>vals[k]===max):"auto";
+};
+function language(){
+ try{const choice=document.getElementById("cmd-sphere-language")?.value||localStorage.getItem("cmd-sphere-language")||"fr";
+ return names[choice]?choice:"fr";}catch{return"fr"}
 }
-
-/* If Railway cannot contact the free provider, try its documented CORS API directly
-   from the reader's browser after an explicit tap. No translation is sent without consent. */
-async function browserFreeTranslate(message,target){
- const tl=target==="us"?"en":target;
- const matches=(re)=>((message.toLowerCase().match(re))||[]).length;
- const french=matches(/\b(bonjour|merci|vous|avec|pour|dans|une|salut|comment|le|les)\b/g);
- const english=matches(/\b(hello|thanks|you|your|please|what|with|this|have|good|the|and)\b/g);
- const source=english>french?"en":french>english?"fr":tl==="fr"?"en":"fr";
- const chunks=[];
- // MyMemory accepts a maximum of 500 UTF-8 bytes. Slice along Unicode code points.
- let current="";
- for(const character of String(message)){
-   if(new TextEncoder().encode(current+character).length>440){
-     if(current)chunks.push(current);
-     current=character;
-   }else current+=character;
+const keyFor=(text,lang)=>lang+"|"+text;
+function row(el){return el.closest(".discord-message,.bubble")}
+function originalNode(article){
+ return article.querySelector(".msg-text,.dm-text")||article.querySelector(".msg-embed");
+}
+function controls(article){
+ let area=article.querySelector(".cmd-translation-tools");
+ if(!area){
+  area=document.createElement("div");area.className="cmd-translation-tools";
+  (article.querySelector(".msg-main")||article).append(area);
  }
- if(current)chunks.push(current);
- if(!chunks.length||chunks.length>8)throw Error("Message trop long pour la traduction gratuite directe.");
- const results=[];
+ let showOriginal=area.querySelector(".cmd-original-action");
+ if(!showOriginal){
+  showOriginal=document.createElement("button");showOriginal.type="button";
+  showOriginal.className="cmd-original-action";showOriginal.hidden=true;
+  showOriginal.textContent="Voir l’original";area.append(showOriginal);
+ }
+ let retry=area.querySelector(".cmd-translate-action");
+ if(!retry){
+  retry=document.createElement("button");retry.type="button";retry.className="cmd-translate-action";
+  retry.textContent="Traduire";retry.hidden=true;area.append(retry);
+ }
+ return{area,showOriginal,retry};
+}
+function translationNode(article){
+ let node=article.querySelector(".cmd-translation-output");
+ if(!node){
+  node=document.createElement("div");node.className="cmd-translation-output";
+  node.setAttribute("lang",language()==="us"?"en":language());
+  (article.querySelector(".msg-main")||article).append(node);
+ }
+ return node;
+}
+function showOriginal(article){
+ const source=originalNode(article);if(source)source.hidden=false;
+ article.querySelector(".cmd-translation-output")?.setAttribute("hidden","");
+ article.classList.remove("cmd-auto-translated");
+ const {showOriginal:button,retry}=controls(article);
+ button.hidden=true;
+ if(article.dataset.cmdTranslated==="1"){retry.hidden=false;retry.textContent="Voir la traduction"}
+}
+function showTranslated(article,translated,lang,sourceLang){
+ const source=originalNode(article);if(!source)return;
+ const node=translationNode(article);node.textContent=translated;
+ node.hidden=false;node.setAttribute("lang",lang==="us"?"en":lang);
+ node.dataset.state="translated";source.hidden=true;
+ article.classList.add("cmd-auto-translated");
+ const {showOriginal:button,retry}=controls(article);button.hidden=false;retry.hidden=true;
+ article.dataset.cmdTranslated="1";article.dataset.cmdOriginalLanguage=sourceLang||"auto";
+}
+function showFailure(article){
+ const source=originalNode(article);if(source)source.hidden=false;
+ const node=article.querySelector(".cmd-translation-output");if(node)node.hidden=true;
+ article.classList.remove("cmd-auto-translated");
+ const {showOriginal:button,retry}=controls(article);
+ button.hidden=true;retry.hidden=false;retry.textContent="Traduire";
+ retry.title="Le service gratuit est indisponible pour ce message. Réessayer.";
+ // A transient provider error must never replace the user's message with a red box.
+}
+async function translate(message,target){
+ const source=firstSource(message);
+ if(source===target||(source==="en"&&target==="us"))return{unchanged:true,sourceLanguage:source};
+ const response=await fetch("/api/cmd/translate-message",{
+   method:"POST",credentials:"same-origin",cache:"no-store",
+   headers:{"content-type":"application/json"},
+   body:JSON.stringify({text:message,target,source:source==="auto"?"auto":source})
+ });
+ const json=await response.json().catch(()=>({}));
+ if(response.ok&&json.translatedText){
+  const detected=json.sourceLanguage||source;
+  if((detected===target)||(detected==="en"&&target==="us")||json.translatedText.trim()===message.trim())
+    return{unchanged:true,sourceLanguage:detected};
+  return{translatedText:json.translatedText,sourceLanguage:detected};
+ }
+ // Fallback uses the free provider's browser CORS endpoint only if it is reachable.
+ const actual=target==="us"?"en":target;
+ const from=source==="auto"?(actual==="fr"?"en":"fr"):source;
+ if(from===actual) return{unchanged:true,sourceLanguage:from};
+ const chunks=[];let part="";
+ for(const cp of message){
+  if(new TextEncoder().encode(part+cp).length>440){if(part)chunks.push(part);part=cp}
+  else part+=cp;
+ }
+ if(part)chunks.push(part);
+ if(chunks.length>6)throw Error("Trop long");
+ const translations=[];
  for(const chunk of chunks){
-   const url="https://api.mymemory.translated.net/get?"+new URLSearchParams({q:chunk,langpair:source+"|"+tl});
-   const r=await fetch(url,{method:"GET",mode:"cors",cache:"no-store",headers:{accept:"application/json"}});
-   if(!r.ok)throw Error("Service public injoignable (HTTP "+r.status+").");
-   const data=await r.json();
-   const value=String(data?.responseData?.translatedText||"").trim();
-   if(Number(data?.responseStatus)!==200||!value||/MYMEMORY WARNING/i.test(value))throw Error("La langue "+tl+" est indisponible sur le service gratuit.");
-   const dom=document.createElement("textarea");dom.innerHTML=value;
-   results.push(dom.value);
+  const url="https://api.mymemory.translated.net/get?"+new URLSearchParams({q:chunk,langpair:from+"|"+actual});
+  const r=await fetch(url,{mode:"cors",cache:"no-store",headers:{accept:"application/json"}});
+  if(!r.ok)throw Error("Service indisponible");
+  const obj=await r.json(),result=String(obj?.responseData?.translatedText||"").trim();
+  if(Number(obj?.responseStatus)!==200||!result||/^MYMEMORY WARNING/i.test(result))throw Error("Traduction indisponible");
+  // Convert HTML entities safely without rendering HTML.
+  const element=document.createElement("textarea");element.innerHTML=result;
+  translations.push(element.value);
  }
- const translatedText=results.join(" ").trim();
- if(!translatedText||translatedText===message.trim())throw Error("Aucune traduction différente du texte original.");
- return {translatedText,sourceLanguage:source,targetLanguage:tl,provider:"MyMemory direct"};
+ const translatedText=translations.join(" ").trim();
+ if(translatedText===message.trim())return{unchanged:true,sourceLanguage:from};
+ return{translatedText,sourceLanguage:from};
 }
-
-function row(btn){return btn.closest(".discord-message,.bubble")}
-function show(original,txt,type){
-  let translation=original.querySelector(".cmd-translation-output");
-  if(!translation){translation=document.createElement("div");translation.className="cmd-translation-output";const area=original.querySelector(".msg-main")||original;area?.appendChild(translation)}
-  translation.hidden=false;translation.textContent=txt;translation.dataset.state=type;
-  return translation;
+function articleKey(article){
+ const source=originalNode(article),text=source?.textContent?.trim()||"";
+ return{text,lang:language(),key:keyFor(text,language())};
 }
-document.addEventListener("click",async ev=>{
-  const btn=ev.target.closest(".cmd-translate-action");
-  if(!btn)return;
-  ev.preventDefault();
-  const article=row(btn);if(!article)return;
-  const hideBtn=article.querySelector(".cmd-original-action");
-  const original=article.querySelector(".msg-text,.dm-text,.msg-embed");
-  if(!original?.textContent.trim()){show(article,"Ce message ne contient pas de texte à traduire.","error");return}
-  const chosen=article.querySelector(".cmd-translation-target")?.value;
-  const lang=supported[chosen]?chosen:language(),name=supported[lang]||lang;
-  const content=original.textContent;
-  if(content.length>1700){show(article,"Message trop long pour le service de traduction gratuit (1 700 caractères maximum).","error");return}
-  btn.disabled=true;btn.textContent="Traduction…";
-  show(article,"Traduction en "+name+" en cours…","loading");
-  try{
-    const res=await fetch("/api/cmd/translate-message",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"content-type":"application/json"},body:JSON.stringify({text:content,target:lang,source:"auto"})});
-    let data=await res.json().catch(()=>({}));
-    if(!res.ok||!data.translatedText){
-      try{data=await browserFreeTranslate(content,lang)}
-      catch(fallbackError){throw Error((data.error||"Serveur de traduction indisponible")+" ; accès direct : "+fallbackError.message)}
-    }
-    show(article,data.translatedText,"translated");
-    const id=String(article.dataset.messageId||"");
-    if(id){
-      visibleTranslations.set(id,{lang,original:content,translation:data.translatedText});
-      if(visibleTranslations.size>140)visibleTranslations.delete(visibleTranslations.keys().next().value);
-    }
-    btn.hidden=true;
-    if(hideBtn)hideBtn.hidden=false;
-  }catch(error){show(article,"Traduction indisponible : "+error.message+". Le message original est conservé.","error")}
-  finally{btn.disabled=false;btn.textContent="🌐 Traduire"}
+function complete(article,key){
+ if(!article.isConnected)return;
+ const {text,lang,key:now}=articleKey(article);if(now!==key||!text)return;
+ const cached=cache.get(key);
+ if(cached?.translatedText)showTranslated(article,cached.translatedText,lang,cached.sourceLanguage);
+ else if(cached?.unchanged){
+  showOriginal(article);
+  const {retry}=controls(article);retry.hidden=true;
+ }else showFailure(article);
+}
+function pump(){
+ if(running>=CONCURRENT||!queue.length)return;
+ const now=Date.now();
+ if(now<suspendedUntil)return;
+ // The free API cannot translate dozens of messages per second.
+ const delay=Math.max(0,WAIT-(now-lastRequest));
+ if(delay>0){window.setTimeout(pump,delay);return}
+ const task=queue.shift(),key=task.key;
+ if(pending.has(key)){pump();return}
+ running++;pending.add(key);lastRequest=Date.now();
+ translate(task.text,task.lang).then(result=>{
+   cache.set(key,result);visible.delete(key);
+   for(const article of document.querySelectorAll(".discord-message,.bubble")){
+     if(articleKey(article).key===key)complete(article,key);
+   }
+ }).catch(()=>{
+   cache.set(key,{failed:true});
+   suspendedUntil=Date.now()+30000;
+   for(const article of document.querySelectorAll(".discord-message,.bubble")){
+     if(articleKey(article).key===key)showFailure(article);
+   }
+ }).finally(()=>{running--;pending.delete(key);window.setTimeout(pump,WAIT)});
+}
+function queueMessage(article,force=false){
+ const source=originalNode(article),text=source?.textContent?.trim()||"";
+ if(!text||text.length>MAX)return;
+ const lang=language(),origin=firstSource(text),key=keyFor(text,lang);
+ if(origin===lang||(origin==="en"&&lang==="us")){
+   const {retry}=controls(article);retry.hidden=true;
+   return;
+ }
+ const remembered=cache.get(key);
+ if(remembered&&!force){complete(article,key);return}
+ if(force){cache.delete(key);suspendedUntil=0}
+ if(pending.has(key)||queue.some(x=>x.key===key))return;
+ queue.push({key,lang,text});pump();
+}
+let viewportObserver=null;
+function observe(article){
+ if(article.dataset.cmdTranslationObserved==="1")return;
+ const source=originalNode(article);if(!source)return;
+ if(article.classList.contains("bubble")&&!article.querySelector(".dm-text")){
+   const node=[...article.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());
+   if(node){const span=document.createElement("span");span.className="dm-text";node.replaceWith(span);span.append(node)}
+ }
+ article.dataset.cmdTranslationObserved="1";
+ const {retry}=controls(article);retry.hidden=true;
+ if(viewportObserver)viewportObserver.observe(article);
+ else queueMessage(article);
+}
+function scan(){
+ const lists=document.querySelectorAll("#channelMessages .discord-message,#msgs .bubble");
+ for(const article of lists)observe(article);
+}
+function scheduleScan(){if(scanTimer)return;scanTimer=window.setTimeout(()=>{scanTimer=0;scan()},150)}
+function resetLanguage(){
+ queue=[];cache.clear();suspendedUntil=0;
+ for(const article of document.querySelectorAll(".discord-message,.bubble")){
+  article.dataset.cmdTranslationObserved="";
+  article.dataset.cmdTranslated="";
+  const source=originalNode(article);if(source)source.hidden=false;
+  const node=article.querySelector(".cmd-translation-output");if(node)node.hidden=true;
+  const original=article.querySelector(".cmd-original-action");if(original)original.hidden=true;
+  const retry=article.querySelector(".cmd-translate-action");if(retry)retry.hidden=true;
+  article.classList.remove("cmd-auto-translated");
+  viewportObserver?.unobserve(article);
+ }
+ scheduleScan();
+}
+document.addEventListener("click",event=>{
+ const original=event.target.closest(".cmd-original-action");
+ if(original){
+  event.preventDefault();const article=row(original);if(!article)return;
+  showOriginal(article);return;
+ }
+ const retry=event.target.closest(".cmd-translate-action");if(!retry)return;
+ event.preventDefault();const article=row(retry);if(!article)return;
+ const data=articleKey(article),remembered=cache.get(data.key);
+ if(remembered?.translatedText){showTranslated(article,remembered.translatedText,data.lang,remembered.sourceLanguage);return}
+ queueMessage(article,true);
+ retry.hidden=true;
 });
-document.addEventListener("click",ev=>{
-  const btn=ev.target.closest(".cmd-original-action");if(!btn)return;
-  ev.preventDefault();const article=row(btn);if(!article)return;
-  const output=article.querySelector(".cmd-translation-output");if(output)output.hidden=true;
-  const id=String(article.dataset.messageId||"");if(id)visibleTranslations.delete(id);
-  btn.hidden=true;const translate=article.querySelector(".cmd-translate-action");if(translate)translate.hidden=false;
-});
-
-// Reset stale translations when each reader changes the target language.
 document.addEventListener("change",event=>{
-  if(event.target?.id!=="cmd-sphere-language")return;
-  visibleTranslations.clear();
-  document.querySelectorAll(".discord-message,.bubble").forEach(article=>{
-    const output=article.querySelector(".cmd-translation-output");
-    if(output)output.hidden=true;
-    const button=article.querySelector(".cmd-translate-action");
-    if(button)button.hidden=false;
-    const revert=article.querySelector(".cmd-original-action");
-    if(revert)revert.hidden=true;
-  });
+ if(event.target?.id==="cmd-sphere-language"){
+  resetLanguage();
+ }
 });
-// A new message can cause the conversation to re-render. Keep previously requested
-// translations visible without a second external request or saving private text to disk.
-function restoreVisibleTranslations(){
-  const box=document.querySelector("#channelMessages");
-  if(!box||!visibleTranslations.size)return;
-  for(const article of box.querySelectorAll("article.discord-message[data-message-id]")){
-    const state=visibleTranslations.get(String(article.dataset.messageId||""));
-    if(!state||state.lang!==language())continue;
-    const original=article.querySelector(".msg-text,.msg-embed");
-    if(!original||original.textContent!==state.original)continue;
-    const translated=article.querySelector(".cmd-translation-output");
-    if(!translated||translated.hidden||translated.textContent!==state.translation){
-      show(article,state.translation,"translated");
-      const action=article.querySelector(".cmd-translate-action"),revert=article.querySelector(".cmd-original-action");
-      if(action)action.hidden=true;if(revert)revert.hidden=false;
-    }
-  }
+document.addEventListener("DOMContentLoaded",scheduleScan,{once:true});
+if(document.readyState!=="loading")scheduleScan();
+if(typeof IntersectionObserver==="function"){
+ viewportObserver=new IntersectionObserver(entries=>{
+  for(const entry of entries){if(entry.isIntersecting){viewportObserver.unobserve(entry.target);queueMessage(entry.target)}}
+ },{rootMargin:"120px 0px"});
 }
-function attachChannelObserver(){
-  const box=document.querySelector("#channelMessages");
-  if(!box)return;
-  const observer=new MutationObserver(()=>{addTargetPickers(box);restoreVisibleTranslations()});
-  observer.observe(box,{childList:true});
-  addTargetPickers(box);restoreVisibleTranslations();
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",attachChannelObserver,{once:true});else attachChannelObserver();
-
-// Private/group CMD conversations share the same explicit translation controls.
-// Keep re-rendering inexpensive: only decorate new DOM nodes.
-function decoratePrivateMessages(){
-  const container=document.querySelector("#msgs");if(!container)return;
-  for(const item of container.querySelectorAll(".bubble:not([data-cmd-translatable])")){
-    item.dataset.cmdTranslatable="1";
-    const node=[...item.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());
-    if(!node)continue;
-    const content=document.createElement("span");content.className="dm-text";
-    node.parentNode.replaceChild(content,node);content.appendChild(node);
-    const tools=document.createElement("div");tools.className="cmd-translation-tools";
-    const button=document.createElement("button");button.type="button";button.className="cmd-translate-action";button.textContent="🌐 Traduire";button.title="Traduction gratuite à la demande : le texte est envoyé au service de traduction externe";
-    const original=document.createElement("button");original.type="button";original.className="cmd-original-action";original.hidden=true;original.textContent="Voir l’original";
-    tools.append(button,original);item.appendChild(tools);
-  }
-}
-function bootPrivate(){
-  const box=document.querySelector("#msgs");if(!box)return;
-  const style=document.createElement("style");
-  style.textContent=".bubble .dm-text{white-space:pre-wrap;overflow-wrap:anywhere}.bubble .cmd-translation-tools{display:flex;gap:8px;flex-wrap:wrap;max-width:100%;margin-top:7px}.bubble .cmd-translation-tools button{font-size:12px;color:#ead6ff;background:#5c458f;border:0;border-radius:7px;padding:6px 9px}.bubble .cmd-translation-tools select{background:#20192e;color:#f3e9ff;border:1px solid #8c70b3;border-radius:7px;padding:5px 7px;max-width:100%;width:120px;font-size:12px}.bubble .cmd-translation-tools button[hidden],.bubble .cmd-translation-output[hidden]{display:none!important}.bubble .cmd-translation-output{margin-top:8px;max-width:100%;overflow-wrap:anywhere;border-left:3px solid #c1a4ff;background:#221a36;padding:8px;border-radius:5px}.bubble .cmd-translation-output[data-state=error]{color:#ffcece;border-color:#ff7878}";
-  document.head.appendChild(style);
-  decoratePrivateMessages();addTargetPickers(box);
-  const observer=new MutationObserver(()=>{decoratePrivateMessages();addTargetPickers(box)});
-  observer.observe(box,{childList:true});
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootPrivate,{once:true});else bootPrivate();
-
+const domObserver=new MutationObserver(records=>{
+ if(records.some(record=>[...record.addedNodes].some(node=>node.nodeType===1&&
+ !node.classList?.contains("cmd-translation-output")&&!node.classList?.contains("cmd-translation-tools")&&
+ !node.classList?.contains("cmd-translation-target"))))scheduleScan();
+});
+function attach(){if(document.body)domObserver.observe(document.body,{subtree:true,childList:true})}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",attach,{once:true});else attach();
+const css=document.createElement("style");
+css.textContent='.cmd-auto-translated .msg-text[hidden],.cmd-auto-translated .dm-text[hidden],.cmd-translation-output[hidden],.cmd-translation-tools button[hidden]{display:none!important}.cmd-translation-output{white-space:pre-wrap;overflow-wrap:anywhere;color:inherit;background:transparent;border:0;padding:0;margin:5px 0}.cmd-translation-tools{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}.cmd-translation-tools button{font-size:11px;color:#bda7ef;background:transparent;border:0;padding:3px 5px;cursor:pointer}.cmd-translation-tools button:hover{text-decoration:underline}.bubble .cmd-translation-output{color:inherit!important;background:transparent!important;border:0!important;padding:0!important}.bubble .cmd-translation-tools button[hidden]{display:none!important}';
+(document.head||document.documentElement).append(css);
 })();
