@@ -367,3 +367,15 @@ body:has(#serverSettingsModal.on) #cmd-sphere-tools{display:none!important}
  .sphere-app #channelOverlay .msg-image,
  .sphere-app #channelOverlay .msg-embed{max-width:100%!important;min-width:0!important;overflow-wrap:anywhere}
 }
+
+/* Archived-message count is informational, not an unread counter. */
+.sphere-app.cmd-native-selected .cmd-channel-archive-count{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;max-width:80px;min-width:30px;padding:3px 5px;
+  border-radius:7px;background:#393045;color:#d8c3e9;
+  font-size:10px;font-weight:650;white-space:nowrap;
+}
+@media(max-width:850px){
+  .sphere-app.cmd-native-selected .cmd-channel-row{max-width:100%;gap:7px;padding:8px 6px}
+  .sphere-app.cmd-native-selected .cmd-channel-archive-count{max-width:63px;font-size:10px}
+}
