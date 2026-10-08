@@ -79,3 +79,21 @@
  .csm-server-menu-body{width:100%;max-width:none;border-radius:20px 20px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom))}
  .csm-server-menu-handle{display:block;width:42px;height:5px;border-radius:5px;background:#78727f;margin:0 auto 10px}
 }
+/* Keep the settings card and its scrolling children within narrow screens. */
+#serverSettingsModal.csm-open,#serverSettingsModal.csm-open *{box-sizing:border-box}
+.csm-root,.csm-header,.csm-columns,.csm-nav,.csm-main,#csm-webhooks{min-width:0;max-width:100%}
+.csm-main{min-height:0}
+#csm-close{flex:none}
+.csm-line{flex-wrap:wrap}
+.csm-line small{overflow-wrap:anywhere;white-space:normal}
+.csm-bot-icon{width:36px;height:36px;object-fit:contain;border-radius:50%;flex:none}
+@media(max-width:850px){
+ .csm-header{padding-top:calc(58px + env(safe-area-inset-top,0px))}
+}
+@media(max-width:760px){
+ .csm-nav{width:100%;max-width:100%;overscroll-behavior-x:contain}
+ .csm-nav-group{flex:none}
+ .csm-main{width:100%;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+ .csm-sub{padding:12px}
+ .csm-line>div{flex-basis:calc(100% - 46px)}
+}

@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
 import crypto from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -150,8 +151,8 @@ function clearDashboardCookies(){
 }
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008p"></head>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008p"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008p"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008q"></head>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -2856,8 +2857,8 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
   }
   const messages=(rows.rows||[]).map(row=>({
     id:String(row.id),channelId:String(ch.id),guildId:String(guildId),content:String(row.body||""),timestamp:row.created_at,editedTimestamp:row.edited_at,
-    author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},
-    attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata&&typeof row.metadata==="object"?row.metadata:{},embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
+    author:{id:String(row.sender_user_id),username:String(row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.webhook)},
+    attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata&&typeof row.metadata==="object"?row.metadata:{},embeds:Array.isArray(row.metadata?.embeds)?row.metadata.embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
   if(!before)await markNativeChannelRead(auth,guildId,ch.id);
@@ -2910,7 +2911,7 @@ async function sendNativeChannelMessage(auth,input){
       body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
     });
   }
-  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.author_name||"Utilisateur"),avatar:row.author_avatar||null,bot:false},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
+  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
 async function updateNativeOverview(auth,input){
@@ -3238,7 +3239,8 @@ async function dashboardWebhooks(auth,guildId,preferred){
     for(const bot of used){try{structure=await backend(bot,"structure",{guildId});break}catch{}}
   }
   const channelMap=new Map((structure?.channels||[]).map(c=>[String(c.id),c.name]));
-  const discordUserId=/^\d{15,22}$/.test(String(auth.user?.id||''))?String(auth.user.id):null;
+  const linkedDiscordId=String(auth.user?.discordId||auth.user?.id||'');
+  const discordUserId=/^\d{15,22}$/.test(linkedDiscordId)?linkedDiscordId:null;
   const webhooks=[...merged.values()].map(w=>({
     id:String(w.id||''),guildId:String(w.guildId||guildId),channelId:w.channelId?String(w.channelId):null,
     channelName:channelMap.get(String(w.channelId||''))||null,name:String(w.name||'Webhook'),avatar:w.avatar||null,
@@ -3248,6 +3250,22 @@ async function dashboardWebhooks(auth,guildId,preferred){
   })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   return {guildId:String(guildId),guildName:structure?.name||guild.name||String(guildId),guildIcon:guild.icon||null,bot:used[0],botName:used.map(b=>bots[b]?.label||b).join(' + '),botsUsed:used,webhooks,errors};
 }
+async function importNativeIntegrations(auth,nativeGuildId){
+  await requireNativeAdmin(auth,nativeGuildId);
+  const detail=await nativeGuildDetail(auth,nativeGuildId),sourceId=String(detail.guild.source_discord_id||"");
+  requireGuild(auth,sourceId);
+  const [botData,webhookData]=await Promise.all([dashboardBots(auth,sourceId),dashboardWebhooks(auth,sourceId)]);
+  const old=await pool.query('SELECT snapshot FROM cmd_discord_mirror_guilds WHERE user_id=$1 AND guild_id=$2 LIMIT 1',[String(auth.user.id),sourceId]);
+  const previous=old.rows[0]?.snapshot||{},guild=botData.guilds.find(g=>String(g.guildId)===sourceId)||{};
+  const channelIds=new Map(detail.channels.map(c=>[String(c.source_channel_id||c.id),String(c.id)]));
+  const mapped=webhookData.webhooks.map(w=>({...w,nativeChannelId:channelIds.get(String(w.channelId))||null}));
+  // Only replace a successfully read catalog. Keep previous entries when a source is unavailable.
+  const merge=(before,after)=>[...new Map([...(before||[]),...(after||[])].map(x=>[String(x.id),x])).values()];
+  const snapshot={...previous,bots:merge(previous.bots,guild.bots),integrations:merge(previous.integrations,guild.integrations),webhooks:merge(previous.webhooks,mapped)};
+  await mirrorStoreGuild(auth,sourceId,webhookData.bot,snapshot);
+  return {ok:true,bots:(guild.bots||[]).length,webhooks:mapped.length,unmapped:mapped.filter(w=>!w.nativeChannelId).length,errors:[...(botData.errors||[]),...(webhookData.errors||[])]};
+}
+
 async function dashboardAllWebhooks(auth){
   const all=await installedEverywhere(auth),guilds=all.guilds||[],out=[],errors=[...(all.errors||[])];
   let index=0;
@@ -3964,6 +3982,21 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,await nativeGuildDetail(auth,url.pathname.split("/").pop()))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&/^\/api\/webhooks\/[^/]+\/[^/]+$/.test(url.pathname)){
+      try{const parts=url.pathname.split('/');const message=await receiveNativeWebhook(pool,parts[3],parts[4],await readFormBodyJson(req));sendJson(res,200,message)}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/webhooks/delete"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req),guildId=String(body.guildId||"");await requireNativeAdmin(auth,guildId);sendJson(res,200,await deleteNativeWebhook(pool,guildId,String(body.id||"")))}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
+    if((req.method==="GET"||req.method==="POST")&&url.pathname==="/api/native/webhooks"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const body=req.method==="POST"?await readFormBodyJson(req):null,guildId=String(body?.guildId||url.searchParams.get("guildId")||"");await requireNativeAdmin(auth,guildId);
+        const result=body?await createNativeWebhook(pool,{guildId,channelId:String(body.channelId||""),name:body.name,userId:String(auth.user.id),baseUrl}):await listNativeWebhooks(pool,guildId);
+        sendJson(res,body?201:200,result);
+      }catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/history"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -4028,6 +4061,18 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await dashboardBots(auth,String(url.searchParams.get("guildId")||"")))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/native/integrations"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const guildId=String(url.searchParams.get("guildId")||"");await requireNativeAdmin(auth,guildId);
+        const detail=await nativeGuildDetail(auth,guildId),stored=await pool.query('SELECT snapshot,synced_at FROM cmd_discord_mirror_guilds WHERE user_id=$1 AND guild_id=$2 LIMIT 1',[String(auth.user.id),String(detail.guild.source_discord_id||"")]);
+        sendJson(res,200,{snapshot:stored.rows[0]?.snapshot||{},syncedAt:stored.rows[0]?.synced_at||null});
+      }catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/integrations/import"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await importNativeIntegrations(auth,String(body.nativeGuildId||"")))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/webhooks"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -4077,14 +4122,16 @@ const httpServer=createServer(async(req,res)=>{
           discordMessageFallbackCache.set(cacheKey,{until:Date.now()+(chosen===first?120000:600000)});
           if(discordMessageFallbackCache.size>1000)discordMessageFallbackCache.clear();
         }
-        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),...data});
+        let archiveWarning=null;
+        if(pool)try{await mirrorStoreMessagePage(auth,guildId,channelId,data.messages||[])}catch(e){archiveWarning="Messages affichés, mais sauvegarde CMD Sphere indisponible."}
+        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),archiveWarning,...data});
       }catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{
         const raw=await readFormBodyJson(req),guildId=String(raw.guildId||"");requireGuild(auth,guildId);
-        const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions","send_message"]);
+        const allowed=new Set(["create_category","create_channel","update_channel","delete_channel","create_role","update_role","delete_role","set_channel_permissions","send_message","create_webhook"]);
         if(!allowed.has(String(raw.action||"")))throw new Error("Action non autorisée.");
         if(String(raw.action)==="send_message"){sendJson(res,200,await dashboardSendMessage(auth,raw));return}
         const chosen=await resolveBot(auth,guildId,raw.bot),out=await backend(chosen,"action",{body:raw});

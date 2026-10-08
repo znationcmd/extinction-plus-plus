@@ -40,7 +40,7 @@ function avatarUrl(user){
 function serializeMessage(m){
   const ref=m?.referenced_message?{id:String(m.referenced_message.id||''),content:String(m.referenced_message.content||''),author:{id:String(m.referenced_message.author?.id||''),username:String(m.referenced_message.author?.global_name||m.referenced_message.author?.username||'Utilisateur'),avatar:avatarUrl(m.referenced_message.author)}}:null;
   return {
-    id:String(m.id),channelId:String(m.channel_id||''),guildId:m.guild_id?String(m.guild_id):null,
+    id:String(m.id),webhookId:m.webhook_id?String(m.webhook_id):null,channelId:String(m.channel_id||''),guildId:m.guild_id?String(m.guild_id):null,
     content:String(m.content||''),timestamp:m.timestamp||null,editedTimestamp:m.edited_timestamp||null,
     author:{id:String(m.author?.id||''),username:String(m.author?.global_name||m.author?.username||'Utilisateur'),tag:String(m.author?.username||''),bot:Boolean(m.author?.bot),avatar:avatarUrl(m.author)},
     attachments:(m.attachments||[]).map(a=>({id:String(a.id),filename:a.filename,url:a.url,proxyUrl:a.proxy_url,contentType:a.content_type||null,size:Number(a.size||0),width:a.width??null,height:a.height??null,description:a.description||null})),

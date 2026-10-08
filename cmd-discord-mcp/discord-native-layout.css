@@ -136,3 +136,27 @@
  .sphere-app .channel-composer button{padding:0 7px;min-width:32px}
  .sphere-app .channel-composer textarea{min-width:0}
 }
+
+/* Constrain the implicit grid column to the device width, including long notices. */
+.sphere-app #channelOverlay{box-sizing:border-box;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr)}
+.sphere-app #channelOverlay>*,.sphere-app #channelOverlay .discord-message,.sphere-app #channelOverlay .msg-main{min-width:0;max-width:100%;box-sizing:border-box}
+.sphere-app #channelMessages{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.sphere-app #channelOverlay .msg-meta b,.sphere-app #channelOverlay .msg-text,.sphere-app #channelOverlay .msg-empty,.sphere-app #channelOverlay .cmd-message-warning,.sphere-app #channelOverlay .send-note{white-space:normal;overflow-wrap:anywhere;max-width:100%}
+.sphere-app #channelOverlay .msg-text{white-space:pre-wrap}
+.sphere-app #channelOverlay .msg-meta{min-width:0}
+.sphere-app #channelOverlay .msg-image,.sphere-app #channelOverlay .msg-embed{max-width:100%;box-sizing:border-box}
+.sphere-app #channelOverlay .channel-composer{min-width:0;flex-wrap:wrap;box-sizing:border-box}
+.sphere-app #channelOverlay .channel-composer textarea{width:0;min-width:60px;flex:1;box-sizing:border-box}
+@media(max-width:850px){
+ .sphere-app #channelOverlay.on{inset:0!important;width:100%!important;height:100dvh!important}
+ .sphere-app #channelOverlay .channel-head{display:grid;grid-template-columns:38px minmax(0,1fr);padding:calc(58px + env(safe-area-inset-top,0px)) 10px 10px;gap:8px;min-width:0}
+ .sphere-app #channelOverlay .channel-back{width:38px;grid-row:1 / span 2}
+ .sphere-app #channelOverlay .channel-actions{grid-column:2;flex-wrap:wrap;min-width:0}
+ .sphere-app #channelOverlay .channel-actions .btn{white-space:normal;max-width:100%;font-size:12px;padding:7px 9px}
+ .sphere-app #channelOverlay .channel-compose-wrap{padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+ .sphere-app #channelOverlay .send-note{font-size:11px;line-height:1.4}
+ .sphere-app #channelOverlay .msg-meta b{font-size:14px}
+ .sphere-app #channelOverlay .message-day{font-size:11px;gap:7px}
+ .sphere-app #channelOverlay .msg-avatar{width:36px;height:36px;min-width:36px;flex:none}
+ .sphere-app #channelOverlay .discord-message{gap:8px;padding:9px 3px}
+}

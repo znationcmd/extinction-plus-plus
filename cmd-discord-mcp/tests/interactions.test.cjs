@@ -64,3 +64,41 @@ test('Recovered or edited content refreshes even when the message count stays th
  x.w.fetch=async()=>({ok:true,json:async()=>({messages:[{...msg,content:'Texte accessible'}]})});await x.w.refreshDiscordMessages();assert.match(x.w.document.querySelector('#channelMessages').textContent,/Texte accessible/);
  }finally{x.close()}
 });
+
+test('Integrations maps existing Discord webhooks to imported rooms and requires confirmation before creation',async()=>{
+ const x=setup();try{
+  const original=x.w.fetch;
+  x.w.fetch=async(url,opts={})=>{
+   if(String(url).startsWith('/api/dashboard/webhooks'))return {ok:true,json:async()=>({bot:'extinction',botsUsed:['extinction'],webhooks:[{id:'1513783303285637191',name:'Annonces CMD',channelId:channels[1].source_channel_id,mine:true,creator:{username:'Derek'}}]})};
+   if(String(url).startsWith('/api/dashboard/bots'))return {ok:true,json:async()=>({guilds:[{bots:[{id:'1513783303285637192',username:'Bot existant'}]}]})};
+   return original(url,opts);
+  };
+  await tick();await x.w.selectNative(guild);x.w.eval(fs.readFileSync(require('node:path').join(__dirname,'../cmd-server-manager.js'),'utf8'));
+  await x.w.cmdSphereServerSettings.open('integrations');await tick();await tick();
+  assert.match(x.w.document.querySelector('#csm-webhooks').textContent,/Annonces CMD/);
+  assert.match(x.w.document.querySelector('#csm-webhooks').textContent,/salon associé dans CMD Sphere/);
+  assert.match(x.w.document.querySelector('#csm-webhooks').textContent,/Bot existant/);
+  assert.ok(x.w.document.querySelector('[data-csm-action="import-integrations"]'));
+  const form=x.w.document.querySelector('#csm-create-webhook');assert.ok(form);
+  form.dispatchEvent(new x.w.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  assert.equal(x.requests.filter(r=>r.opts.method==='POST').length,0);
+  x.w.confirm=()=>true;form.dispatchEvent(new x.w.Event('submit',{bubbles:true,cancelable:true}));await tick();
+  const post=x.requests.find(r=>r.url==='/api/dashboard/action');assert.ok(post);
+  const body=JSON.parse(post.opts.body);assert.equal(body.action,'create_webhook');assert.equal(body.guildId,guild.source_discord_id);assert.equal(body.channelId,channels[1].source_channel_id);
+  assert.deepEqual(x.errors,[]);
+ }finally{x.close()}
+});
+
+test('My webhooks uses the linked Discord ID instead of the CMD account UUID',async()=>{
+ const fnSource=source.slice(source.indexOf('async function dashboardWebhooks('),source.indexOf('\nasync function importNativeIntegrations('));
+ const discordId='1513783303285637198',ctx={requireGuild:()=>{},installedEverywhere:async()=>({guilds:[{id:guild.source_discord_id,availableBots:[{id:'extinction'}]}]}),bots:{extinction:{label:'CMD'}},backend:async(bot,kind)=>kind==='structure'?{channels:[{id:channels[1].source_channel_id,name:'général'}]}:{webhooks:[{id:'1513783303285637191',name:'Mon webhook',channelId:channels[1].source_channel_id,creator:{id:discordId,username:'Derek'}}]}};
+ const fn=vm.runInNewContext(fnSource+';dashboardWebhooks',ctx),data=await fn({user:{id:'local-account-uuid',discordId}},guild.source_discord_id);
+ assert.equal(data.webhooks[0].mine,true);assert.equal(data.webhooks[0].channelName,'général');
+});
+
+test('Local integrations import keeps old snapshots and preserves Discord channel IDs',async()=>{
+ const fnSource=source.slice(source.indexOf('async function importNativeIntegrations('),source.indexOf('\nasync function dashboardAllWebhooks('));let saved;
+ const ctx={requireNativeAdmin:async()=>{},requireGuild:()=>{},nativeGuildDetail:async()=>detail,dashboardBots:async()=>({guilds:[{guildId:guild.source_discord_id,bots:[{id:'bot',username:'Existing bot'}],integrations:[]}],errors:[]}),dashboardWebhooks:async()=>({bot:'extinction',webhooks:[{id:'hook',channelId:channels[1].source_channel_id}],errors:[]}),pool:{query:async()=>({rows:[{snapshot:{meta:{name:'Keep'},bots:[{id:'old'}],webhooks:[{id:'old-hook'}]}}]})},mirrorStoreGuild:async(auth,id,bot,snapshot)=>{saved=snapshot}};
+ const fn=vm.runInNewContext(fnSource+';importNativeIntegrations',ctx),data=await fn(auth,guild.id);
+ assert.equal(data.ok,true);assert.equal(saved.meta.name,'Keep');assert.equal(saved.webhooks.find(w=>w.id==='hook').nativeChannelId,'room');assert.equal(saved.webhooks.find(w=>w.id==='hook').channelId,channels[1].source_channel_id);assert.ok(saved.webhooks.find(w=>w.id==='old-hook'));assert.ok(saved.bots.find(b=>b.id==='old'));
+});
