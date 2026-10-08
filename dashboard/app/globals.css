@@ -255,3 +255,8 @@ input,select,textarea{max-width:100%}
   .ext-draft-header{height:calc(58px + env(safe-area-inset-top,0px))}
   .ext-content{padding-bottom:calc(70px + env(safe-area-inset-bottom,0px))}
 }
+
+/* CMD Extinction circle branding 20261008 */
+.ext-guild-bubble,.ext-guild-bubble.active{border-radius:50%!important;overflow:hidden!important}
+.ext-guild-bubble img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;border-radius:50%!important}
+.ext-draft-header>img{width:48px!important;height:48px!important;border-radius:50%!important;object-fit:cover!important;display:block!important}
