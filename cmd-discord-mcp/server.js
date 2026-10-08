@@ -186,6 +186,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     for(const g of d.guilds||[])if(!sourceIds.has(String(g.id)))entries.push({key:'discord:'+g.id,kind:'discord',g});
     const byKey=new Map(entries.map(x=>[x.key,x])),foldered=new Set(),folderMap=new Map();
     window.__cmdFolderState={folders:fd.folders||[],entries,layout:ld.itemKeys||[]};window.__nativeGuilds=nativeGuilds;
+    window.__discordManagedGuilds=d.guilds||[];
     function railButton(entry,inFolder=false){
       const r=document.createElement('button');r.className='rail-server '+(entry.kind==='discord'&&!entry.g.installed?'off':'');r.title=entry.g.name;r.innerHTML=iconHtml(entry.g);
       if(entry.kind==='native'){r.dataset.nativeId=entry.g.id;const n=Number(entry.g.unread_count||0);if(n)r.insertAdjacentHTML('beforeend','<i class="rail-count">'+Math.min(99,n)+'</i>')}
@@ -281,6 +282,8 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     S.guild=null;S.bot=null;S.structure=null;S.nativeGuild=g;qs('#refresh').disabled=false;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML='<span class="bot">CMD Sphere · autonome</span>';
     try{
       const d=await api('/api/native/guild/'+encodeURIComponent(g.id)),cats=(d.channels||[]).filter(x=>x.type==='category'),chs=(d.channels||[]).filter(x=>x.type!=='category'),admin=['owner','admin'].includes(String(d.member?.membership_role||''));
+      S.nativeChannels=new Map((d.channels||[]).map(ch=>[String(ch.id),ch]));
+      S.nativeImportedOwner=String(d.guild.owner_user_id||'')===String(d.member?.user_id||'')&&String(d.member?.membership_role||'')==='owner';
       let create='';
       if(admin){
         create='<div class="cols section"><form id="nativeCatForm" class="card"><h3>Nouvelle catégorie</h3><label>Nom<input name="name" maxlength="100" required></label><button class="btn primary">Créer</button></form><form id="nativeChForm" class="card"><h3>Nouveau salon</h3><label>Nom<input name="name" maxlength="100" required></label><label>Type<select name="type"><option value="text">Texte</option><option value="voice">Vocal</option><option value="announcement">Annonce</option><option value="forum">Forum</option></select></label><label>Catégorie<select name="parentId"><option value="">Aucune</option>'+cats.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>').join('')+'</select></label><button class="btn primary">Créer</button></form></div>';
@@ -347,11 +350,39 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function mergeChannelMessages(list){
     const map=new Map(CHAT.messages.map(m=>[String(m.id),m]));for(const m of list||[])map.set(String(m.id),m);CHAT.messages=[...map.values()];
   }
-  async function openNativeChannel(guildId,id,name){
+  async function openNativeChannel(guildId,id,name,localOnly=false){
     const chBtn=document.querySelector('[data-native-channel="'+CSS.escape(String(id))+'"]');chBtn?.querySelector('.channelUnread')?.remove();
-    CHAT.open=true;CHAT.mode='native';CHAT.guildId=String(guildId);CHAT.bot=null;CHAT.channelId=String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
-    qs('#channelTitle').textContent='# '+CHAT.name;qs('#channelSubtitle').textContent='CMD Sphere · sans bot Discord';qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=false;qs('#channelSend').disabled=false;updateReplyBar();
-    await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),3500);
+    const ch=S.nativeChannels?.get(String(id));
+    const sourceId=String(S.nativeGuild?.source_discord_id||'');
+    const managed=(window.__discordManagedGuilds||[]).find(g=>String(g.id)===sourceId);
+    // The original Discord history is only accessible to the importing owner,
+    // when a CMD bot is actually installed and authorized for the source guild.
+    const remote=Boolean(!localOnly&&S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||''))&&managed?.installed&&(managed.availableBots||[]).length);
+    CHAT.open=true;CHAT.mode=remote?'discord':'native';CHAT.guildId=remote?sourceId:String(guildId);CHAT.bot=remote?managed.availableBots[0].id:null;CHAT.channelId=remote?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
+    qs('#channelTitle').textContent='# '+CHAT.name;
+    qs('#channelSubtitle').textContent=remote?'Messages originaux Discord · historique consultable':'Messages CMD Sphere';
+    qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=false;qs('#channelSend').disabled=false;updateReplyBar();
+    const existing=qs('#cmdChannelSourceToggle');existing?.remove();
+    if(remote){
+      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
+      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
+      toggle.textContent='Afficher mes messages CMD Sphere';
+      toggle.onclick=()=>openNativeChannel(guildId,id,name,true);
+      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
+    }else if(!localOnly&&sourceId&&S.nativeImportedOwner){
+      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
+      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
+      toggle.textContent='Discord non accessible · Reconnecter / autoriser un bot';
+      toggle.onclick=()=>location.assign('/dashboard-login?link=1&next='+encodeURIComponent('/dashboard?sync=1'));
+      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
+    }else if(localOnly&&sourceId){
+      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
+      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
+      toggle.textContent='Revenir aux messages Discord';
+      toggle.onclick=()=>openNativeChannel(guildId,id,name,false);
+      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
+    }
+    await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),remote?5000:3500);
   }
   async function openDiscordChannel(id,name){
     if(!S.guild||!S.bot){toast('Aucun bot CMD disponible pour ce Discord.',false);return}
@@ -359,7 +390,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     qs('#channelTitle').textContent='# '+CHAT.name;qs('#channelSubtitle').textContent='Chargement des vrais messages Discord…';qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=false;qs('#channelSend').disabled=false;updateReplyBar();
     await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),5000);
   }
-  function closeDiscordChannel(){CHAT.open=false;clearInterval(CHAT.poll);CHAT.poll=null;qs('#channelOverlay').classList.remove('on')}
+  function closeDiscordChannel(){CHAT.open=false;clearInterval(CHAT.poll);CHAT.poll=null;qs('#channelOverlay').classList.remove('on');qs('#cmdChannelSourceToggle')?.remove()}
   async function loadDiscordMessages(reset=false,all=false){
     if(CHAT.loading||!CHAT.open)return;CHAT.loading=true;const moreBtn=qs('#loadAllMessages');if(moreBtn&&all)moreBtn.textContent='Récupération…';
     try{
@@ -668,7 +699,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         if(job.status==='complete'||job.status==='failed'){
           await loadGuilds();
           const title=job.status==='complete'?'Synchronisation terminée':'Synchronisation interrompue';
-          const msg=title+' : '+Number(p.full||0)+' avec salons, '+Number(p.shell||0)+' sans bot CMD, '+Number(p.failed||0)+' erreur(s).';
+          const msg=title+' : '+Number(p.full||0)+' avec salons, '+Number(p.shell||0)+' sans bot CMD, '+Number(p.failed||0)+' erreur(s).'+(su.mirrorJob?' Historique Discord : archivage démarré en arrière-plan.':'');
           toast(msg,job.status==='complete');
           const more=[su.error||'',...(su.failed||[]).slice(0,6).map(x=>x.name+' : '+x.error),...(su.warnings||[]).slice(0,5).map(x=>x.name+' : salons indisponibles')].filter(Boolean);
           if(showResult||job.status==='failed'||more.length)alert([msg,...more].join('\n'));
@@ -2631,7 +2662,9 @@ async function runDiscordSyncJob(auth,jobId){
       }catch(e){p.failed++;summary.failed.push({id,name:p.name,error:e.message})}
       finally{p.index++;await save("running")}
     }
-    p.name="";await save("complete",true);
+    p.name="";
+    if(p.full>0){try{const mirror=await startMirrorJob(auth);summary.mirrorJob=mirror.jobId;summary.mirrorStatus=mirror.status}catch(e){summary.warnings.push({name:"Archivage de l’historique",error:e.message})}}
+    await save("complete",true);
   }catch(e){p.name="";summary.error=e.message;try{await save("failed",true)}catch(err){console.error("[sync-job] error writing status:",err.message)}}
 }
 async function startDiscordSyncJob(auth){
