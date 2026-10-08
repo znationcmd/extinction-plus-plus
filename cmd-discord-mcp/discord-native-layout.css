@@ -68,3 +68,27 @@
 @media(min-width:851px) and (max-width:1100px){
  .sphere-app.cmd-native-selected .grid{grid-template-columns:250px minmax(0,1fr)}
 }
+
+
+/* Round Discord guild icons, including mobile, without cropping the rail itself. */
+.sphere-app .server-rail .rail-server,
+.sphere-app .server-rail .rail-home,
+.sphere-app .server-rail .rail-top{border-radius:50%!important;overflow:hidden!important;flex:none;aspect-ratio:1/1;box-sizing:border-box}
+.sphere-app .server-rail .rail-server>img,
+.sphere-app .server-rail .rail-home>img,
+.sphere-app .server-rail .rail-top>img{width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;object-position:center!important;border-radius:50%!important;vertical-align:middle}
+.sphere-app .server-rail .rail-folder .mini,
+.sphere-app .server-rail .rail-folder .mini img{border-radius:50%!important;object-fit:cover!important}
+.sphere-app.cmd-native-selected .cmd-channel-row.active{background:#594065;color:#fff}
+.sphere-app.cmd-native-selected .cmd-channel-row:focus-visible{outline:2px solid #a78bfa;outline-offset:1px}
+.sphere-app .cmd-message-warning{margin:8px 12px 15px;padding:12px 13px;border:1px solid #f3b86c66;border-radius:11px;background:#493728;color:#fff3da;line-height:1.5;font-size:13px;overflow-wrap:anywhere}
+.sphere-app .cmd-message-warning a{color:#ffe6aa;text-decoration:underline;font-weight:700}
+.sphere-app .msg-empty .cmd-view-discord{display:inline-block;margin-top:8px;color:#c6b7ff;font-weight:650;text-decoration:underline;font-size:12px}
+@media(max-width:850px){
+ .sphere-app .server-rail .rail-server,
+ .sphere-app .server-rail .rail-home,
+ .sphere-app .server-rail .rail-top{border-radius:50%!important;overflow:hidden!important}
+ .sphere-app .server-rail .rail-server>img,
+ .sphere-app .server-rail .rail-home>img{border-radius:50%!important;object-fit:cover!important}
+ .sphere-app.cmd-native-selected .cmd-channel-row{min-height:44px;margin:1px 0}
+}
