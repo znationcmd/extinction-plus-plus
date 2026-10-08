@@ -466,3 +466,42 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
   #cmd-sphere-tools{top:calc(6px + env(safe-area-inset-top,0px))!important;right:6px!important;max-width:calc(100vw - 12px)!important}
   #cmd-sphere-language{width:125px!important;max-width:125px!important;font-size:13px!important}
 }
+
+/* Translation languages are selectable directly below each message on small screens. */
+.sphere-app #channelOverlay .cmd-translation-tools{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:7px!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+.sphere-app #channelOverlay .cmd-translation-target{
+  display:inline-block!important;
+  flex:0 1 auto!important;
+  box-sizing:border-box!important;
+  width:122px!important;
+  min-width:0!important;
+  max-width:45vw!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:4px 7px!important;
+  color:#f4eafb!important;
+  background:#252131!important;
+  border:1px solid #8773ab!important;
+  border-radius:7px!important;
+  font-size:12px!important;
+}
+.sphere-app #channelOverlay .cmd-translation-tools button{
+  flex:0 0 auto!important;
+  white-space:normal!important;
+}
+.sphere-app .server-rail .cmd-icon-fallback{display:none!important}
+.sphere-app .server-rail .cmd-icon-failed>img{display:none!important}
+.sphere-app .server-rail .cmd-icon-failed>.cmd-icon-fallback{
+  display:grid!important;
+  width:100%!important;
+  height:100%!important;
+  place-items:center!important;
+  border-radius:50%!important;
+}
