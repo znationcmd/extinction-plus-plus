@@ -1142,7 +1142,7 @@ async function resolveDiscordAccount(identity,linkAccountId=null){
     [String(accountId),did,JSON.stringify(profile),JSON.stringify(identity.guilds||[])]);
   await migrateLegacyDiscordUser(did,accountId);
   const authData=authFromAccount(account,{provider_user_id:did,profile,guilds:identity.guilds||[]});
-  setTimeout(()=>importOwnedDiscordGuilds(authData).then(x=>console.log("[owned-import] login manageable="+(x.manageableCount||0)+" owner="+x.ownedCount+" imported="+x.imported.length)).catch(e=>console.error("[owned-import] login failed: "+e.message)),50);
+  // La synchronisation est lancée explicitement par le tableau de bord après la liaison OAuth.
   return authData;
 }
 async function createNativeAccount(input){
@@ -2246,7 +2246,19 @@ function discordGuildIcon(g){
   const id=String(g?.id||"");
   return /^\d{15,22}$/.test(id)?("https://cdn.discordapp.com/icons/"+id+"/"+icon+".webp?size=128"):null;
 }
+async function currentLinkedDiscordAuth(auth){
+  const id=String(auth?.user?.id||"");
+  if(!id)return auth;
+  try{
+    const identity=await discordIdentityForAccount(id);
+    if(!identity)return auth;
+    const account=await accountById(id);
+    if(!account)return auth;
+    return authFromAccount(account,identity);
+  }catch(e){console.error("[discord-sync] identity refresh failed:",e.message);return auth}
+}
 async function allManagedGuilds(auth){
+  auth=await currentLinkedDiscordAuth(auth);
   const installed=await installedEverywhere(auth);
   const byId=new Map(installed.guilds.map(g=>[String(g.id),g]));
   const metas=await linkedDiscordGuilds(auth),metaById=new Map(metas.map(g=>[String(g.id),g]));
@@ -2376,17 +2388,24 @@ async function syncNativeFromDiscord(auth,sourceGuildId,preferredBot){
     ON CONFLICT(owner_user_id,source_discord_id) DO UPDATE SET name=EXCLUDED.name,icon=EXCLUDED.icon,updated_at=NOW()`,
     [nativeId,String(auth.user.id),String(sourceGuildId),name,icon,inviteCode]);
   await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET membership_role=EXCLUDED.membership_role',[nativeId,String(auth.user.id),'owner',safeText(auth.user.name,80)]);
-  await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1',[nativeId]);
-  await pool.query('DELETE FROM cmd_native_roles WHERE guild_id=$1',[nativeId]);
+  // Mise à jour non destructive : les UUID des salons restent stables et les messages CMD sont conservés.
   for(const ch of Array.isArray(structure.channels)?structure.channels:[]){
+    const remoteId=String(ch.id||"");if(!/^\d{15,22}$/.test(remoteId))continue;
     await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)`,
-      [crypto.randomUUID(),nativeId,String(ch.id||crypto.randomUUID()),ch.parentId?String(ch.parentId):null,safeText(ch.name||'salon',100),safeText(ch.type||'text',30),ch.topic?safeText(ch.topic,1024):null,Number(ch.position||0),JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]);
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+      ON CONFLICT(guild_id,source_channel_id) DO UPDATE SET source_parent_id=EXCLUDED.source_parent_id,
+        name=EXCLUDED.name,type=EXCLUDED.type,topic=EXCLUDED.topic,position=EXCLUDED.position,
+        permission_overwrites=EXCLUDED.permission_overwrites`,
+      [crypto.randomUUID(),nativeId,remoteId,ch.parentId?String(ch.parentId):null,safeText(ch.name||'salon',100),safeText(ch.type||'text',30),ch.topic?safeText(ch.topic,1024):null,Number(ch.position||0),JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]);
   }
   for(const role of Array.isArray(structure.roles)?structure.roles:[]){
+    const remoteId=String(role.id||"");if(!/^\d{15,22}$/.test(remoteId))continue;
     await pool.query(`INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable)
-      VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)`,
-      [crypto.randomUUID(),nativeId,String(role.id||crypto.randomUUID()),safeText(role.name||'rôle',100),role.color!=null?String(role.color):null,JSON.stringify(role.permissions||{}),Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]);
+      VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)
+      ON CONFLICT(guild_id,source_role_id) DO UPDATE SET name=EXCLUDED.name,color=EXCLUDED.color,
+        permissions=EXCLUDED.permissions,position=EXCLUDED.position,hoist=EXCLUDED.hoist,
+        mentionable=EXCLUDED.mentionable`,
+      [crypto.randomUUID(),nativeId,remoteId,safeText(role.name||'rôle',100),role.color!=null?String(role.color):null,JSON.stringify(role.permissions||{}),Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]);
   }
   return {id:nativeId,name,sourceDiscordId:String(sourceGuildId),bot,botName:bots[bot].label,inviteUrl:baseUrl+"/invite/"+inviteCode};
 }
@@ -2403,22 +2422,28 @@ async function importDiscordShell(auth,meta){
   return {id:nativeId,name,icon,sourceDiscordId:sourceId,full:false,inviteUrl:baseUrl+"/invite/"+inviteCode};
 }
 async function importOwnedDiscordGuilds(auth){
+  auth=await currentLinkedDiscordAuth(auth);
   const metas=(await linkedDiscordGuilds(auth)).filter(g=>/^\d{15,22}$/.test(String(g.id||"")));
-  const installed=await installedEverywhere(auth),installedById=new Map(installed.guilds.map(g=>[String(g.id),g]));
-  const imported=[],failed=[];
+  let installed={guilds:[],errors:[]};
+  try{installed=await installedEverywhere(auth)}catch(e){installed.errors=[{error:e.message}]}
+  const installedById=new Map(installed.guilds.map(g=>[String(g.id),g]));
+  const imported=[],failed=[],warnings=[];
   for(const meta of metas){
     const id=String(meta.id||"");
     try{
       const hit=installedById.get(id);
       if(hit){
-        const full=await syncNativeFromDiscord({...auth,guilds:metas},id,hit.availableBots?.[0]?.id);
-        imported.push({...full,full:true,owner:Boolean(meta.owner)});
-      }else{
-        imported.push({...await importDiscordShell(auth,meta),owner:Boolean(meta.owner)});
+        try{
+          const full=await syncNativeFromDiscord(auth,id,hit.availableBots?.[0]?.id);
+          imported.push({...full,full:true,owner:Boolean(meta.owner)});continue;
+        }catch(e){warnings.push({id,name:String(meta.name||id),error:"Structure Discord inaccessible : "+e.message})}
       }
+      imported.push({...await importDiscordShell(auth,meta),owner:Boolean(meta.owner)});
     }catch(e){failed.push({id,name:String(meta.name||id),error:e.message})}
   }
-  return {ownedCount:metas.filter(g=>Boolean(g.owner)).length,manageableCount:metas.length,imported,failed};
+  return {ownedCount:metas.filter(g=>Boolean(g.owner)).length,manageableCount:metas.length,imported,
+    fullCount:imported.filter(g=>g.full).length,shellCount:imported.filter(g=>!g.full).length,
+    failed,warnings,botErrors:installed.errors||[]};
 }
 async function backfillOwnedDiscordGuilds(){
   const r=await pool.query(`SELECT a.*,i.provider_user_id,i.profile,i.guilds
@@ -3438,6 +3463,25 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
       html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/")</script>',200,{"set-cookie":clearDashboardCookies()});return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/discord/sync-status"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const fresh=await currentLinkedDiscordAuth(auth),metas=await linkedDiscordGuilds(fresh);
+        sendJson(res,200,{linked:Boolean(fresh.user.discordId),discordCount:metas.length,
+          ownerCount:metas.filter(g=>g.owner).length,discordId:fresh.user.discordId||null});
+      }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/discord/sync"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const fresh=await currentLinkedDiscordAuth(auth);
+        if(!fresh.user.discordId){sendJson(res,409,{error:"Associe d'abord ton compte Discord pour récupérer ses serveurs.",needsLink:true});return}
+        const outcome=await importOwnedDiscordGuilds(fresh);
+        sendJson(res,200,{ok:true,...outcome,linked:true,
+          message:outcome.imported.length+" Discord synchronisés, dont "+outcome.fullCount+" avec salons. "+
+            (outcome.shellCount?outcome.shellCount+" sans bot CMD (nom et icône uniquement).":"")});
+      }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,await allManagedGuilds(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
@@ -3621,7 +3665,8 @@ const httpServer=createServer(async(req,res)=>{
         const identity=verifyDiscordBridge(url.searchParams.get("token"));
         if(tx.typ==="dashboard_tx"){
           const authData=await resolveDiscordAccount(identity,tx.linkAccountId||null);
-          if(String(tx.next||"").includes("sync=1"))await importOwnedDiscordGuilds(authData);
+          // Le tableau de bord déclenche l'import en arrière-plan avec son retour visible.
+          // Ne jamais bloquer le callback OAuth pendant l'import des dizaines de serveurs.
           const session=sessionPayload(authData);
           res.writeHead(302,{Location:(String(tx.next||"/dashboard").startsWith("/")?baseUrl+String(tx.next):baseUrl+"/dashboard"),"set-cookie":dashboardCookie(session),"cache-control":"no-store, no-cache, must-revalidate","pragma":"no-cache","expires":"0"});res.end();return;
         }
