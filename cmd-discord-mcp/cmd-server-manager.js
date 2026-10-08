@@ -199,7 +199,7 @@ async function action(which){
  }
  if(which==='sync-native'){
   if(!isNative()||!ctx.source)return;
-  try{const res=await request('/api/native/sync',{nativeGuildId:id()});notify('Catégories, salons et rôles accessibles synchronisés.');await update()}
+  try{const res=await request('/api/native/sync',{nativeGuildId:id()});notify(res.warning||(res.botless?'Nom et icône actualisés. Catégories et salons non accessibles au bot.':'Catégories, salons et rôles accessibles synchronisés.'),!res.botless&&!res.warning);await update()}
   catch(err){notify('Synchronisation impossible : '+err.message,false)}return;
  }
  if(which==='mirror-history'){close();if(typeof openMirrorManager==='function')openMirrorManager();return}
@@ -225,6 +225,8 @@ function install(){
  const closeButton=$('#serverSettingsClose');if(closeButton)closeButton.onclick=close;
 }
 document.addEventListener('click',e=>{
+ const gear=e.target.closest('[data-csm-channel-settings]');if(gear){e.preventDefault();open('channels').then(()=>editChannel(gear.dataset.csmChannelSettings));return}
+ if(e.target.closest('[data-csm-open-settings]')){e.preventDefault();open();return}
  if(e.target.closest('.cmd-server-heading')&&!e.target.closest('a,button,input'))menu();
  if(e.target.closest('#serverSettingsModal .csm-open-outside'))close();
 });

@@ -92,3 +92,47 @@
  .sphere-app .server-rail .rail-home>img{border-radius:50%!important;object-fit:cover!important}
  .sphere-app.cmd-native-selected .cmd-channel-row{min-height:44px;margin:1px 0}
 }
+
+/* Keep the selected server sidebar visible alongside its conversation on desktop. */
+.sphere-app .cmd-server-settings,.sphere-app .cmd-category-settings,.sphere-app .cmd-channel-settings{border:0;background:transparent;color:#cbbdd3;cursor:pointer;min-width:36px;min-height:36px;border-radius:8px;font-size:17px}
+.sphere-app .cmd-server-settings:hover,.sphere-app .cmd-category-settings:hover,.sphere-app .cmd-channel-settings:hover{color:#fff;background:#ffffff16}
+.sphere-app .cmd-server-settings:focus-visible,.sphere-app .cmd-category-settings:focus-visible,.sphere-app .cmd-channel-settings:focus-visible{outline:2px solid #a78bfa;outline-offset:1px}
+.sphere-app .cmd-server-heading>div{flex:1;min-width:0}
+.sphere-app .cmd-server-section{position:relative}
+.sphere-app .cmd-server-section>.cmd-category-toggle{padding-right:38px}
+.sphere-app .cmd-category-settings{position:absolute;right:0;top:7px}
+.sphere-app .cmd-category-children,.sphere-app .cmd-server-channels{position:relative}
+.sphere-app.cmd-native-selected .cmd-channel-row:has(+.cmd-channel-settings){padding-right:41px}
+.sphere-app .cmd-channel-settings{float:right;position:relative;margin-top:-40px;margin-right:3px;z-index:1}
+.sphere-app .cmd-channel-row[hidden]+.cmd-channel-settings,.sphere-app .collapsed .cmd-channel-settings{display:none}
+.sphere-app.cmd-native-selected .cmd-server-heading img{border-radius:50%;object-fit:contain}
+.sphere-app .server-rail .rail-server>img,.sphere-app .server-rail .rail-home>img,.sphere-app .server-rail .rail-folder .mini img{object-fit:contain!important}
+@media(min-width:851px){
+ .sphere-app.cmd-native-selected{height:100dvh;overflow:hidden}
+ .sphere-app.cmd-native-selected .wrap{max-width:none;margin:0;padding:0}
+ .sphere-app.cmd-native-selected .wrap>.top{display:none}
+ .sphere-app.cmd-native-selected .grid{display:block;margin:0}
+ .sphere-app.cmd-native-selected .grid>aside.card{display:none}
+ .sphere-app.cmd-native-selected .grid>main.card{width:280px;height:100dvh;padding:0;margin:0;overflow:hidden}
+ .sphere-app.cmd-native-selected .cmd-server-panel{height:100dvh;display:flex;flex-direction:column}
+ .sphere-app.cmd-native-selected .cmd-server-head{flex:none}
+ .sphere-app.cmd-native-selected .cmd-server-channels{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:100px}
+ .sphere-app.cmd-native-selected .user-dock{left:89px;width:266px;right:auto;padding:7px;display:flex;gap:5px}
+ .sphere-app.cmd-native-selected .user-dock-avatar{width:35px;height:35px;flex:none}
+ .sphere-app.cmd-native-selected .user-dock-actions{gap:1px}
+ .sphere-app.cmd-native-selected .user-dock-actions>*{width:27px;height:30px;padding:3px!important}
+ .sphere-app.cmd-native-selected .user-dock-presence-indicator{left:31px;top:32px}
+ .sphere-app.cmd-native-selected #channelOverlay.on{left:362px;width:calc(100% - 362px);top:0;bottom:0}
+ .sphere-app.cmd-native-selected .channel-head{min-height:58px;padding:8px 14px}
+ .sphere-app.cmd-native-selected .dashboard-profile-pop,.sphere-app.cmd-native-selected .dashboard-notif-pop{left:89px;width:266px}
+}
+@media(max-width:850px){
+ .sphere-app.cmd-native-selected .cmd-channel-row:has(+.cmd-channel-settings){padding-right:42px}
+ .sphere-app .cmd-channel-settings{min-width:40px;min-height:40px;margin-top:-43px}
+ .sphere-app.cmd-native-selected #channelOverlay.on{left:0;width:100%;height:100dvh}
+ .sphere-app .channel-head{gap:5px;padding-left:5px;padding-right:7px}
+ .sphere-app .channel-head-main b{overflow-wrap:anywhere;font-size:17px}
+ .sphere-app .channel-composer{gap:3px}
+ .sphere-app .channel-composer button{padding:0 7px;min-width:32px}
+ .sphere-app .channel-composer textarea{min-width:0}
+}
