@@ -5,7 +5,7 @@ self.addEventListener("push",e=>{
  let data={};try{data=e.data?.json()||{}}catch{}
  const call=data.kind==="call";
  e.waitUntil(self.registration.showNotification(data.title||"CMD Sphere",{
-   body:data.body||"",icon:"/app-icon.webp?v=5",badge:"/app-icon.webp?v=5",
+   body:data.body||"",icon:data.icon||"/app-icon.webp?v=5",badge:"/app-icon.webp?v=5",
    tag:call?"cmd-call-"+data.room:"cmd-message-"+Date.now(),renotify:call,
    requireInteraction:call,vibrate:call?[400,200,400,200,400]:[200,100,200],
    data:{href:data.href||"/messages",kind:data.kind},
