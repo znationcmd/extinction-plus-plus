@@ -732,10 +732,11 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       await loadGuilds();
       if(S.guild&&S.guild.id)await loadStructure();else if(S.nativeGuild?.id)await selectNative(S.nativeGuild);
       if(qs('#webhookModal')?.classList.contains('on'))await openWebhookManager();
-      toast('CMD Sphere actualisé');
-    }catch(e){toast(e.message,false)}
+      toast('CMD Sphere actualisé');return true;
+    }catch(e){toast(e.message,false);return false}
     finally{if(b){b.disabled=false;b.textContent='↻ Actualiser'}}
   }
+  window.refreshEverything=refreshEverything;
   let mirrorPoll=null;
   function closeMirrorManager(){qs('#mirrorModal').classList.remove('on');clearInterval(mirrorPoll);mirrorPoll=null}
   async function mirrorRender(){
