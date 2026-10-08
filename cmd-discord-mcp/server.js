@@ -152,7 +152,7 @@ function clearDashboardCookies(){
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008q"></head>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script><script defer src="/bulk-sync.js?v=20261008a"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -2754,6 +2754,10 @@ async function startDiscordSyncJob(auth){
   if(!auth.user.discordId)return {ok:false,needsLink:true,error:"Connecte ton compte Discord d'abord."};
   const uid=String(auth.user.id),old=await discordSyncJobStatus(auth);
   if(old&&["queued","running"].includes(old.status)&&Date.now()-new Date(old.updated_at).getTime()<15*60*1000)return {ok:true,job:old,started:false};
+  if(old?.status==="complete"&&old.summary?.mirrorJob){
+    const mirror=await mirrorStatus(auth,old.summary.mirrorJob);
+    if(["queued","running"].includes(mirror.job?.status))return {ok:true,job:old,started:false};
+  }
   const id=crypto.randomUUID();
   await pool.query("INSERT INTO cmd_discord_sync_jobs(id,user_id,status) VALUES($1,$2,'queued')",[id,uid]);
   setImmediate(()=>runDiscordSyncJob(auth,id).catch(e=>console.error("[sync-job]",e.message)));
@@ -3312,6 +3316,10 @@ async function mirrorIdentityProfile(auth){
     [userId,safeText(dp.displayName||auth.user.displayName||auth.user.name,80)||null,dp.avatar||auth.user.avatar||null,dp.banner||auth.user.banner||null,accent]);
 }
 async function mirrorStoreGuild(auth,guildId,bot,snapshot){
+  const previous=await pool.query('SELECT snapshot FROM cmd_discord_mirror_guilds WHERE user_id=$1 AND guild_id=$2 LIMIT 1',[String(auth.user.id),String(guildId)]);
+  const old=previous.rows[0]?.snapshot||{};
+  const merge=(a,b)=>[...new Map([...(a||[]),...(b||[])].map(x=>[String(x.id),x])).values()];
+  snapshot={...old,...snapshot,extras:{...(old.extras||{}),...(snapshot.extras||{}),bots:merge(old.extras?.bots,snapshot.extras?.bots),integrations:merge(old.extras?.integrations,snapshot.extras?.integrations)},webhooks:merge(old.webhooks,snapshot.webhooks)};
   await pool.query(`INSERT INTO cmd_discord_mirror_guilds(user_id,guild_id,bot,snapshot,synced_at)
     VALUES($1,$2,$3,$4::jsonb,NOW())
     ON CONFLICT(user_id,guild_id) DO UPDATE SET bot=EXCLUDED.bot,snapshot=EXCLUDED.snapshot,synced_at=NOW()`,
@@ -3374,6 +3382,8 @@ async function runMirrorJob(jobId,auth){
           backend(bot,"extras",{guildId:gid}).catch(e=>({errors:{extras:e.message},threads:[],bots:[],integrations:[]})),
           dashboardWebhooks(auth,gid,bot).catch(e=>({webhooks:[],errors:[{error:e.message}]}))
         ]);
+        for(const error of webhooks.errors||[])summary.errors.push({guildId:gid,guildName:g.name,error:error.error||"Webhooks inaccessibles"});
+        for(const error of Object.values(extras.errors||{}))summary.errors.push({guildId:gid,guildName:g.name,error:String(error)});
         const snapshot={meta:g,structure,extras,webhooks:webhooks.webhooks||[],coverage:{full:true,bot,botName:bots[bot].label,syncedAt:new Date().toISOString()}};
         await mirrorStoreGuild(auth,gid,bot,snapshot);summary.fullGuilds++;summary.bots+=(extras.bots||[]).length;summary.integrations+=(extras.integrations||[]).length;summary.webhooks+=(webhooks.webhooks||[]).length;
         const channelMap=new Map();
@@ -3384,13 +3394,16 @@ async function runMirrorJob(jobId,auth){
         for(const th of extras.threads||[])channelMap.set(String(th.id),th);
         const channels=[...channelMap.values()];summary.channels+=channels.length;
         for(let ci=0;ci<channels.length;ci++){
-          const ch=channels[ci];let before="",lastBefore=null,pages=0;
+          const ch=channels[ci];let before="",lastBefore=null,pages=0,contentWarning=false;
           while(true){
             const d=await backend(bot,"messages",{guildId:gid,channelId:String(ch.id),before,limit:100}).catch(e=>({error:e.message,messages:[],hasMore:false}));
             if(d.error){summary.errors.push({guildId:gid,channelId:String(ch.id),error:d.error});break}
+            if(!contentWarning&&(d.messages||[]).some(m=>Number(m.type||0)===0&&!String(m.content||"").trim()&&![m.attachments,m.embeds,m.stickers,m.components].some(a=>a?.length)&&!m.poll)){
+              contentWarning=true;summary.errors.push({guildId:gid,guildName:g.name,channelId:String(ch.id),error:"Certains messages sont fournis sans contenu par Discord ; vérifier les autorisations du bot."});
+            }
             summary.messages+=await mirrorStoreMessagePage(auth,gid,String(ch.id),d.messages||[]);
             pages++;
-            if(pages%10===0)await mirrorJobUpdate(jobId,{progress:{stage:"messages",guildIndex:gi+1,guildCount:guilds.length,guildId:gid,guildName:g.name,channelIndex:ci+1,channelCount:channels.length,channelName:ch.name||ch.id,messages:summary.messages,label:"Archivage des messages"}});
+            await mirrorJobUpdate(jobId,{progress:{stage:"messages",guildIndex:gi+1,guildCount:guilds.length,guildId:gid,guildName:g.name,channelIndex:ci+1,channelCount:channels.length,channelName:ch.name||ch.id,messages:summary.messages,label:"Archivage des messages"}});
             const next=String(d.nextBefore||"");if(!d.hasMore||!next||next===lastBefore)break;lastBefore=next;before=next;
             await new Promise(r=>setTimeout(r,80));
           }
@@ -4180,6 +4193,9 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,result);
       }catch(e){sendJson(res,400,{error:"La demande n’a pas pu être traitée."})}
       return;
+    }
+    if(req.method==="GET"&&url.pathname==="/bulk-sync.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./bulk-sync.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-server-manager.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
