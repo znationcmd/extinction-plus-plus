@@ -2882,7 +2882,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
   }
   const messages=(rows.rows||[]).map(row=>({
     id:String(row.id),channelId:String(ch.id),guildId:String(guildId),content:String(row.body||""),timestamp:row.created_at,editedTimestamp:row.edited_at,
-    author:{id:String(row.sender_user_id),username:String(row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.webhook)},
+    author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},
     attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata&&typeof row.metadata==="object"?row.metadata:{},embeds:Array.isArray(row.metadata?.embeds)?row.metadata.embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
@@ -2936,7 +2936,7 @@ async function sendNativeChannelMessage(auth,input){
       body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
     });
   }
-  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
+  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
 async function updateNativeOverview(auth,input){
