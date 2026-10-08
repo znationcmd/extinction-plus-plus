@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
 import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
+import {freeMessageTranslation} from "./cmd-translation.js";
 import crypto from "node:crypto";
 import {initDeveloperDb,developerRoute} from "./cmd-developer-api.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -154,7 +155,7 @@ function clearDashboardCookies(){
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008q"></head>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script><script defer src="/bulk-sync.js?v=20261008a"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008q"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008a"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -398,7 +399,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const divider=day&&day!==lastDay?'<div class="message-day">'+esc(day)+'</div>':'';if(day)lastDay=day;
       const authorName=m.author?.displayName||m.author?.globalName||m.author?.username||'Utilisateur';
       const av=m.author?.avatar&&/^https:\/\//i.test(m.author.avatar)?'<img src="'+esc(m.author.avatar)+'" alt="">':'<span>'+esc(String(authorName).slice(0,1).toUpperCase())+'</span>';
-      return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time><button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button></div>'+messageBody(m)+'</div></article>';
+      return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time><button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button></div>'+messageBody(m)+(String(m.content||'').trim()?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
     }).join('');
     const normal=rows.filter(m=>Number(m.type||0)===0),empty=normal.filter(m=>!hasDiscordMessageContent(m));
     const inaccessible=(CHAT.mode==='discord'||CHAT.mode==='archive')&&normal.length>0&&empty.length>=Math.min(2,normal.length)&&empty.length/normal.length>=.8;
@@ -4264,6 +4265,18 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,await restoreNativeMirrorBackups(auth))}
       catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/cmd/translate-message"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{
+        const body=await readFormBodyJson(req);
+        const translated=await freeMessageTranslation({
+          userId:String(auth.user.id),text:String(body.text||""),
+          target:String(body.target||"fr"),source:String(body.source||"auto")
+        });
+        sendJson(res,200,translated);
+      }catch(error){sendJson(res,error.status||503,{error:error.message})}
+      return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/history"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -4484,6 +4497,10 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-developer.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-developer.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-message-translate.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-message-translate.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-server-manager.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
