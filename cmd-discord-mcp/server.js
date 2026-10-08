@@ -382,7 +382,9 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     if((m.reactions||[]).length)out+='<div class="msg-reactions">'+m.reactions.map(r=>'<span>'+esc(r.emoji?.name||'⭐')+' '+Number(r.count||0)+'</span>').join('')+'</div>';
     if(!out){
       const remote=CHAT.mode==='discord'||CHAT.mode==='archive'||m.source==='discord_archive',system=Number(m.type||0)!==0;
-      const gid=CHAT.mode==='discord'?String(CHAT.guildId||''):'',cid=CHAT.mode==='discord'?String(CHAT.channelId||''):'',mid=String(m.id||'');
+      const archived=m.source==='discord_archive'||CHAT.mode==='archive';
+      const gid=CHAT.mode==='discord'?String(CHAT.guildId||''):archived?String(S.nativeGuild?.source_discord_id||''):'',
+        cid=CHAT.mode==='discord'?String(CHAT.channelId||''):archived?String(m.channelId||S.nativeChannels?.get(String(CHAT.channelId))?.source_channel_id||''):'',mid=String(m.id||'');
       const url=/^\d{15,22}$/.test(gid)&&/^\d{15,22}$/.test(cid)&&/^\d{15,22}$/.test(mid)?'https://discord.com/channels/'+gid+'/'+cid+'/'+mid:'';
       out='<div class="msg-empty">'+(system?'Événement système Discord.':remote?'Discord ne transmet pas le contenu de ce message au bot CMD.':'Message sans texte ni fichier.')+(url?'<a class="cmd-view-discord" href="'+url+'" target="_blank" rel="noopener noreferrer">Voir sur Discord ↗</a>':'')+'</div>';
     }
@@ -402,13 +404,14 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const av=m.author?.avatar&&/^https:\/\//i.test(m.author.avatar)?'<img src="'+esc(m.author.avatar)+'" alt="">':'<span>'+esc(String(authorName).slice(0,1).toUpperCase())+'</span>';
       return divider+'<article class="discord-message" data-message-id="'+esc(m.id)+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+(m.source==='discord_archive'?'<span class="bot-badge">DISCORD</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time>'+(m.source==='discord_archive'?'':'<button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button>')+'</div>'+messageBody(m)+(String(m.content||'').trim()?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
     }).join('');
-    const normal=rows.filter(m=>Number(m.type||0)===0),empty=normal.filter(m=>!hasDiscordMessageContent(m));
+    const normal=rows.filter(m=>Number(m.type||0)===0&&(CHAT.mode!=='combined'||m.source==='discord_archive')),
+      empty=normal.filter(m=>!hasDiscordMessageContent(m));
     const inaccessible=(CHAT.mode==='discord'||CHAT.mode==='archive'||CHAT.mode==='combined')&&normal.length>0&&empty.length>=Math.min(2,normal.length)&&empty.length/normal.length>=.8;
     const warning=inaccessible?'<div class="cmd-message-warning">⚠️ Discord renvoie les auteurs et les dates, mais pas le contenu de '+empty.length+' message(s). Le bot n’a probablement pas accès au <b>Message Content Intent</b>. Pour voir le texte, les images et les fichiers, active cette autorisation pour le bot dans le <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">Portail des développeurs Discord</a> → Bot → Privileged Gateway Intents, puis recharge le salon. Une approbation Discord peut être nécessaire.</div>':'';
     box.innerHTML=warning+(CHAT.hasMore?'<div class="history-tools"><button class="btn" id="loadMoreMessages">↑ Charger 100 messages plus anciens</button><button class="btn" id="loadAllMessages">⇧ Tout récupérer</button></div>':'')+(rendered||'<div class="channel-empty">Aucun message visible dans ce salon.</div>');
     box.querySelectorAll('[data-reply-message]').forEach(b=>b.addEventListener('click',()=>{const m=CHAT.messages.find(x=>String(x.id)===b.dataset.replyMessage);if(m)replyDiscordMessage(m.id,m.author?.displayName||m.author?.globalName||m.author?.username||'Utilisateur',String(m.content||'').slice(0,120))}));
     if(qs('#loadMoreMessages'))qs('#loadMoreMessages').onclick=()=>loadDiscordMessages(false,false);
-    if(qs('#loadAllMessages'))qs('#loadAllMessages').onclick=()=>loadDiscordMessages(false,true);
+    if(qs('#loadAllMessages')){if(CHAT.mode==='combined')qs('#loadAllMessages').textContent='⇧ Charger trois lots (sans bloquer le téléphone)';qs('#loadAllMessages').onclick=()=>loadDiscordMessages(false,true)}
     if(scrollBottom)requestAnimationFrame(()=>box.scrollTop=box.scrollHeight);
   }
   function mergeChannelMessages(list){
