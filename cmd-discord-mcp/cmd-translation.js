@@ -29,15 +29,49 @@ async function googlePublic(text,target){
   if(!translated)fail("Traduction non disponible.");
   return {translatedText:translated,sourceLanguage:String(out[2]||"auto"),provider:"service public"};
 }
-async function myMemory(text,target,source){
-  const langpair=(allowed.has(source)&&source!==target?source:"fr")+"|"+target;
-  const query=new URLSearchParams({q:text,langpair});
-  const out=await getJson("https://api.mymemory.translated.net/get?"+query.toString());
-  const result=decode(out?.responseData?.translatedText||"").trim();
-  if(Number(out?.responseStatus||0)!==200||!result||/^MYMEMORY WARNING/i.test(result))fail("Paire de langues indisponible auprès du service gratuit.");
-  if(result===text&&source!==target)fail("Ce service n'a pas renvoyé de traduction pour cette paire de langues.");
-  return {translatedText:result,sourceLanguage:source,provider:"MyMemory"};
+// MyMemory free API accepts at most 500 UTF-8 bytes per request.
+function splitForMyMemory(message,maxBytes=440){
+  const parts=[],encoder=new TextEncoder(),words=String(message).split(/(\s+)/);
+  let current="";
+  for(const word of words){
+    if(encoder.encode(current+word).length<=maxBytes){current+=word;continue}
+    if(current.trim()){parts.push(current);current=""}
+    if(encoder.encode(word).length<=maxBytes){current=word;continue}
+    let piece="";
+    for(const char of word){
+      if(encoder.encode(piece+char).length>maxBytes){if(piece)parts.push(piece);piece=""}
+      piece+=char;
+    }
+    current=piece;
+  }
+  if(current.trim())parts.push(current);
+  return parts;
 }
+function likelySource(message,target){
+  const m=String(message).toLowerCase();
+  const english=/\b(the|hello|thanks|you|your|please|what|with|this|have|good|can|how|where)\b/g;
+  const french=/\b(le|la|les|des|bonjour|merci|vous|avec|pour|dans|est|une|pas|comment|salut)\b/g;
+  const en=(m.match(english)||[]).length,fr=(m.match(french)||[]).length;
+  return fr>en?"fr":en>fr?"en":target==="fr"?"en":"fr";
+}
+async function myMemory(text,target,source){
+  // The free memory provider has no language auto-detect: estimate the source.
+  const from=allowed.has(source)&&source!==target?source:likelySource(text,target);
+  if(from===target)fail("Langue source non reconnue pour le service gratuit.");
+  const translated=[];
+  for(const part of splitForMyMemory(text)){
+    const query=new URLSearchParams({q:part,langpair:from+"|"+target});
+    const out=await getJson("https://api.mymemory.translated.net/get?"+query.toString());
+    const result=decode(out?.responseData?.translatedText||"").trim();
+    if(Number(out?.responseStatus||0)!==200||!result||/^MYMEMORY WARNING/i.test(result))
+      fail("Paire de langues indisponible auprès du service gratuit.");
+    translated.push(result);
+  }
+  const value=translated.join(" ").trim();
+  if(value===text&&source!==target)fail("Ce service n'a fourni aucune traduction.");
+  return {translatedText:value,sourceLanguage:from,provider:"MyMemory (source estimée)"};
+}
+
 export async function freeMessageTranslation({userId,text,target,source="auto"}){
   const content=String(text||"").trim(),lang=target==="us"?"en":String(target||"").trim().toLowerCase();
   if(!allowed.has(lang))fail("Langue demandée non disponible.",400);
@@ -49,7 +83,7 @@ export async function freeMessageTranslation({userId,text,target,source="auto"})
   let translated=null,reason="";
   try{translated=await googlePublic(content,lang)}catch(e){reason=e.message}
   if(!translated){
-    try{translated=await myMemory(content,lang,source==="auto"?"fr":source)}
+    try{translated=await myMemory(content,lang,source)}
     catch(e){reason+=" ; "+e.message}
   }
   if(!translated)fail("Traduction indisponible actuellement pour "+lang+". Le message original reste visible. "+reason);
