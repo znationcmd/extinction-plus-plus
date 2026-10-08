@@ -379,3 +379,61 @@ body:has(#serverSettingsModal.on) #cmd-sphere-tools{display:none!important}
   .sphere-app.cmd-native-selected .cmd-channel-row{max-width:100%;gap:7px;padding:8px 6px}
   .sphere-app.cmd-native-selected .cmd-channel-archive-count{max-width:63px;font-size:10px}
 }
+
+/* CMD Sphere regression correction: visible language picker in chats,
+   uncropped round guild images on desktop, phone and tablet. */
+#cmd-sphere-language{
+  box-sizing:border-box!important;
+  width:155px!important;
+  min-width:125px!important;
+  max-width:min(155px,42vw)!important;
+  text-overflow:ellipsis;
+  font-size:13px!important;
+  line-height:20px;
+  padding:8px 24px 8px 8px!important;
+}
+.sphere-app .server-rail .rail-server,
+.sphere-app .server-rail .rail-home,
+.sphere-app.cmd-native-selected .server-rail .rail-server,
+.sphere-app.cmd-native-selected .server-rail .rail-home{
+  position:relative!important;
+  border-radius:50%!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  aspect-ratio:1 / 1!important;
+  flex-shrink:0!important;
+}
+.sphere-app .server-rail .rail-server>img,
+.sphere-app .server-rail .rail-home>img,
+.sphere-app .server-rail .rail-folder img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  border-radius:50%!important;
+}
+body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
+  display:flex!important;
+  position:fixed!important;
+  z-index:11090!important;
+  right:8px!important;
+  top:calc(74px + env(safe-area-inset-top, 0px))!important;
+  bottom:auto!important;
+  max-width:calc(100vw - 16px)!important;
+}
+@media(max-width:850px){
+  body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
+    top:calc(76px + env(safe-area-inset-top, 0px))!important;
+    right:7px!important;
+    transform:none!important;
+  }
+  #cmd-sphere-language{
+    width:132px!important;
+    max-width:42vw!important;
+    font-size:12px!important;
+  }
+}
