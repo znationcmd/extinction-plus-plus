@@ -34,8 +34,9 @@
       '.cmd-set-row:hover,.cmd-set-row:focus-visible{background:#ffffff0a}',
       '.cmd-set-row svg{flex:none;color:#f3f3f5;width:25px;height:25px;stroke-width:2.25}',
       '.cmd-set-row[hidden],.cmd-settings-category[hidden],.cmd-settings-search[hidden]{display:none!important}',
-      '.cmd-set-label{flex:1;min-width:0;font-weight:560;line-height:1.3}',
-      '.cmd-set-sub{display:block!important;font-size:12px;color:#a8a8b4;line-height:1.4;margin-top:4px;font-weight:400}',
+      '.cmd-set-label{display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;flex:1 1 0;min-width:0;font-weight:560;line-height:1.3;gap:3px;overflow-wrap:anywhere}',
+      '.cmd-set-name{display:block!important;line-height:1.35;min-width:0;max-width:100%;overflow-wrap:anywhere}',
+      '.cmd-set-sub{display:block!important;position:static!important;float:none!important;clear:both!important;width:100%!important;white-space:normal!important;font-size:12px;color:#a8a8b4;line-height:1.4;margin:0!important;font-weight:400;overflow-wrap:anywhere}',
       '.cmd-set-value{color:#a7a7b0;font-size:12px;max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.cmd-set-chevron{font-size:28px;font-weight:300;color:#a1a2aa;margin-left:6px;line-height:1}',
       '.cmd-set-row.cmd-set-danger{color:#ff8587;margin-top:5px}',
@@ -172,9 +173,9 @@
     // Locale-specific settings labels. The account setting keys never change.
     var cmdSettingsLocales={"en":{"sections":"Account settings|Billing settings|App settings|CMD tools|Support|What's new|Account","rows":["Account|Content and social|Data and privacy|Devices|Authorized apps|Connections|Scan / invitations","Shop|Quests|CMD Premium|Server boosts|Rewards inventory|My diamonds","Voice and video|Appearance|Accessibility|Language|Notifications|App icon|Advanced","Sync my Discord servers|Reconnect Discord|Server folders|Discord bots|Webhooks|Discord backup","Help|Diagnostics","What's new in CMD Sphere","Log out"],"subs":"Profile, photo, banner|Messages and friends","title":"Settings","search":"Search","desc":"Manage this setting for your CMD Sphere account."},"es":{"sections":"Ajustes de la cuenta|Ajustes de facturación|Ajustes de la aplicación|Herramientas CMD|Ayuda|Novedades|Cuenta","rows":["Cuenta|Contenido y social|Datos y privacidad|Dispositivos|Aplicaciones autorizadas|Conexiones|Escanear / invitaciones","Tienda|Misiones|CMD Premium|Mejoras del servidor|Inventario de recompensas|Mis diamantes","Voz y vídeo|Apariencia|Accesibilidad|Idioma|Notificaciones|Icono de la aplicación|Avanzado","Sincronizar mis Discord|Reconectar Discord|Carpetas de servidores|Bots de Discord|Webhooks|Copia de seguridad Discord","Ayuda|Diagnóstico","Novedades CMD Sphere","Cerrar sesión"],"subs":"Perfil, foto y banner|Mensajes y amigos","title":"Ajustes","search":"Buscar","desc":"Gestiona este ajuste en tu cuenta de CMD Sphere."},"de":{"sections":"Kontoeinstellungen|Abrechnung|App-Einstellungen|CMD-Werkzeuge|Hilfe|Neuigkeiten|Konto","rows":["Konto|Inhalte und Soziales|Daten und Datenschutz|Geräte|Autorisierte Apps|Verbindungen|Scannen / Einladungen","Shop|Quests|CMD Premium|Server-Boosts|Belohnungsinventar|Meine Diamanten","Sprache und Video|Darstellung|Barrierefreiheit|Sprache|Benachrichtigungen|App-Symbol|Erweitert","Discord-Server synchronisieren|Discord erneut verbinden|Serverordner|Discord-Bots|Webhooks|Discord-Sicherung","Hilfe|Diagnose","CMD Sphere Neuigkeiten","Abmelden"],"subs":"Profil, Foto und Banner|Nachrichten und Freunde","title":"Einstellungen","search":"Suchen","desc":"Verwalte diese Einstellung in CMD Sphere."},"it":{"sections":"Impostazioni account|Fatturazione|Impostazioni app|Strumenti CMD|Assistenza|Novità|Account","rows":["Account|Contenuti e social|Dati e privacy|Dispositivi|App autorizzate|Connessioni|Scansione / inviti","Negozio|Missioni|CMD Premium|Boost server|Inventario ricompense|I miei diamanti","Voce e video|Aspetto|Accessibilità|Lingua|Notifiche|Icona app|Avanzate","Sincronizza i miei Discord|Riconnetti Discord|Cartelle server|Bot Discord|Webhook|Backup Discord","Assistenza|Diagnostica","Novità CMD Sphere","Disconnetti"],"subs":"Profilo, foto e banner|Messaggi e amici","title":"Impostazioni","search":"Cerca","desc":"Gestisci questa impostazione nel tuo account CMD Sphere."},"ru":{"sections":"Настройки аккаунта|Платежи|Настройки приложения|Инструменты CMD|Поддержка|Новости|Аккаунт","rows":["Аккаунт|Контент и общение|Данные и приватность|Устройства|Разрешённые приложения|Подключения|Сканер / приглашения","Магазин|Задания|CMD Premium|Усиления сервера|Награды|Мои алмазы","Голос и видео|Внешний вид|Доступность|Язык|Уведомления|Значок приложения|Дополнительно","Синхронизация Discord|Подключить Discord снова|Папки серверов|Боты Discord|Вебхуки|Резервная копия Discord","Поддержка|Диагностика","Новости CMD Sphere","Выйти"],"subs":"Профиль, фото, баннер|Сообщения и друзья","title":"Настройки","search":"Поиск","desc":"Настройки вашего аккаунта CMD Sphere."},"ko":{"sections":"계정 설정|결제 설정|앱 설정|CMD 도구|지원|새로운 소식|계정","rows":["계정|콘텐츠 및 소셜|데이터와 개인정보|기기|승인된 앱|연결|스캔 / 초대","상점|퀘스트|CMD 프리미엄|서버 부스트|보상 보관함|내 다이아몬드","음성 및 영상|외관|접근성|언어|알림|앱 아이콘|고급","Discord 서버 동기화|Discord 재연결|서버 폴더|Discord 봇|웹훅|Discord 백업","지원|진단","CMD Sphere 새로운 소식","로그아웃"],"subs":"프로필, 사진, 배너|메시지 및 친구","title":"설정","search":"검색","desc":"CMD Sphere 계정의 이 설정을 관리합니다."},"ja":{"sections":"アカウント設定|請求設定|アプリ設定|CMDツール|サポート|新着情報|アカウント","rows":["アカウント|コンテンツと交流|データとプライバシー|デバイス|認証済みアプリ|接続|スキャン / 招待","ショップ|クエスト|CMDプレミアム|サーバーブースト|報酬インベントリ|ダイヤモンド","音声・ビデオ|外観|アクセシビリティ|言語|通知|アプリアイコン|詳細設定","Discordサーバーの同期|Discordを再接続|サーバーフォルダー|Discordボット|ウェブフック|Discordバックアップ","サポート|診断","CMD Sphereの新機能","ログアウト"],"subs":"プロフィール、写真、バナー|メッセージとフレンド","title":"設定","search":"検索","desc":"CMD Sphereアカウントの設定を管理します。"},"zh":{"sections":"账户设置|账单设置|应用设置|CMD 工具|支持|新功能|账户","rows":["账户|内容与社交|数据与隐私|设备|已授权应用|连接|扫码 / 邀请","商店|任务|CMD 会员|服务器加成|奖励背包|我的钻石","语音与视频|外观|辅助功能|语言|通知|应用图标|高级","同步我的 Discord|重新连接 Discord|服务器文件夹|Discord 机器人|Webhook|Discord 备份","帮助|诊断","CMD Sphere 新功能","退出登录"],"subs":"个人资料、照片、横幅|消息和好友","title":"设置","search":"搜索","desc":"管理 CMD Sphere 账户中的此项设置。"},"co":{"sections":"Paràmetri di u contu|Fatturazione|Paràmetri di l'app|Arnesi CMD|Assistenza|Novità|Contu","rows":["Contu|Cuntenutu è suciale|Dati è riservatezza|Apparechji|Applicazioni auturizate|Cunnessioni|Scannà / inviti","Buttega|Missioni|CMD Premium|Boost di servore|Ricumpense|I mo diamanti","Voce è video|Aspettu|Accessibilità|Lingua|Nutificazioni|Icona di l'app|Avanzatu","Sincrunizà i mo Discord|Ricunnette Discord|Cartulari di servori|Bot Discord|Webhooks|Salvaguardia Discord","Assistenza|Diagnostichi","Novità CMD Sphere","Scunnettassi"],"subs":"Prufilu, fotò è bandera|Missaghji è amichi","title":"Paràmetri","search":"Circà","desc":"Gestisci stu paràmetru di u contu CMD Sphere."}};
     var cmdSettingsNativeNames={fr:'Français',en:'English',us:'English (US)',de:'Deutsch',es:'Español',it:'Italiano',ru:'Русский',ko:'한국어',ja:'日本語',zh:'中文',co:'Corsu'};
-    function settingsLocale(){var code='fr';try{code=localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}return cmdSettingsLocales[code==='us'?'en':code]||null}
+    function settingsLocale(){var code='fr';try{code=document.querySelector('#cmd-sphere-language')?.value||localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}return cmdSettingsLocales[code==='us'?'en':code]||null}
     function localizeSettings(){
-      var L=settingsLocale(),language='fr';try{language=localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}
+      var L=settingsLocale(),language='fr';try{language=document.querySelector('#cmd-sphere-language')?.value||localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}
       title.textContent=L?L.title:'Paramètres';
       search.placeholder=L?L.search:'Rechercher';
       var groupsEls=view.querySelectorAll('.cmd-settings-category');
@@ -184,9 +185,9 @@
         var labels=L?L.rows[index].split('|'):null;
         section.querySelectorAll('.cmd-set-row').forEach(function(row,j){
           var orig=g.rows[j],label=row.querySelector('.cmd-set-label');if(!orig||!label)return;
-          var node=Array.from(label.childNodes).find(function(n){return n.nodeType===3});
+          var nameNode=label.querySelector('.cmd-set-name');
           var translated=labels?labels[j]:orig[0];
-          if(node)node.nodeValue=translated;
+          if(nameNode)nameNode.textContent=translated;
           var sub=label.querySelector('.cmd-set-sub');
           if(sub)sub.textContent=L?L.subs.split('|')[orig[2]==='profile'?0:1]:orig[3];
           row.dataset.cmdFilter=(translated+' '+(h?h.textContent:'')+' '+orig[0]+' '+g.label).toLocaleLowerCase();
@@ -204,17 +205,25 @@
         }else if(p)p.textContent=d[1];
       }
     }
+    // Keep settings synchronized even when language changes outside this panel.
+    var lastAppliedLanguage='';
+    function syncSettingsLanguage(){
+      var code='fr';try{code=document.querySelector('#cmd-sphere-language')?.value||localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}
+      if(code===lastAppliedLanguage)return;
+      lastAppliedLanguage=code;
+      localizeSettings();
+    }
     document.addEventListener('change',function(e){
-      if(e.target&&e.target.id==='cmd-sphere-language'){
-        if(current==='home')draw();else detail(current);
-      }
+      if(e.target&&e.target.id==='cmd-sphere-language')syncSettingsLanguage();
     });
+    window.addEventListener('cmd-sphere-language-applied',syncSettingsLanguage);
+    window.addEventListener('storage',function(e){if(e.key==='cmd-sphere-language')syncSettingsLanguage()});
 
     function draw(){
       current='home';title.textContent='Paramètres';back.hidden=true;layer.querySelector('#cmdSettingsSearchWrap').hidden=false;
       view.innerHTML=groups.map(function(g){
         return '<section class="cmd-settings-category"><h3>'+esc(g.label)+'</h3><div class="cmd-settings-group">'+g.rows.map(function(r){
-          return '<button type="button" class="cmd-set-row'+(r[2]==='logout'?' cmd-set-danger':'')+'" data-cmd-action="'+esc(r[2])+'" data-cmd-filter="'+esc((r[0]+' '+g.label).toLowerCase())+'">'+glyph(r[1])+'<span class="cmd-set-label">'+esc(r[0])+(r[3]?'<span class="cmd-set-sub">'+esc(r[3])+'</span>':'')+'</span>'+(r[2]==='language'?'<span class="cmd-set-value" id="cmdCurrentLanguage">Français</span>':'')+'<span class="cmd-set-chevron">›</span></button>';
+          return '<button type="button" class="cmd-set-row'+(r[2]==='logout'?' cmd-set-danger':'')+'" data-cmd-action="'+esc(r[2])+'" data-cmd-filter="'+esc((r[0]+' '+g.label).toLowerCase())+'">'+glyph(r[1])+'<span class="cmd-set-label"><span class="cmd-set-name">'+esc(r[0])+'</span>'+(r[3]?'<span class="cmd-set-sub">'+esc(r[3])+'</span>':'')+'</span>'+(r[2]==='language'?'<span class="cmd-set-value" id="cmdCurrentLanguage">Français</span>':'')+'<span class="cmd-set-chevron">›</span></button>';
         }).join('')+'</div></section>';
       }).join('');
       search.value='';view.scrollTop=0;localizeSettings();
@@ -260,7 +269,7 @@
       document.body.classList.toggle('cmd-less-motion',localStorage.getItem('cmd-sphere-less-motion')==='1');
       document.body.classList.toggle('cmd-bigger-type',localStorage.getItem('cmd-sphere-bigger-type')==='1');
     }
-    function open(){lastFocus=document.activeElement;draw();layer.classList.add('on');layer.setAttribute('aria-hidden','false');document.body.classList.add('cmd-settings-locked');close.focus()}
+    function open(){lastAppliedLanguage='';lastFocus=document.activeElement;draw();layer.classList.add('on');layer.setAttribute('aria-hidden','false');document.body.classList.add('cmd-settings-locked');close.focus()}
     function dismiss(){layer.classList.remove('on');layer.setAttribute('aria-hidden','true');document.body.classList.remove('cmd-settings-locked');if(lastFocus&&lastFocus.focus)lastFocus.focus()}
     function realButton(id){dismiss();var b=document.getElementById(id);if(b)b.click();else alert('Fonction indisponible pour cette session.')}
     function action(key){
