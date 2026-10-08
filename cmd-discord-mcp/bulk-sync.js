@@ -5,7 +5,7 @@ let timer=null,busy=false,visible=false;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function request(path,body){const r=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(d.needsLink){location.href='/dashboard-login?link=1&next='+encodeURIComponent('/dashboard?sync=1');return null}if(!r.ok)throw Error(d.error||'Synchronisation indisponible');return d}
 const panel=document.createElement('section');panel.id='cmd-bulk-sync';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Tout synchroniser');
-panel.innerHTML='<div class="cmd-bulk-card"><header><h2>Tout synchroniser</h2><button type="button" data-close aria-label="Fermer">×</button></header><p>Serveurs, catégories, salons, rôles, bots, webhooks et historique accessibles aux bots autorisés.</p><div data-progress role="status" aria-live="polite"></div><div class="cmd-bulk-actions"><button type="button" data-start>Lancer / reprendre</button><button type="button" data-check>Actualiser</button><button type="button" data-restore>Restaurer les archives déjà sauvegardées</button><button type="button" data-audit-button>Vérifier les données réellement importées</button></div><p>La récupération continue sur le serveur après fermeture de cette fenêtre. Les réglages privés des bots tiers ne sont pas exportés par Discord.</p></div>';
+panel.innerHTML='<div class="cmd-bulk-card"><header><h2>Tout synchroniser</h2><button type="button" data-close aria-label="Fermer">×</button></header><p>Serveurs, catégories, salons, rôles, bots, webhooks et historique accessibles aux bots autorisés.</p><div data-progress role="status" aria-live="polite"></div><div class="cmd-bulk-actions"><button type="button" data-start>Lancer / reprendre</button><button type="button" data-check>Actualiser</button><button type="button" data-diagnostics>Vérifier ce qui est réellement importé</button><button type="button" data-restore>Restaurer les archives déjà sauvegardées</button><button type="button" data-audit-button>Vérifier les données réellement importées</button></div><p>La récupération continue sur le serveur après fermeture de cette fenêtre. Les réglages privés des bots tiers ne sont pas exportés par Discord.</p></div>';
 const style=document.createElement('style');style.textContent='#cmd-bulk-sync[hidden]{display:none}#cmd-bulk-sync{position:fixed;inset:0;z-index:110010;background:#090610d9;display:grid;place-items:center;padding:12px;box-sizing:border-box}#cmd-bulk-sync *{box-sizing:border-box}.cmd-bulk-card{width:min(620px,100%);max-height:calc(100dvh - 24px);overflow:auto;background:#25212e;color:#f5f0ff;border:1px solid #8e65c8;border-radius:18px;padding:20px;overflow-wrap:anywhere}.cmd-bulk-card header{display:flex;gap:10px;align-items:center}.cmd-bulk-card h2{flex:1;margin:0;font-size:22px}.cmd-bulk-card p{line-height:1.5;font-size:14px}.cmd-bulk-card button{background:#6742a3;color:white;border:0;border-radius:9px;padding:11px;cursor:pointer}.cmd-bulk-card button:disabled{opacity:.6}.cmd-bulk-actions{display:flex;gap:10px;flex-wrap:wrap}.cmd-bulk-card progress{width:100%;accent-color:#ac7cf4}.cmd-bulk-card li{margin:6px 0}.cmd-bulk-rail{flex:none;min-height:52px;width:52px;border-radius:50%;background:#6742a3;color:white;border:0;cursor:pointer;font-weight:800;font-size:12px}';document.head.append(style);document.body.append(panel);
 const status=panel.querySelector('[data-progress]'),startButton=panel.querySelector('[data-start]');
 function show(){visible=true;panel.hidden=false}
@@ -75,7 +75,24 @@ panel.querySelector('[data-audit-button]').onclick=async()=>{
          g.name+': '+Number(g.channels)+' salon(s) · '+Number(g.archivedMessages)+' messages archivés · '+Number(g.readableMessages)+' textes'));
   }catch(e){draw('Diagnostic impossible',e.message,0)}
 };
-panel.querySelector('[data-close]').onclick=stop;panel.querySelector('[data-start]').onclick=start;panel.querySelector('[data-check]').onclick=check;panel.querySelector('[data-restore]').onclick=restoreArchive;
+
+async function importDiagnostics(){
+  show();const button=panel.querySelector('[data-diagnostics]');button.disabled=true;
+  draw('Contrôle de l’import','Lecture des serveurs, des salons et des textes réellement présents dans PostgreSQL…',20);
+  try{
+    const d=await request('/api/native/import-diagnostics');
+    const count=Number(d.archivedMessages||0),readable=Number(d.readableMessages||0),native=Number(d.nativeMessages||0);
+    const rows=(d.guilds||[]).filter(x=>Number(x.archivedMessages||0)>0||Number(x.channels||0)>0);
+    const problems=rows.filter(x=>Number(x.archivedMessages||0)>0&&Number(x.readableMessages||0)===0).map(x=>(x.name||'Serveur')+' : '+Number(x.archivedMessages||0)+' messages archivés, aucun texte fourni au bot. Vérifier Message Content Intent.');
+    draw('Contrôle réel de l’import',
+      Number(d.nativeGuilds||0)+' serveurs CMD · '+Number(d.mirroredGuilds||0)+' serveurs sauvegardés · '+count+' messages archivés dont '+readable+' avec texte · '+native+' messages CMD locaux.',
+      100,problems);
+    if(!readable&&count)status.insertAdjacentHTML('beforeend','<p>Les messages ont été enregistrés sans texte. CMD Sphere ne peut pas reconstruire ce que Discord n’a pas fourni au bot.</p>');
+    const restore=panel.querySelector('[data-restore]');if(restore)restore.focus();
+  }catch(err){draw('Contrôle indisponible',err.message,0)}
+  finally{button.disabled=false}
+}
+panel.querySelector('[data-close]').onclick=stop;panel.querySelector('[data-start]').onclick=start;panel.querySelector('[data-check]').onclick=check;panel.querySelector('[data-diagnostics]').onclick=importDiagnostics;panel.querySelector('[data-restore]').onclick=restoreArchive;
 const rail=document.querySelector('.server-rail');if(rail){const button=document.createElement('button');button.className='cmd-bulk-rail';button.type='button';button.title='Tout synchroniser';button.setAttribute('aria-label','Tout synchroniser');button.textContent='↻ Tout';button.onclick=start;rail.prepend(button)}
 const old=document.querySelector('#syncDiscordBtn');if(old){old.textContent='↻ Tout synchroniser';old.onclick=start}
 window.cmdSphereBulkSync={start,open:()=>{show();return check()}};
