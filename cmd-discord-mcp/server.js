@@ -3077,6 +3077,68 @@ async function nativeMemberList(auth,guildId){
     WHERE m.guild_id=$1 ORDER BY CASE m.membership_role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,m.joined_at LIMIT 1000`,[String(guildId)]);
   return {members:rows.rows};
 }
+// Repair a single imported server from the user's already stored mirror.
+ // Does not call Discord, overwrite local messages, or change Discord.
+async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
+  const uid=String(auth.user.id);
+  const rg=await pool.query(
+    "SELECT g.id,g.source_discord_id FROM cmd_native_guilds g WHERE g.id=$1 AND g.owner_user_id=$2 LIMIT 1",
+    [String(nativeId),uid]
+  );
+  const g=rg.rows[0],sid=String(g?.source_discord_id||"");
+  if(!g||!/^\\d{15,22}$/.test(sid))return;
+  const archived=await pool.query(
+    "SELECT DISTINCT m.channel_id FROM cmd_discord_mirror_messages m "+
+    "LEFT JOIN cmd_native_channels c ON c.guild_id=$3 AND c.source_channel_id=m.channel_id "+
+    "WHERE m.user_id=$1 AND m.guild_id=$2 AND c.id IS NULL LIMIT 200",
+    [uid,sid,String(nativeId)]
+  );
+  const local=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_native_channels WHERE guild_id=$1",[String(nativeId)]);
+  if(!archived.rows.length&&Number(local.rows[0]?.n||0)>0)return;
+  const mirror=await pool.query("SELECT snapshot FROM cmd_discord_mirror_guilds WHERE user_id=$1 AND guild_id=$2",[uid,sid]);
+  const snap=mirror.rows[0]?.snapshot||{};
+  const structure=snap.structure||{};
+  const maps=new Map();
+  if(Number(local.rows[0]?.n||0)===0){
+    for(const ch of (Array.isArray(structure.channels)?structure.channels:[])){
+      if(/^\\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
+    }
+    for(const ch of (Array.isArray(snap.extras?.threads)?snap.extras.threads:[])){
+      if(/^\\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
+    }
+  }
+  for(const m of archived.rows){
+    const id=String(m.channel_id||"");
+    if(!/^\\d{15,22}$/.test(id))continue;
+    const original=(Array.isArray(structure.channels)?structure.channels:[]).find(c=>String(c.id)===id);
+    maps.set(id,original||{id,name:"archive-"+id,type:"text"});
+  }
+  for(const ch of maps.values()){
+    const cid=String(ch.id),raw=String(ch.type||"text").toLowerCase();
+    const type=["thread","public_thread","private_thread"].includes(raw)?"text":raw==="news"?"announcement":["text","category","voice","announcement","forum"].includes(raw)?raw:"text";
+    await pool.query(
+      "INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites) "+
+      "VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT(guild_id,source_channel_id) DO NOTHING",
+      [crypto.randomUUID(),String(nativeId),cid,
+       /^\\d{15,22}$/.test(String(ch.parentId||ch.parent_id||""))?String(ch.parentId||ch.parent_id):null,
+       safeText(ch.name||"archive-"+cid,100),type,ch.topic?safeText(ch.topic,1024):null,
+       Number(ch.position||0),JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]
+    );
+  }
+  if(!Number(local.rows[0]?.n||0)&&Array.isArray(structure.roles)){
+    for(const role of structure.roles){
+      if(!/^\\d{15,22}$/.test(String(role.id||"")))continue;
+      await pool.query(
+        "INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) "+
+        "VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9) ON CONFLICT(guild_id,source_role_id) DO NOTHING",
+        [crypto.randomUUID(),String(nativeId),String(role.id),safeText(role.name||"Rôle",100),
+         role.color==null?null:String(role.color),JSON.stringify(role.permissions||{}),
+         Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]
+      );
+    }
+  }
+}
+
 async function nativeGuildDetail(auth,id){
   const member=await requireNativeMember(auth,id);
   const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
@@ -4180,7 +4242,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname.startsWith("/api/native/guild/")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
-      try{sendJson(res,200,await nativeGuildDetail(auth,url.pathname.split("/").pop()))}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{const id=url.pathname.split("/").pop();try{await ensureArchivedChannelsForNativeGuild(auth,id)}catch(restoreError){console.warn("[archive-view] repair skipped:",restoreError.message)}sendJson(res,200,await nativeGuildDetail(auth,id))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&/^\/api\/webhooks\/[^/]+\/[^/]+$/.test(url.pathname)){
       try{const parts=url.pathname.split('/');const message=await receiveNativeWebhook(pool,parts[3],parts[4],await readFormBodyJson(req));sendJson(res,200,message)}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
