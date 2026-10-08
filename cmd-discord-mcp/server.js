@@ -3086,7 +3086,7 @@ async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
     [String(nativeId),uid]
   );
   const g=rg.rows[0],sid=String(g?.source_discord_id||"");
-  if(!g||!/^\\d{15,22}$/.test(sid))return;
+  if(!g||!/^\d{15,22}$/.test(sid))return;
   const archived=await pool.query(
     "SELECT DISTINCT m.channel_id FROM cmd_discord_mirror_messages m "+
     "LEFT JOIN cmd_native_channels c ON c.guild_id=$3 AND c.source_channel_id=m.channel_id "+
@@ -3101,15 +3101,15 @@ async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
   const maps=new Map();
   if(Number(local.rows[0]?.n||0)===0){
     for(const ch of (Array.isArray(structure.channels)?structure.channels:[])){
-      if(/^\\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
+      if(/^\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
     }
     for(const ch of (Array.isArray(snap.extras?.threads)?snap.extras.threads:[])){
-      if(/^\\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
+      if(/^\d{15,22}$/.test(String(ch?.id||"")))maps.set(String(ch.id),ch);
     }
   }
   for(const m of archived.rows){
     const id=String(m.channel_id||"");
-    if(!/^\\d{15,22}$/.test(id))continue;
+    if(!/^\d{15,22}$/.test(id))continue;
     const original=(Array.isArray(structure.channels)?structure.channels:[]).find(c=>String(c.id)===id);
     maps.set(id,original||{id,name:"archive-"+id,type:"text"});
   }
@@ -3120,14 +3120,14 @@ async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
       "INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites) "+
       "VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT(guild_id,source_channel_id) DO NOTHING",
       [crypto.randomUUID(),String(nativeId),cid,
-       /^\\d{15,22}$/.test(String(ch.parentId||ch.parent_id||""))?String(ch.parentId||ch.parent_id):null,
+       /^\d{15,22}$/.test(String(ch.parentId||ch.parent_id||""))?String(ch.parentId||ch.parent_id):null,
        safeText(ch.name||"archive-"+cid,100),type,ch.topic?safeText(ch.topic,1024):null,
        Number(ch.position||0),JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]
     );
   }
   if(!Number(local.rows[0]?.n||0)&&Array.isArray(structure.roles)){
     for(const role of structure.roles){
-      if(!/^\\d{15,22}$/.test(String(role.id||"")))continue;
+      if(!/^\d{15,22}$/.test(String(role.id||"")))continue;
       await pool.query(
         "INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) "+
         "VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9) ON CONFLICT(guild_id,source_role_id) DO NOTHING",
