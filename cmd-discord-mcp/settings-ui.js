@@ -35,7 +35,7 @@
       '.cmd-set-row svg{flex:none;color:#f3f3f5;width:25px;height:25px;stroke-width:2.25}',
       '.cmd-set-row[hidden],.cmd-settings-category[hidden],.cmd-settings-search[hidden]{display:none!important}',
       '.cmd-set-label{flex:1;min-width:0;font-weight:560;line-height:1.3}',
-      '.cmd-set-sub{font-size:12px;color:#a8a8b4;line-height:1.4;margin-top:3px}',
+      '.cmd-set-sub{display:block!important;font-size:12px;color:#a8a8b4;line-height:1.4;margin-top:4px;font-weight:400}',
       '.cmd-set-value{color:#a7a7b0;font-size:12px;max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.cmd-set-chevron{font-size:28px;font-weight:300;color:#a1a2aa;margin-left:6px;line-height:1}',
       '.cmd-set-row.cmd-set-danger{color:#ff8587;margin-top:5px}',
@@ -168,6 +168,48 @@
         ['Déconnexion','logout','logout','']
       ]}
     ];
+
+    // Locale-specific settings labels. The account setting keys never change.
+    var cmdSettingsLocales={"en":{"sections":"Account settings|Billing settings|App settings|CMD tools|Support|What's new|Account","rows":["Account|Content and social|Data and privacy|Devices|Authorized apps|Connections|Scan / invitations","Shop|Quests|CMD Premium|Server boosts|Rewards inventory|My diamonds","Voice and video|Appearance|Accessibility|Language|Notifications|App icon|Advanced","Sync my Discord servers|Reconnect Discord|Server folders|Discord bots|Webhooks|Discord backup","Help|Diagnostics","What's new in CMD Sphere","Log out"],"subs":"Profile, photo, banner|Messages and friends","title":"Settings","search":"Search","desc":"Manage this setting for your CMD Sphere account."},"es":{"sections":"Ajustes de la cuenta|Ajustes de facturación|Ajustes de la aplicación|Herramientas CMD|Ayuda|Novedades|Cuenta","rows":["Cuenta|Contenido y social|Datos y privacidad|Dispositivos|Aplicaciones autorizadas|Conexiones|Escanear / invitaciones","Tienda|Misiones|CMD Premium|Mejoras del servidor|Inventario de recompensas|Mis diamantes","Voz y vídeo|Apariencia|Accesibilidad|Idioma|Notificaciones|Icono de la aplicación|Avanzado","Sincronizar mis Discord|Reconectar Discord|Carpetas de servidores|Bots de Discord|Webhooks|Copia de seguridad Discord","Ayuda|Diagnóstico","Novedades CMD Sphere","Cerrar sesión"],"subs":"Perfil, foto y banner|Mensajes y amigos","title":"Ajustes","search":"Buscar","desc":"Gestiona este ajuste en tu cuenta de CMD Sphere."},"de":{"sections":"Kontoeinstellungen|Abrechnung|App-Einstellungen|CMD-Werkzeuge|Hilfe|Neuigkeiten|Konto","rows":["Konto|Inhalte und Soziales|Daten und Datenschutz|Geräte|Autorisierte Apps|Verbindungen|Scannen / Einladungen","Shop|Quests|CMD Premium|Server-Boosts|Belohnungsinventar|Meine Diamanten","Sprache und Video|Darstellung|Barrierefreiheit|Sprache|Benachrichtigungen|App-Symbol|Erweitert","Discord-Server synchronisieren|Discord erneut verbinden|Serverordner|Discord-Bots|Webhooks|Discord-Sicherung","Hilfe|Diagnose","CMD Sphere Neuigkeiten","Abmelden"],"subs":"Profil, Foto und Banner|Nachrichten und Freunde","title":"Einstellungen","search":"Suchen","desc":"Verwalte diese Einstellung in CMD Sphere."},"it":{"sections":"Impostazioni account|Fatturazione|Impostazioni app|Strumenti CMD|Assistenza|Novità|Account","rows":["Account|Contenuti e social|Dati e privacy|Dispositivi|App autorizzate|Connessioni|Scansione / inviti","Negozio|Missioni|CMD Premium|Boost server|Inventario ricompense|I miei diamanti","Voce e video|Aspetto|Accessibilità|Lingua|Notifiche|Icona app|Avanzate","Sincronizza i miei Discord|Riconnetti Discord|Cartelle server|Bot Discord|Webhook|Backup Discord","Assistenza|Diagnostica","Novità CMD Sphere","Disconnetti"],"subs":"Profilo, foto e banner|Messaggi e amici","title":"Impostazioni","search":"Cerca","desc":"Gestisci questa impostazione nel tuo account CMD Sphere."},"ru":{"sections":"Настройки аккаунта|Платежи|Настройки приложения|Инструменты CMD|Поддержка|Новости|Аккаунт","rows":["Аккаунт|Контент и общение|Данные и приватность|Устройства|Разрешённые приложения|Подключения|Сканер / приглашения","Магазин|Задания|CMD Premium|Усиления сервера|Награды|Мои алмазы","Голос и видео|Внешний вид|Доступность|Язык|Уведомления|Значок приложения|Дополнительно","Синхронизация Discord|Подключить Discord снова|Папки серверов|Боты Discord|Вебхуки|Резервная копия Discord","Поддержка|Диагностика","Новости CMD Sphere","Выйти"],"subs":"Профиль, фото, баннер|Сообщения и друзья","title":"Настройки","search":"Поиск","desc":"Настройки вашего аккаунта CMD Sphere."},"ko":{"sections":"계정 설정|결제 설정|앱 설정|CMD 도구|지원|새로운 소식|계정","rows":["계정|콘텐츠 및 소셜|데이터와 개인정보|기기|승인된 앱|연결|스캔 / 초대","상점|퀘스트|CMD 프리미엄|서버 부스트|보상 보관함|내 다이아몬드","음성 및 영상|외관|접근성|언어|알림|앱 아이콘|고급","Discord 서버 동기화|Discord 재연결|서버 폴더|Discord 봇|웹훅|Discord 백업","지원|진단","CMD Sphere 새로운 소식","로그아웃"],"subs":"프로필, 사진, 배너|메시지 및 친구","title":"설정","search":"검색","desc":"CMD Sphere 계정의 이 설정을 관리합니다."},"ja":{"sections":"アカウント設定|請求設定|アプリ設定|CMDツール|サポート|新着情報|アカウント","rows":["アカウント|コンテンツと交流|データとプライバシー|デバイス|認証済みアプリ|接続|スキャン / 招待","ショップ|クエスト|CMDプレミアム|サーバーブースト|報酬インベントリ|ダイヤモンド","音声・ビデオ|外観|アクセシビリティ|言語|通知|アプリアイコン|詳細設定","Discordサーバーの同期|Discordを再接続|サーバーフォルダー|Discordボット|ウェブフック|Discordバックアップ","サポート|診断","CMD Sphereの新機能","ログアウト"],"subs":"プロフィール、写真、バナー|メッセージとフレンド","title":"設定","search":"検索","desc":"CMD Sphereアカウントの設定を管理します。"},"zh":{"sections":"账户设置|账单设置|应用设置|CMD 工具|支持|新功能|账户","rows":["账户|内容与社交|数据与隐私|设备|已授权应用|连接|扫码 / 邀请","商店|任务|CMD 会员|服务器加成|奖励背包|我的钻石","语音与视频|外观|辅助功能|语言|通知|应用图标|高级","同步我的 Discord|重新连接 Discord|服务器文件夹|Discord 机器人|Webhook|Discord 备份","帮助|诊断","CMD Sphere 新功能","退出登录"],"subs":"个人资料、照片、横幅|消息和好友","title":"设置","search":"搜索","desc":"管理 CMD Sphere 账户中的此项设置。"},"co":{"sections":"Paràmetri di u contu|Fatturazione|Paràmetri di l'app|Arnesi CMD|Assistenza|Novità|Contu","rows":["Contu|Cuntenutu è suciale|Dati è riservatezza|Apparechji|Applicazioni auturizate|Cunnessioni|Scannà / inviti","Buttega|Missioni|CMD Premium|Boost di servore|Ricumpense|I mo diamanti","Voce è video|Aspettu|Accessibilità|Lingua|Nutificazioni|Icona di l'app|Avanzatu","Sincrunizà i mo Discord|Ricunnette Discord|Cartulari di servori|Bot Discord|Webhooks|Salvaguardia Discord","Assistenza|Diagnostichi","Novità CMD Sphere","Scunnettassi"],"subs":"Prufilu, fotò è bandera|Missaghji è amichi","title":"Paràmetri","search":"Circà","desc":"Gestisci stu paràmetru di u contu CMD Sphere."}};
+    var cmdSettingsNativeNames={fr:'Français',en:'English',us:'English (US)',de:'Deutsch',es:'Español',it:'Italiano',ru:'Русский',ko:'한국어',ja:'日本語',zh:'中文',co:'Corsu'};
+    function settingsLocale(){var code='fr';try{code=localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}return cmdSettingsLocales[code==='us'?'en':code]||null}
+    function localizeSettings(){
+      var L=settingsLocale(),language='fr';try{language=localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}
+      title.textContent=L?L.title:'Paramètres';
+      search.placeholder=L?L.search:'Rechercher';
+      var groupsEls=view.querySelectorAll('.cmd-settings-category');
+      groupsEls.forEach(function(section,index){
+        var h=section.querySelector('h3'),g=groups[index];if(!g)return;
+        if(h)h.textContent=L?L.sections.split('|')[index]:g.label;
+        var labels=L?L.rows[index].split('|'):null;
+        section.querySelectorAll('.cmd-set-row').forEach(function(row,j){
+          var orig=g.rows[j],label=row.querySelector('.cmd-set-label');if(!orig||!label)return;
+          var node=Array.from(label.childNodes).find(function(n){return n.nodeType===3});
+          var translated=labels?labels[j]:orig[0];
+          if(node)node.nodeValue=translated;
+          var sub=label.querySelector('.cmd-set-sub');
+          if(sub)sub.textContent=L?L.subs.split('|')[orig[2]==='profile'?0:1]:orig[3];
+          row.dataset.cmdFilter=(translated+' '+(h?h.textContent:'')+' '+orig[0]+' '+g.label).toLocaleLowerCase();
+        });
+      });
+      var currentLang=view.querySelector('#cmdCurrentLanguage');if(currentLang)currentLang.textContent=cmdSettingsNativeNames[language]||'Français';
+      if(current!=='home'&&pages[current]){
+        var d=pages[current],h=view.querySelector('.cmd-settings-detail h3'),p=view.querySelector('.cmd-settings-detail > p');
+        var pageLabel=d[0];groups.forEach(function(g,i){g.rows.forEach(function(r,j){if(r[2]===current&&L)pageLabel=L.rows[i].split('|')[j]})});
+        if(h)h.textContent=pageLabel;
+        title.textContent=pageLabel;
+        if(p&&L){
+          var es={"social":"Accede a tus mensajes y administra tus amistades de CMD Sphere.","privacy":"Configura la privacidad de CMD Sphere. Discord mantiene sus propios permisos.","device":"Información de este dispositivo y tu sesión CMD Sphere.","invites":"Crea o acepta invitaciones desde tus servidores CMD Sphere.","premium":"Personalización, suscripciones y ventajas de CMD Sphere.","boost":"Opciones de mejora para los servidores CMD Sphere.","inventory":"Recompensas y objetos desbloqueados de tu perfil.","voice":"Comprueba el acceso al micrófono. Las llamadas usan CMD Sphere.","appearance":"Personaliza la apariencia de CMD Sphere en este dispositivo.","accessibility":"Ajusta la comodidad visual de este dispositivo.","language":"Elige el idioma de la interfaz de CMD Sphere.","notifications":"Activa las notificaciones de mensajes y llamadas de este dispositivo.","appicon":"Instala CMD Sphere desde el menú del navegador en la pantalla de inicio.","advanced":"Herramientas de administración de CMD Sphere según tus permisos.","support":"¿Problemas de conexión o sincronización? Consulta el diagnóstico o contacta con CMD.","diagnostics":"Comprueba la disponibilidad y actualiza los archivos de CMD Sphere.","whatsnew":"Nueva organización de ajustes con categorías y búsqueda."};
+          p.textContent=language==='es'?(es[current]||d[1]):L.desc;
+        }else if(p)p.textContent=d[1];
+      }
+    }
+    document.addEventListener('change',function(e){
+      if(e.target&&e.target.id==='cmd-sphere-language'){
+        if(current==='home')draw();else detail(current);
+      }
+    });
+
     function draw(){
       current='home';title.textContent='Paramètres';back.hidden=true;layer.querySelector('#cmdSettingsSearchWrap').hidden=false;
       view.innerHTML=groups.map(function(g){
@@ -175,7 +217,7 @@
           return '<button type="button" class="cmd-set-row'+(r[2]==='logout'?' cmd-set-danger':'')+'" data-cmd-action="'+esc(r[2])+'" data-cmd-filter="'+esc((r[0]+' '+g.label).toLowerCase())+'">'+glyph(r[1])+'<span class="cmd-set-label">'+esc(r[0])+(r[3]?'<span class="cmd-set-sub">'+esc(r[3])+'</span>':'')+'</span>'+(r[2]==='language'?'<span class="cmd-set-value" id="cmdCurrentLanguage">Français</span>':'')+'<span class="cmd-set-chevron">›</span></button>';
         }).join('')+'</div></section>';
       }).join('');
-      search.value='';view.scrollTop=0;
+      search.value='';view.scrollTop=0;localizeSettings();
     }
     var pages={
       social:["Contenu et social","Accède à tes messages privés et gère les conversations et relations de CMD Sphere.",'<a class="cmd-set-cta" href="/messages">Ouvrir les messages</a>'],
@@ -188,7 +230,7 @@
       voice:["Voix & Vidéo","Vérifie l'accès au microphone sur cet appareil. Les appels passent par la fonction d'appel CMD Sphere.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="mic">Tester le microphone</button><a class="cmd-set-cta secondary" href="/messages">Accéder aux appels et MP</a><p class="cmd-status" id="cmdSubStatus"></p>'],
       appearance:["Apparence","Personnalise l'affichage de CMD Sphere sur cet appareil.",'<label for="cmdThemeChoice">Thème</label><select id="cmdThemeChoice"><option value="dark">Sombre</option><option value="amoled">Noir AMOLED</option></select>'],
       accessibility:["Accessibilité","Réglages de confort visuel sur cet appareil.",'<label class="cmd-setting-toggle"><input id="cmdLessMotion" type="checkbox"> Réduire les animations</label><label class="cmd-setting-toggle"><input id="cmdBiggerType" type="checkbox"> Agrandir le texte</label>'],
-      language:["Langue","Choisis la langue de l'interface CMD Sphere.",'<label for="cmdLanguageChoice">Langue de l’application</label><select id="cmdLanguageChoice"><option value="fr">Français</option><option value="en">English</option><option value="us">English (USA)</option><option value="de">Deutsch</option><option value="es">Español</option><option value="it">Italiano</option><option value="ru">Русский</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select><p id="cmdSubStatus" class="cmd-status"></p>'],
+      language:["Langue","Choisis la langue de l'interface CMD Sphere.",'<label for="cmdLanguageChoice">Langue de l’application</label><select id="cmdLanguageChoice"><option value="fr">Français</option><option value="en">English</option><option value="us">English (USA)</option><option value="de">Deutsch</option><option value="es">Español</option><option value="it">Italiano</option><option value="ru">Русский</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="co">Corsu</option></select><p id="cmdSubStatus" class="cmd-status"></p>'],
       notifications:["Notifications","Active les notifications de messages et d'appels sur cet appareil. L'autorisation système ne garantit pas à elle seule les alertes lorsque le navigateur est fermé.",'<p id="cmdNotifState" class="cmd-small"></p><button type="button" class="cmd-set-cta" data-cmd-subaction="notif">Autoriser les notifications</button><a class="cmd-set-cta secondary" href="/messages">Messages et appels</a><p id="cmdSubStatus" class="cmd-status"></p>'],
       appicon:["Icône de l'appli","Installe CMD Sphere depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil » sur iPhone ou « Installer l'application » sur les navigateurs compatibles.",'<a class="cmd-set-cta secondary" href="/dashboard">Revenir à CMD Sphere</a>'],
       advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes Discord</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots Discord</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde Discord</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter Discord</a>'],
@@ -200,7 +242,7 @@
       var d=pages[key];if(!d)return;
       current=key;title.textContent=d[0];back.hidden=false;layer.querySelector('#cmdSettingsSearchWrap').hidden=true;
       view.innerHTML='<section class="cmd-settings-detail"><h3>'+esc(d[0])+'</h3><p>'+esc(d[1])+'</p>'+d[2]+'</section>';
-      view.scrollTop=0;
+      view.scrollTop=0;localizeSettings();
       if(key==='device')view.querySelector('#cmdDeviceText').textContent=(navigator.userAgent||'Navigateur')+(window.matchMedia('(display-mode: standalone)').matches?' · application installée':' · navigateur');
       if(key==='appearance'){var theme=view.querySelector('#cmdThemeChoice');theme.value=localStorage.getItem('cmd-sphere-appearance')||'dark';theme.onchange=function(){localStorage.setItem('cmd-sphere-appearance',theme.value);applyPreferences()}}
       if(key==='accessibility'){
@@ -209,7 +251,7 @@
         less.onchange=function(){localStorage.setItem('cmd-sphere-less-motion',less.checked?'1':'0');applyPreferences()};
         big.onchange=function(){localStorage.setItem('cmd-sphere-bigger-type',big.checked?'1':'0');applyPreferences()};
       }
-      if(key==='language'){var sel=view.querySelector('#cmdLanguageChoice');sel.value=localStorage.getItem('cmd-sphere-language')||'fr';sel.onchange=function(){localStorage.setItem('cmd-sphere-language',sel.value);var original=document.querySelector('#cmd-sphere-language');if(original){original.value=sel.value;original.dispatchEvent(new Event('change',{bubbles:true}))}else{status('Langue enregistrée. Actualise l’application pour appliquer ce choix.') }}}
+      if(key==='language'){var sel=view.querySelector('#cmdLanguageChoice');sel.value=localStorage.getItem('cmd-sphere-language')||'fr';sel.onchange=function(){var code=sel.value;localStorage.setItem('cmd-sphere-language',code);var original=document.querySelector('#cmd-sphere-language');if(original){original.value=code;original.dispatchEvent(new Event('change',{bubbles:true}))}else{localizeSettings()} }}
       if(key==='notifications'){var notif=view.querySelector('#cmdNotifState');notif.textContent=('Notification' in window)?('État : '+Notification.permission):'Notifications navigateur indisponibles sur cet appareil.'}
     }
     function status(s){var el=view.querySelector('#cmdSubStatus');if(el)el.textContent=String(s)}
