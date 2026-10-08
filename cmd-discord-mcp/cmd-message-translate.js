@@ -97,6 +97,38 @@ function loadTranslated(row,result,target){
  if(!row.isConnected||target!==actualLang())return;
  modeTranslated(row,result);
 }
+// Bounded, zero-cost direct fallback, used only after a server-side 503.
+// MyMemory supports browser CORS, but free quotas and some languages are limited.
+async function directFreeFallback(message,target){
+ const normalized=target==="us"?"en":target;
+ const detected=clue(message);
+ const source=detected!=="auto"?detected:normalized==="fr"?"en":"fr";
+ if(source===normalized)return{translatedText:message,sourceLanguage:source,provider:"original"};
+ const chunks=[];let part="";
+ for(const char of message){
+  if(new TextEncoder().encode(part+char).length>440){
+   if(part)chunks.push(part);part=char;
+  }else part+=char;
+ }
+ if(part)chunks.push(part);
+ if(chunks.length>4||!chunks.length)throw Error("Texte trop long pour l'accès gratuit direct");
+ const translated=[];
+ for(const chunk of chunks){
+  const url="https://api.mymemory.translated.net/get?"+new URLSearchParams({q:chunk,langpair:source+"|"+normalized});
+  const r=await fetch(url,{mode:"cors",cache:"no-store",headers:{accept:"application/json"}});
+  if(!r.ok)throw Error("Service de traduction indisponible");
+  const data=await r.json();
+  const value=String(data?.responseData?.translatedText||"").trim();
+  if(Number(data?.responseStatus)!==200||!value||/^MYMEMORY WARNING/i.test(value))
+    throw Error("Cette traduction gratuite n'est pas disponible");
+  const decoder=document.createElement("textarea");decoder.innerHTML=value;
+  translated.push(decoder.value);
+ }
+ const translatedText=translated.join(" ").trim();
+ if(!translatedText)throw Error("Traduction vide");
+ return{translatedText,sourceLanguage:source,provider:"MyMemory (accès direct gratuit)"};
+}
+
 async function requestServer(message,target){
  const response=await fetch("/api/cmd/translate-message",{
    method:"POST",credentials:"same-origin",cache:"no-store",
@@ -104,7 +136,10 @@ async function requestServer(message,target){
    body:JSON.stringify({text:message,target,source:"auto"})
  });
  const data=await response.json().catch(()=>({}));
- if(!response.ok)throw Object.assign(Error(data.error||"Service de traduction indisponible"),{status:response.status});
+ if(!response.ok){
+   if(response.status===503){try{return await directFreeFallback(message,target)}catch{}}
+   throw Object.assign(Error(data.error||"Service de traduction indisponible"),{status:response.status});
+ }
  if(!data.translatedText)throw Error("Traduction indisponible");
  return data;
 }
