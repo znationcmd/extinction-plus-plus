@@ -95,12 +95,17 @@ function installation(){
 }
 function oauth2(){
  const redirects=Array.isArray(current.config?.redirectUris)?current.config.redirectUris.join("\n"):"";
- return wrapper("OAuth2","Gère les URL de retour prévues pour tes intégrations. La connexion OAuth2 complète CMD Sphere est encore en développement.",
-  '<div class="dev-alert warn">Les URL enregistrées ici ne constituent pas encore un serveur OAuth2 opérationnel. Ne les utilise pas comme méthode d’authentification en production.</div>'+
-  card("URL de redirection",'<form id="dev-oauth-form">'+area("Une URL par ligne (HTTPS ou localhost)","redirects",redirects,'placeholder="https://exemple.fr/callback"')+
+ return wrapper("OAuth2","Autorisation CMD Sphere indépendante, avec validation des URL de retour et preuve cryptographique PKCE S256.",
+  card("Autorisations opérationnelles",'<p><b>OAuth2 — Authorization Code + PKCE S256</b> : chaque membre approuve explicitement la connexion.</p>'+
+    '<p>Permission disponible : <code>identify</code> (ID et pseudo CMD Sphere). L’accès aux salons ou aux messages exige une installation séparée et ses permissions.</p>'+
+    '<p>Durée du code : 5 minutes. Durée du jeton : 1 heure. Les jetons de renouvellement ne sont pas encore proposés.</p>')+
+  card("URL de redirection",'<form id="dev-oauth-form">'+area("Une URL exacte par ligne (HTTPS ou localhost)","redirects",redirects,'placeholder="https://exemple.fr/callback"')+
   '<button type="submit" class="dev-btn primary">Enregistrer les URL</button></form>')+
-  card("Identifiants",'<p>Client ID CMD Sphere</p><code class="dev-code">'+h(current.id)+'</code>'+
-  '<p>Autorisation Discord :'+(current.discord_client_id?' lien Discord disponible dans Installation.':' ajoute un Client ID Discord si tu souhaites proposer aussi Discord.')+'</p>'));
+  card("Identifiants et routes",'<p>Client ID CMD Sphere</p><code class="dev-code">'+h(current.id)+'</code>'+
+   '<p>URL d’autorisation</p><code class="dev-code">'+h(location.origin+'/api/cmd-oauth/authorize')+'</code>'+
+   '<p>Échange de jeton</p><code class="dev-code">'+h(location.origin+'/api/cmd-oauth/token')+'</code>'+
+   '<p>Profil de l’utilisateur connecté</p><code class="dev-code">'+h(location.origin+'/api/cmd-oauth/user')+'</code>'+
+   '<p>Paramètres : response_type=code, scope=identify, client_id, redirect_uri, state, code_challenge, code_challenge_method=S256.</p>'));
 }
 function bot(){
  return wrapper("Bot","Clé API, permissions et accès de ton bot aux serveurs CMD Sphere.",
