@@ -290,7 +290,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     try{
       const d=await api('/api/native/guild/'+encodeURIComponent(g.id)),cats=(d.channels||[]).filter(x=>x.type==='category'),chs=(d.channels||[]).filter(x=>x.type!=='category'),admin=['owner','admin'].includes(String(d.member?.membership_role||''));
       S.nativeChannels=new Map((d.channels||[]).map(ch=>[String(ch.id),ch]));
-      S.nativeImportedOwner=String(d.member?.membership_role||'')==='owner'&&String(d.guild.owner_user_id||'')===String(d.member?.user_id||'');
+      S.nativeImportedOwner=String(d.member?.membership_role||'')==='owner';
       qs('#workspace').dataset.nativeGuildId=String(g.id);
       let create='';
       if(admin){
@@ -423,41 +423,45 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
     await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=null;
   }
-  async function openNativeChannel(guildId,id,name,localOnly=false){
-    const chBtn=document.querySelector('[data-native-channel="'+CSS.escape(String(id))+'"]');chBtn?.querySelector('.channelUnread')?.remove();
-    const ch=S.nativeChannels?.get(String(id));
-    const sourceId=String(S.nativeGuild?.source_discord_id||'');
+  async function openNativeChannel(guildId,id,name,localOnly=false,sourceMode='archive'){
+    const chBtn=document.querySelector('[data-native-channel="'+CSS.escape(String(id))+'"]');
+    chBtn?.querySelector('.channelUnread')?.remove();
+    const ch=S.nativeChannels?.get(String(id)),sourceId=String(S.nativeGuild?.source_discord_id||'');
     const managed=(window.__discordManagedGuilds||[]).find(g=>String(g.id)===sourceId);
-    // The original Discord history is only accessible to the importing owner,
-    // when a CMD bot is actually installed and authorized for the source guild.
-    const remote=Boolean(!localOnly&&S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||''))&&managed?.installed&&(managed.availableBots||[]).length);
-    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;qs('#channelMessages').textContent='Chargement des messages…';CHAT.open=true;CHAT.mode=remote?'discord':'native';CHAT.guildId=remote?sourceId:String(guildId);CHAT.bot=remote?managed.availableBots[0].id:null;CHAT.channelId=remote?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
-    qs('#cmdArchiveHistoryToggle')?.remove();
+    const linked=Boolean(S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||'')));
+    const live=Boolean(!localOnly&&linked&&sourceMode==='discord'&&managed?.installed&&(managed.availableBots||[]).length);
+    const archive=Boolean(!localOnly&&linked&&!live);
+    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;CHAT.open=true;CHAT.mode=archive?'archive':live?'discord':'native';
+    CHAT.guildId=live?sourceId:String(guildId);CHAT.bot=live?managed.availableBots[0].id:null;
+    CHAT.channelId=live?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');
+    CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
+    qs('#channelMessages').textContent='Chargement des messages…';
     qs('#channelTitle').textContent='# '+CHAT.name;
-    qs('#channelSubtitle').textContent=remote?'Messages originaux Discord · historique consultable':'Messages CMD Sphere';
-    qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=false;qs('#channelSend').disabled=false;updateReplyBar();
-    const existing=qs('#cmdChannelSourceToggle');existing?.remove();
-    if(remote){
-      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
-      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
-      toggle.textContent='Messages CMD Sphere';
-      const archived=document.createElement('button');archived.type='button';archived.className='btn';archived.style.cssText='font-size:12px;padding:5px 9px;margin:6px';archived.textContent='Historique Discord sauvegardé';archived.onclick=()=>openArchivedDiscordChannel(guildId,id,name);qs('#channelSubtitle')?.insertAdjacentElement('afterend',archived);archived.id='cmdArchiveHistoryToggle';
-      toggle.onclick=()=>openNativeChannel(guildId,id,name,true);
-      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
-    }else if(!localOnly&&sourceId&&S.nativeImportedOwner){
-      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
-      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
-      toggle.textContent='Discord non accessible · Reconnecter / autoriser un bot';
-      toggle.onclick=()=>location.assign('/dashboard-login?link=1&next='+encodeURIComponent('/dashboard?sync=1'));
-      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
-    }else if(localOnly&&sourceId){
-      const toggle=document.createElement('button');toggle.type='button';toggle.id='cmdChannelSourceToggle';toggle.className='btn';
-      toggle.style.cssText='font-size:12px;padding:5px 9px;margin:6px;max-width:100%';
-      toggle.textContent='Revenir aux messages Discord';
-      toggle.onclick=()=>openNativeChannel(guildId,id,name,false);
-      qs('#channelSubtitle')?.insertAdjacentElement('afterend',toggle);
+    qs('#channelSubtitle').textContent=archive?'Historique Discord sauvegardé · lecture seule':live?'Messages Discord en direct':'Messages CMD Sphere';
+    qs('#channelOverlay').classList.add('on');
+    qs('#channelInput').disabled=archive;qs('#channelSend').disabled=archive;
+    updateReplyBar();
+    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();
+    const addSwitch=(label,fn,buttonId)=>{
+      const b=document.createElement('button');b.type='button';b.className='btn';b.id=buttonId;
+      b.style.cssText='font-size:12px;padding:6px 9px;margin:4px 3px;max-width:100%;white-space:normal';
+      b.textContent=label;b.onclick=fn;
+      qs('#channelSubtitle')?.insertAdjacentElement('afterend',b);
+    };
+    if(archive){
+      addSwitch('Messages CMD Sphere',()=>openNativeChannel(guildId,id,name,true),'cmdChannelSourceToggle');
+      if(managed?.installed&&(managed.availableBots||[]).length)
+        addSwitch('Messages Discord en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdArchiveHistoryToggle');
+    }else if(live){
+      addSwitch('Historique Discord sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
+      addSwitch('Messages CMD Sphere',()=>openNativeChannel(guildId,id,name,true),'cmdChannelSourceToggle');
+    }else if(linked){
+      addSwitch('Historique Discord sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
+      if(managed?.installed&&(managed.availableBots||[]).length)
+        addSwitch('Messages Discord en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdChannelSourceToggle');
     }
-    await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),remote?5000:3500);
+    await loadDiscordMessages(true,false);
+    clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),archive?25000:live?6000:10000);
   }
   async function openDiscordChannel(id,name){
     if(!S.guild||!S.bot){toast('Aucun bot CMD disponible pour ce Discord.',false);return}
