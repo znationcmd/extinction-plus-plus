@@ -3264,7 +3264,19 @@ async function mirrorStoreMessagePage(auth,guildId,channelId,messages){
   }
   await pool.query(`INSERT INTO cmd_discord_mirror_messages(user_id,guild_id,channel_id,message_id,message_timestamp,data,synced_at)
     VALUES ${vals.join(",")}
-    ON CONFLICT(user_id,message_id) DO UPDATE SET guild_id=EXCLUDED.guild_id,channel_id=EXCLUDED.channel_id,message_timestamp=EXCLUDED.message_timestamp,data=EXCLUDED.data,synced_at=NOW()`,args);
+    ON CONFLICT(user_id,message_id) DO UPDATE SET guild_id=EXCLUDED.guild_id,channel_id=EXCLUDED.channel_id,message_timestamp=EXCLUDED.message_timestamp,
+      data=CASE WHEN
+        COALESCE(EXCLUDED.data->>'content','')=''
+        AND COALESCE(EXCLUDED.data->'attachments','[]'::jsonb)='[]'::jsonb
+        AND COALESCE(EXCLUDED.data->'embeds','[]'::jsonb)='[]'::jsonb
+        AND COALESCE(EXCLUDED.data->'stickers','[]'::jsonb)='[]'::jsonb
+        AND (
+          COALESCE(cmd_discord_mirror_messages.data->>'content','')<>''
+          OR COALESCE(cmd_discord_mirror_messages.data->'attachments','[]'::jsonb)<>'[]'::jsonb
+          OR COALESCE(cmd_discord_mirror_messages.data->'embeds','[]'::jsonb)<>'[]'::jsonb
+          OR COALESCE(cmd_discord_mirror_messages.data->'stickers','[]'::jsonb)<>'[]'::jsonb
+        )
+        THEN cmd_discord_mirror_messages.data ELSE EXCLUDED.data END,synced_at=NOW()`,args);
   return messages.length;
 }
 async function mirrorJobUpdate(id,patch){
