@@ -175,7 +175,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function esc(v){return String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
   function toast(m,ok=true){const e=qs('#status');e.textContent=m;e.style.borderColor=ok?'#34d39966':'#fb718566';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
   async function api(url,opt){const r=await fetch(url,{cache:'no-store',...opt,headers:{'content-type':'application/json',...(opt&&opt.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
-  function iconUrl(g){if(!g||!g.icon)return '';if(/^https?:/.test(g.icon))return g.icon;if(/^\d{15,22}$/.test(String(g.id)))return 'https://cdn.discordapp.com/icons/'+g.id+'/'+g.icon+'.png?size=128';return ''}
+  function iconUrl(g){if(!g||!g.icon)return '';const v=String(g.icon);if(/^https?:\/\//i.test(v)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v))return v;if(/^\d{15,22}$/.test(String(g.source_discord_id||g.id)))return 'https://cdn.discordapp.com/icons/'+String(g.source_discord_id||g.id)+'/'+v+'.webp?size=256';return ''}
   function iconHtml(g){const u=iconUrl(g);return u?'<img src="'+esc(u)+'" alt="">':'<span class="rail-initial">'+esc((g.name||'?').slice(0,2).toUpperCase())+'</span>'}
   async function loadGuilds(){
     const results=await Promise.allSettled([api('/api/dashboard/guilds'),api('/api/native/guilds'),api('/api/folders'),api('/api/server-layout')]);
