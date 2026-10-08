@@ -351,7 +351,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     const map=new Map(CHAT.messages.map(m=>[String(m.id),m]));for(const m of list||[])map.set(String(m.id),m);CHAT.messages=[...map.values()];
   }
   async function openArchivedDiscordChannel(guildId,id,name){
-    qs('#cmdChannelSourceToggle')?.remove();
+    qs('#cmdChannelSourceToggle')?.remove();qs('#cmdArchiveHistoryToggle')?.remove();
     CHAT.open=true;CHAT.mode='archive';CHAT.guildId=String(guildId);CHAT.bot=null;CHAT.channelId=String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;
     qs('#channelTitle').textContent='# '+CHAT.name;qs('#channelSubtitle').textContent='Archive Discord · lecture seule';
     qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=true;qs('#channelSend').disabled=true;
