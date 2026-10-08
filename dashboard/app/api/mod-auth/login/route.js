@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 import { seal, origin, cookieOptions, failure } from '../../../../lib/mod-auth';
 export const dynamic = 'force-dynamic';
+// Pending authorization lasts for the browser session, without a timer.
 function bridgeTarget(value){
   if(!value)return null;
   let target;try{target=new URL(value)}catch{throw new Error('Dashboard partenaire invalide.');}
@@ -21,7 +22,7 @@ export async function GET(req) {
     url.search = new URLSearchParams({ client_id: process.env.CLIENT_ID, response_type: 'code', redirect_uri: `${origin()}/api/mod-auth/callback`, scope: 'identify guilds guilds.members.read', state }).toString();
     const res = NextResponse.redirect(url);
     const returnTo=requestUrl.searchParams.get('next')==='groups'?'/groups':'/select-discord';
-    res.cookies.set('extinction_mod_oauth', seal({ state, returnTo, bridgeTarget:bridge, bridgeState:bridgeState||null, expires: Date.now()+600000 }), { ...cookieOptions, maxAge: 600 });
+    res.cookies.set('extinction_mod_oauth', seal({ typ: 'discord_login', state, returnTo, bridgeTarget:bridge, bridgeState:bridgeState||null, expires: 0 }), { ...cookieOptions });
     return res;
   } catch(e) { return failure(e); }
 }

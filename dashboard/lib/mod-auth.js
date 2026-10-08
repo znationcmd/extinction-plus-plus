@@ -25,7 +25,8 @@ export function unseal(value) {
     const cipher = crypto.createDecipheriv('aes-256-gcm', key(), data.subarray(0,12));
     cipher.setAuthTag(data.subarray(12,28));
     const result = JSON.parse(Buffer.concat([cipher.update(data.subarray(28)), cipher.final()]));
-    return result.expires > Date.now() ? result : null;
+    const pendingLogin = result.typ === 'discord_login' && result.expires === 0 && /^[a-f0-9]{64}$/.test(result.state || '');
+    return pendingLogin || result.expires > Date.now() ? result : null;
   } catch { return null; }
 }
 export const cookieOptions = { httpOnly: true, sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production' };

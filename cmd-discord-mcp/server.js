@@ -59,7 +59,8 @@ function verifySigned(value,secret=oauthSecret){
   const a=Buffer.from(sig),b=Buffer.from(expected);
   if(a.length!==b.length||!crypto.timingSafeEqual(a,b))throw new Error("Signature invalide.");
   let data;try{data=JSON.parse(Buffer.from(encoded,"base64url").toString("utf8"))}catch{throw new Error("Jeton invalide.")}
-  if(Number(data.exp||0)<Date.now())throw new Error("Jeton expiré.");
+  const pendingLogin=(data.typ==="dashboard_tx"||data.typ==="oauth_tx")&&data.exp===0;
+  if(!pendingLogin&&Number(data.exp||0)<Date.now())throw new Error("Jeton expiré.");
   return data;
 }
 function verifyDiscordBridge(value){
@@ -3897,7 +3898,7 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/dashboard-login"){
       const next=safeText(url.searchParams.get("next")||"/dashboard",220);
       const current=dashboardAuth(req),link=url.searchParams.get("link")==="1";
-      const tx=signPayload({typ:"dashboard_tx",exp:Date.now()+10*60*1000,next,linkAccountId:(link&&current?.user?.id)?String(current.user.id):null});
+      const tx=signPayload({typ:"dashboard_tx",exp:0,next,linkAccountId:(link&&current?.user?.id)?String(current.user.id):null});
       const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
     }
     if(req.method==="GET"&&url.pathname==="/dashboard-logout"){
@@ -4180,7 +4181,7 @@ const httpServer=createServer(async(req,res)=>{
       try{validateChatGPTClient(clientId,redirectUri)}catch(e){sendJson(res,400,{error:"invalid_client",error_description:e.message});return}
       if(requestedResource!==resource){oauthErrorRedirect(res,redirectUri,state,"invalid_target","Ressource OAuth invalide.");return}
       const scope=parseScopes(url.searchParams.get("scope"));
-      const tx=signPayload({typ:"oauth_tx",exp:Date.now()+10*60*1000,clientId,redirectUri,oauthState:state,codeChallenge:challenge,scope,resource});
+      const tx=signPayload({typ:"oauth_tx",exp:0,clientId,redirectUri,oauthState:state,codeChallenge:challenge,scope,resource});
       const bridge=new URL(bridgeLoginUrl);bridge.searchParams.set("bridge",baseUrl);bridge.searchParams.set("bridge_state",tx);redirect(res,bridge);return;
     }
 
