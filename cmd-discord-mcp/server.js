@@ -761,6 +761,15 @@ async function initNativeDb(){
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_user_idx ON cmd_server_boosts(user_id,active)');
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_guild_idx ON cmd_server_boosts(guild_id,active)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_founder_app_tickets(
+    token_hash TEXT PRIMARY KEY,
+    app TEXT NOT NULL,
+    discord_id TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_founder_app_tickets_expires_idx ON cmd_founder_app_tickets(expires_at)');
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_payment_config(
     config_key TEXT PRIMARY KEY,
     config_value TEXT NOT NULL,
@@ -1370,6 +1379,23 @@ function isCmdOwner(auth){
   const discordId=String(auth?.user?.discordId||"").trim();
   const founderIds=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(x=>x.trim()).filter(x=>/^\d{15,22}$/.test(x)));
   return Boolean((discordId&&founderIds.has(discordId))||(ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
+}
+const CMDPAD_PRIV_ORIGIN="https://cmdpad-private-production.up.railway.app";
+async function issueFounderAppTicket(auth,app){
+  if(!isCmdOwner(auth)||String(auth?.user?.discordId||"")!==String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").trim())throw new Error("Connecte-toi avec ton compte Discord fondateur pour accéder à cet outil.");
+  if(app!=="cmdpad")throw new Error("Application non autorisée.");
+  await pool.query("DELETE FROM cmd_founder_app_tickets WHERE expires_at<NOW()-INTERVAL '1 day'");
+  const ticket=crypto.randomBytes(32).toString("base64url"),tokenHash=crypto.createHash("sha256").update(ticket).digest("hex");
+  await pool.query("INSERT INTO cmd_founder_app_tickets(token_hash,app,discord_id,expires_at) VALUES($1,$2,$3,NOW()+INTERVAL '2 minutes')",[tokenHash,app,String(auth.user.discordId)]);
+  return ticket;
+}
+async function redeemFounderAppTicket(input,app){
+  const ticket=String(input.ticket||"");if(!/^[A-Za-z0-9_-]{40,80}$/.test(ticket))throw new Error("Connexion expirée ou invalide.");
+  if(app!=="cmdpad")throw new Error("Application non autorisée.");
+  const tokenHash=crypto.createHash("sha256").update(ticket).digest("hex");
+  const r=await pool.query("UPDATE cmd_founder_app_tickets SET consumed_at=NOW() WHERE token_hash=$1 AND app=$2 AND consumed_at IS NULL AND expires_at>NOW() RETURNING discord_id",[tokenHash,app]);
+  if(!r.rows[0])throw new Error("Ce lien de connexion a expiré ou déjà été utilisé.");
+  return {ok:true,role:"founder"};
 }
 function premiumItem(item){
   if(!item)return false;
@@ -3112,6 +3138,17 @@ const httpServer=createServer(async(req,res)=>{
         const [installed,unlocks,diamond,premium,offers,favorites]=await Promise.all([installedShopItems(auth),getDiamondUnlocks(auth),getDiamondState(auth),getPremiumState(auth),listRewardOffers(auth,true),getDiamondFavorites(auth)]);
         html(res,diamondsPage(auth,installed,unlocks,diamond,premium,offers,favorites));
       }catch(e){html(res,"<h1>Boutique Diamants indisponible</h1><p>"+escHtml(e.message)+"</p>",500)}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/founder/cmdpad-login"){
+      const auth=dashboardAuth(req);
+      if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/founder/cmdpad-login"));return}
+      try{
+        const ticket=await issueFounderAppTicket(auth,"cmdpad"),action=CMDPAD_PRIV_ORIGIN+"/auth/cmd-sphere";
+        html(res,'<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Connexion sécurisée CMDPad++</title></head><body style="font:16px system-ui;background:#100e18;color:white;text-align:center;padding:50px"><form id="handoff" method="POST" action="'+action+'"><input type="hidden" name="ticket" value="'+ticket+'"><button style="padding:15px;border:0;border-radius:12px;background:#7c3aed;color:white">Continuer vers CMDPad++</button></form><p>Connexion de ton compte fondateur CMD…</p><script>document.getElementById("handoff").submit()</script></body></html>',200,{"referrer-policy":"no-referrer","cache-control":"no-store"});
+      }catch(e){html(res,"<h1>Accès refusé</h1><p>"+escHtml(e.message)+"</p>",403)}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/founder/cmdpad/redeem"){
+      try{sendJson(res,200,await redeemFounderAppTicket(await readFormBodyJson(req),"cmdpad"))}catch(e){sendJson(res,401,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/shop"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
