@@ -239,3 +239,78 @@ html,body{max-width:100%;overflow-x:clip}
 @media(min-width:851px){
  .sphere-app.cmd-native-selected #channelOverlay.on{position:fixed!important;left:362px!important;right:0!important;top:0!important;bottom:0!important;width:calc(100vw - 362px)!important;max-width:calc(100vw - 362px)!important;min-width:0!important;margin:0!important;z-index:10001!important}
 }
+
+
+/* 2026-10-08: fixed viewport sizing after native server restoration.
+   Avoid horizontal clipping while keeping long Discord messages readable. */
+.sphere-app #channelOverlay,.sphere-app #channelOverlay *{box-sizing:border-box}
+.sphere-app #channelOverlay{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  min-width:0!important;
+  min-height:0!important;
+}
+.sphere-app #channelOverlay .channel-messages{
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.sphere-app #channelOverlay .discord-message{display:flex!important;align-items:flex-start;max-width:100%!important;min-width:0!important}
+.sphere-app #channelOverlay .msg-avatar{flex:0 0 auto}
+.sphere-app #channelOverlay .msg-main{flex:1 1 0!important;width:auto!important;min-width:0!important;overflow:hidden!important}
+.sphere-app #channelOverlay .msg-text,
+.sphere-app #channelOverlay .msg-embed,
+.sphere-app #channelOverlay .msg-file,
+.sphere-app #channelOverlay .msg-empty,
+.sphere-app #channelOverlay .msg-reply{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+  white-space:pre-wrap;
+}
+.sphere-app #channelOverlay .channel-head-main{min-width:0!important;overflow:hidden!important}
+.sphere-app #channelOverlay .channel-compose-wrap{min-width:0!important;max-width:100%!important}
+@media (max-width:850px){
+  .sphere-app #channelOverlay.on{
+    position:fixed!important;
+    inset:0!important;
+    width:100%!important;
+    width:100dvw!important;
+    max-width:100dvw!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    padding:0!important;
+    margin:0!important;
+    transform:none!important;
+    border-radius:0!important;
+    z-index:10002!important;
+  }
+  .sphere-app #channelOverlay .channel-head{
+    min-width:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    padding:calc(8px + env(safe-area-inset-top,0px)) 8px 8px!important;
+    overflow:hidden!important;
+  }
+  .sphere-app #channelOverlay .channel-back{flex:none!important;width:35px!important;min-width:35px!important}
+  .sphere-app #channelOverlay .channel-head-main{flex:1 1 0!important;max-width:calc(100% - 46px)!important}
+  .sphere-app #channelOverlay #channelMessages{padding:8px 7px!important;max-width:100dvw!important}
+  .sphere-app #channelOverlay .channel-actions{
+    flex:1 1 100%!important;
+    width:100%!important;
+    max-width:100%!important;
+    justify-content:flex-start!important;
+    padding-left:0!important;
+    overflow-x:auto!important;
+    flex-wrap:nowrap!important;
+  }
+  .sphere-app #channelOverlay .channel-actions .btn{white-space:nowrap!important;flex:0 0 auto!important}
+  .sphere-app #channelOverlay .channel-composer{display:flex!important;flex-wrap:nowrap!important;width:100%!important}
+  .sphere-app #channelOverlay .channel-composer textarea{flex:1 1 0!important;width:0!important;min-width:0!important}
+  .sphere-app #channelOverlay .channel-composer button{flex:0 0 auto!important;max-width:64px!important}
+}
