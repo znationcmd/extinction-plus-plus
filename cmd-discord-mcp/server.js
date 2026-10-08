@@ -2877,6 +2877,65 @@ async function restoreNativeMirrorBackups(auth){
   return result;
 }
 
+// Non-destructive restoration from a signed-in user's saved Discord mirror.
+// Never contacts or modifies Discord; never overwrites existing CMD Sphere server edits.
+async function restoreNativeServersFromMirror(auth,{offset=0,limit=6}={}){
+  const uid=String(auth.user.id),size=Math.max(1,Math.min(15,Number(limit)||6)),start=Math.max(0,Math.min(10000,Number(offset)||0));
+  const totalResult=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_discord_mirror_guilds WHERE user_id=$1",[uid]);
+  const total=Number(totalResult.rows[0]?.n||0);
+  const result=await pool.query("SELECT guild_id,snapshot FROM cmd_discord_mirror_guilds WHERE user_id=$1 ORDER BY guild_id LIMIT $2 OFFSET $3",[uid,size,start]);
+  const summary={total,offset:start,processed:0,restoredServers:0,newChannels:0,newRoles:0,archivedMessageChannels:0,issues:[]};
+  for(const saved of result.rows){
+    const sourceId=String(saved.guild_id||""),snap=saved.snapshot||{};
+    if(!/^[0-9]{15,22}$/.test(sourceId)){summary.issues.push({guildId:sourceId,error:"Identifiant Discord invalide"});continue}
+    try{
+      const meta=snap.meta||{},struct=snap.structure||{},name=safeText(meta.name||struct.name||("Discord "+sourceId),100);
+      const iconRaw=String(meta.icon||"");
+      const icon=/^https:\/\//.test(iconRaw)?iconRaw:/^[a-z0-9_]+$/i.test(iconRaw)&&iconRaw?("https://cdn.discordapp.com/icons/"+sourceId+"/"+iconRaw+".webp?size=256"):null;
+      const found=await pool.query("SELECT id FROM cmd_native_guilds WHERE owner_user_id=$1 AND source_discord_id=$2 LIMIT 1",[uid,sourceId]);
+      const nativeId=found.rows[0]?.id||crypto.randomUUID();
+      if(!found.rows[0]){
+        const created=await pool.query("INSERT INTO cmd_native_guilds(id,owner_user_id,source_discord_id,name,icon,invite_code) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(owner_user_id,source_discord_id) DO NOTHING RETURNING id",[nativeId,uid,sourceId,name,icon,crypto.randomBytes(8).toString("base64url")]);
+        if(created.rowCount)summary.restoredServers++;
+      }
+      const resolved=await pool.query("SELECT id FROM cmd_native_guilds WHERE owner_user_id=$1 AND source_discord_id=$2 LIMIT 1",[uid,sourceId]);
+      const gid=resolved.rows[0]?.id;
+      if(!gid)throw new Error("Serveur restauré introuvable");
+      await pool.query("INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,'owner',$3) ON CONFLICT(guild_id,user_id) DO NOTHING",[gid,uid,safeText(auth.user.displayName||auth.user.name||"CMD",80)]);
+      const archived=await pool.query("SELECT DISTINCT channel_id FROM cmd_discord_mirror_messages WHERE user_id=$1 AND guild_id=$2",[uid,sourceId]);
+      const channels=new Map();
+      for(const c of [...(Array.isArray(struct.channels)?struct.channels:[]),...(Array.isArray(snap.extras?.threads)?snap.extras.threads:[])]){
+        if(/^[0-9]{15,22}$/.test(String(c?.id||"")))channels.set(String(c.id),c);
+      }
+      for(const row of archived.rows){
+        const cid=String(row.channel_id||"");
+        if(/^[0-9]{15,22}$/.test(cid)&&!channels.has(cid))channels.set(cid,{id:cid,name:"archive-"+cid,type:"text"});
+      }
+      summary.archivedMessageChannels+=archived.rows.length;
+      for(const c of channels.values()){
+        const rid=String(c.id);let type=String(c.type||"text").toLowerCase();
+        if(["thread","public_thread","private_thread"].includes(type))type="text";
+        if(type==="news")type="announcement";
+        if(!["text","category","announcement","forum","voice"].includes(type))type="text";
+        const r=await pool.query("INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT(guild_id,source_channel_id) DO NOTHING RETURNING id",[crypto.randomUUID(),gid,rid,c.parentId?String(c.parentId):c.parent_id?String(c.parent_id):null,safeText(c.name||("archive-"+rid),100),type,c.topic?safeText(c.topic,1024):null,Number(c.position)||0,JSON.stringify(c.permissionOverwrites||c.permission_overwrites||[])]);
+        summary.newChannels+=r.rowCount||0;
+      }
+      for(const role of (Array.isArray(struct.roles)?struct.roles:[])){
+        const rid=String(role.id||"");if(!/^[0-9]{15,22}$/.test(rid))continue;
+        const r=await pool.query("INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9) ON CONFLICT(guild_id,source_role_id) DO NOTHING RETURNING id",[crypto.randomUUID(),gid,rid,safeText(role.name||"Rôle",100),role.color!=null?String(role.color):null,JSON.stringify(role.permissions&&typeof role.permissions==="object"?role.permissions:{}),Number(role.position)||0,Boolean(role.hoist),Boolean(role.mentionable)]);
+        summary.newRoles+=r.rowCount||0;
+      }
+      summary.processed++;
+    }catch(e){summary.issues.push({guildId:sourceId,error:e.message})}
+  }
+  return {...summary,nextOffset:start+result.rows.length,hasMore:start+result.rows.length<total};
+}
+async function nativeMirrorImportStatus(auth){
+  const uid=String(auth.user.id);
+  const r=await pool.query("SELECT (SELECT COUNT(*)::int FROM cmd_discord_mirror_guilds WHERE user_id=$1) AS saved_servers, (SELECT COUNT(*)::bigint FROM cmd_discord_mirror_messages WHERE user_id=$1) AS archived_messages, (SELECT COUNT(*)::int FROM cmd_native_guilds WHERE owner_user_id=$1 AND source_discord_id IS NOT NULL) AS imported_servers, (SELECT COUNT(*)::int FROM cmd_native_channels c JOIN cmd_native_guilds g ON g.id=c.guild_id WHERE g.owner_user_id=$1 AND g.source_discord_id IS NOT NULL) AS imported_channels",[uid]);
+  return r.rows[0]||{saved_servers:0,archived_messages:0,imported_servers:0,imported_channels:0};
+}
+
 async function importedDiscordHistory(auth,guildId,channelId,{before="",limit=100}={}){
   const ch=await nativeTextChannel(auth,guildId,channelId);
   const guild=await pool.query("SELECT owner_user_id,source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1",[String(guildId)]);
@@ -4091,6 +4150,16 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/native/import-owned"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,await importOwnedDiscordGuilds(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/mirror-import-status"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{sendJson(res,200,await nativeMirrorImportStatus(auth))}
+      catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/restore-from-mirror"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await restoreNativeServersFromMirror(auth,{offset:body.offset,limit:body.limit}))}
+      catch(e){sendJson(res,500,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/import-all"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
