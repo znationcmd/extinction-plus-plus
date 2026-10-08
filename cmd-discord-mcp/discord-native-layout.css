@@ -1,0 +1,70 @@
+/* CMD Sphere / Discord-inspired channel sidebar. Safe-scoped to native server view. */
+.sphere-app.cmd-native-selected .grid>main.card{background:#25212f;box-shadow:none;border:0;border-radius:0;min-width:0}
+.sphere-app.cmd-native-selected .grid>main.card>.top{display:none}
+.sphere-app.cmd-native-selected #workspace{padding:0!important;background:transparent;min-width:0}
+.sphere-app.cmd-native-selected .cmd-server-panel{color:#eeeaf3;min-width:0}
+.sphere-app.cmd-native-selected .cmd-server-head{padding:16px 16px 12px;border-bottom:1px solid #ffffff15;background:#302038}
+.sphere-app.cmd-native-selected .cmd-server-heading{display:flex;align-items:center;gap:10px;min-width:0}
+.sphere-app.cmd-native-selected .cmd-server-heading img{width:41px;height:41px;object-fit:contain;border-radius:14px;flex:none}
+.sphere-app.cmd-native-selected .cmd-server-heading strong{font-size:17px;line-height:1.25;overflow-wrap:anywhere;display:block}
+.sphere-app.cmd-native-selected .cmd-server-heading small{display:block;color:#c3b6cc;font-size:12px;margin-top:3px}
+.sphere-app.cmd-native-selected .cmd-server-search{position:relative;margin:14px 0 0}
+.sphere-app.cmd-native-selected .cmd-server-search input{display:block;width:100%;min-width:0;background:#44304d;border:0;border-radius:11px;height:41px;color:#fff;font-size:15px;padding:0 14px 0 38px;box-sizing:border-box}
+.sphere-app.cmd-native-selected .cmd-server-search input::placeholder{color:#cabdd1}
+.sphere-app.cmd-native-selected .cmd-server-search span{position:absolute;left:13px;top:10px;opacity:.7;pointer-events:none}
+.sphere-app.cmd-native-selected .cmd-server-head-actions{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
+.sphere-app.cmd-native-selected .cmd-server-head-actions a,.sphere-app.cmd-native-selected .cmd-server-head-actions button{background:#50385b;color:#f3eef6;border:0;border-radius:9px;font-size:12px;padding:8px 10px;text-decoration:none;cursor:pointer}
+.sphere-app.cmd-native-selected .cmd-channel-search-empty{padding:17px;text-align:center;color:#b8aabe;font-size:14px}
+.sphere-app.cmd-native-selected .cmd-server-channels{padding:11px 9px 135px;min-width:0}
+.sphere-app.cmd-native-selected .cmd-server-quick{display:flex;align-items:center;gap:10px;color:#bbaacb;font-size:14px;padding:12px 12px;text-decoration:none;border-bottom:1px solid #ffffff0c}
+.sphere-app.cmd-native-selected .cmd-server-quick:hover{background:#ffffff0b}
+.sphere-app.cmd-native-selected .cmd-server-section{border-top:1px solid #ffffff0c;padding-top:8px;margin-top:9px}
+.sphere-app.cmd-native-selected .cmd-server-section[hidden],.sphere-app.cmd-native-selected .cmd-channel-row[hidden]{display:none!important}
+.sphere-app.cmd-native-selected .cmd-category-toggle{display:flex;align-items:center;gap:7px;background:transparent;border:0;width:100%;text-align:left;font-size:13px;font-weight:800;color:#bcaec7;padding:11px 6px;cursor:pointer;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+.sphere-app.cmd-native-selected .cmd-category-toggle span{display:block;min-width:0;flex:1}
+.sphere-app.cmd-native-selected .cmd-category-toggle svg{flex:none;transition:transform .13s}
+.sphere-app.cmd-native-selected .cmd-server-section.collapsed .cmd-category-toggle svg{transform:rotate(-90deg)}
+.sphere-app.cmd-native-selected .cmd-server-section.collapsed .cmd-channel-row{display:none}
+.sphere-app.cmd-native-selected .cmd-channel-row{display:flex;align-items:center;gap:10px;text-decoration:none;min-height:43px;border-radius:10px;padding:9px 11px;margin:1px 0;color:#cbbdd3;background:transparent;border:0;cursor:pointer;font-size:14px;text-align:left;width:100%;font-weight:550}
+.sphere-app.cmd-native-selected .cmd-channel-row:hover,.sphere-app.cmd-native-selected .cmd-channel-row:focus-visible,.sphere-app.cmd-native-selected .cmd-channel-row.active{background:#644672;color:#fff}
+.sphere-app.cmd-native-selected .cmd-channel-row .cmd-channel-icon{font-size:24px;line-height:1;flex:none;color:#ad97b7;width:25px;text-align:center}
+.sphere-app.cmd-native-selected .cmd-channel-row .cmd-channel-title{min-width:0;flex:1;white-space:normal;overflow-wrap:anywhere;line-height:1.3;font-weight:600}
+.sphere-app.cmd-native-selected .cmd-channel-row .cmd-channel-badge{background:#ed4245;border-radius:999px;padding:3px 6px;font-size:10px;font-weight:800;color:#fff}
+.sphere-app.cmd-native-selected .cmd-native-tools{margin-top:22px;background:#241e2d;border-radius:12px;padding:9px 10px}
+.sphere-app.cmd-native-selected .cmd-native-tools summary{padding:8px;cursor:pointer;color:#d2bfdc;font-weight:700;font-size:13px}
+.sphere-app.cmd-native-selected .cmd-native-tools .card{margin:9px 0}
+.sphere-app.cmd-native-selected .cmd-native-tools .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.sphere-app.cmd-native-selected .server-rail img{object-fit:contain!important;object-position:center!important}
+.sphere-app.cmd-native-selected .server-rail,.sphere-app.cmd-native-selected .rail-server,.sphere-app.cmd-native-selected .rail-home{overflow:visible}
+.sphere-app.cmd-native-selected .rail-server img,.sphere-app.cmd-native-selected .rail-home img{display:block;border-radius:inherit;width:100%;height:100%;object-fit:contain!important}
+.sphere-app.cmd-native-selected .rail-server.off{opacity:.72}
+.sphere-app.cmd-native-selected .user-dock{box-sizing:border-box;gap:7px}
+.sphere-app.cmd-native-selected .user-dock-main{min-width:0;flex:1}
+.sphere-app.cmd-native-selected .user-dock-main>*{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sphere-app.cmd-native-selected #channelOverlay.on{z-index:10001!important;display:grid!important}
+@media(max-width:850px){
+ .sphere-app.cmd-native-selected{padding-left:76px!important}
+ .sphere-app.cmd-native-selected .server-rail{width:76px!important;padding:8px 9px!important;overflow-x:hidden!important}
+ .sphere-app.cmd-native-selected .rail-server,.sphere-app.cmd-native-selected .rail-home,.sphere-app.cmd-native-selected .rail-messages,.sphere-app.cmd-native-selected .rail-plus{width:52px!important;height:52px!important;min-height:52px!important;border-radius:17px!important}
+ .sphere-app.cmd-native-selected .rail-server img,.sphere-app.cmd-native-selected .rail-home img{width:100%!important;height:100%!important;object-fit:contain!important}
+ .sphere-app.cmd-native-selected .wrap{padding:0!important;min-width:0}
+ .sphere-app.cmd-native-selected .wrap>.top{display:none!important}
+ .sphere-app.cmd-native-selected .grid{display:block!important;margin:0!important;min-width:0}
+ .sphere-app.cmd-native-selected .grid>aside.card{display:none!important}
+ .sphere-app.cmd-native-selected .grid>main.card{padding:0!important;margin:0!important;min-width:0}
+ .sphere-app.cmd-native-selected .cmd-server-head{padding:14px 12px 13px}
+ .sphere-app.cmd-native-selected .cmd-server-heading strong{font-size:15px}
+ .sphere-app.cmd-native-selected .cmd-server-channels{padding:7px 7px 128px}
+ .sphere-app.cmd-native-selected .cmd-channel-row{padding:9px 7px;gap:8px}
+ .sphere-app.cmd-native-selected .cmd-category-toggle{padding:11px 4px}
+ .sphere-app.cmd-native-selected .user-dock{left:79px!important;right:6px!important;width:auto!important;max-width:none!important;bottom:max(6px,env(safe-area-inset-bottom,0px))!important;padding:7px 8px!important;border-radius:18px!important}
+ .sphere-app.cmd-native-selected .user-dock-avatar,.sphere-app.cmd-native-selected .user-dock-avatar-wrap{width:41px!important;height:41px!important;flex:none!important}
+ .sphere-app.cmd-native-selected .user-dock-actions{gap:3px!important}
+ .sphere-app.cmd-native-selected .user-dock-actions>*{padding:7px!important}
+ .sphere-app.cmd-native-selected .user-dock-main{font-size:13px!important}
+ .cmd-ai-open{right:8px!important;bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;font-size:0!important;padding:12px!important;border-radius:50%!important;width:45px;height:45px;justify-content:center;overflow:hidden}
+ .cmd-ai-open span{font-size:22px!important}
+}
+@media(min-width:851px) and (max-width:1100px){
+ .sphere-app.cmd-native-selected .grid{grid-template-columns:250px minmax(0,1fr)}
+}
