@@ -890,6 +890,19 @@ async function initNativeDb(){
     claimed_at TIMESTAMPTZ
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_reward_sessions_user_offer_idx ON cmd_reward_sessions(user_id,offer_id,started_at DESC)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_reward_human_challenges(
+    id UUID PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES cmd_reward_sessions(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    challenge_text TEXT NOT NULL,
+    answer_hash TEXT NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    solved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_reward_human_challenges_session_idx ON cmd_reward_human_challenges(session_id,user_id,created_at DESC)');
+
 
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_server_folders(
     id UUID PRIMARY KEY,
@@ -1532,7 +1545,59 @@ async function heartbeatRewardSession(auth,input){
   const u=await pool.query("UPDATE cmd_reward_sessions SET watched_seconds=watched_seconds+$2,last_heartbeat_at=NOW() WHERE id=$1 RETURNING watched_seconds",[sid,delta]);
   return {ok:true,seconds:Number(u.rows[0]?.watched_seconds||0)};
 }
+
+const TURNSTILE_SITE_KEY=String(process.env.CF_TURNSTILE_SITE_KEY||"").trim();
+const TURNSTILE_SECRET=String(process.env.CF_TURNSTILE_SECRET||"").trim();
+function rewardHumanMode(){
+  if(TURNSTILE_SITE_KEY&&TURNSTILE_SECRET)return "turnstile";
+  if(TURNSTILE_SITE_KEY||TURNSTILE_SECRET)return "unconfigured";
+  return "challenge";
+}
+function rewardAnswerHash(id,answer){
+  const secret=String(process.env.OAUTH_SIGNING_SECRET||process.env.CMD_MCP_SECRET||"cmd-local-human-challenge");
+  return crypto.createHmac("sha256",secret).update(String(id)+":"+String(answer)).digest("hex");
+}
+async function rewardHumanChallenge(auth,input){
+  const sid=String(input.sessionId||""),uid=String(auth.user.id),mode=rewardHumanMode();
+  if(mode==="unconfigured")throw new Error("Vérification humaine en cours de configuration.");
+  const r=await pool.query("SELECT id FROM cmd_reward_sessions WHERE id=$1 AND user_id=$2 AND status='started' LIMIT 1",[sid,uid]);
+  if(!r.rows[0])throw new Error("Session de quête introuvable.");
+  if(mode==="turnstile")return {ok:true,mode,siteKey:TURNSTILE_SITE_KEY};
+  const prev=await pool.query("SELECT id,challenge_text,expires_at FROM cmd_reward_human_challenges WHERE session_id=$1 AND user_id=$2 AND solved_at IS NULL AND attempts < 3 AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1",[sid,uid]);
+  if(prev.rows[0])return {ok:true,mode,challengeId:String(prev.rows[0].id),question:prev.rows[0].challenge_text,expiresAt:prev.rows[0].expires_at};
+  const a=crypto.randomInt(3,20),b=crypto.randomInt(3,20),id=crypto.randomUUID(),question="Combien font "+a+" + "+b+" ?";
+  const expires=new Date(Date.now()+5*60*1000);
+  await pool.query("INSERT INTO cmd_reward_human_challenges(id,session_id,user_id,challenge_text,answer_hash,expires_at) VALUES($1,$2,$3,$4,$5,$6)",[id,sid,uid,question,rewardAnswerHash(id,a+b),expires]);
+  return {ok:true,mode,challengeId:id,question,expiresAt:expires.toISOString()};
+}
+async function verifyRewardHuman(auth,input){
+  const mode=rewardHumanMode(),sid=String(input.sessionId||""),uid=String(auth.user.id);
+  if(mode==="unconfigured")throw new Error("Vérification humaine indisponible : complète la configuration.");
+  if(mode==="turnstile"){
+    const token=String(input.turnstileToken||"");
+    if(!token||token.length>3000)throw new Error("Valide le contrôle anti-robot pour récupérer tes diamants.");
+    const body=new URLSearchParams({secret:TURNSTILE_SECRET,response:token,idempotency_key:crypto.randomUUID()});
+    let result;
+    try{
+      const response=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body,signal:AbortSignal.timeout(9000)});
+      if(!response.ok)throw new Error("Vérification externe indisponible.");
+      result=await response.json();
+    }catch{throw new Error("Impossible de vérifier que tu es humain. Réessaie.");}
+    if(result?.success!==true)throw new Error("Vérification humaine échouée. Réessaie.");
+    return true;
+  }
+  const cid=String(input.challengeId||"");
+  if(!/^[0-9a-f-]{36}$/i.test(cid))throw new Error("Effectue la vérification humaine.");
+  const answer=String(input.humanAnswer??"").trim();
+  if(!/^\d{1,3}$/.test(answer))throw new Error("Entre le résultat de la vérification.");
+  const wanted=rewardAnswerHash(cid,Number(answer));
+  const r=await pool.query("UPDATE cmd_reward_human_challenges SET attempts=attempts+1,solved_at=CASE WHEN answer_hash=$4 THEN NOW() ELSE NULL END WHERE id=$1 AND session_id=$2 AND user_id=$3 AND solved_at IS NULL AND expires_at>NOW() AND attempts<3 RETURNING solved_at,attempts",[cid,sid,uid,wanted]);
+  if(!r.rows[0])throw new Error("Défi expiré ou déjà utilisé. Recommence la vérification.");
+  if(!r.rows[0].solved_at)throw new Error(r.rows[0].attempts>=3?"Trop de réponses incorrectes. Recommence.":"Réponse incorrecte, réessaie.");
+  return true;
+}
 async function claimRewardSession(auth,input){
+  await verifyRewardHuman(auth,input);
   const sid=String(input.sessionId||""),uid=String(auth.user.id),client=await pool.connect();
   try{
     await client.query("BEGIN");
