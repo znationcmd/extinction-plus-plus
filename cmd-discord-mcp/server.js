@@ -9,6 +9,7 @@ import { setupNotifications,pushPublicKey,subscribePush,unsubscribePush,pollNoti
 import { initConnections, getConnections, saveConnection, removeConnection, connectionsPage, profileConnectionsHtml, statusConnection } from "./connections.js";
 import { renderNativeGuildPage } from "./native-ui.js";
 import { callPage } from "./call-ui.js";
+import { answerCMD,allowRequest,aiMode } from "./cmd-ai.js";
 
 const port=Number(process.env.PORT||8787);
 const baseUrl=String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"");
@@ -147,7 +148,7 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008a"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -3873,6 +3874,25 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/sw.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./notification-sw.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-ai-ui.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-ai-ui.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/cmd-ai/status"){
+      if(!dashboardAuth(req)){sendJson(res,401,{error:"Connexion requise"});return}
+      sendJson(res,200,{ok:true,mode:aiMode(),free:true,features:["blagues","aide CMD Sphere","définitions"],advancedAvailable:aiMode()==="gemini"});return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/cmd-ai"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      if(!allowRequest(auth.user.id)){sendJson(res,429,{error:"Trop de messages. Attends une minute avant de réessayer."});return}
+      try{
+        let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>16000){sendJson(res,413,{error:"Message trop long"});return}chunks.push(chunk)}
+        const body=JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+        if(typeof body.message!=="string"||!body.message.trim()){sendJson(res,400,{error:"Écris une question."});return}
+        const result=await answerCMD(body.message,body.history);
+        sendJson(res,200,result);
+      }catch(e){sendJson(res,400,{error:"La demande n’a pas pu être traitée."})}
+      return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-settings.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./settings-ui.js",import.meta.url),"utf8"));return;
