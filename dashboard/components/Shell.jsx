@@ -172,10 +172,10 @@ export default function Shell({ children }) {
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
           <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
+        </Link>
           <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-full border border-purple-400/35 bg-purple-500/10 px-3 py-1.5 text-[11px] font-black tracking-wide text-purple-200 hover:bg-purple-500/20">
             <img src="/cmd-official.svg?v=20261008" alt="CMD" className="h-5 w-5"/> CMD OFFICIEL
           </a>
-        </Link>
         <div className="mb-3"><LanguageSelector /></div>
         <button type="button" onClick={refreshApp} disabled={refreshing} className="mb-5 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/30 bg-white/5 px-3 py-3 text-sm font-bold text-white/80 hover:bg-white/10 disabled:opacity-50">
           <RefreshCw size={18} className={refreshing?'animate-spin':''}/>{refreshing?t('Actualisation…'):t('Actualiser')}
