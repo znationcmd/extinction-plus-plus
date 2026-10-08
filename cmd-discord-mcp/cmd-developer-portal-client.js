@@ -133,6 +133,52 @@ function docs(){
   '<p>Le bot doit être invité sur le serveur CMD Sphere avec la permission correspondante.</p>')+
   card("Ressources",'<p>Portail CMD Sphere indépendant de Discord. L’installation est contrôlée par chaque administrateur et les données restent dans les serveurs CMD Sphere.</p>'));
 }
+function memberPanel(kind){
+ const team=kind==="team",owner=current.developer_role==="owner";
+ return wrapper(team?"Équipe":"Testeurs",team?"Gère les collaborateurs et leurs droits sur cette application.":"Les testeurs peuvent installer l’application même lorsqu’elle n’est pas publiée.",
+  card(team?"Collaborateurs":"Comptes testeurs",'<div id="dev-people-list">Chargement…</div>')+
+  (owner?card("Ajouter "+(team?"un collaborateur":"un testeur"),
+    '<form id="dev-people-form" data-kind="'+kind+'">'+fld("Pseudo CMD Sphere","username","","required maxlength=\"80\" placeholder=\"Pseudo CMD Sphere\"")+
+    (team?'<label class="dev-field">Rôle<select name="role"><option value="viewer">Lecture seule</option><option value="editor">Éditeur : paramètres et commandes</option></select></label>':'')+
+    '<button class="dev-btn primary" type="submit">Ajouter</button></form>'):
+    '<p>Seul le propriétaire gère ces accès.</p>'));
+}
+function discoveryView(){
+ return wrapper("Annuaire","Publication réelle de ton application dans le catalogue de CMD Sphere.",
+  card("Visibilité",'<p>'+(current.published?"Application actuellement publique.":"Application privée : réservée au propriétaire, à l’équipe et aux testeurs.")+'</p>'+
+    (current.developer_role==="owner"?'<form id="dev-visibility"><label class="dev-check"><input type="checkbox" name="published" '+(current.published?"checked":"")+'> Afficher dans le catalogue CMD Sphere</label><button class="dev-btn primary" type="submit">Enregistrer</button></form>':'<p>Seul le propriétaire peut publier.</p>')+
+    '<p>Publier l’application ne remplace pas le code du bot. Il doit être connecté à l’API CMD Sphere.</p>')+
+  card("Liens",link("Catalogue","/apps/directory")+" "+link("Tester l’invitation","/apps/choose?client_id="+encodeURIComponent(current.id))));
+}
+function webhooksView(){
+ return wrapper("Webhooks","Les webhooks de salons CMD Sphere sont gérés dans les paramètres de chaque serveur.",
+   card("Serveurs autorisés",'<div id="dev-webhook-guilds">Chargement…</div>')+
+   card("Sécurité",'<p>Les secrets des webhooks ne doivent jamais être publiés dans GitHub ou dans un lien public.</p>'));
+}
+async function loadPeople(kind){
+ const container=$("#dev-people-list");if(!container||!current)return;
+ try{
+  const r=await api(root+current.id+"/people");
+  if(!$("#dev-people-list")||tab!==(kind==="tester"?"testing":"team"))return;
+  const people=(r.people||[]).filter(x=>x.kind===kind);
+  container.innerHTML=people.length?people.map(x=>'<div class="dev-item"><div class="dev-row"><div style="flex:1"><b>'+h(x.display_name||x.username||"Utilisateur")+'</b><p>'+h(x.role==="editor"?"Éditeur":x.role==="viewer"?"Lecture seule":"Testeur")+'</p></div>'+
+    (r.canManage?'<button type="button" class="dev-btn danger" data-remove-person="'+h(x.user_id)+'">Retirer</button>':'')+'</div></div>').join(""):'<p>Aucun compte ajouté.</p>';
+  container.querySelectorAll("[data-remove-person]").forEach(button=>button.addEventListener("click",async()=>{
+    if(!confirm("Retirer cet accès à CMD Sphere Développeur ?"))return;
+    try{await api(root+current.id+"/people",{kind,operation:"remove",userId:button.dataset.removePerson});await loadPeople(kind);notify("Accès retiré.")}catch(e){notify(e.message,true)}
+  }));
+ }catch(e){if($("#dev-people-list"))$("#dev-people-list").textContent=e.message}
+}
+async function loadWebhookGuilds(){
+ const container=$("#dev-webhook-guilds");if(!container||!current)return;
+ try{
+  const r=await api(root+current.id+"/installations");
+  if(!$("#dev-webhook-guilds")||tab!=="webhooks")return;
+  container.innerHTML=(r.installations||[]).length?r.installations.map(x=>
+    '<div class="dev-item"><b>'+h(x.guild_name)+'</b><p>Les webhooks et les salons sont configurés par les administrateurs du serveur.</p>'+
+    link("Ouvrir le serveur","/native/"+encodeURIComponent(x.guild_id))+'</div>').join(""):'<p>Aucun serveur autorisé pour cette application.</p>';
+ }catch(e){if($("#dev-webhook-guilds"))$("#dev-webhook-guilds").textContent=e.message}
+}
 function upcoming(which){
  const data={
  webhooks:["Webhooks","La création de webhooks de salons CMD Sphere existe dans les paramètres de serveur. Le pilotage des webhooks propres à chaque application depuis ce portail reste à développer."],
@@ -150,11 +196,13 @@ function render(){
  navigation();
  const b=$("#dev-content");
  if(!current||tab==="home"){b.innerHTML=home();wire();return}
- const byTab={overview,installation,oauth2,bot,commands:commandsView,analytics,documentation:docs};
+ const byTab={overview,installation,oauth2,bot,commands:commandsView,analytics,documentation:docs,team:()=>memberPanel("team"),testing:()=>memberPanel("tester"),discovery:discoveryView,webhooks:webhooksView};
  b.innerHTML=(byTab[tab]||(()=>upcoming(tab)))();
  wire();
  if(!sleep&&tab==="installation")loadInstallations();
  if(!sleep&&tab==="commands")loadCommands();
+ if(!sleep&&(tab==="team"||tab==="testing"))loadPeople(tab==="team"?"team":"tester");
+ if(!sleep&&tab==="webhooks")loadWebhookGuilds();
 }
 function chooseTab(t){
  tab=tabs.has(t)?t:"home";
@@ -239,6 +287,18 @@ function wire(){
     }
    }catch(e){notify(e.message,true)}
  });
+ const peopleForm=$("#dev-people-form");if(peopleForm)peopleForm.addEventListener("submit",async event=>{
+   event.preventDefault();const values=new FormData(peopleForm),kind=peopleForm.dataset.kind;
+   try{await api(root+current.id+"/people",{kind,operation:"add",username:values.get("username"),role:values.get("role")});
+      peopleForm.reset();await loadPeople(kind);notify("Accès enregistré.");
+   }catch(e){notify(e.message,true)}
+ });
+ const visibilityForm=$("#dev-visibility");if(visibilityForm)visibilityForm.addEventListener("submit",async event=>{
+   event.preventDefault();try{
+     const result=await api(root+current.id+"/visibility",{published:new FormData(visibilityForm).has("published")});
+     current.published=result.published;render();notify("Publication mise à jour.");
+   }catch(e){notify(e.message,true)}
+ });
  const overviewForm=$("#dev-save-overview");if(overviewForm)overviewForm.addEventListener("submit",async event=>{
   event.preventDefault();const values=new FormData(overviewForm);
   try{await saveSettings({name:values.get("name"),description:values.get("description"),discordClientId:values.get("discordClientId"),
@@ -250,7 +310,14 @@ function wire(){
   const redirectUris=String(val||"").split("\n").map(x=>x.trim()).filter(Boolean);
   try{await saveSettings({config:{redirectUris}})}catch(e){notify(e.message,true)}
  });
- const rotate=$("#dev-rotate");if(rotate)rotate.addEventListener("click",async()=>{
+ const rotate=$("#dev-rotate");
+ if(rotate&&current.developer_role!=="owner"){rotate.disabled=true;rotate.title="Réservé au propriétaire";}
+ if(current.developer_role==="viewer"){
+   ["#dev-save-overview","#dev-oauth-form","#dev-command-create"].forEach(id=>{
+     const form=$(id);form?.querySelectorAll("input,textarea,select,button").forEach(input=>input.disabled=true)
+   });
+ }
+ if(rotate)rotate.addEventListener("click",async()=>{
    if(!confirm("Générer une nouvelle clé ? Toutes les instances utilisant l’ancienne seront déconnectées."))return;
    try{
     const result=await api(root+current.id+"/rotate",{});
