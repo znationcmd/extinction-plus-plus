@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
+import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
 import crypto from "node:crypto";
 import {initDeveloperDb,developerRoute} from "./cmd-developer-api.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -4059,6 +4060,18 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/dashboard/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,await allManagedGuilds(auth))}catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/import-diagnostics"){
+      const auth=dashboardAuth(req);
+      if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{sendJson(res,200,await getImportDiagnostics(pool,auth))}
+      catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/restore-mirror"){
+      const auth=dashboardAuth(req);
+      if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{sendJson(res,200,await restoreAllMirrors(pool,auth,importDiscordShell))}
+      catch(e){sendJson(res,500,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/native/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
