@@ -652,3 +652,15 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
 .sphere-app .server-rail .rail-developers:hover,.sphere-app .server-rail .rail-developers:focus-visible{background:#61439e!important;outline:2px solid #a99bed;outline-offset:2px}
 .sphere-app .cmd-developer-entry{white-space:normal;max-width:100%;text-align:center}
 @media(max-width:850px){.sphere-app .server-rail .rail-developers{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;max-width:48px!important;max-height:48px!important;font-size:23px!important}}
+
+/* CMD Sphere Developer quick access — 2026-10-08 */
+.sphere-app .server-rail #railDevelopers{order:0!important;flex:none!important;display:grid!important;visibility:visible!important;opacity:1!important}
+.sphere-app .server-rail #railGuilds{order:1}
+.sphere-app .server-rail #railPlus{order:2}
+.sphere-app .cmd-dev-bot-shortcut{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 20px;padding:12px;background:#241c33;border:1px solid #9673be50;border-radius:12px}
+.sphere-app .cmd-dev-bot-shortcut .btn{max-width:100%;overflow-wrap:anywhere;white-space:normal;text-align:center}
+@media(max-width:850px){
+ .sphere-app .server-rail #railDevelopers{width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;margin:0 auto 2px}
+ .sphere-app .cmd-dev-bot-shortcut{flex-direction:column;align-items:stretch;padding:9px}
+ .sphere-app .cmd-dev-bot-shortcut .btn{width:100%;min-height:40px}
+}
