@@ -14,7 +14,7 @@ self.addEventListener("push",e=>{
 });
 self.addEventListener("notificationclick",e=>{
  e.notification.close();if(e.action==="decline")return;
- const url=new URL(e.notification.data?.href||"/messages",self.location.origin).href;
+ const next=new URL(e.notification.data?.href||"/messages",self.location.origin);if(e.action==="answer")next.searchParams.set("answer","1");const url=next.href;
  e.waitUntil((async()=>{
   const tabs=await self.clients.matchAll({type:"window",includeUncontrolled:true});
   const tab=tabs.find(t=>t.url.startsWith(self.location.origin)&&typeof t.navigate==="function");
