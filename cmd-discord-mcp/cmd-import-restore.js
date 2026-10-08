@@ -18,9 +18,7 @@ export async function restoreFromMirror(pool,auth,nativeId){
     const type=String(ch.type||"text").toLowerCase();
     if(!["text","voice","category","announcement","forum","stage","thread"].includes(type))continue;
     const sql="INSERT INTO cmd_native_channels(id,guild_id,source_channel_id,source_parent_id,name,type,topic,position,permission_overwrites) "
-      +"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT(guild_id,source_channel_id) DO UPDATE SET "
-      +"source_parent_id=EXCLUDED.source_parent_id,name=EXCLUDED.name,type=EXCLUDED.type,"
-      +"topic=EXCLUDED.topic,position=EXCLUDED.position,permission_overwrites=EXCLUDED.permission_overwrites";
+      +"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) ON CONFLICT(guild_id,source_channel_id) DO NOTHING";
     await pool.query(sql,[crypto.randomUUID(),guild.id,String(ch.id),snow(ch.parentId)?String(ch.parentId):null,
       text(ch.name||"salon",100),type,ch.topic?text(ch.topic,1024):null,Number(ch.position||0),
       JSON.stringify(ch.permissionOverwrites||ch.permission_overwrites||[])]);
@@ -29,9 +27,7 @@ export async function restoreFromMirror(pool,auth,nativeId){
   for(const role of roles){
     if(!snow(role.id))continue;
     const sql="INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) "
-      +"VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9) ON CONFLICT(guild_id,source_role_id) DO UPDATE SET "
-      +"name=EXCLUDED.name,color=EXCLUDED.color,permissions=EXCLUDED.permissions,"
-      +"position=EXCLUDED.position,hoist=EXCLUDED.hoist,mentionable=EXCLUDED.mentionable";
+      +"VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9) ON CONFLICT(guild_id,source_role_id) DO NOTHING";
     await pool.query(sql,[crypto.randomUUID(),guild.id,String(role.id),
       text(role.name||"rôle",100),role.color==null?null:text(role.color,30),
       JSON.stringify(role.permissions||{}),Number(role.position||0),Boolean(role.hoist),Boolean(role.mentionable)]);
