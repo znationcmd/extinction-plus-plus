@@ -1,6 +1,7 @@
 /* One tap / one message. Original text is never replaced or stored as a translation. */
 (function(){
 "use strict";
+const visibleTranslations=new Map();
 const supported={fr:"Français",en:"English",us:"English (US)",de:"Deutsch",es:"Español",it:"Italiano",ru:"Русский",ko:"한국어",ja:"日本語",zh:"中文",co:"Corsu",pt:"Português"};
 function language(){try{const e=document.querySelector("#cmd-sphere-language");return supported[e?.value]?e.value:supported[localStorage.getItem("cmd-sphere-language")]?localStorage.getItem("cmd-sphere-language"):"fr"}catch{return"fr"}}
 function row(btn){return btn.closest(".discord-message,.bubble")}
@@ -28,6 +29,11 @@ document.addEventListener("click",async ev=>{
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.translatedText)throw Error(data.error||"Service de traduction indisponible");
     show(article,data.translatedText,"translated");
+    const id=String(article.dataset.messageId||"");
+    if(id){
+      visibleTranslations.set(id,{lang,original:content,translation:data.translatedText});
+      if(visibleTranslations.size>140)visibleTranslations.delete(visibleTranslations.keys().next().value);
+    }
     btn.hidden=true;
     if(hideBtn)hideBtn.hidden=false;
   }catch(error){show(article,"Traduction indisponible : "+error.message+". Le message original est conservé.","error")}
@@ -37,8 +43,36 @@ document.addEventListener("click",ev=>{
   const btn=ev.target.closest(".cmd-original-action");if(!btn)return;
   ev.preventDefault();const article=row(btn);if(!article)return;
   const output=article.querySelector(".cmd-translation-output");if(output)output.hidden=true;
+  const id=String(article.dataset.messageId||"");if(id)visibleTranslations.delete(id);
   btn.hidden=true;const translate=article.querySelector(".cmd-translate-action");if(translate)translate.hidden=false;
 });
+
+// A new message can cause the conversation to re-render. Keep previously requested
+// translations visible without a second external request or saving private text to disk.
+function restoreVisibleTranslations(){
+  const box=document.querySelector("#channelMessages");
+  if(!box||!visibleTranslations.size)return;
+  for(const article of box.querySelectorAll("article.discord-message[data-message-id]")){
+    const state=visibleTranslations.get(String(article.dataset.messageId||""));
+    if(!state||state.lang!==language())continue;
+    const original=article.querySelector(".msg-text");
+    if(!original||original.textContent!==state.original)continue;
+    const translated=article.querySelector(".cmd-translation-output");
+    if(!translated||translated.hidden||translated.textContent!==state.translation){
+      show(article,state.translation,"translated");
+      const action=article.querySelector(".cmd-translate-action"),revert=article.querySelector(".cmd-original-action");
+      if(action)action.hidden=true;if(revert)revert.hidden=false;
+    }
+  }
+}
+function attachChannelObserver(){
+  const box=document.querySelector("#channelMessages");
+  if(!box)return;
+  const observer=new MutationObserver(()=>restoreVisibleTranslations());
+  observer.observe(box,{childList:true});
+  restoreVisibleTranslations();
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",attachChannelObserver,{once:true});else attachChannelObserver();
 
 // Private/group CMD conversations share the same explicit translation controls.
 // Keep re-rendering inexpensive: only decorate new DOM nodes.
