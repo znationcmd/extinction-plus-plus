@@ -462,6 +462,22 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         addSwitch('Messages Discord en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdChannelSourceToggle');
     }
     await loadDiscordMessages(true,false);
+    // An imported Discord guild can have a partial or still-running archive.
+    // Do not leave its conversation empty when the source has no archived messages yet.
+    if(archive&&CHAT.open&&CHAT.mode==='archive'&&!CHAT.messages.length){
+      if(managed?.installed&&(managed.availableBots||[]).length){
+        await openNativeChannel(guildId,id,name,false,'discord');
+        if(CHAT.open&&CHAT.mode==='discord'&&!CHAT.messages.length){
+          qs('#channelSubtitle').textContent='Aucun message Discord lisible pour ce salon · Messages CMD Sphere disponibles';
+          addSwitch('Ouvrir les messages CMD Sphere',()=>openNativeChannel(guildId,id,name,true),'cmdEmptyNativeSwitch');
+        }
+        return;
+      }
+      await openNativeChannel(guildId,id,name,true);
+      if(CHAT.open&&CHAT.mode==='native'&&!CHAT.messages.length)
+        qs('#channelSubtitle').textContent='Aucun message dans ce salon · Archive Discord non accessible au bot';
+      return;
+    }
     clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),archive?25000:live?6000:10000);
   }
   async function openDiscordChannel(id,name){
