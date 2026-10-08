@@ -169,7 +169,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   const nativeGuilds=Array.isArray(initialNativeGuilds)?initialNativeGuilds:[];
   const nativeRailHtml=nativeGuilds.map(g=>{
     const label=escHtml(g.name||"Serveur"),icon=String(g.icon||"");
-    const visual=icon?'<img src="'+escHtml(icon)+'" alt="">':'<span class="rail-initial">'+escHtml(String(g.name||"?").slice(0,2).toUpperCase())+'</span>';
+    const initial=escHtml(String(g.name||"?").slice(0,2).toUpperCase());const visual=icon?'<img src="'+escHtml(icon)+'" alt="" onerror="this.parentElement.classList.add(\'cmd-icon-failed\')"><span class="rail-initial cmd-icon-fallback">'+initial+'</span>':'<span class="rail-initial">'+initial+'</span>';
     return '<a class="rail-server" href="/dashboard?openNative='+encodeURIComponent(g.id)+'" title="'+label+'">'+visual+'</a>';
   }).join("");
   const nativeListHtml=nativeGuilds.map(g=>'<a class="btn guild" href="/dashboard?openNative='+encodeURIComponent(g.id)+'"><strong>'+escHtml(g.name||"Serveur")+'</strong><br><span class="muted">CMD Sphere'+(g.source_discord_id?' · importé depuis Discord':'')+'</span></a>').join("")||'<div class="empty">Aucun serveur CMD Sphere.</div>';
@@ -180,8 +180,8 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function esc(v){return String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
   function toast(m,ok=true){const e=qs('#status');e.textContent=m;e.style.borderColor=ok?'#34d39966':'#fb718566';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
   async function api(url,opt){const r=await fetch(url,{cache:'no-store',...opt,headers:{'content-type':'application/json',...(opt&&opt.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
-  function iconUrl(g){if(!g||!g.icon)return '';const v=String(g.icon);if(/^https?:\/\//i.test(v)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v))return v;if(/^\d{15,22}$/.test(String(g.source_discord_id||g.id)))return 'https://cdn.discordapp.com/icons/'+String(g.source_discord_id||g.id)+'/'+v+'.webp?size=256';return ''}
-  function iconHtml(g){const u=iconUrl(g);return u?'<img src="'+esc(u)+'" alt="">':'<span class="rail-initial">'+esc((g.name||'?').slice(0,2).toUpperCase())+'</span>'}
+  function iconUrl(g){if(!g||!g.icon)return '';const v=String(g.icon).trim();if(/^https?:\/\//i.test(v)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v)||/^\/(?!\/)[\w./?=&%-]+$/.test(v))return v;const id=String(g.source_discord_id||g.id||'');if(/^\d{15,22}$/.test(id)&&/^[a-z0-9_]{12,100}$/i.test(v))return 'https://cdn.discordapp.com/icons/'+id+'/'+v+'.webp?size=256';return ''}
+  function iconHtml(g){const u=iconUrl(g),initial=esc((g.name||'?').slice(0,2).toUpperCase());return u?'<img src="'+esc(u)+'" alt="" onerror="this.parentElement.classList.add(\'cmd-icon-failed\')"><span class="rail-initial cmd-icon-fallback" aria-hidden="true">'+initial+'</span>':'<span class="rail-initial">'+initial+'</span>'}
   async function loadGuilds(){
     const results=await Promise.allSettled([api('/api/dashboard/guilds'),api('/api/native/guilds'),api('/api/folders'),api('/api/server-layout')]);
     const [d,n,fd,ld]=results.map((r,i)=>r.status==='fulfilled'?r.value:([{guilds:[]},{guilds:[]},{folders:[]},{itemKeys:[]}][i]));
