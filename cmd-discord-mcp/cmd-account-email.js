@@ -25,6 +25,8 @@ export async function sendCmdAccountMail(pool,account,purpose="verify"){
  const api=String(process.env.RESEND_API_KEY||""),from=String(process.env.RESEND_FROM_EMAIL||"");
  if(!api||!from)throw new Error("Expédition des e-mails indisponible pour le moment.");
  if(/@resend\.dev>?$/i.test(from)&&email!==String(process.env.CMD_FOUNDER_EMAIL||"").toLowerCase())throw new Error("L'expédition aux autres adresses attend un domaine CMD vérifié.");
+ const recent=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_account_email_tokens WHERE account_id=$1 AND purpose=$2 AND created_at>NOW()-INTERVAL '1 hour'",[account.id,purpose]);
+ if(Number(recent.rows[0]?.n||0)>=3)throw new Error("Trop de liens demandés. Réessaie dans une heure.");
  const t=token(),ttl=purpose==="verify"?"24 hours":"30 minutes";
  await pool.query("INSERT INTO cmd_account_email_tokens(token_hash,account_id,purpose,expires_at) VALUES($1,$2,$3,NOW()+($4::text)::interval)",[sha(t),account.id,purpose,ttl]);
  const url=base+(purpose==="verify"?"/account-mail/verify":"/account-mail/reset")+"?token="+encodeURIComponent(t);
