@@ -39,7 +39,7 @@ async function gemini(message,history){
  if(!key)return null;
  const signal=AbortSignal.timeout(14000);
  try{
-   const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",{
+   const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},signal,
      body:JSON.stringify({systemInstruction:{parts:[{text:"Tu es CMD IA, l'assistant sympathique de CMD Sphere, une application communautaire indépendante de Discord. Réponds naturellement dans la langue de l'utilisateur, en français par défaut. Tu fais des blagues originales à la demande, aides pour la rédaction, expliques des sujets et les usages de CMD Sphere. Ne prétends pas avoir accès aux données privées, exécuter des actions, ou synchroniser des serveurs. Sois bref, utile et honnête. Si une fonction n'existe pas, dis-le. Aucune publicité ni abonnement."}]},contents:[...cleanHistory(history),{role:"user",parts:[{text:message}]}],generationConfig:{maxOutputTokens:420,temperature:0.75}})})
    if(!r.ok)return null;
