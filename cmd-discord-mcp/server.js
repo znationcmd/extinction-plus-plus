@@ -807,6 +807,51 @@ async function initNativeDb(){
     read_at TIMESTAMPTZ
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_dm_messages_thread_created_idx ON cmd_dm_messages(thread_id,created_at)');
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_group_dms(
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    owner_user_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_group_dm_members(
+    group_id UUID NOT NULL REFERENCES cmd_group_dms(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(group_id,user_id)
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_group_dm_messages(
+    id UUID PRIMARY KEY,
+    group_id UUID NOT NULL REFERENCES cmd_group_dms(id) ON DELETE CASCADE,
+    sender_user_id TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_group_dm_messages_idx ON cmd_group_dm_messages(group_id,created_at)');
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_group_dm_members_user_idx ON cmd_group_dm_members(user_id)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_call_presence(
+    room_key TEXT NOT NULL,
+    peer_id UUID NOT NULL,
+    user_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    video_on BOOLEAN NOT NULL DEFAULT FALSE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(room_key,peer_id)
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_call_presence_seen_idx ON cmd_call_presence(last_seen)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_call_signals(
+    id BIGSERIAL PRIMARY KEY,
+    room_key TEXT NOT NULL,
+    from_peer UUID NOT NULL,
+    to_peer UUID NOT NULL,
+    signal_type TEXT NOT NULL CHECK(signal_type IN ('offer','answer','ice')),
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_call_signals_to_idx ON cmd_call_signals(room_key,to_peer,id)');
+
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_friend_requests(
     id UUID PRIMARY KEY,
     requester_user_id TEXT NOT NULL,
