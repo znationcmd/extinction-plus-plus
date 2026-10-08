@@ -74,7 +74,9 @@ export async function authorize(guildId, ownerOnly = false, context) {
   const { rows } = await p.query('SELECT role_ids FROM dayz_mod_access WHERE guild_id=$1', [guildId]);
   const roles = rows[0]?.role_ids || [];
   const member = guild.owner ? null : await discord(`/users/@me/guilds/${guildId}/member`, s.token);
-  if (ownerOnly ? !guild.owner : !store.allowed(guild.owner, member?.roles || [], roles)) throw Object.assign(new Error('Réservé au propriétaire et aux rôles Fondateur autorisés.'), { status: 403 });
+  const founderDiscordIds=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||'1397096854159622285').split(',').map(x=>x.trim()).filter(x=>/^\d{15,22}$/.test(x)));
+  const isCmdFounder=founderDiscordIds.has(String(s.user?.id||''));
+  if (!isCmdFounder && (ownerOnly ? !guild.owner : !store.allowed(guild.owner, member?.roles || [], roles))) throw Object.assign(new Error('Réservé au propriétaire et aux rôles Fondateur autorisés.'), { status: 403 });
   return { ...s, guild, roles };
 }
 export function sameOrigin(req) {
