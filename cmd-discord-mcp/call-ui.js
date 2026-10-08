@@ -237,5 +237,6 @@ $("#hang").onclick=leave;
 window.addEventListener("pagehide",()=>{if(connected){navigator.sendBeacon?.("/api/calls/leave",new Blob([JSON.stringify({room:ROOM,peerId})],{type:"application/json"}));for(const pc of pcs.values())pc.close();localStream?.getTracks().forEach(t=>t.stop())}});
 $("#roomTitle").textContent=ROOM.startsWith("group:")?"Appel de groupe":"Appel privé";
 if(initialVideo)$("#joinVideo").focus();
+if(new URL(location.href).searchParams.get("answer")==="1")setTimeout(()=>join(initialVideo),200);
 </script></body></html>`;
 }
