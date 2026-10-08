@@ -2139,7 +2139,7 @@ async function sendDmMessage(auth,input){
   const body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
   const id=crypto.randomUUID();const r=await pool.query("INSERT INTO cmd_dm_messages(id,thread_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,t.id,me,body]);
   await pool.query("UPDATE cmd_dm_threads SET updated_at=NOW() WHERE id=$1",[t.id]);
-  notifyUsers([other],{kind:"message",title:"Message de "+String(auth.user.displayName||auth.user.name||"CMD Sphere"),body,href:"/messages?open="+encodeURIComponent(String(t.id)),room:String(t.id)});
+  notifyUsers([other],{kind:"message",title:"Message de "+String(auth.user.displayName||auth.user.name||"CMD Sphere"),body,href:"/messages?open="+encodeURIComponent(String(t.id)),room:String(t.id),senderId:me});
   return {id,body,createdAt:r.rows[0].created_at,senderUserId:me};
 }
 
@@ -2185,7 +2185,7 @@ async function sendGroupDmMessage(auth,input){
   const id=crypto.randomUUID(),uid=String(auth.user.id),r=await pool.query("INSERT INTO cmd_group_dm_messages(id,group_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,g.id,uid,body]);
   await pool.query("UPDATE cmd_group_dms SET updated_at=NOW() WHERE id=$1",[g.id]);
   const members=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[g.id,uid]);
-  notifyUsers(members.rows.map(x=>x.user_id),{kind:"message",title:"Message · "+g.name,body:String(auth.user.displayName||auth.user.name||"Membre")+": "+body,href:"/messages?open=group:"+encodeURIComponent(String(g.id)),room:"group:"+String(g.id)});
+  notifyUsers(members.rows.map(x=>x.user_id),{kind:"message",title:"Message · "+g.name,body:String(auth.user.displayName||auth.user.name||"Membre")+": "+body,href:"/messages?open=group:"+encodeURIComponent(String(g.id)),room:"group:"+String(g.id),senderId:uid});
   return {id,body,senderUserId:uid,createdAt:r.rows[0].created_at};
 }
 async function addGroupDmMember(auth,input){
@@ -2225,7 +2225,7 @@ async function joinCallRoom(auth,input){
       const members=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[parsed.id,uid]);
       ids=members.rows.map(x=>x.user_id);
     }
-    notifyUsers(ids,{kind:"call",title:name+" t'appelle",body:Boolean(input.video)?"Appel vidéo entrant sur CMD Sphere":"Appel vocal entrant sur CMD Sphere",href:"/call?room="+encodeURIComponent(room)+"&video="+(input.video?"1":"0"),room});
+    notifyUsers(ids,{kind:"call",title:name+" t'appelle",body:Boolean(input.video)?"Appel vidéo entrant sur CMD Sphere":"Appel vocal entrant sur CMD Sphere",href:"/call?room="+encodeURIComponent(room)+"&video="+(input.video?"1":"0"),room,senderId:uid});
   }
   return {ok:true,peers:await callPresenceList(room)};
 }
@@ -3534,6 +3534,21 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/groups/add"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await addGroupDmMember(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname.startsWith("/api/notifications/avatar/")){
+      const auth=dashboardAuth(req);if(!auth){res.writeHead(401).end();return}
+      try{
+        const senderId=String(url.pathname.split("/").pop()||"");
+        if(!/^[a-f0-9-]{36}$/i.test(senderId)){res.writeHead(404).end();return}
+        const r=await pool.query("SELECT p.avatar_data_url,i.profile->>'avatar' AS discord_avatar FROM cmd_accounts a LEFT JOIN cmd_global_profiles p ON p.user_id=a.id::text LEFT JOIN cmd_account_identities i ON i.account_id=a.id AND i.provider='discord' WHERE a.id::text=$1 LIMIT 1",[senderId]);
+        const avatar=String(r.rows[0]?.avatar_data_url||r.rows[0]?.discord_avatar||"");
+        if(/^data:image\/(png|jpeg|gif|webp);base64,/i.test(avatar)){
+          const match=/^data:image\/(png|jpeg|gif|webp);base64,/i.exec(avatar),buf=Buffer.from(avatar.slice(match[0].length),"base64");
+          res.writeHead(200,{"content-type":"image/"+match[1].toLowerCase(),"cache-control":"private,max-age=300"}).end(buf);return;
+        }
+        if(/^https:\/\//i.test(avatar)){redirect(res,avatar);return}
+        redirect(res,baseUrl+"/app-icon.webp?v=5");
+      }catch(e){res.writeHead(404).end()}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/push/key"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
