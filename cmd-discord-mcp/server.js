@@ -3988,7 +3988,31 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
         const guildId=String(url.searchParams.get("guildId")||""),channelId=String(url.searchParams.get("channelId")||""),before=String(url.searchParams.get("before")||""),preferred=String(url.searchParams.get("bot")||"")||undefined,limit=Math.max(1,Math.min(100,Number(url.searchParams.get("limit")||100)));
-        requireGuild(auth,guildId);const bot=await resolveBot(auth,guildId,preferred);const data=await backend(bot,"messages",{guildId,channelId,before,limit});sendJson(res,200,{bot,botName:bots[bot].label,...data});
+        requireGuild(auth,guildId);
+        const first=await resolveBot(auth,guildId,preferred),args={guildId,channelId,before,limit};
+        let chosen=first, data=await backend(first,"messages",args);
+        // Try another already-installed CMD bot only when the selected bot returns redacted message bodies.
+        // No credentials are changed and the same user's guild authorization still applies.
+        const readable=m=>Boolean(String(m?.content||"").trim()||(m?.embeds||[]).length||(m?.attachments||[]).length||(m?.stickers||[]).length||(m?.components||[]).length||m?.poll);
+        const empty=(data.messages||[]).length>0&&!(data.messages||[]).some(readable);
+        if(empty){
+          const installed=await installedEverywhere(auth);
+          const guild=(installed.guilds||[]).find(g=>String(g.id)===String(guildId));
+          for(const candidate of (guild?.availableBots||[])){
+            if(candidate.id===first)continue;
+            try{
+              const alternative=await backend(candidate.id,"messages",args);
+              if((alternative.messages||[]).some(readable)){
+                const extra=new Map((alternative.messages||[]).map(m=>[String(m.id),m]));
+                data={...data,messages:(data.messages||[]).map(m=>{
+                  const n=extra.get(String(m.id));return n&&readable(n)&&!readable(m)?n:m;
+                })};
+                chosen=candidate.id;break;
+              }
+            }catch{} // Another bot may lack View Channel or Read Message History permission.
+          }
+        }
+        sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),...data});
       }catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/dashboard/action"){
