@@ -675,8 +675,12 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     }
     if(btn){btn.disabled=true;btn.textContent='↻ Démarrage…'}
     try{
-      const d=await api('/api/discord/sync',{method:'POST',body:'{}'});
+      const response=await fetch('/api/discord/sync',{method:'POST',headers:{'content-type':'application/json'},body:'{}',cache:'no-store'});
+      const d=await response.json().catch(()=>({}));
+      // A 409 means Discord linking is required; the generic API helper throws before it can be handled.
       if(d.needsLink){location.href='/dashboard-login?link=1&next='+encodeURIComponent('/dashboard?sync=1');return}
+      if(!response.ok)throw new Error(d.error||('Erreur HTTP '+response.status));
+      if(!d.job)throw new Error('Aucune tâche de synchronisation démarrée.');
       return await followDiscordSyncJob(showAlert);
     }catch(e){
       if(btn){btn.disabled=false;btn.textContent='↻ Synchroniser mes Discord'}
