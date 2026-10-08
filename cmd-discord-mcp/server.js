@@ -1373,18 +1373,19 @@ const PREMIUM_PLANS={
   monthly:{id:"monthly_5",label:"Premium mensuel",price:5,days:31},
   annual:{id:"annual_50",label:"Premium annuel",price:50,days:365}
 };
+function verifiedCmdFounderDiscordIds(){
+  return new Set(["1397096854159622285",...String(process.env.CMD_FOUNDER_DISCORD_IDS||"").split(",").map(x=>x.trim())].filter(x=>/^\d{15,22}$/.test(x)));
+}
 function isCmdOwner(auth){
   const ownerId=String(process.env.CMD_OWNER_USER_ID||"").trim();
   const ownerName=String(process.env.CMD_OWNER_USERNAME||"cmd").trim().toLowerCase();
   const discordId=String(auth?.user?.discordId||"").trim();
-  const founderIds=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(x=>x.trim()).filter(x=>/^\d{15,22}$/.test(x)));
-  return Boolean((discordId&&founderIds.has(discordId))||(ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
+  return Boolean((discordId&&verifiedCmdFounderDiscordIds().has(discordId))||(ownerId&&String(auth?.user?.id||"")===ownerId)||(ownerName&&String(auth?.user?.name||"").trim().toLowerCase()===ownerName));
 }
 const CMDPAD_PRIV_ORIGIN="https://cmdpad-private-production.up.railway.app";
 async function issueFounderAppTicket(auth,app){
   const discordId=String(auth?.user?.discordId||"").trim();
-  const authorizedDiscordFounders=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(v=>v.trim()).filter(v=>/^\d{15,22}$/.test(v)));
-  if(!isCmdOwner(auth)||!discordId||!authorizedDiscordFounders.has(discordId))throw new Error("Connecte-toi avec un compte Discord fondateur autorisé pour accéder à cet outil.");
+  if(!isCmdOwner(auth)||!discordId||!verifiedCmdFounderDiscordIds().has(discordId))throw new Error("Connecte-toi avec un compte Discord fondateur autorisé pour accéder à cet outil.");
   if(app!=="cmdpad")throw new Error("Application non autorisée.");
   await pool.query("DELETE FROM cmd_founder_app_tickets WHERE expires_at<NOW()-INTERVAL '1 day'");
   const ticket=crypto.randomBytes(32).toString("base64url"),tokenHash=crypto.createHash("sha256").update(ticket).digest("hex");
