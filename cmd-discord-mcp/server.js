@@ -170,7 +170,10 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   const userAvatar=escHtml(auth?.user?.avatar||"/app-icon.webp?v=5");
   const nativeGuilds=Array.isArray(initialNativeGuilds)?initialNativeGuilds:[];
   const nativeRailHtml=nativeGuilds.map(g=>{
-    const label=escHtml(g.name||"Serveur"),icon=String(g.icon||"");
+    const label=escHtml(g.name||"Serveur"),rawIcon=String(g.icon||"").trim(),sourceId=String(g.source_discord_id||g.id||"");
+    const icon=/^https?:\/\//i.test(rawIcon)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(rawIcon)||/^\/(?!\/)[\w./?=&%-]+$/.test(rawIcon)
+      ?rawIcon:/^\d{15,22}$/.test(sourceId)&&/^[a-z0-9_]{12,100}$/i.test(rawIcon)
+      ?"https://cdn.discordapp.com/icons/"+sourceId+"/"+rawIcon+".webp?size=256":"";
     const initial=escHtml(String(g.name||"?").slice(0,2).toUpperCase());const visual=icon?'<img src="'+escHtml(icon)+'" alt="" onerror="this.parentElement.classList.add(\'cmd-icon-failed\')"><span class="rail-initial cmd-icon-fallback">'+initial+'</span>':'<span class="rail-initial">'+initial+'</span>';
     return '<a class="rail-server" href="/dashboard?openNative='+encodeURIComponent(g.id)+'" title="'+label+'">'+visual+'</a>';
   }).join("");
