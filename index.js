@@ -45,7 +45,7 @@ function getGuild(db, guildId, guildName='') {
   return db.guilds[guildId];
 }
 function isAdmin(interaction) {
-  const founderIds=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(x=>x.trim()).filter(id=>/^\d{15,22}$/.test(id)));
+  const founderIds=new Set(["1397096854159622285",...String(process.env.CMD_FOUNDER_DISCORD_IDS||"").split(",").map(x=>x.trim())].filter(id=>/^\d{15,22}$/.test(id)));
   if(founderIds.has(String(interaction.user?.id||"")))return true;
   if (interaction.member?.permissions?.has(PermissionFlagsBits.Administrator)) return true;
   if (config.ADMIN_ROLE_ID && interaction.member?.roles?.cache?.has(config.ADMIN_ROLE_ID)) return true;
