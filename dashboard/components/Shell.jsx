@@ -170,7 +170,7 @@ export default function Shell({ children }) {
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
           <img src="/extinction-logo.png" alt="Extinction++ RSS" className="mb-4 w-full rounded-2xl object-cover" />
-          <h1 className="text-2xl font-black text-purple-400">EXTINCTION++ RSS</h1>
+          <h1 className="text-2xl font-black text-purple-400">CMD EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
           <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 rounded-full border border-purple-400/35 bg-purple-500/10 px-3 py-1.5 text-[11px] font-black tracking-wide text-purple-200 hover:bg-purple-500/20">
@@ -230,8 +230,8 @@ export default function Shell({ children }) {
         <div className="ext-module-footer"><LanguageSelector/></div>
       </aside>
 
-      <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-1 border-t border-white/10 bg-black/95 p-2 backdrop-blur-xl lg:hidden">
-        {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-2 text-[11px] active:bg-red-600"><Icon size={22}/><span>{t(label)}</span></Link>)}
+      <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-0.5 border-t border-white/10 bg-black/95 px-1 pt-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))] backdrop-blur-xl lg:hidden">
+        {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="flex min-w-0 min-h-[57px] flex-col items-center justify-start gap-1 rounded-xl px-0.5 py-1.5 text-[10px] active:bg-red-600"><Icon size={21} className="shrink-0"/><span className="w-full text-center leading-tight break-words line-clamp-2">{label==='CFTools & BattleMetrics'?'CFTools':t(label)}</span></Link>)}
       </nav>
 
       <section className="ext-content px-4 py-5 lg:ml-[23rem] lg:p-10">{children}</section>
