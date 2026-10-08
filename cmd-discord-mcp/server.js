@@ -34,6 +34,7 @@ const writeScope="discord.write";
 const readSecurity=[{type:"oauth2",scopes:[readScope]}];
 const writeSecurity=[{type:"oauth2",scopes:[writeScope]}];
 
+const discordMessageFallbackCache=new Map();
 const bots={
   dayz:{label:"DAYZ GATE",base:String(process.env.DAYZ_ADMIN_URL||"")},
   ark:{label:"BOT ARK",base:String(process.env.ARK_ADMIN_URL||"")},
@@ -3995,7 +3996,9 @@ const httpServer=createServer(async(req,res)=>{
         // No credentials are changed and the same user's guild authorization still applies.
         const readable=m=>Boolean(String(m?.content||"").trim()||(m?.embeds||[]).length||(m?.attachments||[]).length||(m?.stickers||[]).length||(m?.components||[]).length||m?.poll);
         const empty=(data.messages||[]).length>0&&!(data.messages||[]).some(readable);
-        if(empty){
+        const cacheKey=String(auth.user.id)+":"+guildId+":"+channelId;
+        const cache=discordMessageFallbackCache.get(cacheKey);
+        if(empty&&(!cache||cache.until<Date.now())){
           const installed=await installedEverywhere(auth);
           const guild=(installed.guilds||[]).find(g=>String(g.id)===String(guildId));
           for(const candidate of (guild?.availableBots||[])){
@@ -4011,6 +4014,8 @@ const httpServer=createServer(async(req,res)=>{
               }
             }catch{} // Another bot may lack View Channel or Read Message History permission.
           }
+          discordMessageFallbackCache.set(cacheKey,{until:Date.now()+(chosen===first?120000:600000)});
+          if(discordMessageFallbackCache.size>1000)discordMessageFallbackCache.clear();
         }
         sendJson(res,200,{bot:chosen,botName:bots[chosen].label,contentRestrictionSuspected:empty&&!(data.messages||[]).some(readable),...data});
       }catch(e){sendJson(res,400,{error:e.message})}return;
