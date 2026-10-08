@@ -64,7 +64,7 @@ function chanItem(c){
 function channels(){
  const all=ctx.data.channels||[],cats=all.filter(x=>x.type==='category'),rooms=all.filter(x=>x.type!=='category');
  const create=canEdit()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
- return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
+ return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis Discord','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
 }
 const perms=[['viewChannels','Voir les salons'],['sendMessages','Envoyer des messages'],['readHistory','Consulter l’historique'],['connect','Se connecter au vocal'],['speak','Parler en vocal'],['manageChannels','Gérer les salons'],['manageMessages','Gérer les messages'],['manageRoles','Gérer les rôles'],['administrator','Administrateur']];
 function roleEditor(role){
@@ -197,6 +197,12 @@ async function action(which){
   if(!confirm('Supprimer ce rôle ? Cette action est irréversible.'))return;
   try{await mutate('delete_role',{roleId:editing.id})}catch(e){notify(e.message,false)}return;
  }
+ if(which==='sync-native'){
+  if(!isNative()||!ctx.source)return;
+  try{const res=await request('/api/native/sync',{nativeGuildId:id()});notify('Catégories, salons et rôles accessibles synchronisés.');await update()}
+  catch(err){notify('Synchronisation impossible : '+err.message,false)}return;
+ }
+ if(which==='mirror-history'){close();if(typeof openMirrorManager==='function')openMirrorManager();return}
  if(which==='copy-invite'){
   const invite=String(ctx.data.inviteUrl||'');
   try{await navigator.clipboard.writeText(invite);notify('Invitation copiée.')}catch{prompt('Copier le lien d’invitation',invite)}return;
