@@ -1382,7 +1382,9 @@ function isCmdOwner(auth){
 }
 const CMDPAD_PRIV_ORIGIN="https://cmdpad-private-production.up.railway.app";
 async function issueFounderAppTicket(auth,app){
-  if(!isCmdOwner(auth)||String(auth?.user?.discordId||"")!==String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").trim())throw new Error("Connecte-toi avec ton compte Discord fondateur pour accéder à cet outil.");
+  const discordId=String(auth?.user?.discordId||"").trim();
+  const authorizedDiscordFounders=new Set(String(process.env.CMD_FOUNDER_DISCORD_IDS||"1397096854159622285").split(",").map(v=>v.trim()).filter(v=>/^\d{15,22}$/.test(v)));
+  if(!isCmdOwner(auth)||!discordId||!authorizedDiscordFounders.has(discordId))throw new Error("Connecte-toi avec un compte Discord fondateur autorisé pour accéder à cet outil.");
   if(app!=="cmdpad")throw new Error("Application non autorisée.");
   await pool.query("DELETE FROM cmd_founder_app_tickets WHERE expires_at<NOW()-INTERVAL '1 day'");
   const ticket=crypto.randomBytes(32).toString("base64url"),tokenHash=crypto.createHash("sha256").update(ticket).digest("hex");
