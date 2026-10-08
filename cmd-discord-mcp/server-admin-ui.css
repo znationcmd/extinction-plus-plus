@@ -1,0 +1,57 @@
+
+/* CMD Sphere server menus — Discord-inspired navigation, app-native layout. */
+.cmd-srv-layer{position:fixed;inset:0;z-index:12000;display:none;justify-content:center;align-items:stretch;background:#09090ed9;color:#f1f1f4;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+.cmd-srv-layer.open{display:flex}
+.cmd-srv-panel{width:min(760px,100vw);min-height:0;display:flex;flex-direction:column;background:#18181d;box-shadow:0 25px 90px #0009}
+.cmd-srv-header{display:grid;grid-template-columns:43px minmax(0,1fr) 43px;align-items:center;gap:10px;padding:calc(17px + env(safe-area-inset-top,0px)) 16px 17px;border-bottom:1px solid #ffffff10;flex:none;background:#18181d;z-index:2}
+.cmd-srv-header button{color:#e1e0e6;background:transparent;border:0;font-size:29px;line-height:1;border-radius:10px;min-width:39px;min-height:40px;cursor:pointer}
+.cmd-srv-header button:hover{background:#ffffff13}
+.cmd-srv-header h2{margin:0;text-align:center;font-size:19px;font-weight:740;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd-srv-content{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:24px 18px calc(44px + env(safe-area-inset-bottom,0px));scrollbar-color:#45454c transparent}
+.cmd-srv-profile{text-align:center;padding:13px 12px 33px}
+.cmd-srv-profile>img{height:104px;width:104px;border-radius:27px;object-fit:cover;display:block;margin:0 auto 18px}
+.cmd-srv-profile h3{font-weight:800;overflow-wrap:anywhere;font-size:20px;margin:0 0 8px}
+.cmd-srv-profile p{font-size:14px;color:#a9aab3;margin:8px 0}
+.cmd-srv-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0 24px}
+.cmd-srv-actions button{border:0;background:none;color:#bbb9c4;font:inherit;font-size:12px;cursor:pointer;padding:3px;min-width:0}
+.cmd-srv-actions span{display:grid;place-items:center;height:60px;width:60px;max-width:100%;margin:0 auto 8px;background:#303037;border-radius:18px;color:white;font-size:28px}
+.cmd-srv-section{margin:5px 0 31px}
+.cmd-srv-section>h3{font-size:17px;color:#a0a0a9;font-weight:550;margin:0 0 13px}
+.cmd-srv-group{background:#29292f;border-radius:18px;overflow:hidden}
+.cmd-srv-row{width:100%;min-height:68px;display:flex;align-items:center;gap:13px;padding:14px 20px;border:0;background:transparent;color:#f5f4f6;text-align:left;font:550 16px system-ui;cursor:pointer}
+.cmd-srv-row:not(:last-child){border-bottom:1px solid #ffffff12}
+.cmd-srv-row:hover,.cmd-srv-row:focus-visible{background:#ffffff0d}
+.cmd-srv-row .cmd-srv-ico{flex:none;width:29px;text-align:center;font-size:23px}
+.cmd-srv-row .cmd-srv-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.cmd-srv-row small{color:#a2a2b0;font-size:12px;font-weight:450}
+.cmd-srv-row .cmd-srv-chevron{font-size:30px;color:#aeb0bd;font-weight:300}
+.cmd-srv-text{font-size:14px;line-height:1.6;color:#c0bfc8;margin:10px 1px 20px}
+.cmd-srv-status{font-size:13px;color:#c7b2fa;line-height:1.5;overflow-wrap:anywhere}
+.cmd-srv-control label{display:block;font-size:14px;color:#d8d8e1;font-weight:700;margin:18px 0 9px}
+.cmd-srv-control input,.cmd-srv-control textarea,.cmd-srv-control select{width:100%;background:#101015;color:#fafafa;border:1px solid #45454c;border-radius:12px;font:16px system-ui;padding:14px;outline:none;box-sizing:border-box}
+.cmd-srv-control textarea{resize:vertical;min-height:110px}
+.cmd-srv-control input:focus,.cmd-srv-control textarea:focus,.cmd-srv-control select:focus{border-color:#8285f1}
+.cmd-srv-control .cmd-srv-toggle{display:flex;align-items:center;gap:13px;background:#29292f;border-radius:13px;margin-top:13px;padding:14px 15px;min-height:54px}
+.cmd-srv-toggle input{width:20px;height:20px;accent-color:#5865f2;flex:none}
+.cmd-srv-control .cmd-srv-toggle span{flex:1;line-height:1.4}
+.cmd-srv-primary,.cmd-srv-secondary,.cmd-srv-danger{display:block;text-decoration:none;text-align:center;margin:16px 0 8px;border:0;border-radius:12px;padding:14px 16px;font:750 15px system-ui;cursor:pointer;width:100%;box-sizing:border-box}
+.cmd-srv-primary{background:#5865f2;color:white}
+.cmd-srv-secondary{background:#373741;color:#f1f1f5}
+.cmd-srv-danger{background:#71282c;color:#fff}
+.cmd-srv-info{background:#282730;color:#c4c2ce;font-size:13px;line-height:1.5;padding:13px 16px;border-radius:14px;margin:14px 0}
+.cmd-srv-ch-category{margin:25px 0 0}
+.cmd-srv-ch-category>strong{display:block;font-weight:800;color:#bdbdc5;font-size:14px;margin:8px 0 14px;overflow-wrap:anywhere}
+.cmd-srv-ch-row{display:flex;align-items:center;gap:11px;padding:12px 8px;font-size:16px;border:0;border-bottom:1px solid #ffffff0c;color:#e9e8ed;background:none;width:100%;text-align:left;cursor:pointer}
+.cmd-srv-ch-row>span{font-size:25px;color:#a9a8ae}
+.cmd-srv-ch-row b{flex:1;font-size:15px;overflow-wrap:anywhere;font-weight:580}
+.cmd-srv-ch-row>em{font-style:normal;color:#8b8c95}
+.cmd-srv-ch-row:hover{background:#ffffff09}
+.cmd-srv-actions-row{display:flex;gap:9px;margin:18px 0}
+.cmd-srv-actions-row button{flex:1;margin:0}
+.cmd-srv-pill{display:inline-block;background:#42424b;border-radius:11px;padding:6px 10px;color:#e8e5ed;font-size:13px;margin:3px 4px 3px 0}
+.cmd-srv-progress{padding:35px;text-align:center;color:#bbb8c4}
+.sphere-app .cmd-server-heading{cursor:pointer}
+.sphere-app .cmd-server-heading:after{content:'›';font-size:28px;color:#d5c3e4;margin-left:auto}
+.sphere-app .cmd-server-heading:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
+body.cmd-srv-no-scroll{overflow:hidden!important}
+@media(max-width:640px){.cmd-srv-panel{width:100vw}.cmd-srv-header{padding:calc(13px + env(safe-area-inset-top,0px)) 12px 12px}.cmd-srv-content{padding:20px 17px calc(40px + env(safe-area-inset-bottom,0px))}.cmd-srv-group{border-radius:18px}.cmd-srv-row{min-height:68px;padding:15px 15px}.cmd-srv-actions{gap:4px}.cmd-srv-actions span{height:58px;width:58px}.cmd-srv-profile>img{height:104px;width:104px}.cmd-srv-control label{margin-top:17px}}
