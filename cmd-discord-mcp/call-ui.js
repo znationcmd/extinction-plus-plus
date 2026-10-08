@@ -23,9 +23,27 @@ export function callPage(auth,room){
 .controls .red{background:#da373c}.controls .primary{background:#7055ef}.controls button:disabled{opacity:.45}
 .join{margin:20px 0;background:#221630;border:1px solid #7156a7;padding:25px;border-radius:22px;max-width:540px}.join button{background:#7455ea;color:white;border:none;border-radius:11px;padding:12px 22px;font-weight:800;margin:8px 6px 0 0}
 .hint{color:#bcb3ca;font-size:13px;line-height:1.5}.hidden{display:none!important}
+
+.call-chat-btn{margin-left:auto;width:46px;height:46px;border:0;border-radius:14px;background:#2e2337;color:white;font-size:24px;cursor:pointer;position:relative}
+.call-chat-btn:hover,.call-chat-btn.active{background:#5b3aa3}
+.call-chat-count{position:absolute;right:-3px;top:-4px;background:#e63f5f;border-radius:999px;color:white;min-width:17px;padding:2px 5px;font-size:10px;display:none}
+.chat-panel{position:fixed;right:0;top:0;bottom:0;width:min(415px,100vw);background:#26242b;z-index:51;box-shadow:-20px 0 60px #0009;border-left:1px solid #ffffff16;display:flex;flex-direction:column;transform:translateX(105%);transition:transform .22s ease}
+.chat-panel.visible{transform:translateX(0)}
+.call-chat-header{padding:calc(14px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid #ffffff1a;display:flex;align-items:center;gap:12px;background:#201c25}
+.call-chat-header strong{flex:1}.call-chat-header button{border:0;border-radius:10px;color:#fff;background:#3a3441;padding:8px 12px;font-size:21px}
+.call-chat-messages{flex:1;min-height:0;overflow-y:auto;padding:16px 12px}
+.call-chat-empty{text-align:center;color:#b8b3bf;padding:36px 8px}
+.call-chat-item{display:flex;gap:10px;padding:6px 3px 12px}.call-chat-avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:#603ab2;display:grid;place-items:center;overflow:hidden;font-weight:bold}.call-chat-avatar img{width:100%;height:100%;object-fit:cover}.call-chat-copy{min-width:0;flex:1}.call-chat-copy header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.call-chat-copy time{font-size:11px;color:#a69daf}.call-chat-copy p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;color:#f4f0f9}
+.call-chat-form{display:flex;align-items:end;gap:8px;padding:12px 12px calc(10px + env(safe-area-inset-bottom));background:#1d1a21}
+.call-chat-form textarea{background:#3c3741;color:#fff;border:0;border-radius:14px;min-height:48px;max-height:190px;resize:none;padding:12px;flex:1;min-width:0;font:inherit;outline:none}
+.call-chat-form button{background:#6755df;color:white;border:0;border-radius:11px;padding:12px;font-weight:900;cursor:pointer}
+.call-chat-info{margin:0;padding:0 14px 9px;background:#1d1a21;color:#a9a2af;font-size:11px}
+@media(min-width:980px){body.call-chat-open .wrap{margin-right:min(415px,33vw)}body.call-chat-open .controls{right:min(415px,33vw)}}
+@media(max-width:650px){.top{padding:calc(12px + env(safe-area-inset-top)) 12px 10px}.call-chat-btn{flex-shrink:0}.chat-panel{width:100%;top:15%;bottom:0;border-radius:23px 23px 0 0;transform:translateY(110%);border-top:1px solid #ffffff25}.chat-panel.visible{transform:translateY(0)}}
+
 </style>
 </head>
-<body><header class="top"><a href="/messages">‹</a><div><b>CMD Sphere · Appel privé</b><small id="roomTitle">Conversation sécurisée</small></div></header>
+<body><header class="top"><a href="/messages" aria-label="Retour">‹</a><div><b>CMD Sphere · Appel privé</b><small id="roomTitle">Conversation sécurisée</small></div><button type="button" id="callChatToggle" class="call-chat-btn" title="Messages pendant l’appel" aria-label="Ouvrir les messages">💬<span id="callChatCount" class="call-chat-count"></span></button></header>
 <main class="wrap"><div class="hero"><span class="dot"></span><h1 id="heading">Appel audio / vidéo</h1></div><div id="notice">Prêt à rejoindre.</div>
 <section class="join" id="join"><h2>Rejoindre la conversation</h2><p>Choisis le micro seul ou active aussi la caméra. Les autres participants du groupe peuvent rejoindre la même conférence.</p>
 <button id="joinVoice">🎙️ Appel vocal</button><button id="joinVideo">📹 Appel vidéo</button>
@@ -33,6 +51,12 @@ export function callPage(auth,room){
 <div class="stage" id="stage"></div>
 </main>
 <div class="controls hidden" id="controls"><button id="mic">🎙️ Micro</button><button id="camera">📷 Caméra</button><button id="share">🖥️ Écran</button><button id="hang" class="red">📞 Raccrocher</button></div>
+<aside id="callChatPanel" class="chat-panel" aria-label="Messages pendant l'appel">
+  <header class="call-chat-header"><strong>💬 Messages pendant l’appel</strong><button id="callChatClose" type="button" aria-label="Fermer">×</button></header>
+  <div id="callChatMessages" class="call-chat-messages"><div class="call-chat-empty">Chargement des messages…</div></div>
+  <form id="callChatForm" class="call-chat-form"><textarea id="callChatInput" rows="1" placeholder="Envoyer un message…" aria-label="Message"></textarea><button type="submit">Envoyer</button></form>
+  <p class="call-chat-info">Les messages restent disponibles dans les MP ou le groupe après l’appel.</p>
+</aside>
 <script>
 const ROOM=new URL(location.href).searchParams.get("room")||"";
 const initialVideo=new URL(location.href).searchParams.get("video")==="1";
@@ -152,6 +176,63 @@ $("#share").onclick=async()=>{
   track.onended=async()=>{for(const pc of pcs.values()){const sender=pc.getSenders().find(x=>x.track?.kind==="video");if(sender)await sender.replaceTrack(current||null)}tile("local","Toi",localStream,true)};
  }catch(e){say("Partage impossible : "+e.message)}
 };
+
+const callChatType=ROOM.startsWith("group:")?"group":"dm";
+const callChatRoomId=ROOM.split(":")[1]||"";
+let callChatVisible=false,callChatLast="",callChatSeen="",callChatTimer=null,callChatHasLoaded=false;
+const callMyName="Moi";
+function callChatElem(tag,cls,value){
+ const el=document.createElement(tag);if(cls)el.className=cls;if(value!==undefined)el.textContent=value;return el;
+}
+async function callChatApi(url,body){
+ const r=await fetch(url,{method:body?"POST":"GET",headers:body?{"content-type":"application/json"}:{},body:body?JSON.stringify(body):undefined,cache:"no-store",credentials:"same-origin"});
+ const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||"Erreur");return data;
+}
+async function callChatLoad(force=false){
+ if(!callChatRoomId)return;
+ try{
+  const path=(callChatType==="group"?"/api/groups/thread/":"/api/dm/thread/")+encodeURIComponent(callChatRoomId);
+  const data=await callChatApi(path),messages=Array.isArray(data.messages)?data.messages:[];
+  const latest=String(messages[messages.length-1]?.id||"");
+  if(callChatHasLoaded&&latest!==callChatLast&&!callChatVisible){
+    const badge=$("#callChatCount");badge.textContent="●";badge.style.display="inline-block";
+  }
+  if(!force&&callChatHasLoaded&&latest===callChatLast)return;
+  const box=$("#callChatMessages");const isAtBottom=box.scrollHeight-box.scrollTop-box.clientHeight<130;
+  callChatLast=latest;callChatHasLoaded=true;box.replaceChildren();
+  const fallback=data.other?.displayName||"Participant";
+  if(!messages.length)box.append(callChatElem("div","call-chat-empty","Aucun message. Écris le premier pendant l’appel."));
+  else for(const m of messages){
+    const author=String(m.senderName|| (String(m.senderUserId)===String(data.myId||"")?callMyName:fallback) ||"Utilisateur");
+    const row=callChatElem("article","call-chat-item"),avatar=callChatElem("span","call-chat-avatar",author.slice(0,1).toUpperCase());
+    if(m.avatar&&String(m.avatar).startsWith("https://")){
+      const im=document.createElement("img");im.src=m.avatar;im.alt="";avatar.replaceChildren(im);
+    }
+    const content=callChatElem("div","call-chat-copy"),head=callChatElem("header"),time=callChatElem("time","",new Date(m.createdAt||Date.now()).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}));
+    head.append(callChatElem("strong","",author),time);
+    content.append(head,callChatElem("p","",m.body||""));row.append(avatar,content);box.append(row);
+  }
+  if(force||isAtBottom)box.scrollTop=box.scrollHeight;
+ }catch(e){if(force)$("#callChatMessages").replaceChildren(callChatElem("div","call-chat-empty",e.message))}
+}
+function toggleCallChat(){
+ callChatVisible=!callChatVisible;$("#callChatPanel").classList.toggle("visible",callChatVisible);document.body.classList.toggle("call-chat-open",callChatVisible);
+ $("#callChatToggle").classList.toggle("active",callChatVisible);
+ if(callChatVisible){$("#callChatCount").style.display="none";callChatLoad(true);$("#callChatInput").focus();}
+}
+$("#callChatToggle").onclick=toggleCallChat;
+$("#callChatClose").onclick=toggleCallChat;
+$("#callChatForm").onsubmit=async e=>{
+ e.preventDefault();const field=$("#callChatInput"),body=field.value.trim();if(!body)return;field.value="";
+ try{
+  const endpoint=callChatType==="group"?"/api/groups/send":"/api/dm/send";
+  const payload=callChatType==="group"?{groupId:callChatRoomId,body}:{threadId:callChatRoomId,body};
+  await callChatApi(endpoint,payload);await callChatLoad(true);
+ }catch(err){field.value=body;$("#callChatMessages").append(callChatElem("p","call-chat-empty","Échec de l’envoi : "+err.message))}
+};
+callChatTimer=setInterval(()=>callChatLoad(false),4000);
+callChatLoad(true);
+
 $("#hang").onclick=leave;
 window.addEventListener("pagehide",()=>{if(connected){navigator.sendBeacon?.("/api/calls/leave",new Blob([JSON.stringify({room:ROOM,peerId})],{type:"application/json"}));for(const pc of pcs.values())pc.close();localStream?.getTracks().forEach(t=>t.stop())}});
 $("#roomTitle").textContent=ROOM.startsWith("group:")?"Appel de groupe":"Appel privé";
