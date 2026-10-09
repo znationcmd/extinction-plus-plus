@@ -309,7 +309,7 @@ function refreshEditor(){
    fallback.innerHTML=drawPerson(state);
   }
  const animal=$("#cmdScenePreviewPet");
- if(animal){if(state.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[state.pet]||"";img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.replaceChildren();animal.hidden=state.pet==="none"||state.petStyle==="3d"}
+ if(animal){if(state.petStyle==="photo"){const src=animalPhoto||petImages[state.pet];if(src){const img=new Image();img.src=src;img.alt="Mon animal";img.className="cmd-scene-photo-preview";img.onerror=()=>{animal.textContent=pets.find(p=>p[0]===state.pet)?.[2]||"🐾"};animal.replaceChildren(img)}else{animal.textContent=state.pet==="none"?"":(pets.find(p=>p[0]===state.pet)?.[2]||"🐾")}}else animal.replaceChildren();animal.hidden=state.pet==="none"||state.petStyle==="3d"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
  $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
  const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
