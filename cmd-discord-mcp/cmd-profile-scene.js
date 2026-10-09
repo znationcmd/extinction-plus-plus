@@ -89,7 +89,12 @@ function present(s=state,img=custom){
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
  const light=document.createElement("div");light.className="cmd-scene-scenery";if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";
- if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {const photo=s.gender==="female"?"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=420&fit=crop&q=80":"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=420&fit=crop&q=80";person.innerHTML='<img class="cmd-avatar-fallback-photo" src="'+photo+'" alt="Portrait de remplacement en cas d’indisponibilité du modèle 3D">';}
+ const chosenAvatar=/^reference-avatar-(\d+)$/.exec(s.avatarPreset||"");
+ const chosenIndex=chosenAvatar?Number(chosenAvatar[1]):-1;
+ if(chosenIndex>=0&&chosenIndex<importedAvatarCount&&importedAvatarTiles[chosenIndex]){
+  const img=new Image();img.src=importedAvatarTiles[chosenIndex];img.alt="Avatar CMD Sphere "+(chosenIndex+1);img.className="cmd-saved-imported-avatar";
+  person.append(img);person.classList.add("cmd-scene-selected-avatar");
+ }else if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {const photo=s.gender==="female"?"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=420&fit=crop&q=80":"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=420&fit=crop&q=80";person.innerHTML='<img class="cmd-avatar-fallback-photo" src="'+photo+'" alt="Portrait de remplacement en cas d’indisponibilité du modèle 3D">';}
  scenery.append(person);
  if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[s.pet]||"";img.alt="Animal réaliste";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}scenery.append(animal)}
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
@@ -232,6 +237,8 @@ async function loadOriginalSheets(){
  }));
  await prepareImportedAvatarTiles();
  applyOriginalSheets();
+ // Repaint the public-facing banner after the image sheet decodes, even if the profile state loaded first.
+ if(slot)present();
  if(sheet&&!sheet.hidden){renderSheet("avatar");refreshEditor()}
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage="url("+JSON.stringify(src)+")"});
  if(sceneReferenceIndex(state.scene)>=0)present();
