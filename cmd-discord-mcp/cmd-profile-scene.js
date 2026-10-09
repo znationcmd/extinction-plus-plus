@@ -100,6 +100,7 @@ const looks=[
  {name:"Décontracté",style:"street",top:"shirt",bottom:"jeans",shoes:"sneakers",topColor:"#ffffff",accessory:"none"},
  {name:"Nocturne",style:"chic",top:"jacket",bottom:"cargo",shoes:"boots",topColor:"#212331",accessory:"headphones"}
 ];
+window.cmdSphereLookList=looks;
 const poses=[["stand","Debout","🧍"],["walk","Marche","🚶"],["run","Course","🏃"],["dance","Danse","💃"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
 const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]];
 const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
@@ -129,7 +130,8 @@ function contents(tab){
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
  area.innerHTML=contents(tab);
- $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
+ if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
+ $("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
  $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle="3d";state.petModel="fox"}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
