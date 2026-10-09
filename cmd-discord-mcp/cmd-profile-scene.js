@@ -292,16 +292,7 @@ async function initialize(){
   const retry=setInterval(()=>{mountBanner();if(slot){clearInterval(retry);initialize()}else if(++attempts>=30)clearInterval(retry)},500);
   return;
  }
- if(!document.getElementById("cmdSceneQuickAccess")){
-  const quick=document.createElement("button");
-  quick.id="cmdSceneQuickAccess";
-  quick.type="button";
-  quick.textContent="✦ Personnaliser mon avatar";
-  quick.setAttribute("aria-label","Ouvrir le studio avatar CMD Sphere");
-  quick.style.cssText="position:fixed;right:14px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:1000;border:1px solid #b888f4;background:linear-gradient(135deg,#58348b,#28183f);color:white;border-radius:24px;padding:11px 15px;font:600 13px system-ui;box-shadow:0 5px 22px #170b26a8;max-width:220px";
-  quick.onclick=()=>openSheet();
-  document.body.appendChild(quick);
- }
+ // The banner already provides the avatar editor entry; no floating duplicate.
 
  try{
   const r=await fetch("/api/profile/scene",{credentials:"same-origin",cache:"no-store"});if(!r.ok)return;
