@@ -4,18 +4,18 @@
 if(window.__cmdProfileScene)return;window.__cmdProfileScene=true;
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["neonforest","Forêt néon","✨"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["custom","Ma photo","📷"]];
+const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["neonforest","Forêt néon","✨"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["chalet","Chalet","🏡"],["crystal","Cristaux violets","💎"]];
 const clothes=[["hoodie","Sweat à capuche"],["tshirt","T-shirt"],["jacket","Veste"],["shirt","Chemise"],["dress","Robe"],["sport","Sport"],["suit","Costume"],["armor","Armure"]];
 const pants=[["jeans","Jean"],["dark","Pantalon noir"],["shorts","Short"],["skirt","Jupe"],["cargo","Cargo"],["formal","Habillé"]];
 const footwear=[["sneakers","Baskets"],["boots","Bottes"],["sandals","Sandales"],["formal","Chaussures de ville"]];
 const skins=["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"];
 const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"];
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
-const pets=[["none","Aucun",""],["cat","Chat 3D",""],["fox","Renard 3D",""],["horse","Cheval 3D",""],["bird","Perroquet 3D",""],["duck","Canard 3D",""],["flamingo","Flamant rose 3D",""],["stork","Cigogne 3D",""],["dog","Chien (photo)",""],["rabbit","Lapin (photo)",""],["wolf","Loup (photo)",""],["turtle","Tortue (photo)",""]];
+const pets=[["none","Aucun",""],["cat","Chat 3D",""],["fox","Renard 3D",""],["horse","Cheval 3D",""],["bird","Perroquet 3D",""],["duck","Canard 3D",""],["flamingo","Flamant rose 3D",""],["stork","Cigogne 3D",""],["dog","Chien",""],["rabbit","Lapin",""],["wolf","Loup",""],["turtle","Tortue",""]];
 const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=300&fit=crop",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
 const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
 function petArt(value){return petImages[value]?'<img src="'+petImages[value]+'" loading="lazy" alt="" class="cmd-scene-pet-photo-card">':'<span class="cmd-scene-none">∅</span>'}
-const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"soldier",petModel:"fox",label:""};
+const defaults={scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"soldier",petModel:"fox",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
@@ -104,6 +104,15 @@ const looks=[
  {name:"Nocturne",style:"chic",top:"jacket",bottom:"cargo",shoes:"boots",topColor:"#212331",accessory:"headphones"}
 ];
 window.cmdSphereLookList=looks;
+const avatarPresets=[
+ {id:"guardian",name:"Gardien",model:"soldier",gender:"male",top:"armor",bottom:"cargo",topColor:"#317f67",hair:"short",hairColor:"#201b27",skin:"#e8ad7e"},
+ {id:"nocturne",name:"Nocturne",model:"soldier",gender:"male",top:"jacket",bottom:"dark",topColor:"#212331",hair:"shaved",hairColor:"#201b27",skin:"#c68a60"},
+ {id:"azur",name:"Azur",model:"soldier",gender:"male",top:"shirt",bottom:"jeans",topColor:"#237a9b",hair:"short",hairColor:"#58372a",skin:"#905a3d"},
+ {id:"luna",name:"Luna",model:"michelle",gender:"female",top:"jacket",bottom:"jeans",topColor:"#7549b9",hair:"long",hairColor:"#201b27",skin:"#f7cb9e"},
+ {id:"nova",name:"Nova",model:"michelle",gender:"female",top:"sport",bottom:"dark",topColor:"#d24e79",hair:"ponytail",hairColor:"#9b9ba9",skin:"#c68a60"},
+ {id:"iris",name:"Iris",model:"michelle",gender:"female",top:"suit",bottom:"formal",topColor:"#ffffff",hair:"bob",hairColor:"#58372a",skin:"#905a3d"}
+];
+window.cmdSphereAvatarPresets=avatarPresets;
 const poses=[["stand","Debout","🧍"],["walk","Marche","🚶"],["run","Course","🏃"],["dance","Danse","💃"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
 const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]];
 const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
@@ -125,10 +134,12 @@ function lookGrid(){
 }
 function contents(tab){
  if(tab==="mode")return '<h2>Choisis ton look</h2><p class="cmd-scene-section-intro">Change la couleur du vêtement sur ton personnage 3D.</p>'+lookGrid()+swatches("Couleur de la tenue","topColor",outfits);
- if(tab==="selfie")return '<h2>Animations et poses</h2>'+picker("Animations du personnage","pose",state.gender==="female"?[["dance","Danse","♪"],["stand","Repos","◉"]]:[["stand","Repos","◉"],["walk","Marche","→"],["run","Course","↗"]],"action");
- if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2><p class="cmd-scene-section-intro">Chat, renard, cheval et oiseaux en 3D. Chien, lapin, loup et tortue avec photo en attendant un modèle 3D autorisé.</p>'+picker("Compagnons","pet",pets,"pet");
- if(tab==="scene")return '<h2>Choisis ton décor</h2>'+picker("Paysages","scene",scenes,"scene")+'<label class="cmd-scene-file">📷 Choisir ma propre photo<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>';
- return '<h2>Mon avatar en 3D</h2><p class="cmd-scene-section-intro">Choisis directement un modèle animé, aucun fichier à importer.</p><div class="cmd-scene-model-actions"><button type="button" data-person-model="soldier" class="cmd-scene-built-in '+(state.avatarModel==="soldier"?"selected":"")+'"><span class="cmd-scene-model-photo">3D</span><b>Masculin</b><small>Animé</small></button><button type="button" data-person-model="michelle" class="cmd-scene-built-in '+(state.avatarModel==="michelle"?"selected":"")+'"><span class="cmd-scene-model-photo">3D</span><b>Féminin</b><small>Animé</small></button></div>';
+ if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
+ if(tab==="pet")return '<h2>Animaux de compagnie</h2><p class="cmd-scene-section-intro">Animaux intégrés : modèles 3D animés et photographies pour les espèces sans modèle.</p>'+picker("Compagnons","pet",pets,"pet");
+ if(tab==="scene")return '<h2>Décors officiels</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
+ return '<h2>Avatars 3D CMD Sphere</h2><p class="cmd-scene-section-intro">Choisis ton personnage, puis personnalise son apparence.</p>'+
+ '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><span class="cmd-avatar-card-loading">Portrait 3D</span></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
+ swatches("Teint de peau","skin",skins)+field("Coiffure","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+picker("Accessoires","accessory",accessories,"action");
 }
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
@@ -140,15 +151,11 @@ function renderSheet(tab){
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
- $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de la photo…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Photo ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
- $("#cmdSceneAvatarPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{characterPhoto=await compressPhoto(f,true);characterDirty=true;state.avatarStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Personnage importé. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
- $("#cmdScenePetPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{animalPhoto=await compressPhoto(f,true);animalDirty=true;state.petStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Image de l’animal importée. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
- $("#cmdSceneAvatarIllustration")?.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier";refreshEditor()});
- $("#cmdScenePetIllustration")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
- $("#cmdScenePet3D")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
- $$("[data-person-model]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=button.dataset.personModel;state.gender=state.avatarModel==="michelle"?"female":"male";refreshEditor()}));
- $("#cmdSceneAvatarGLB")?.addEventListener("change",e=>upload3D(e,"avatar"));
- $("#cmdScenePetGLB")?.addEventListener("change",e=>upload3D(e,"pet"));
+ $$("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
+  const p=avatarPresets.find(p=>p.id===button.dataset.avatarPreset);if(!p)return;
+  Object.assign(state,{avatarPreset:p.id,avatarModel:p.model,gender:p.gender,avatarStyle:"3d",top:p.top,bottom:p.bottom,topColor:p.topColor,skin:p.skin,hair:p.hair,hairColor:p.hairColor,accessory:"none"});
+  renderSheet("avatar");refreshEditor();
+ }));
 }
 function refreshEditor(){
  present();
@@ -160,22 +167,6 @@ function refreshEditor(){
  $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
  const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
  document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
-}
-async function upload3D(event,kind){
- const input=event.target,file=input.files?.[0];if(!file)return;
- const message=$("#cmdSceneNotice");message.textContent="Importation du modèle 3D en cours…";
- try{
-  if(!/\.glb$/i.test(file.name)||file.size>12*1024*1024||file.size<24)throw Error("Fichier .glb de 12 Mo maximum requis.");
-  const response=await fetch("/api/profile/3d/"+kind,{method:"PUT",headers:{"content-type":"model/gltf-binary"},body:file,credentials:"same-origin"});
-  const result=await response.json();
-  if(!response.ok)throw Error(result.error||"Enregistrement du modèle impossible");
-  if(kind==="avatar"){state.avatarStyle="3d";state.avatarModel="custom"}
-  else{state.petStyle="3d";state.petModel="custom";if(state.pet==="none")state.pet="dog"}
-  window.cmdProfile3D?.invalidateCustom?.(kind);
-  refreshEditor();
-  message.textContent="Modèle 3D importé. Enregistre aussi ton profil.";
- }catch(error){message.textContent=error.message||"Erreur d'importation."}
- finally{input.value=""}
 }
 async function compressPhoto(file,preserveTransparency=false){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>25*1024*1024)throw Error("Choisis une image PNG, JPG ou WebP de moins de 25 Mo.");
