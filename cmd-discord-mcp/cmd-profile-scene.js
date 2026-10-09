@@ -218,8 +218,8 @@ function universePhoto(kind,value){
  const words=kind==="vehicle"?{compact:"small-car",sportscar:"sports-car",convertible:"convertible-car",scooter:"scooter",motorcycle:"motorcycle",bike:"bicycle",van:"van",truck:"pickup-truck",kart:"go-kart",boat:"sailboat",plane:"airplane",rocket:"rocket",sedan:"sedan-car",suv:"suv-car",jeep:"offroad-jeep",limousine:"limousine",bus:"bus",camper:"camper-van",helicopter:"helicopter",jetski:"jetski",yacht:"yacht"}:{cottage:"cottage-house",house:"family-house",villa:"luxury-villa",apartment:"apartment-building",castle:"castle",cabin:"wooden-cabin",beach:"beach-house",snow:"snow-cabin",tree:"treehouse",crystal:"crystal-house",modern:"modern-house",farm:"farmhouse",mansion:"mansion",penthouse:"penthouse",lighthouse:"lighthouse",japanese:"japanese-house",tiny:"tiny-house"};
  return "https://loremflickr.com/320/240/"+encodeURIComponent(words[value]||value)+"?lock="+([...value].reduce((n,c)=>n+c.charCodeAt(0),kind==="vehicle"?200:400));
 }
-const importedAvatarCount=49;
-const originalSheets=["avatar-collection-212","catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
+const importedAvatarCount=68;
+const originalSheets=["avatar-68-final","catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
 const loadedSheets=new Map();
 for(let i=0;i<54;i++)scenes.push(["reference-"+i,"Fond original "+(i+1),"🖼️"]);
 function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||"");return match&&Number(match[1])<54?Number(match[1]):-1}
@@ -282,7 +282,7 @@ function screenshotCatalogue(category){
 function applyScreenshotCatalogue(){
  document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
 }
-function importedAvatarArt(i){const src=loadedSheets.get("avatar-collection-212");return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-collection-212" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:800% 700%;background-position:'+(i%8*100/7)+'% '+(Math.floor(i/8)*100/6)+'%;'+(src?'background-image:url('+JSON.stringify(src)+');':'')+'"></span>'}
+function importedAvatarArt(i){const src=loadedSheets.get("avatar-68-final");return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-68-final" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:1700% 400%;background-position:'+(i%17*100/16)+'% '+(Math.floor(i/17)*100/3)+'%;'+(src?'background-image:url('+JSON.stringify(src)+');':'')+'"></span>'}
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Image originale · 2D</small></button>').join("")}
 function avatarEditor(){
  const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
