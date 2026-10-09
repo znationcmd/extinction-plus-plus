@@ -156,7 +156,12 @@ function contents(tab){
 }
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
+ const previousScroll=area.scrollTop;
+ const previousScroller=area.closest(".cmd-scene-options-scroll");
+ const outerScroll=previousScroller?.scrollTop;
  area.innerHTML=contents(tab);
+ area.scrollTop=previousScroll;
+ if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
  if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
  if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
