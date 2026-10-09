@@ -504,3 +504,43 @@
 #cmdSceneSheet #cmdSceneOptions{min-height:0!important;flex:1 1 auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain;padding-bottom:calc(35px + env(safe-area-inset-bottom,0px))!important}
 #cmdSceneSheet .cmd-scene-footer{flex:0 0 auto!important;position:relative!important;z-index:20!important;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important}
 #cmdSceneSheet .cmd-real-3d-editor{pointer-events:auto}
+
+
+/* CMD Sphere Oct 2026: single responsive editor stack, with truly scrollable catalog. */
+#cmdSceneSheet{inset:0;width:100%;height:100dvh;overflow:hidden}
+#cmdSceneSheet .cmd-scene-sheet{width:min(720px,100%);height:100dvh;max-height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#cmdSceneSheet .cmd-scene-hero{flex:0 0 auto;height:clamp(205px,35dvh,385px);min-height:205px;max-height:385px;overflow:hidden}
+#cmdSceneSheet .cmd-scene-float-header{z-index:8;gap:6px}
+#cmdSceneSheet .cmd-scene-float-header button{touch-action:manipulation}
+#cmdSceneSheet .cmd-scene-tabs{flex:0 0 auto;min-height:64px;padding:3px 4px 5px}
+#cmdSceneSheet .cmd-scene-tabs button{min-height:59px;max-width:100%;padding:5px 1px}
+#cmdSceneSheet .cmd-scene-tabs button svg{width:25px;height:25px}
+#cmdSceneSheet #cmdSceneOptions.cmd-scene-market{flex:1 1 0;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;padding:13px 12px 26px!important}
+#cmdSceneSheet .cmd-scene-footer{flex:0 0 auto;max-height:125px;z-index:10;padding:7px 12px max(11px,env(safe-area-inset-bottom))!important}
+#cmdSceneSheet #cmdSceneNotice{max-height:40px;overflow-y:auto}
+#cmdSceneSheet button:focus-visible,#cmdSceneSheet select:focus-visible,#cmdSceneSheet input:focus-visible{outline:2px solid #e5bcff;outline-offset:2px}
+#cmdSceneSheet .cmd-scene-choice-grid,#cmdSceneSheet .cmd-scene-card-carousel,#cmdSceneSheet .cmd-avatar-premium-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#cmdSceneSheet .cmd-scene-catalog-card{min-width:0;max-width:100%;touch-action:manipulation}
+#cmdSceneSheet .cmd-civilian-2d-fallback{height:100%;width:100%;display:flex;align-items:flex-end;justify-content:center}
+#cmdSceneSheet .cmd-civilian-2d-fallback svg{display:block;height:100%;width:auto;max-width:100%}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson{max-height:100%;bottom:-1%}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor.cmd-real-3d-ready ~ .cmd-scene-preview #cmdScenePreviewPerson{visibility:hidden!important}
+#cmdSceneSheet #cmdScenePreviewSave:disabled{opacity:.55;cursor:wait}
+@media (max-width:600px){
+ #cmdSceneSheet .cmd-scene-sheet{width:100%;border-radius:0}
+ #cmdSceneSheet .cmd-scene-hero{height:clamp(190px,33dvh,320px);min-height:190px;max-height:320px}
+ #cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson{width:min(59%,245px);height:90%}
+ #cmdSceneSheet .cmd-scene-tabs button small{font-size:10px;max-width:100%;overflow-wrap:anywhere}
+ #cmdSceneSheet .cmd-scene-choice-grid,#cmdSceneSheet .cmd-scene-card-carousel,#cmdSceneSheet .cmd-avatar-premium-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #cmdSceneSheet .cmd-scene-float-header{padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px}
+ #cmdSceneSheet .cmd-scene-float-header span{font-size:9px;letter-spacing:.04em;max-width:45%;white-space:normal;text-align:center}
+ #cmdSceneSheet .cmd-scene-float-header #cmdScenePreviewSave{min-width:91px;padding:0 11px;font-size:12px}
+ #cmdSceneSheet #cmdSceneOptions.cmd-scene-market{padding-inline:10px!important}
+ #cmdSceneSheet .cmd-scene-footer-actions button{min-width:0;white-space:normal}
+}
+@media (max-height:690px){
+ #cmdSceneSheet .cmd-scene-hero{height:clamp(160px,28dvh,220px);min-height:160px}
+ #cmdSceneSheet .cmd-scene-tabs{min-height:56px}
+ #cmdSceneSheet .cmd-scene-tabs button{min-height:51px}
+ #cmdSceneSheet .cmd-scene-tabs button svg{width:22px;height:22px}
+}
