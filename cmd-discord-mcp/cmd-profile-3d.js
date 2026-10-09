@@ -389,12 +389,12 @@ function animateCivilian(frame,now){
 
 function createWorldMiniature(kind,type){
  if(!kind||kind==="none")return null;
- const root=new THREE.Group(),paint=new THREE.MeshStandardMaterial({color:type==="home"?0xcab7a0:0x9365d0,roughness:.65}),glass=new THREE.MeshStandardMaterial({color:0x85b4cc,roughness:.26}),dark=new THREE.MeshStandardMaterial({color:0x292532,roughness:.9}),roof=new THREE.MeshStandardMaterial({color:0x5c4967,roughness:.76});
+ const root=new THREE.Group(),palette=[0x9365d0,0xd95c73,0x4b9aa7,0xd4a54b,0x638c56,0x6d76bd,0xc07842,0x8b689b],seed=[...String(kind)].reduce((n,c)=>n*31+c.charCodeAt(0),7)>>>0,paint=new THREE.MeshStandardMaterial({color:palette[seed%palette.length],roughness:.65}),glass=new THREE.MeshStandardMaterial({color:0x85b4cc,roughness:.26}),dark=new THREE.MeshStandardMaterial({color:0x292532,roughness:.9}),roof=new THREE.MeshStandardMaterial({color:0x5c4967,roughness:.76});
  const add=(geo,mat,x,y,z)=>{const mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);root.add(mesh);return mesh};
  if(type==="home"){
-  const high=["apartment","castle","villa"].includes(kind)?1.65:1;
+  const high=["apartment","castle","villa","mansion","penthouse","palace"].includes(kind)?1.65:["tiny","tree"].includes(kind)?.72:1;
   add(new THREE.BoxGeometry(1,high,.85),paint,0,high/2,0);
-  if(["cottage","house","cabin","beach","snow","tree"].includes(kind)){const m=add(new THREE.ConeGeometry(.81,.5,4),roof,0,high+.25,0);m.rotation.y=Math.PI/4}
+  if(["cottage","house","cabin","beach","snow","tree","farm","japanese","tiny"].includes(kind)){const m=add(new THREE.ConeGeometry(.81,.5,4),roof,0,high+.25,0);m.rotation.y=Math.PI/4}
   else add(new THREE.BoxGeometry(1.11,.14,.95),roof,0,high+.07,0);
   add(new THREE.BoxGeometry(.24,.5,.02),dark,0,.25,.43);
   for(const x of [-.34,.34])for(let y=.61;y<high;y+=.45)add(new THREE.BoxGeometry(.22,.23,.02),glass,x,y,.44);
@@ -402,10 +402,10 @@ function createWorldMiniature(kind,type){
   root.scale.setScalar(.5);root.position.x=-1.13;root.position.z=-1;
  }else{
   const tiny=["motorcycle","scooter","bike","kart"].includes(kind);
-  if(kind==="rocket"){
+  if(kind==="rocket"||kind==="helicopter"){
    add(new THREE.CylinderGeometry(.25,.25,1.2,18),paint,0,.7,0);
    add(new THREE.ConeGeometry(.26,.4,18),roof,0,1.48,0);
-  }else if(kind==="plane"){
+  }else if(kind==="plane"||kind==="jetski"){
    add(new THREE.CapsuleGeometry(.23,.6,6,12),paint,0,.6,0).rotation.x=Math.PI/2;
    add(new THREE.BoxGeometry(1.7,.08,.26),roof,0,.67,0);
   }else if(kind==="boat"){
