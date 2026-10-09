@@ -84,3 +84,19 @@
  }
 }
 @keyframes cmd-emoji-photo-breathe{0%{transform:translateY(0) scale(.97) rotate(-2deg)}100%{transform:translateY(-2px) scale(1.045) rotate(2deg)}}
+
+
+/* GIF and stickers are larger than inline emojis, with live animation. */
+#channelEmojiSheet .cmd-emoji-grid-v2.cmd-media-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;align-items:stretch}
+#channelEmojiSheet .cmd-media-tile{aspect-ratio:1.18;width:100%;background:#190d22;border:1px solid #ffffff20;border-radius:12px;padding:5px}
+#channelEmojiSheet .cmd-media-tile img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+#channelEmojiSheet .cmd-public-gif-item{min-width:0;position:relative}
+#channelEmojiSheet .cmd-public-gif-item a{display:block;text-align:center;font-size:10px;color:#d6bff0;padding:4px;text-decoration:underline}
+#channelMessages img.cmd-chat-gif{display:block;width:auto;max-width:min(310px,100%);max-height:350px;height:auto;object-fit:contain;border-radius:10px;margin:6px 0}
+#channelMessages img.cmd-chat-sticker{display:block;width:auto;max-width:min(170px,100%);max-height:180px;height:auto;object-fit:contain;margin:4px 0}
+#channelMessages a.cmd-chat-gif-link{display:inline-block;max-width:100%}
+#channelMessages .msg-text{overflow-wrap:anywhere}
+@media(max-width:430px){
+ #channelEmojiSheet .cmd-emoji-grid-v2.cmd-media-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #channelEmojiSheet .cmd-media-tile{aspect-ratio:1.25}
+}
