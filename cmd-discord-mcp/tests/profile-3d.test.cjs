@@ -43,7 +43,7 @@ test("3D scene config retains 3D mode, model choice and original profile ownersh
  await api.initCmdProfileScene(pool);
  assert.ok(query.some(x=>x.sql.includes("cmd_avatar_scene")));
  let a=output();
- const input=Buffer.from(JSON.stringify({scene:{scene:"neonforest",gender:"female",avatarStyle:"3d",avatarModel:"civilian",petStyle:"3d",petModel:"fox",pet:"fox",vehicle:"kart",home:"villa",hideHome:false,petName:"Milo",top:"polo",accessory:"necklace",hair:"undercut",beard:"full",beardColor:"#58372a",faceShape:"square",eyeShape:"almond",browStyle:"arched"}}));
+ const input=Buffer.from(JSON.stringify({scene:{scene:"neonforest",gender:"female",avatarStyle:"3d",avatarModel:"civilian",petStyle:"3d",petModel:"fox",pet:"fox",vehicle:"kart",home:"villa",hideHome:false,petName:"Milo",top:"polo",accessory:"necklace",bag:"handbag",piercing:"septum",hair:"undercut",beard:"full",beardColor:"#58372a",faceShape:"square",eyeShape:"almond",browStyle:"arched"}}));
  await api.handleCmdProfileScene({method:"POST",async *[Symbol.asyncIterator](){yield input}},a,{pathname:"/api/profile/scene"},{pool,auth:{user:{id:"42"}}});
  assert.equal(a.status,200);
  assert.equal(JSON.parse(a.body).scene.avatarModel,"civilian");
@@ -55,6 +55,8 @@ test("3D scene config retains 3D mode, model choice and original profile ownersh
  assert.equal(JSON.parse(a.body).scene.accessory,"necklace");
  assert.equal(JSON.parse(a.body).scene.hair,"undercut");
  assert.equal(JSON.parse(a.body).scene.beard,"full");
+ assert.equal(JSON.parse(a.body).scene.bag,"handbag");
+ assert.equal(JSON.parse(a.body).scene.piercing,"septum");
  assert.equal(JSON.parse(a.body).scene.beardColor,"#58372a");
  assert.equal(JSON.parse(a.body).scene.faceShape,"square");
  assert.equal(JSON.parse(a.body).scene.eyeShape,"almond");
