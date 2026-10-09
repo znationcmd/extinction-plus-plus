@@ -31,7 +31,7 @@ function pixelsToIndices(image){
 async function encodeGif({source,draw,duration=6,fps=7,width=320,height=568,onProgress}){
  const off=document.createElement("canvas");off.width=width;off.height=height;const ctx=off.getContext("2d",{willReadFrequently:true});
  if(!ctx)throw new Error("Création GIF impossible sur cet appareil.");
- const frames=Math.min(120,Math.ceil(duration*fps)),delay=Math.round(100/fps);
+ const frames=Math.min(120,Math.ceil(duration*fps)),delay=Math.max(2,Math.round(duration*100/frames));
  const output=[71,73,70,56,57,97];push16(output,width);push16(output,height);output.push(0xF7,0,0);
  for(let i=0;i<256;i++)output.push(Math.round(((i>>5)&7)*255/7),Math.round(((i>>2)&7)*255/7),(i&3)*85);
  output.push(0x21,0xFF,11,...Array.from("NETSCAPE2.0",x=>x.charCodeAt(0)),3,1,0,0,0);
