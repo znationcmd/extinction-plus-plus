@@ -265,7 +265,8 @@ function openSheet(){
  sheet.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();closeSheet()}});
  showTab("mode");
 }
-function showTab(tab){\n if(tab==="mode")lookCategory="all";
+function showTab(tab){
+ if(tab==="mode")lookCategory="all";
  $$("[data-scene-tab]",sheet).forEach(b=>{const on=b.dataset.sceneTab===tab;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
  renderSheet(tab);refreshEditor();
  const area=$("#cmdSceneOptions");if(area)area.scrollTop=0;
