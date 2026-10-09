@@ -10,6 +10,7 @@ import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js"
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
+import {handleCmdStudioMusic} from "./cmd-studio-music.js";
 import {seedCmdPhotoEmojis} from "./cmd-emoji-photo-seed.js";
 import {initCmdBubbleColors,cmdBubbleColorsRoute} from "./cmd-bubble-colors.js";
 import {initCmdEmailDb,cmdEmailRoute,sendCmdAccountMail,attachFounderEmail,normalizeEmail} from "./cmd-account-email.js";
@@ -169,7 +170,7 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
-    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009media9"><link rel="stylesheet" href="/cmd-chat-polish.css?v=20261009chatfix9"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261009studio2"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009media9"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009media9"></script><script defer src="/cmd-emoji-uploader.js?v=20261009media9"></script><script defer src="/cmd-chat-polish.js?v=20261009chatfix9"></script><script defer src="/cmd-gif-encoder.js?v=20261009studio2"></script><script defer src="/cmd-promo-studio.js?v=20261009studio2"></script></body>');
+    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009media9"><link rel="stylesheet" href="/cmd-chat-polish.css?v=20261009chatfix9"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261009music5"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009media9"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009media9"></script><script defer src="/cmd-emoji-uploader.js?v=20261009media9"></script><script defer src="/cmd-chat-polish.js?v=20261009chatfix9"></script><script defer src="/cmd-gif-encoder.js?v=20261009music5"></script><script defer src="/cmd-promo-studio.js?v=20261009music5"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008fullcircle4"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261009simple6"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
@@ -3920,6 +3921,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCmdGifSearch(req,res,url,{auth:emojiAuth}))return;
     if(await handleCmdPromos(req,res,url,{pool,auth:emojiAuth,baseUrl}))return;
     if(await handleCmdProfileScene(req,res,url,{pool,auth:emojiAuth}))return;
+    if(await handleCmdStudioMusic(req,res,url,{auth:emojiAuth}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
