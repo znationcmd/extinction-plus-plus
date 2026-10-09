@@ -5,7 +5,7 @@ if(window.__cmdProfileScene)return;window.__cmdProfileScene=true;
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["neonforest","Forêt néon","✨"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["chalet","Chalet","🏡"],["crystal","Cristaux violets","💎"]];
-const clothes=[["hoodie","Sweat à capuche"],["tshirt","T-shirt"],["jacket","Veste"],["shirt","Chemise"],["dress","Robe"],["sport","Sport"],["suit","Costume"],["armor","Armure"]];
+const clothes=[["hoodie","Sweat à capuche"],["tshirt","T-shirt"],["jacket","Veste"],["shirt","Chemise"],["polo","Polo"],["sweater","Pull"],["coat","Manteau"],["dress","Robe"],["sport","Sport"],["suit","Costume"],["armor","Armure"]];
 const pants=[["jeans","Jean"],["dark","Pantalon noir"],["shorts","Short"],["skirt","Jupe"],["cargo","Cargo"],["formal","Habillé"]];
 const footwear=[["sneakers","Baskets"],["boots","Bottes"],["sandals","Sandales"],["formal","Chaussures de ville"]];
 const vehicles=[["none","À pied","🚶"],["compact","Citadine","🚙"],["sportscar","Sportive","🏎️"],["convertible","Cabriolet","🚗"],["scooter","Scooter","🛵"],["motorcycle","Moto","🏍️"],["bike","Vélo","🚲"],["van","Van","🚐"],["truck","Pick-up","🛻"],["kart","Kart","🏎️"],["boat","Bateau","⛵"],["plane","Avion","✈️"],["rocket","Fusée","🚀"]];
@@ -19,7 +19,7 @@ const pets=[["none","Aucun",""],["cat","Chat 3D",""],["fox","Renard 3D",""],["ho
 const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
 const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
 function petArt(value){if(value==='wolf')return '<span class="cmd-clothing-icon" aria-label="Loup">🐺</span>';return petImages[value]?'<img src="'+petImages[value]+'" loading="lazy" alt="" class="cmd-scene-pet-photo-card">':'<span class="cmd-scene-none">∅</span>'}
-const defaults={scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"soldier",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
+const defaults={scene:"none",avatarPreset:"guardian",gender:"male",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
@@ -80,7 +80,7 @@ function mountBanner(){
  const btn=document.createElement("button");btn.id="cmdSceneEdit";btn.type="button";btn.textContent="🎭 Avatar & décor";btn.setAttribute("aria-label","Personnaliser mon avatar, mon animal et mon décor de profil");btn.onclick=e=>{e.preventDefault();e.stopPropagation();openSheet()};wrap.append(btn);
  slot=wrap;
  const edit=$("#profileForm"),section=document.createElement("div");
- if(edit){section.className="cmd-scene-form-entry";section.innerHTML='<h3>🎭 Mon décor et mon personnage</h3><p>Apparaît dans la bannière de ce profil, sans remplacer ta photo, ton pseudo ni tes autres informations.</p><button type="button" id="cmdSceneFromProfile">Personnaliser mon décor</button>';edit.querySelector("h2")?.after(section);$("#cmdSceneFromProfile").onclick=()=>{document.querySelector("#modal")?.classList.remove("on");openSheet()}}
+ if(edit){section.className="cmd-scene-form-entry";section.innerHTML='<h3>🎭 Personnalisation CMD Sphere</h3><p>Ouvre « Avatar & décor » sur ta bannière pour modifier ton personnage, tes tenues et ton univers.</p>';edit.querySelector("h2")?.after(section)}
 }
 /* Self-contained illustrated pets instead of emoji heads in the actual scene. */
 function drawPet(kind){
@@ -103,18 +103,18 @@ const looks=[
  {name:"Été",style:"summer",top:"tshirt",bottom:"shorts",shoes:"sandals",topColor:"#e6a53a",accessory:"none"},
  {name:"Ville",style:"street",top:"jacket",bottom:"dark",shoes:"boots",topColor:"#237a9b",accessory:"glasses"},
  {name:"Soirée",style:"chic",top:"dress",bottom:"skirt",shoes:"formal",topColor:"#d24e79",accessory:"none"},
- {name:"MilSim",style:"rp",top:"armor",bottom:"cargo",shoes:"boots",topColor:"#317f67",accessory:"cap"},
+ {name:"Urbain",style:"street",top:"coat",bottom:"cargo",shoes:"boots",topColor:"#317f67",accessory:"cap"},
  {name:"Décontracté",style:"street",top:"shirt",bottom:"jeans",shoes:"sneakers",topColor:"#ffffff",accessory:"none"},
  {name:"Nocturne",style:"chic",top:"jacket",bottom:"cargo",shoes:"boots",topColor:"#212331",accessory:"headphones"}
 ];
 window.cmdSphereLookList=looks;
 const avatarPresets=[
- {id:"guardian",name:"Gardien",model:"soldier",gender:"male",top:"armor",bottom:"cargo",topColor:"#317f67",hair:"short",hairColor:"#201b27",skin:"#e8ad7e"},
- {id:"nocturne",name:"Nocturne",model:"soldier",gender:"male",top:"jacket",bottom:"dark",topColor:"#212331",hair:"shaved",hairColor:"#201b27",skin:"#c68a60"},
- {id:"azur",name:"Azur",model:"soldier",gender:"male",top:"shirt",bottom:"jeans",topColor:"#237a9b",hair:"short",hairColor:"#58372a",skin:"#905a3d"},
- {id:"luna",name:"Luna",model:"michelle",gender:"female",top:"jacket",bottom:"jeans",topColor:"#7549b9",hair:"long",hairColor:"#201b27",skin:"#f7cb9e"},
- {id:"nova",name:"Nova",model:"michelle",gender:"female",top:"sport",bottom:"dark",topColor:"#d24e79",hair:"ponytail",hairColor:"#9b9ba9",skin:"#c68a60"},
- {id:"iris",name:"Iris",model:"michelle",gender:"female",top:"suit",bottom:"formal",topColor:"#ffffff",hair:"bob",hairColor:"#58372a",skin:"#905a3d"}
+ {id:"guardian",name:"Alex",model:"civilian",gender:"male",top:"hoodie",bottom:"jeans",topColor:"#7549b9",hair:"short",hairColor:"#201b27",skin:"#e8ad7e"},
+ {id:"nocturne",name:"Lucas",model:"civilian",gender:"male",top:"jacket",bottom:"dark",topColor:"#212331",hair:"shaved",hairColor:"#201b27",skin:"#c68a60"},
+ {id:"azur",name:"Mathis",model:"civilian",gender:"male",top:"polo",bottom:"jeans",topColor:"#237a9b",hair:"curly",hairColor:"#58372a",skin:"#905a3d"},
+ {id:"luna",name:"Luna",model:"civilian",gender:"female",top:"coat",bottom:"jeans",topColor:"#7549b9",hair:"long",hairColor:"#201b27",skin:"#f7cb9e"},
+ {id:"nova",name:"Emma",model:"civilian",gender:"female",top:"sport",bottom:"dark",topColor:"#d24e79",hair:"ponytail",hairColor:"#9b9ba9",skin:"#c68a60"},
+ {id:"iris",name:"Iris",model:"civilian",gender:"female",top:"dress",bottom:"skirt",topColor:"#ffffff",hair:"bob",hairColor:"#58372a",skin:"#905a3d"}
 ];
 window.cmdSphereAvatarPresets=avatarPresets;
 const portraitPhotos={
@@ -127,16 +127,16 @@ const portraitPhotos={
 };
 
 const poses=[["stand","Debout","🧍"],["walk","Marche","🚶"],["run","Course","🏃"],["dance","Danse","💃"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
-const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]];
+const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["earrings","Boucles d’oreilles","💠"],["necklace","Collier","📿"],["crown","Couronne","👑"]];
 const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
 const hairOptions=[["short","Courts"],["long","Longs"],["curly","Bouclés"],["bob","Carré"],["shaved","Très courts"],["ponytail","Queue de cheval"]];
 const tabs=[["mode","Mode","♧"],["selfie","Selfie","◉"],["pet","Animal de compagnie","♧"],["scene","Scène","▧"],["avatar","Avatar","◉"]];
 function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
 const clothingIcons={"hoodie":"🧥","tshirt":"👕","jacket":"🧥","shirt":"👔","dress":"👗","sport":"🎽","suit":"🤵","armor":"🛡️","jeans":"👖","dark":"👖","shorts":"🩳","skirt":"👗","cargo":"👖","formal":"👞","sneakers":"👟","boots":"🥾","sandals":"🩴","glasses":"🕶️","cap":"🧢","hat":"👒","none":"✕"};
 function garmentArt(value){
- const upper=new Set(["hoodie","tshirt","jacket","shirt","dress","sport","suit","armor"]);
+ const upper=new Set(["hoodie","tshirt","jacket","shirt","polo","sweater","coat","dress","sport","suit","armor"]);
  const lower=new Set(["jeans","dark","shorts","skirt","cargo"]);
- const colors={hoodie:"#b895e4",tshirt:"#d8efff",jacket:"#bba185",shirt:"#eae5db",dress:"#d28bbd",sport:"#83b9d7",suit:"#5b6381",armor:"#868c9c",jeans:"#668bb5",dark:"#444c60",shorts:"#92b1d5",skirt:"#b98abb",cargo:"#8e997b",formal:"#3e4555",sneakers:"#f0e7dd",boots:"#8c6b5d",sandals:"#c9a581",glasses:"#9baed2",sunglasses:"#34384b",hat:"#c9b3a1",cap:"#8d83c7",headphones:"#a9a1b8",crown:"#e6c875",none:"#a7a1b5"};
+ const colors={hoodie:"#b895e4",tshirt:"#d8efff",jacket:"#bba185",shirt:"#eae5db",polo:"#b8d0e5",sweater:"#9c79be",coat:"#807687",dress:"#d28bbd",sport:"#83b9d7",suit:"#5b6381",armor:"#868c9c",jeans:"#668bb5",dark:"#444c60",shorts:"#92b1d5",skirt:"#b98abb",cargo:"#8e997b",formal:"#3e4555",sneakers:"#f0e7dd",boots:"#8c6b5d",sandals:"#c9a581",glasses:"#9baed2",sunglasses:"#34384b",hat:"#c9b3a1",cap:"#8d83c7",headphones:"#a9a1b8",crown:"#e6c875",none:"#a7a1b5"};
  const fill=colors[value]||"#b5a6ca";
  let path;
  if(upper.has(value))path=value==="dress"?"M35 23 49 15 71 15 85 23 97 48 83 56 77 43 92 100 28 100 43 43 29 56 15 48Z":"M35 23 49 15 71 15 85 23 104 47 88 59 79 45 79 103 41 103 41 45 32 59 16 47Z";
@@ -169,13 +169,13 @@ function lookGrid(){
  sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key,values,"clothing")).join("")+'</div>';
 }
 function contents(tab){
- if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Les vêtements interchangeables en 3D sont encore en préparation.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
+ if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue stylisée : hauts, bas et chaussures changent directement sur l’avatar 3D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return universePicker();
  if(tab==="scene")return '<h2>Mon univers</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
  return '<h2>Avatars 3D CMD Sphere</h2><p class="cmd-scene-section-intro">Choisis ton personnage, puis personnalise son apparence.</p>'+
  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><img loading="lazy" src="'+portraitPhotos[p.id]+'" alt="Illustration de secours, remplacée par l’aperçu 3D"></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
- swatches("Teint de peau","skin",skins)+field("Coiffure","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+picker("Accessoires","accessory",accessories,"action");
+ field("Morphologie","gender",genders)+swatches("Teint de peau","skin",skins)+field("Coiffure","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+picker("Accessoires","accessory",accessories,"action");
 }
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
@@ -191,7 +191,7 @@ function renderSheet(tab){
  $$("[data-universe-name]",area).forEach(e=>e.addEventListener("input",()=>{state.petName=e.value.slice(0,40)}));
  $$("[data-universe-privacy]",area).forEach(e=>e.addEventListener("change",()=>{state.hideHome=e.checked}));
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
+ $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel="civilian"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
@@ -204,7 +204,12 @@ function renderSheet(tab){
 function refreshEditor(){
  present();
  if(!preview)return;
- if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";if(!preview.querySelector(".cmd-scene-photo-preview")||preview.querySelector(".cmd-scene-photo-preview").src!==img.src)preview.replaceChildren(img)}else{preview.querySelectorAll(".cmd-scene-photo-preview,.cmd-real-avatar-loading").forEach(el=>el.remove());}
+ if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.querySelectorAll(".cmd-civilian-2d-fallback").forEach(el=>el.remove());if(!preview.querySelector(".cmd-scene-photo-preview")||preview.querySelector(".cmd-scene-photo-preview").src!==img.src)preview.append(img)}else{
+   preview.querySelectorAll(".cmd-scene-photo-preview,.cmd-real-avatar-loading").forEach(el=>el.remove());
+   let fallback=preview.querySelector(".cmd-civilian-2d-fallback");
+   if(!fallback){fallback=document.createElement("div");fallback.className="cmd-civilian-2d-fallback";preview.append(fallback)}
+   fallback.innerHTML=drawPerson(state);
+  }
  const animal=$("#cmdScenePreviewPet");
  if(animal){if(state.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[state.pet]||"";img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.replaceChildren();animal.hidden=state.pet==="none"||state.petStyle==="3d"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
@@ -273,7 +278,7 @@ function showTab(tab){
 }
 async function save(){
  if(busy)return;busy=true;
- const btn=$("#cmdSceneSave");btn.disabled=true;
+ const btn=$("#cmdSceneSave"),heroSave=$("#cmdScenePreviewSave");btn.disabled=true;heroSave.disabled=true;
  $("#cmdSceneNotice").textContent="Enregistrement sur ton compte CMD Sphere…";
  try{
   const data={scene:state};if(customDirty)data.customBackground=custom;if(characterDirty)data.characterImage=characterPhoto;if(animalDirty)data.animalImage=animalPhoto;
@@ -283,7 +288,7 @@ async function save(){
   $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;characterDirty=false;animalDirty=false;savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
   setTimeout(()=>{if(sheet)sheet.hidden=true},550);
  }catch(e){$("#cmdSceneNotice").textContent=e.message||"Erreur de sauvegarde"}
- finally{busy=false;btn.disabled=false}
+ finally{busy=false;btn.disabled=false;heroSave.disabled=false}
 }
 async function initialize(){
  mountBanner();
