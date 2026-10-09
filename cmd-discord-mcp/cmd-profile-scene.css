@@ -79,3 +79,25 @@
 }
 @media(max-width:360px){#cmdSceneSheet .cmd-scene-tabs button small{font-size:9px}}
 @media(prefers-reduced-motion:reduce){#cmdSceneBackdrop *{animation:none!important}}
+
+/* Taller full-character scene only when enabled; existing banner height is unchanged otherwise. */
+#cmdSceneWrap.cmd-scene-active #bannerTap{height:350px!important}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-person{height:115%}
+@media(max-width:560px){#cmdSceneWrap.cmd-scene-active #bannerTap{height:350px!important}}
+
+/* Live scene preview mirrors the profile backdrop, including the companion pet. */
+#cmdSceneSheet .cmd-scene-preview{position:relative;isolation:isolate;min-height:184px;max-height:210px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat}
+#cmdSceneSheet .cmd-scene-preview[data-scene="beach"]{background:linear-gradient(180deg,#65bcdf 0%,#bde5ed 50%,#e7c998 52%,#bea171 100%)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="seaside"]{background:linear-gradient(180deg,#6aaad2 0%,#a7d7ee 51%,#167aa6 52%,#124a6d 100%)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="forest"]{background:radial-gradient(circle at 77% 24%,#88aee3,transparent 45%),linear-gradient(130deg,#224d4d,#123a40)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="waterfall"]{background:linear-gradient(90deg,#244b3b,#84d0da 45%,#dbf4f6 55%,#226661)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="city"]{background:linear-gradient(165deg,#b598c4,#d6afb7 51%,#393955 52%,#171f37)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="night"]{background:radial-gradient(circle at 20% 15%,#644387,transparent 43%),linear-gradient(140deg,#081b2d,#15102d)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="space"]{background:radial-gradient(circle at 70% 18%,#724a99,transparent 45%),linear-gradient(135deg,#060a1c,#2c124a)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="mountains"]{background:linear-gradient(165deg,#94bbd3 10%,#c3d6df 47%,#466d8d 48%,#164050)}
+#cmdSceneSheet .cmd-scene-preview[data-scene="custom"]{background-color:#28333c;background-size:cover;background-position:center}
+#cmdSceneSheet .cmd-scene-preview #cmdScenePreviewPerson{position:absolute;left:50%;bottom:-10px;width:140px;height:210px;transform:translateX(-50%)}
+#cmdSceneSheet .cmd-scene-preview #cmdScenePreviewPerson svg{width:100%;height:100%}
+#cmdSceneSheet .cmd-scene-preview #cmdSceneLabel{position:absolute;left:12px;bottom:10px;background:#151221ae;padding:7px 9px;border-radius:9px;max-width:48%;color:#fff;z-index:2}
+#cmdSceneSheet .cmd-scene-preview .cmd-scene-preview-pet{position:absolute;left:105px;bottom:22px;font-size:38px;filter:drop-shadow(0 5px 7px #0009)}
+@media(max-width:560px){#cmdSceneSheet .cmd-scene-preview{min-height:170px;max-height:190px}#cmdSceneSheet .cmd-scene-preview #cmdScenePreviewPerson{width:126px;height:188px}#cmdSceneSheet .cmd-scene-preview .cmd-scene-preview-pet{left:94px}}
