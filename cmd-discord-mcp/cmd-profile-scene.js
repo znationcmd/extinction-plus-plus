@@ -11,7 +11,10 @@ const footwear=[["sneakers","Baskets"],["boots","Bottes"],["sandals","Sandales"]
 const skins=["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"];
 const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"];
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
-const pets=[["none","Aucun","🚫"],["dog","Chien","🐶"],["cat","Chat","🐱"],["rabbit","Lapin","🐰"],["fox","Renard","🦊"],["bird","Oiseau","🦜"],["horse","Cheval","🐴"],["wolf","Loup","🐺"],["turtle","Tortue","🐢"]];
+const pets=[["none","Aucun",""],["cat","Chat 3D",""],["fox","Renard 3D",""],["horse","Cheval 3D",""],["bird","Perroquet 3D",""],["duck","Canard 3D",""],["flamingo","Flamant rose 3D",""],["stork","Cigogne 3D",""],["dog","Chien (photo)",""],["rabbit","Lapin (photo)",""],["wolf","Loup (photo)",""],["turtle","Tortue (photo)",""]];
+const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=300&fit=crop",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
+const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
+function petArt(value){return petImages[value]?'<img src="'+petImages[value]+'" loading="lazy" alt="" class="cmd-scene-pet-photo-card">':'<span class="cmd-scene-none">∅</span>'}
 const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"soldier",petModel:"fox",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -60,9 +63,9 @@ function present(s=state,img=custom){
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
  const light=document.createElement("div");light.className="cmd-scene-scenery";light.textContent=decorateScene(s.scene);scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";
- if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else person.innerHTML=drawPerson(s);
+ if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else if(s.avatarStyle==="3d")person.innerHTML='<span class="cmd-real-avatar-loading">3D</span>';else person.innerHTML=drawPerson(s);
  scenery.append(person);
- if(s.pet!=="none"||(s.petStyle==="photo"&&animalPhoto)){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"&&animalPhoto){const img=new Image();img.src=animalPhoto;img.alt="Animal personnalisé";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}else animal.innerHTML=drawPet(s.pet);scenery.append(animal)}
+ if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[s.pet]||"";img.alt="Animal réaliste";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}scenery.append(animal)}
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
 }
 function mountBanner(){
@@ -109,7 +112,7 @@ const tabs=[["mode","Mode","♧"],["selfie","Selfie","◉"],["pet","Animal de co
 function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="pet"?(value==="none"?'<span class="cmd-scene-none">∅</span>':drawPet(value)):visual==="person"?drawPerson({...state,[key]:value}):visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
@@ -118,7 +121,7 @@ let lookCategory="all";
 function lookGrid(){
  const filtered=looks.map((x,index)=>({...x,index})).filter(x=>lookCategory==="all"||x.style===lookCategory);
  return '<h2>Essayer un nouveau look</h2><div class="cmd-scene-chips">'+[["all","Tous"],["street","Street"],["sport","Sport"],["chic","Chic"],["summer","Été"],["rp","RP / MilSim"]].map(([id,name])=>'<button type="button" data-look-category="'+id+'" class="'+(lookCategory===id?"selected":"")+'">'+name+'</button>').join("")+'</div>'+
- '<div class="cmd-scene-look-grid">'+filtered.map(look=>'<button type="button" class="cmd-scene-look-tile '+(state.top===look.top&&state.topColor===look.topColor&&state.bottom===look.bottom?"selected":"")+'" data-look="'+look.index+'" aria-label="Essayer le look '+escape(look.name)+'"><div class="cmd-scene-look-model">'+drawPerson({...state,...look})+'</div><strong>'+escape(look.name)+'</strong><span class="cmd-look-free">Inclus</span></button>').join("")+'</div>';
+ '<div class="cmd-scene-look-grid">'+filtered.map(look=>'<button type="button" class="cmd-scene-look-tile '+(state.top===look.top&&state.topColor===look.topColor&&state.bottom===look.bottom?"selected":"")+'" data-look="'+look.index+'" aria-label="Essayer le look '+escape(look.name)+'"><div class="cmd-scene-look-model">'+'<span class="cmd-real-portrait-loader">Aperçu 3D</span>'+'</div><strong>'+escape(look.name)+'</strong><span class="cmd-look-free">Inclus</span></button>').join("")+'</div>';
 }
 function contents(tab){
  if(tab==="mode")return '<h2>Choisis ton look</h2><p class="cmd-scene-section-intro">Change la couleur du vêtement sur ton personnage 3D.</p>'+lookGrid()+swatches("Couleur de la tenue","topColor",outfits);
@@ -132,7 +135,7 @@ function renderSheet(tab){
  area.innerHTML=contents(tab);
  if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
  $("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle="3d";state.petModel="fox"}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
+ $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
@@ -149,9 +152,9 @@ function renderSheet(tab){
 function refreshEditor(){
  present();
  if(!preview)return;
- if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.replaceChildren(img)}else preview.innerHTML=drawPerson(state);
+ if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.replaceChildren(img)}else preview.innerHTML='<span class="cmd-real-avatar-loading">Chargement du personnage 3D…</span>';
  const animal=$("#cmdScenePreviewPet");
- if(animal){if(state.petStyle==="photo"&&animalPhoto){const img=new Image();img.src=animalPhoto;img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.innerHTML=state.pet!=="none"?drawPet(state.pet):"";animal.hidden=state.petStyle==="photo"?!animalPhoto:state.pet==="none"}
+ if(animal){if(state.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[state.pet]||"";img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.replaceChildren();animal.hidden=state.pet==="none"||state.petStyle==="3d"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
  $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
  const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
