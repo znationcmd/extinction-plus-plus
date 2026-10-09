@@ -48,8 +48,66 @@ export async function initCmdProfileScene(pool){
  await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS cmd_avatar_scene_image TEXT");
  await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS cmd_avatar_character_image TEXT");
  await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS cmd_avatar_pet_image TEXT");
+ await pool.query("ALTER TABLE cmd_global_profiles ADD COLUMN IF NOT EXISTS cmd_profile_public BOOLEAN NOT NULL DEFAULT FALSE");
+}
+function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function safeImage(value){
+ const s=String(value||"");
+ return /^(https:\/\/[^"<> ]{1,2048}|data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]{20,})$/.test(s)?s:"";
+}
+function publicProfileHtml(record){
+ const scene=config(record.cmd_avatar_scene);
+ const name=escapeHtml(record.display_name||"Membre CMD Sphere");
+ const about=escapeHtml(record.bio||"Retrouve-moi sur CMD Sphere.");
+ const avatar=safeImage(record.avatar_data_url),banner=safeImage(record.banner_data_url);
+ const animal=scene.pet!=="none"?"<p>🐾 Compagnon : "+escapeHtml(scene.petName||scene.pet)+"</p>":"";
+ const vehicle=scene.vehicle!=="none"?"<p>🚘 Véhicule : "+escapeHtml(scene.vehicle)+"</p>":"";
+ const home=scene.hideHome===false&&scene.home!=="none"?"<p>🏡 Maison virtuelle : "+escapeHtml(scene.home)+"</p>":"";
+ const bannerStyle=banner?' style="background-image:url(&quot;'+escapeHtml(banner)+'&quot;)"':"";
+ const icon=avatar?'<img class="avatar" src="'+escapeHtml(avatar)+'" alt="Avatar du profil">':'<div class="avatar placeholder">CMD</div>';
+ return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'+
+ '<meta name="robots" content="noindex,nofollow"><meta property="og:type" content="profile"><meta property="og:title" content="'+name+' · CMD Sphere">'+
+ '<meta property="og:description" content="'+about+'"><title>'+name+' · CMD Sphere</title>'+
+ '<style>*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 30% 0%,#46305d,#0e0e18 62%);color:#faf6ff;font:16px system-ui;min-height:100vh;padding:32px 12px}main{margin:0 auto;max-width:520px;border-radius:23px;overflow:hidden;background:#20182b;border:1px solid #a76cd849;box-shadow:0 20px 65px #0006}.banner{height:176px;background:linear-gradient(120deg,#3b2256,#805cb1);background-position:center;background-size:cover}.body{padding:0 24px 30px}.avatar{width:94px;height:94px;object-fit:cover;border:5px solid #20182b;border-radius:50%;margin-top:-45px;background:#3a244e;display:grid;place-items:center}.placeholder{font-size:25px;font-weight:900}h1{margin:12px 0 5px;font-size:26px}p{line-height:1.5}small{color:#d7c6e2}a{display:inline-block;margin-top:16px;padding:12px 18px;border-radius:12px;color:#fff;background:#7652aa;text-decoration:none;font-weight:800}</style>'+
+ '</head><body><main><div class="banner"'+bannerStyle+'></div><div class="body">'+icon+'<small>Profil CMD Sphere partagé volontairement</small><h1>'+name+'</h1><p>'+about+'</p>'+animal+vehicle+home+
+ '<a href="/">Découvrir CMD Sphere</a></div></main></body></html>';
+}
+async function getShareRequest(req){
+ const chunks=[];let size=0;
+ for await(const chunk of req){size+=chunk.length;if(size>8192)throw Error("Requête trop volumineuse.");chunks.push(chunk)}
+ return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 export async function handleCmdProfileScene(req,res,url,{pool,auth}){
+ if(/^\/p\/[^/]{1,180}$/.test(url.pathname)){
+  if(req.method!=="GET"){send(res,405,{error:"Méthode non autorisée"});return true}
+  let publicUser;
+  try{publicUser=decodeURIComponent(url.pathname.slice(3));if(publicUser.length>120)throw Error("Identifiant trop long")}
+  catch{send(res,404,{error:"Profil indisponible"});return true}
+  try{
+   const r=await pool.query("SELECT display_name,avatar_data_url,banner_data_url,bio,cmd_avatar_scene FROM cmd_global_profiles WHERE user_id=$1 AND cmd_profile_public=TRUE LIMIT 1",[publicUser]);
+   if(!r.rows[0]){send(res,404,{error:"Profil privé ou inexistant"});return true}
+   res.writeHead(200,{"content-type":"text/html; charset=utf-8","cache-control":"private,no-store","x-content-type-options":"nosniff","x-robots-tag":"noindex,nofollow"});
+   res.end(publicProfileHtml(r.rows[0]));return true;
+  }catch(e){console.error("[CMD share]",e);send(res,503,{error:"Profil partagé indisponible"});return true}
+ }
+ if(url.pathname==="/api/profile/share"){
+  if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere."});return true}
+  const uid=String(auth.user.id);
+  try{
+   if(req.method==="GET"){
+    const r=await pool.query("SELECT cmd_profile_public FROM cmd_global_profiles WHERE user_id=$1",[uid]);
+    send(res,200,{enabled:r.rows[0]?.cmd_profile_public===true,url:"/p/"+encodeURIComponent(uid)});return true;
+   }
+   if(req.method==="POST"){
+    const data=await getShareRequest(req);
+    if(typeof data.enabled!=="boolean")throw Error("Choix de confidentialité incorrect");
+    await pool.query("INSERT INTO cmd_global_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING",[uid]);
+    await pool.query("UPDATE cmd_global_profiles SET cmd_profile_public=$2,updated_at=NOW() WHERE user_id=$1",[uid,data.enabled]);
+    send(res,200,{enabled:data.enabled,url:"/p/"+encodeURIComponent(uid)});return true;
+   }
+   send(res,405,{error:"Méthode non autorisée"});return true;
+  }catch(e){send(res,400,{error:e.message||"Partage impossible"});return true}
+ }
  if(url.pathname!=="/api/profile/scene")return false;
  if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere."});return true}
  const uid=String(auth.user.id);
