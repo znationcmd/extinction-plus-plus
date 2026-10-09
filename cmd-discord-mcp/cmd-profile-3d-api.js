@@ -60,14 +60,7 @@ export async function handleCmdProfile3D(req,res,url,{pool,auth}){
    const data=r.rows[0]?.glb;if(!data){send(res,404,{error:"Aucun modèle personnel enregistré."});return true}
    res.writeHead(200,{"content-type":"model/gltf-binary","content-length":data.length,"cache-control":"private, no-store","x-content-type-options":"nosniff","accept-ranges":"none"});res.end(data);return true;
   }
-  if(req.method==="PUT"){
-   if(String(req.headers["content-type"]||"").split(";")[0]!=="model/gltf-binary"){send(res,415,{error:"Choisis un fichier GLB 3D."});return true}
-   let length=0;const arr=[];
-   for await(const part of req){length+=part.length;if(length>MAX_GLB)throw Error("Modèle 3D supérieur à 12 Mo.");arr.push(part)}
-   const bytes=Buffer.concat(arr);verifyGLB(bytes);
-   await pool.query("INSERT INTO cmd_profile_3d_assets(user_id,kind,glb,bytes) VALUES($1,$2,$3,$4) ON CONFLICT(user_id,kind) DO UPDATE SET glb=EXCLUDED.glb,bytes=EXCLUDED.bytes,updated_at=NOW()",[uid,kind,bytes,bytes.length]);
-   send(res,200,{ok:true,kind,size:bytes.length});return true;
-  }
+  if(req.method==="PUT"){send(res,410,{error:"L’import de fichiers GLB n’est plus proposé. Choisis un avatar du catalogue CMD Sphere."});return true}
   if(req.method==="DELETE"){await pool.query("DELETE FROM cmd_profile_3d_assets WHERE user_id=$1 AND kind=$2",[uid,kind]);send(res,200,{ok:true});return true}
   send(res,405,{error:"Méthode non autorisée"});return true;
  }catch(e){send(res,400,{error:e.message||"Modèle 3D non valide"});return true}
