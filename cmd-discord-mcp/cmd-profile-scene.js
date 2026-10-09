@@ -234,6 +234,9 @@ async function loadOriginalSheets(){
 }
 function applyOriginalSheets(){
  document.querySelectorAll("[data-original-sheet]").forEach(el=>{const src=loadedSheets.get(el.dataset.originalSheet);if(src)el.style.backgroundImage='url("'+src+'")'});
+ document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage='url("'+src+'")'});
+ document.querySelectorAll("[data-scene-choice='scene']").forEach(el=>{const value=el.dataset.value;if(sceneReferenceIndex(value)<0)return;const art=el.querySelector(".cmd-scene-landscape");if(art)art.style.cssText=sceneReferenceStyle(value)});
+ if(typeof state!=="undefined"&&sceneReferenceIndex(state.scene)>=0)present();
 }
 loadOriginalSheets();
 function picker(label,key,opts,visual){
