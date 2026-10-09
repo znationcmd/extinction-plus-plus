@@ -134,6 +134,7 @@ function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
  area.innerHTML=contents(tab);
  if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
+ if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
  $("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
  $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
