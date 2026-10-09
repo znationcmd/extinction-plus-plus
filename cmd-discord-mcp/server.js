@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js";
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
+import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {seedCmdPhotoEmojis} from "./cmd-emoji-photo-seed.js";
 import {initCmdBubbleColors,cmdBubbleColorsRoute} from "./cmd-bubble-colors.js";
 import {initCmdEmailDb,cmdEmailRoute,sendCmdAccountMail,attachFounderEmail,normalizeEmail} from "./cmd-account-email.js";
@@ -163,7 +164,7 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
-    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script></body>');
+    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261009avatar2"></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261009avatar2" defer></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
@@ -3918,6 +3919,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:emojiAuth,founder:emojiFounder}))return;
     if(await handleCmdGifSearch(req,res,url,{auth:emojiAuth}))return;
     if(await handleCmdPromos(req,res,url,{pool,auth:emojiAuth,baseUrl}))return;
+    if(await handleCmdProfileScene(req,res,url,{pool,auth:emojiAuth}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
@@ -4683,9 +4685,9 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":css?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL(css?"./cmd-chat-polish.css":"./cmd-chat-polish.js",import.meta.url),"utf8"));return;
     }
-    if(req.method==="GET"&&(url.pathname==="/cmd-promo-studio.js"||url.pathname==="/cmd-promo-studio.css"||url.pathname==="/cmd-gif-encoder.js")){
+    if(req.method==="GET"&&(url.pathname==="/cmd-promo-studio.js"||url.pathname==="/cmd-promo-studio.css"||url.pathname==="/cmd-gif-encoder.js"||url.pathname==="/cmd-profile-scene.js"||url.pathname==="/cmd-profile-scene.css")){
       const css=url.pathname.endsWith(".css");res.writeHead(200,{"content-type":css?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
-      res.end(readFileSync(new URL(css?"./cmd-promo-studio.css":url.pathname==="/cmd-gif-encoder.js"?"./cmd-gif-encoder.js":"./cmd-promo-studio.js",import.meta.url),"utf8"));return;
+      res.end(readFileSync(new URL(url.pathname.startsWith("/cmd-profile-scene.")?(css?"./cmd-profile-scene.css":"./cmd-profile-scene.js"):css?"./cmd-promo-studio.css":url.pathname==="/cmd-gif-encoder.js"?"./cmd-gif-encoder.js":"./cmd-promo-studio.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-emoji-uploader.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-emoji-uploader.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&(url.pathname==="/cmd-emoji-picker-v2.js"||url.pathname==="/cmd-emoji-picker-v2.css")){
@@ -4821,7 +4823,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
