@@ -614,3 +614,42 @@
 #cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor.cmd-real-3d-ready~.cmd-scene-preview #cmdScenePreviewPerson{visibility:visible!important}
 #cmdSceneSheet .cmd-avatar-card-fallback{display:flex;width:100%;height:100%;min-height:150px;align-items:center;justify-content:center;background:transparent}
 #cmdSceneSheet .cmd-avatar-card-fallback svg{height:100%;width:auto;max-width:100%;display:block}
+
+/* Isolated 68-avatar catalogue: always keep each original silhouette's aspect ratio. */
+#cmdSceneSheet .cmd-imported-avatar-choice{min-width:0;overflow:hidden}
+#cmdSceneSheet .cmd-imported-avatar-choice .cmd-scene-model-photo{
+  display:flex;align-items:center;justify-content:center;
+  width:100%;height:clamp(176px,25vw,240px)!important;
+  overflow:hidden;background:transparent!important;padding:6px 4px 0;
+}
+#cmdSceneSheet .cmd-imported-avatar-choice .cmd-imported-avatar-art{
+  display:block;width:100%!important;height:100%!important;
+  object-fit:contain!important;object-position:center bottom!important;
+  background:transparent!important;max-width:100%;max-height:100%;
+}
+#cmdSceneSheet .cmd-imported-avatar-preview{
+  width:100%!important;height:100%!important;
+  display:flex!important;align-items:flex-end!important;justify-content:center!important;
+  overflow:visible!important;background:transparent!important;
+}
+#cmdSceneSheet .cmd-imported-avatar-preview img{
+  width:100%!important;height:100%!important;object-fit:contain!important;
+  object-position:center bottom!important;max-height:100%;
+}
+#cmdSceneBackdrop .cmd-scene-person.cmd-scene-selected-avatar{
+  height:105%;width:min(50%,230px);aspect-ratio:auto;top:-4%;
+  overflow:visible;background:transparent;
+}
+#cmdSceneBackdrop .cmd-scene-person.cmd-scene-selected-avatar img.cmd-saved-imported-avatar{
+  display:block;width:100%;height:100%;
+  object-fit:contain;object-position:center bottom;max-width:100%;
+  border:0;mask:none;-webkit-mask:none;background:transparent;
+}
+@media(max-width:600px){
+  #cmdSceneSheet .cmd-imported-avatar-choice .cmd-scene-model-photo{
+    height:clamp(155px,47vw,205px)!important;
+  }
+  #cmdSceneBackdrop .cmd-scene-person.cmd-scene-selected-avatar{
+    width:min(65%,225px);height:105%;left:50%;top:-4%;
+  }
+}
