@@ -97,9 +97,9 @@ function applyOutfit(group,color,look){
 }
 function setPose(frame,state){
  if(!frame.personMixer||!frame.sourceAnimations.length)return;
- const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|tpose/i;
- const clip=frame.sourceAnimations.find(x=>desired.test(x.name))||frame.sourceAnimations.find(x=>/idle|tpose/i.test(x.name))||frame.sourceAnimations[0];
- if(frame.activeAnimation===clip.name)return;
+ const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|breath|stand|relax/i;
+ const clip=frame.sourceAnimations.find(x=>desired.test(x.name))||frame.sourceAnimations.find(x=>/idle|breath|stand|relax|walk/i.test(x.name))||frame.sourceAnimations.find(x=>!/tpose|t-pose|bindpose|restpose/i.test(x.name))||frame.sourceAnimations[0];
+ if(frame.activeAnimation===clip.name&&frame.personMixer.existingAction(clip)?.isRunning())return;
  frame.personMixer.stopAllAction();frame.personMixer.clipAction(clip).reset().fadeIn(.23).play();
  frame.activeAnimation=clip.name;
 }
@@ -121,7 +121,7 @@ async function setPerson(frame,state){
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
   frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
   frame.lookKey="";frame.poseKey="";frame.sourceAnimations=data.animations||[];
-  frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
+  frame.activeAnimation="";frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
   if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
   frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
   if(frame.kind==="editor")window.requestAnimationFrame(()=>renderLookCards());
