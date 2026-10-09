@@ -31,6 +31,16 @@ function originalPetArt(value){
  return '<span class="cmd-pet-symbol" role="img" aria-label="'+escape(item?.[1]||value)+'">'+(petSymbol[value]||item?.[2]||"🐾")+'</span>';
 }
 function petArt(value){return originalPetArt(value)}
+function universeArtwork(key,value,icon){
+ if(key==="home"){
+  const i=homes.findIndex(x=>x[0]===value)-1,src=i>=0?homeTiles[i]:null;
+  if(src)return '<img class="cmd-universe-item-image" src="'+src+'" alt="'+escape(homes.find(x=>x[0]===value)?.[1]||"Maison")+'" loading="lazy" decoding="async">';
+ }
+ if(key==="vehicle"&&loadedSheets.has("vehicles")){
+  return sheetArt("vehicles",Math.max(0,vehicles.findIndex(x=>x[0]===value)-1)%16);
+ }
+ return '<span class="cmd-pet-symbol cmd-universe-symbol" aria-hidden="true">'+(icon||"✦")+'</span>';
+}
 const defaults={scene:"none",avatarPreset:"guardian",gender:"male",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -305,7 +315,7 @@ function applyOriginalSheets(){
 loadOriginalSheets();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?sheetArt(key==="vehicle"?"vehicles":"homes",opts.findIndex(x=>x[0]===value)%16):visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'" style="'+(sceneReferenceIndex(value)>=0?sceneReferenceStyle(value):'background-image:url('+escape(scenePhotoUrls[value]||'')+');background-size:cover;background-position:center')+'"><span style="display:none">'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'" style="'+(sceneReferenceIndex(value)>=0?sceneReferenceStyle(value):'background-image:url('+escape(scenePhotoUrls[value]||'')+');background-size:cover;background-position:center')+'"><span style="display:none">'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
