@@ -6,7 +6,8 @@ const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["stor
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
-const state={mode:"video",theme:"epic",format:"9:16",effect:"zoom",transition:"fade",filter:"natural",duration:12,music:"electro",volume:40,headline:"Rejoins notre serveur !",subtitle:"Une communauté t'attend",emoji:"🚀",title:"Publicité de mon serveur",guildId:""};
+let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0;
+const state={mode:"video",theme:"epic",format:"9:16",effect:"zoom",transition:"fade",filter:"natural",duration:12,music:"electro",musicStart:0,volume:40,headline:"Rejoins notre serveur !",subtitle:"Une communauté t'attend",emoji:"🚀",title:"Publicité de mon serveur",guildId:""};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const note=t=>{const n=$("#cmdStudioNotice");if(n)n.textContent=String(t||"")};
 function buttonHTML(arr,key){return arr.map(([v,label])=>'<button type="button" data-studio-'+key+'="'+safe(v)+'" class="'+(state[key]===v?"selected":"")+'">'+label+'</button>').join("")}
@@ -20,21 +21,27 @@ function open(){
  '<div class="cmd-studio-card"><h3>2. Format et modèle</h3><div class="cmd-studio-choices">'+buttonHTML([["9:16","📱 Vertical"],["1:1","⬛ Carré"],["16:9","🖥️ Horizontal"]],"format")+'</div><div id="cmdStudioThemes" class="cmd-studio-choices cmd-studio-themes">'+buttonHTML(Object.entries(THEMES).map(([k,v])=>[k,v[0]]),"theme")+'</div></div>'+
  '<div class="cmd-studio-card"><h3>3. Texte et autocollants</h3><label>Texte principal<input id="cmdStudioHeadline" maxlength="100" placeholder="Rejoins notre serveur"></label><label>Sous-titre<input id="cmdStudioSubtitle" maxlength="140" placeholder="Événement, RP, communauté…"></label><label>Autocollant <input id="cmdStudioEmoji" maxlength="12" placeholder="🚀 🔥 💎"></label></div>'+
  '<div class="cmd-studio-card"><h3>4. Animations et filtres</h3><label>Effet<select id="cmdStudioEffect"><option value="zoom">Zoom dynamique</option><option value="pan">Mouvement caméra</option><option value="pulse">Pulsation</option><option value="slide">Glissement</option><option value="none">Aucun</option></select></label><label>Transition<select id="cmdStudioTransition"><option value="fade">Fondu</option><option value="slide">Glissé</option><option value="cut">Coupe directe</option></select></label><label>Filtre<select id="cmdStudioFilter"><option value="natural">Naturel</option><option value="vivid">Vif</option><option value="warm">Chaud</option><option value="retro">Rétro</option><option value="mono">Noir et blanc</option></select></label><label>Durée : <output id="cmdStudioDurLabel">12 s</output><input id="cmdStudioDuration" type="range" min="5" max="30" step="1" value="12"></label></div>'+
- '<div class="cmd-studio-card"><h3>5. Musique</h3><label>Choix de la musique<select id="cmdStudioMusic"><option value="electro">Électro CMD (libre, générée)</option><option value="epic">Épique CMD (libre, générée)</option><option value="chill">Chill CMD (libre, générée)</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer un son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Aucun fichier musical sélectionné.</small><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Utilise tes propres musiques ou des sons autorisés. Les sons TikTok commerciaux ne sont pas copiés.</small></div>'+
+ '<div class="cmd-studio-card cmd-studio-music"><h3>5. 🎵 Ajouter un son</h3><button type="button" id="cmdStudioOpenMusic" class="cmd-studio-add-sound">🎵 Parcourir les vraies musiques　⌕</button><div id="cmdStudioSelectedSong" class="cmd-studio-selected-song" aria-live="polite">Aucun morceau choisi dans la bibliothèque.</div><label>Choix de la musique<select id="cmdStudioMusic"><option value="library">🎧 Musique de la bibliothèque</option><option value="electro">Électro CMD (générée)</option><option value="epic">Épique CMD (générée)</option><option value="chill">Chill CMD (générée)</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer mon son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Choisis un vrai morceau et écoute son aperçu.</small><label>✂️ Début de l’extrait : <output id="cmdStudioMusicStartLabel">0:00</output><input id="cmdStudioMusicStart" type="range" min="0" max="240" step="1" value="0"></label><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Les morceaux libres indiquent leur artiste et licence. Les chansons commerciales de TikTok ne sont pas accessibles sans contrat de licence.</small></div>'+
  '<div class="cmd-studio-card"><h3>6. Publicité de serveur</h3><label>Titre de publication<input id="cmdStudioTitle" maxlength="100"></label><label>Mon serveur<select id="cmdStudioServer"><option value="">Choisir mon serveur…</option></select></label><small>Pour publier dans CMD Sphere, tu dois être propriétaire ou administrateur de ton serveur.</small></div>'+
- '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div>';
+ '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div><section id="cmdStudioMusicSheet" class="cmd-studio-music-sheet" hidden role="dialog" aria-modal="true" aria-label="Choisir une musique"><div class="cmd-studio-music-panel"><header><b>🎵 Ajouter un son</b><button type="button" id="cmdStudioCloseMusic" aria-label="Fermer">✕</button></header><label class="cmd-studio-search">⌕ <input type="search" id="cmdStudioMusicQuery" placeholder="Rechercher une musique, un style…" autocomplete="off"></label><div class="cmd-studio-music-genres" id="cmdStudioMusicGenres"><button type="button" data-search-music="instrumental">Instrumental</button><button type="button" data-search-music="rock music">Rock</button><button type="button" data-search-music="pop music">Pop</button><button type="button" data-search-music="electronic music">Électro</button><button type="button" data-search-music="piano">Piano</button><button type="button" data-search-music="jazz">Jazz</button><button type="button" data-search-music="classical music">Classique</button><button type="button" data-search-music="hip hop music">Hip-hop</button></div><div id="cmdStudioMusicResults" class="cmd-studio-music-results"><p>Recherche des titres accessibles…</p></div><div class="cmd-studio-music-foot"><small>Catalogue : Wikimedia Commons · morceaux à licence libre identifiée. Écoute un titre avant de l’ajouter. Les obligations de crédit restent applicables.</small><button type="button" id="cmdStudioMusicDone">Terminer</button></div></div></section>';
  document.body.append(root);document.body.classList.add("cmd-studio-active");
  canvas=$("#cmdStudioCanvas");ctx=canvas.getContext("2d",{alpha:false});
  $("#cmdStudioClose").onclick=close;
  $("#cmdStudioPlay").onclick=togglePreview;
+ $("#cmdStudioOpenMusic").onclick=openMusicSheet;
+ $("#cmdStudioCloseMusic").onclick=$("#cmdStudioMusicDone").onclick=()=>{stopAudition();$("#cmdStudioMusicSheet").hidden=true};
+ $("#cmdStudioMusicQuery").addEventListener("input",e=>{clearTimeout(musicSearchTimer);const term=e.target.value.trim();musicSearchTimer=setTimeout(()=>searchMusic(term),400)});
+ $("[data-search-music]",root).forEach(b=>b.onclick=()=>{const term=b.dataset.searchMusic;$("#cmdStudioMusicQuery").value=term;searchMusic(term)});
+ $("#cmdStudioMusicStart").oninput=e=>{state.musicStart=Number(e.target.value)||0;$("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);if(audition&&selectedTrack?.id===auditionId){try{audition.currentTime=state.musicStart}catch{}}if(previewAudio){try{previewAudio.currentTime=state.musicStart}catch{}}};
  $("#cmdStudioMedia").onchange=e=>{addFiles(e.target.files);e.target.value=""};
- $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&f.type.startsWith("audio/")){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
+ $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&f.type.startsWith("audio/")){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;selectedTrack=null;state.musicStart=0;refreshSelectedMusic();note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
  $$(".cmd-studio-choices button",root).forEach(b=>b.onclick=()=>choose(b));
  const ids={Headline:"headline",Subtitle:"subtitle",Emoji:"emoji",Title:"title",Effect:"effect",Transition:"transition",Filter:"filter",Duration:"duration",Music:"music",Volume:"volume",Server:"guildId"};
  for(const [id,key] of Object.entries(ids)){
   const field=$("#cmdStudio"+id);if(!field)continue;
   field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
  }
+ $("#cmdStudioMusic").onchange=()=>{if(state.music==="library"&&!selectedTrack){$("#cmdStudioMusic").value="electro";state.music="electro";note("Choisis d’abord une musique dans la bibliothèque.")}refreshSelectedMusic()};
  $("#cmdStudioSaveDraft").onclick=saveDraft;$("#cmdStudioLoadDraft").onclick=loadDraft;
  $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
  document.addEventListener("keydown",onEscape);
@@ -52,7 +59,7 @@ function choose(btn){
  render(0);
 }
 function close(){
- stop();if(previewAudio){previewAudio.pause();previewAudio=null}if(root)root.hidden=true;document.body.classList.remove("cmd-studio-active");
+ stop();if(previewAudio){previewAudio.pause();previewAudio=null}stopAudition();if($("#cmdStudioMusicSheet"))$("#cmdStudioMusicSheet").hidden=true;if(root)root.hidden=true;document.body.classList.remove("cmd-studio-active");
 }
 function onEscape(e){if(e.key==="Escape"&&root&&!root.hidden)close()}
 function resize(){
@@ -139,13 +146,14 @@ function render(time=0){
  const sub=wrapWords(state.subtitle,w*.85,w*.041,2);sub.forEach((line,i)=>ctx.fillText(line,w/2,h*.82+i*w*.056));
  if(state.emoji){ctx.font=Math.round(w*.13)+"px system-ui";ctx.fillText(state.emoji.slice(0,8),w*.5,h*.43)}
  ctx.font="bold "+Math.round(w*.037)+"px system-ui";ctx.fillStyle="#ebc8ff";ctx.fillText("Rejoins la communauté ✦",w/2,h*.95);
+ if(state.music==="library"&&selectedTrack&&state.mode!=="gif"){ctx.font=Math.max(10,Math.round(w*.019))+"px system-ui";ctx.fillStyle="#f3e7ff";ctx.fillText(("♪ "+selectedTrack.title+" · "+selectedTrack.artist+" · "+selectedTrack.license).slice(0,92),w/2,h*.985)}
  const clk=$("#cmdStudioClock");if(clk)clk.textContent="0:"+String(Math.floor(Math.min(state.duration,t))).padStart(2,"0")+" / 0:"+String(state.duration).padStart(2,"0");
 }
 function stop(){
  playing=false;cancelAnimationFrame(raf);raf=0;
  if($("#cmdStudioPlay"))$("#cmdStudioPlay").textContent="▶ Prévisualiser";
  for(const c of clips)if(c.video)c.element.pause();
- if(previewAudio){previewAudio.pause();URL.revokeObjectURL(previewAudio.src);previewAudio=null}
+ if(previewAudio){previewAudio.pause();if(previewAudio.src.startsWith("blob:"))URL.revokeObjectURL(previewAudio.src);previewAudio=null}
  if(previewCtx){void previewCtx.close().catch(()=>{});previewCtx=null}
 }
 function playFrame(){
@@ -158,8 +166,14 @@ function togglePreview(){
  if(playing){stop();return}
  stop();playing=true;playStart=performance.now();$("#cmdStudioPlay").textContent="⏸ Arrêter";
  for(const c of clips)if(c.video){try{c.element.currentTime=0;void c.element.play().catch(()=>{})}catch{}}
- if(musicFile&&state.music==="file"){previewAudio=new Audio(URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;previewAudio.play().catch(()=>{})}
- else if(state.music!=="none"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
+ stopAudition();
+ if((state.music==="file"&&musicFile)||(state.music==="library"&&selectedTrack)){
+   previewAudio=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;
+   previewAudio.onloadedmetadata=()=>{try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2))}catch{}};
+   previewAudio.onended=()=>{if(playing){try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2));void previewAudio.play().catch(()=>{})}catch{}}};
+   previewAudio.play().catch(e=>note("Aperçu musical indisponible : "+e.message));
+ }
+ else if(state.music!=="none"&&state.music!=="library"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
  playFrame();
 }
 function blobDownload(blob,filename){
@@ -171,7 +185,7 @@ async function savePng(){
  recorded=blob;$("#cmdStudioPublish").disabled=false;blobDownload(blob,"CMD-Sphere-Publicite.png");note("Image PNG exportée. Tu peux maintenant la publier.");
 }
 function synthMusic(audio,dest,total){
- const vol=state.volume/100;if(state.music==="none"||state.music==="file"||!vol)return;
+ const vol=state.volume/100;if(state.music==="none"||state.music==="file"||state.music==="library"||!vol)return;
  const scores={electro:[220,330,440,330,261.6,392,523.2,392],epic:[110,164.8,220,164.8,130.8,196,261.6,196],chill:[196,246.9,293.7,246.9,174.6,220,261.6,220]};
  const notes=scores[state.music]||scores.electro,start=audio.currentTime+.04,count=Math.ceil(total*3);
  for(let i=0;i<count;i++){
@@ -201,8 +215,11 @@ async function exportVideo(){
  let soundtrack=null,source=null,audio=null,dest=null,stream=null;
  try{
   render(0);stream=canvas.captureStream(24);audio=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();dest=audio.createMediaStreamDestination();
-  if(state.music==="file"&&musicFile){
-    soundtrack=new Audio(URL.createObjectURL(musicFile));soundtrack.loop=true;soundtrack.crossOrigin="anonymous";soundtrack.volume=1;
+  if((state.music==="file"&&musicFile)||(state.music==="library"&&selectedTrack)){
+    soundtrack=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));soundtrack.preload="auto";soundtrack.volume=1;
+    await new Promise((resolve,reject)=>{if(soundtrack.readyState>=1)return resolve();soundtrack.onloadedmetadata=resolve;soundtrack.onerror=()=>reject(Error("Le morceau n’est plus disponible."));setTimeout(()=>reject(Error("Délai de chargement audio dépassé.")),12000)});
+    soundtrack.currentTime=Math.min(state.musicStart||0,Math.max(0,(soundtrack.duration||0)-.2));
+    soundtrack.onended=()=>{if(videoRecorder?.state==="recording"){try{soundtrack.currentTime=Math.min(state.musicStart||0,Math.max(0,(soundtrack.duration||0)-.2));void soundtrack.play().catch(()=>{})}catch{}}};
     source=audio.createMediaElementSource(soundtrack);const volume=audio.createGain();volume.gain.value=state.volume/100;source.connect(volume);volume.connect(dest);
   }else synthMusic(audio,dest,state.duration);
   const combined=new MediaStream([...stream.getVideoTracks(),...dest.stream.getAudioTracks()]);
@@ -226,7 +243,7 @@ async function exportVideo(){
   blobDownload(blob,"CMD-Sphere-Publicite."+(blob.type==="video/mp4"?"mp4":"webm"));
   note("Vidéo avec musique créée : "+(blob.size/1048576).toFixed(1)+" Mo."+(blob.size>60*1048576?" Réduis sa durée pour la publier.":" Tu peux aussi la publier sur CMD Sphere."));
  }catch(e){console.error("[CMD Studio export]",e);note("Export impossible : "+(e.message||e)+". Tu peux essayer l’image PNG.")}
- finally{soundtrack?.pause();if(soundtrack?.src)URL.revokeObjectURL(soundtrack.src);stream?.getTracks().forEach(t=>t.stop());try{await audio?.close()}catch{};exportButton.disabled=false;videoRecorder=null}
+ finally{soundtrack?.pause();if(soundtrack?.src?.startsWith("blob:"))URL.revokeObjectURL(soundtrack.src);stream?.getTracks().forEach(t=>t.stop());try{await audio?.close()}catch{};exportButton.disabled=false;videoRecorder=null}
 }
 async function loadServers(){
  try{
@@ -244,7 +261,7 @@ async function publish(){
  if(recorded.size>60*1024*1024){note("Fichier de plus de 60 Mo. Réduis la durée avant publication.");return}
  const button=$("#cmdStudioPublish");button.disabled=true;note("Publication en cours, conserve cette page ouverte…");
  try{
-  const response=await fetch("/api/cmd-promos",{method:"POST",credentials:"same-origin",headers:{"content-type":recorded.type,"x-cmd-guild-id":state.guildId,"x-cmd-title":encodeURIComponent(state.title).slice(0,200),"x-cmd-kind":state.mode},body:recorded});
+  const response=await fetch("/api/cmd-promos",{method:"POST",credentials:"same-origin",headers:{"content-type":recorded.type,"x-cmd-guild-id":state.guildId,"x-cmd-title":encodeURIComponent(state.title).slice(0,200),"x-cmd-kind":state.mode,...(state.music==="library"&&selectedTrack?{"x-cmd-music-credit":encodeURIComponent(JSON.stringify({title:selectedTrack.title,artist:selectedTrack.artist,license:selectedTrack.license,sourceUrl:selectedTrack.sourceUrl,licenseUrl:selectedTrack.licenseUrl})).slice(0,1200)}:{})},body:recorded});
   const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||"Échec de publication");
   const link=new URL(result.url,location.origin).href,box=$("#cmdStudioPublication");box.replaceChildren();
   const a=document.createElement("a");a.href=link;a.target="_blank";a.rel="noopener noreferrer";a.textContent="Voir ma publicité ↗";
@@ -264,7 +281,7 @@ function db(){
 async function saveDraft(){
  note("Sauvegarde du brouillon…");
  try{
-  const conn=await db();const draft={state:{...state},media:clips.map(x=>x.file),music:musicFile,saved:new Date().toISOString()};
+  const conn=await db();const draft={state:{...state},media:clips.map(x=>x.file),music:musicFile,selectedTrack,saved:new Date().toISOString()};
   await new Promise((resolve,reject)=>{const tx=conn.transaction("drafts","readwrite");tx.objectStore("drafts").put(draft,"last");tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
   conn.close();note("Brouillon enregistré sur cet appareil, photos et musique comprises.");
  }catch(e){note("Sauvegarde impossible : "+(e.message||e))}
@@ -279,6 +296,7 @@ async function loadDraft(){
   Object.entries(ids).forEach(([id,key])=>{const input=$("#cmdStudio"+id);if(input)input.value=state[key]});
   $("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";
   $("#cmdStudioMusicName").textContent=musicFile?.name||"Aucun fichier musical sélectionné.";
+  selectedTrack=draft.selectedTrack||null;refreshSelectedMusic();
   addFiles(draft.media||[]);resize();note("Brouillon retrouvé.");
  }catch(e){note("Impossible de reprendre le brouillon : "+(e.message||e))}
 }
