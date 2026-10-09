@@ -5,7 +5,7 @@
   if (window.__cmdEmojiPickerV2) return;
   window.__cmdEmojiPickerV2 = true;
   const $ = s => document.querySelector(s);
-  const state = {tab:"emoji",packs:[],selected:"unicode",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null};
+  const state = {tab:"emoji",packs:[],selected:"all",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null};
   try { const r=JSON.parse(localStorage.getItem("cmd-emoji-recent-v2")||"[]");if(Array.isArray(r))state.recent=r.slice(0,48); } catch {}
   const escapeHtml = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   const digits = v => /^\d{15,22}$/.test(String(v||""));
@@ -48,31 +48,33 @@
     $("#channelEmojiSheet")?.classList.remove("on");
   }
   function listFor(){
+    if(state.selected==="all")return [...glyphs,...state.library,...state.items];
     if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected));
     if(state.selected==="unicode")return glyphs;
     if(state.selected==="recent")return state.recent.filter(e=>state.tab==="emoji"?e.kind!=="sticker":e.kind==="sticker");
     return state.items;
   }
-  let stopInfiniteScroll=null;
-  let emojiScrollObserver=null;
+  let drawGeneration=0;
+  let allPacksGeneration=0;
   function drawItems(){
     const root=$("#cmdEmojiResults");if(!root)return;
-    if(emojiScrollObserver){emojiScrollObserver.disconnect();emojiScrollObserver=null}
+    const generation=++drawGeneration;
+    const oldTop=root.scrollTop;
     root.replaceChildren();
-    if(state.tab==="gif"&&!["mine","community","server"].includes(state.selected)){
+    if(state.tab==="gif"&&!["mine","community","server","all"].includes(state.selected)){
       root.innerHTML='<div class="cmd-emoji-hint">Les GIF peuvent être envoyés en collant leur lien dans le message. La recherche GIF en ligne nécessite un fournisseur connecté.</div>';return;
     }
     if(state.loading){root.innerHTML='<p class="cmd-emoji-hint">Chargement des emojis du serveur…</p>';return}
     const query=state.query.toLocaleLowerCase("fr").trim();
     const all=state.tab==="gif"?listFor().filter(x=>x.animated):listFor();
     const filtered=query?all.filter(i=>(i.name+" "+(i.packName||"")).toLocaleLowerCase("fr").includes(query)):all;
+    const heading=$("#cmdEmojiHeading");if(heading){heading.title=filtered.length+" emojis disponibles";heading.dataset.count=String(filtered.length)}
     if(!filtered.length){root.innerHTML='<p class="cmd-emoji-hint">Aucun emoji accessible pour cette sélection. Choisis un autre serveur ou les emojis standards.</p>';return}
     let displayed=0,filling=false;
     const grid=document.createElement("div");grid.className="cmd-emoji-grid-v2";root.appendChild(grid);
-    const sentinel=document.createElement("div");
-    sentinel.setAttribute("aria-hidden","true");sentinel.style.cssText="height:2px;min-height:2px;pointer-events:none";root.appendChild(sentinel);
+    root.scrollTop=oldTop;
     function more(){
-      if(filling||displayed>=filtered.length)return;
+      if(generation!==drawGeneration||filling||displayed>=filtered.length||!root.isConnected)return;
       filling=true;const end=Math.min(filtered.length,displayed+126),fragment=document.createDocumentFragment();
       for(let i=displayed;i<end;i++){
         const e=filtered[i],btn=document.createElement("button");btn.type="button";btn.className="cmd-emoji-icon-v2";
@@ -82,32 +84,43 @@
         btn.addEventListener("click",()=>insert(e));fragment.appendChild(btn);
       }
       grid.appendChild(fragment);displayed=end;filling=false;
-      if(displayed>=filtered.length){emojiScrollObserver?.disconnect();sentinel.remove()}
+      if(displayed<filtered.length)setTimeout(more,0);
     }
     more();
-    if(displayed<filtered.length){
-      if("IntersectionObserver" in window){
-        emojiScrollObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting))more()},{root,rootMargin:"220px 0px",threshold:0});
-        emojiScrollObserver.observe(sentinel);
-      }else{
-        const onScroll=()=>{if(root.scrollTop+root.clientHeight>=root.scrollHeight-230){more();if(displayed>=filtered.length)root.removeEventListener("scroll",onScroll)}};
-        root.addEventListener("scroll",onScroll,{passive:true});onScroll();
-      }
-    }
+    // Render every emoji automatically, in batches so there is no "voir plus" button.
   }
   async function fetchPacks(){
     try{
       const res=await fetch("/api/dashboard/guilds",{credentials:"same-origin",cache:"no-store"});
-      if(!res.ok)return;
+      if(!res.ok)throw Error("Serveurs non disponibles");
       const data=await res.json();
       const found=(data.guilds||[]).filter(g=>g.installed&&(g.availableBots||[]).length&&digits(g.id));
       state.packs=found.map(g=>({id:String(g.id),name:String(g.name||"Serveur"),icon:icon(g),bot:String(g.availableBots[0].id||"")}));
-      const active=$("#workspace")?.dataset.nativeGuildId||"";
-      const current=(window.__nativeGuilds||[]).find(g=>String(g.id)===String(active));
-      const first=state.packs.find(g=>g.id===String(current?.source_discord_id||""))||state.packs[0];
-      if(first&&state.selected==="unicode"){state.selected=first.id;await loadPack(first)}
-      else draw();
+      draw();
+      if(state.selected==="all")await loadAllPacks();
     }catch{draw()}
+  }
+  async function loadAllPacks(){
+    const generation=++allPacksGeneration;
+    const kind=state.tab==="sticker"?"sticker":"emoji";
+    state.items=[];draw();
+    for(const pack of state.packs){
+      if(generation!==allPacksGeneration||state.selected!=="all")return;
+      const key=pack.id+":"+kind;
+      let batch=state.cache.get(key);
+      if(!batch){
+        try{
+          const path="/api/dashboard/extras?guildId="+encodeURIComponent(pack.id)+(pack.bot?"&bot="+encodeURIComponent(pack.bot):"");
+          const r=await fetch(path,{credentials:"same-origin",cache:"no-store"});
+          if(!r.ok)continue;
+          batch=parsePack(await r.json(),pack,kind);
+          state.cache.set(key,batch);
+        }catch{continue}
+      }
+      state.items.push(...batch);
+      if(generation!==allPacksGeneration||state.selected!=="all")return;
+      if(state.items.length)draw();
+    }
   }
   function icon(g){
     const value=String(g?.icon||"");if(/^https:\/\//.test(value))return value;
@@ -115,7 +128,7 @@
   }
   async function loadPack(pack){
     if(!pack)return;
-    const key=pack.id+":"+state.tab;
+    const key=pack.id+":"+(state.tab==="sticker"?"sticker":"emoji");
     if(state.cache.has(key)){state.items=state.cache.get(key);draw();return}
     state.loading=true;draw();
     try{
@@ -137,26 +150,27 @@
     const query=$("#cmdEmojiSearch");if(query?.value!==state.query)query.value=state.query;
     const heading=$("#cmdEmojiHeading"),rail=$("#cmdEmojiServerRail");
     const pack=state.packs.find(p=>p.id===state.selected);
-    heading.textContent=state.selected==="mine"?"Mes emojis":state.selected==="community"?"Partagés avec tous":state.selected==="server"?"Emojis du serveur":state.tab==="gif"?"GIF":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Emojis du serveur");
+    heading.textContent=state.selected==="all"?"Tous les emojis disponibles":state.selected==="mine"?"Mes emojis":state.selected==="community"?"Partagés avec tous":state.selected==="server"?"Emojis du serveur":state.tab==="gif"?"GIF":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Emojis du serveur");
     rail.innerHTML="";
-    const entries=[{id:"recent",name:"Récents",glyph:"🕘"},{id:"unicode",name:"Standard",glyph:"😀"},{id:"mine",name:"Mes emojis",glyph:"👤"},{id:"community",name:"Partagés",glyph:"🌍"},...(state.libraryGuild?[{id:"server",name:"Ce serveur",glyph:"🏠"}]:[]),...state.packs];
+    const entries=[{id:"all",name:"Tous",glyph:"🌐"},{id:"recent",name:"Récents",glyph:"🕘"},{id:"unicode",name:"Standard",glyph:"😀"},{id:"mine",name:"Mes emojis",glyph:"👤"},{id:"community",name:"Partagés",glyph:"🌍"},...(state.libraryGuild?[{id:"server",name:"Ce serveur",glyph:"🏠"}]:[]),...state.packs];
     for(const entry of entries){
       const btn=document.createElement("button");btn.type="button";btn.title=entry.name;btn.className="cmd-emoji-server-pill"+(state.selected===entry.id?" active":"");
       if(entry.icon){const img=document.createElement("img");img.src=entry.icon;img.alt="";img.loading="lazy";btn.append(img)}
       else btn.textContent=entry.glyph||entry.name.slice(0,2);
-      btn.onclick=()=>{state.selected=entry.id;state.query="";state.items=[];if(["recent","unicode","mine","community","server"].includes(entry.id)){draw()}else loadPack(entry)};
+      btn.onclick=()=>{allPacksGeneration++;state.selected=entry.id;state.query="";state.items=[];if(entry.id==="all"){draw();loadAllPacks()}else if(["recent","unicode","mine","community","server"].includes(entry.id)){draw()}else loadPack(entry)};
       rail.append(btn);
     }
     drawItems();
   }
   function open(tab="emoji",toggle=false){
     const sheet=$("#channelEmojiSheet");if(!sheet)return;
-    if(toggle&&sheet.classList.contains("on")){sheet.classList.remove("on");return}
+    if(toggle&&sheet.classList.contains("on")){sheet.classList.remove("on");$("#channelInput")?.focus();return}
     sheet.classList.add("on");$("#channelToolSheet")?.classList.remove("on");
     state.tab=tab==="sticker"?"sticker":tab==="gif"?"gif":"emoji";
     document.querySelectorAll("[data-emoji-tab]").forEach(b=>b.classList.toggle("active",b.dataset.emojiTab===state.tab));
     const activePack=state.packs.find(p=>p.id===state.selected);
-    if(activePack&&state.tab!=="gif")loadPack(activePack);
+    if(state.selected==="all"){draw();if(state.packs.length)loadAllPacks()}
+    else if(activePack&&state.tab!=="gif")loadPack(activePack);
     else draw();
     if(!state.packs.length)fetchPacks();
     window.cmdEmojiRefreshLibrary?.();
