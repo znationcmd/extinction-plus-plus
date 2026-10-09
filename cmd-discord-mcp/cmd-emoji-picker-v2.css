@@ -62,3 +62,8 @@
 #channelEmojiSheet .cmd-emoji-owned img{width:37px;height:37px;object-fit:contain}
 #channelEmojiSheet .cmd-emoji-owned span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 #channelEmojiSheet .cmd-emoji-owned button{background:#64203b;color:#fff;border:1px solid #ffffff27;border-radius:8px;padding:8px}
+
+/* Founder multi-file import: accessible tap target on phone. */
+#channelEmojiSheet .cmd-emoji-creator .cmd-emoji-import-bulk{display:block;width:100%;min-height:47px;padding:12px 14px;margin:10px 0;border:0;border-radius:10px;background:#8456b4;color:#fff;font:800 14px system-ui;white-space:normal;cursor:pointer}
+#channelEmojiSheet .cmd-emoji-creator .cmd-emoji-import-bulk:disabled{opacity:.5;cursor:wait}
+#channelEmojiSheet #cmdEmojiBulkStatus{line-height:1.5;overflow-wrap:anywhere;color:#e9d7f8;min-height:24px}
