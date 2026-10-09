@@ -477,3 +477,24 @@
 .cmd-universe-privacy{display:flex;align-items:center;gap:12px;padding:17px 15px;border-radius:15px;background:#202024;color:#fff;font:600 13px system-ui}
 .cmd-universe-privacy input{accent-color:#8661e8;width:20px;height:20px}
 [data-universe-name]{width:100%;min-height:44px;border-radius:12px;border:1px solid #ffffff36;background:#202025;color:white;padding:10px 13px;font:500 15px system-ui}
+
+
+/* Screenshot-inspired mobile studio: clean black gallery and clear selections. */
+#cmdSceneSheet .cmd-scene-sheet{background:#050506;color:#fff}
+#cmdSceneSheet .cmd-scene-market{background:#050506;padding:18px 14px 34px}
+#cmdSceneSheet .cmd-scene-market h2{font-size:21px;letter-spacing:-.025em;margin:6px 0 10px}
+#cmdSceneSheet .cmd-scene-section-intro{color:#aaaab2;line-height:1.45}
+#cmdSceneSheet .cmd-universe-nav{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:15px 0 20px}
+#cmdSceneSheet .cmd-universe-nav button{border-radius:0;min-height:64px;background:transparent}
+#cmdSceneSheet .cmd-universe-nav button.selected{border-bottom:3px solid #fff}
+#cmdSceneSheet .cmd-scene-choice-grid{gap:11px}
+#cmdSceneSheet .cmd-scene-choice-grid button{transition:transform .15s ease,border-color .15s ease}
+#cmdSceneSheet .cmd-scene-choice-grid button:active{transform:scale(.96)}
+#cmdSceneSheet .cmd-scene-choice-grid button.selected{outline:2px solid #f8f6ff;outline-offset:1px}
+#cmdSceneSheet .cmd-scene-float-header button:last-child{border-radius:24px;background:#fff;color:#17121d;font-weight:800}
+@media(max-width:600px){
+ #cmdSceneSheet .cmd-scene-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ #cmdSceneSheet .cmd-scene-sheet{width:100vw;max-width:100vw}
+ #cmdSceneSheet .cmd-scene-market{padding:14px 12px 25px}
+ #cmdSceneSheet .cmd-universe-nav button span{font-size:24px}
+}
