@@ -231,7 +231,7 @@ function lookGrid(){
  ["accessory","Accessoires","Lunettes, bijoux et chapeaux",accessories]
  ];
  return '<div class="cmd-clothing-sections">'+navigation+
- sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key,values,"clothing")).join("")+'</div>';
+ sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key==="coat"?"top":key,values,"clothing")).join("")+'</div>';
 }
 let avatarPart="person";
 function groomCatalog(title,key,choices){
