@@ -39,7 +39,7 @@ function createCanvas(mount,kind){
  const rim=new THREE.DirectionalLight(0x8974fe,2.2);rim.position.set(3.5,4.2,-2);scene.add(rim);
  const fill=new THREE.PointLight(0xd941ef,19,11);fill.position.set(3,1,2.2);scene.add(fill);
  const base=new THREE.Group();scene.add(base);
- const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",token:0,petToken:0,angle:0,last:performance.now(),running:false,kind,requested:false};
+ const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",token:0,petToken:0,angle:0,last:performance.now(),lastDraw:0,running:false,kind,requested:false};
  let pointer=null;
  wrapper.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointer={x:e.clientX,id:e.pointerId};wrapper.setPointerCapture?.(e.pointerId)});
  wrapper.addEventListener("pointermove",e=>{if(!pointer||e.pointerId!==pointer.id)return;frame.angle+=(e.clientX-pointer.x)*.008;pointer.x=e.clientX});
@@ -52,8 +52,10 @@ function createCanvas(mount,kind){
  };
  frame.render=()=>{
   if(!frame.wrapper.isConnected){frame.running=false;return}
-  const now=performance.now(),delta=Math.min((now-frame.last)/1000,.04);frame.last=now;
-  if(!document.hidden&&visible&&!wrapper.closest("[hidden]")){
+  const now=performance.now(),delta=Math.min((now-frame.last)/1000,.06);frame.last=now;
+  const insideHidden=!!wrapper.closest("[hidden]");
+  if(!document.hidden&&visible&&!insideHidden&&now-frame.lastDraw>(reduced?140:35)){
+   frame.lastDraw=now;
    if(!reduced)frame.mixers.forEach(m=>m.update(delta));
    base.rotation.y+=(frame.angle-base.rotation.y)*.06;
    if(!reduced&&frame.person)frame.person.position.y=Math.sin(now*.00135)*.013;
@@ -96,7 +98,7 @@ function setNotice(frame,message){
 }
 async function setPerson(frame,state){
  const id=state.avatarModel==="custom"?"customAvatar":state.gender==="female"?"michelle":"soldier";
- if(frame.modelKey===id&&frame.person)return;
+ if(frame.modelKey===id&&frame.person){frame.wrapper.classList.add("cmd-real-3d-ready");return}
  const token=++frame.token;setNotice(frame,"Chargement du personnage 3D…");
  try{
   const data=await loadGLB(modelUrls[id]);
@@ -119,7 +121,7 @@ async function setPerson(frame,state){
 async function setPet(frame,state){
  const id=state.petModel==="custom"?"customPet":state.pet==="fox"?"fox":null;
  if(!id){
-  if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}frame.petKey="";
+  if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}frame.petKey="";frame.petToken++;
   frame.wrapper.dataset.pet3d="off";return;
  }
  if(frame.petKey===id&&frame.pet)return;
@@ -150,9 +152,9 @@ function refresh(){
  if(!editor){const mount=document.querySelector("#cmdSceneHero");if(mount)editor=createCanvas(mount,"editor")}
  if(editor)update(editor,state);
  // Profile banner remains a personalized scene; renderer only starts when a 3D profile is saved.
- const profile=document.querySelector("#cmdSceneBackdrop");
+ const profile=document.querySelector("#bannerTap");
  if(!banner&&profile&&state.avatarStyle==="3d"&&document.querySelector("#cmdSceneWrap.cmd-scene-active"))banner=createCanvas(profile,"banner");
- if(banner)update(banner,state);
+ if(banner){banner.wrapper.hidden=!document.querySelector("#cmdSceneWrap.cmd-scene-active");update(banner,state)}
 }
 document.addEventListener("cmd-avatar-3d:update",refresh);
 document.addEventListener("visibilitychange",()=>visible=!document.hidden);
