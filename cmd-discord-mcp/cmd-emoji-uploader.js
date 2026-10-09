@@ -173,6 +173,48 @@
    }catch(error){status.textContent="Import non terminé : "+(error.message||"erreur");console.warn("[CMD emoji bulk]",error)}
    finally{button.disabled=false;if(stop)stop.hidden=true}
   }
+ function makeBulkName(filename,used){
+   let base=String(filename||"").replace(/\.[^.]+$/,"").normalize("NFKC").replace(/[^\p{L}\p{N}_-]+/gu,"_").replace(/^_+|_+$/g,"").slice(0,28);
+   if(base.length<2)base="emoji";
+   let name=base,n=2;while(used.has(name)){const tail="_"+n++;name=base.slice(0,32-tail.length)+tail;}
+   used.add(name);return name;
+ }
+ async function importFilesAsEmojis(){
+   const input=$("#cmdEmojiBulkFiles"),notice=$("#cmdEmojiBulkStatus"),button=$("#cmdEmojiBulkButton");
+   const files=Array.from(input?.files||[]);
+   if(!files.length){notice.textContent="Sélectionne des fichiers individuels.";return}
+   const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=1024*1024);
+   if(!allowed.length){notice.textContent="Aucun fichier accepté : PNG/JPG/GIF/WebP, 1 Mo par fichier.";return}
+   button.disabled=true;let completed=0,skipped=files.length-allowed.length,failed=0;
+   const names=new Set(),batch=[];let batchSize=0;
+   async function sendBatch(){
+     if(!batch.length)return;
+     const payload=batch.splice(0,batch.length);
+     batchSize=0;
+     const r=await fetch("/api/cmd-emojis/bulk",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({items:payload})});
+     const output=await r.json().catch(()=>({}));
+     if(!r.ok)throw Error(output.error||"Impossible d'enregistrer le lot.");
+     completed+=Number(output.created||0);skipped+=Number(output.skipped||0);
+     notice.textContent=completed+" emojis importés · "+skipped+" ignorés";
+   }
+   try{
+     notice.textContent="Lecture de "+allowed.length+" fichiers…";
+     for(let i=0;i<allowed.length;i++){
+       try{
+         const file=allowed[i],dataUrl=await imageData(file,"");
+         if(batch.length>=10||batchSize+dataUrl.length>7*1024*1024)await sendBatch();
+         batch.push({name:makeBulkName(file.name,names),dataUrl});batchSize+=dataUrl.length;
+         notice.textContent="Préparation "+(i+1)+"/"+allowed.length+" · "+completed+" enregistrés";
+       }catch(e){failed++;console.warn("[CMD emoji file]",allowed[i]?.name,e)}
+     }
+     await sendBatch();
+     notice.textContent="Terminé : "+completed+" emojis individuels enregistrés · "+skipped+" déjà existants ou invalides · "+failed+" erreurs.";
+     input.value="";
+     await getLibrary(true);drawMine();
+     const p=bridge();if(p){p.state.selected="community";p.draw()}
+   }catch(e){notice.textContent="Import arrêté : "+(e.message||"erreur")+". "+completed+" emojis enregistrés."}
+   finally{button.disabled=false}
+ }
  async function openCreator(){
    const sheet=$("#channelEmojiSheet");if(!sheet)return;
    if(panel){panel.remove();panel=null;return}
@@ -189,9 +231,11 @@
      '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 1 Mo. Choisis uniquement des images autorisées.</small>'+
      '<button type="submit" id="cmdEmojiSave">Enregistrer</button><p id="cmdEmojiCreatorNotice" role="status"></p></form>'+
      (bridge()?.state.libraryFounder?'<section class="cmd-emoji-bulk" style="padding:12px;border:1px solid #ffffff26;border-radius:12px;margin:12px 0;display:grid;gap:9px"><strong>Importer les emojis des captures</strong><span>Réservé au fondateur · partager avec tous</span><label>Fichier CMD au format .json<input type="file" id="cmdEmojiBulkFile" accept=".json,application/json"></label><button type="button" id="cmdEmojiBulkImport">Importer tout le pack</button><button type="button" id="cmdEmojiBulkStop" hidden>Arrêter</button><p id="cmdEmojiBulkStatus" role="status" aria-live="polite"></p></section>':'')+
-     '<section class="cmd-emoji-manage"><strong>Mes emojis et ceux que je peux gérer</strong><div id="cmdEmojiOwned"></div></section>';
+     '<section class="cmd-emoji-manage"><strong>Mes emojis et ceux que je peux gérer</strong><div id="cmdEmojiOwned"></div></section>'+
+     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-manage"><strong>Importation multiple du fondateur</strong><p>Choisis tous les fichiers emojis d’origine (PNG, JPG, WebP ou GIF). Chaque fichier deviendra un emoji indépendant, y compris animé.</p><label>Fichiers emojis<input id="cmdEmojiBulkFiles" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label><button type="button" id="cmdEmojiBulkButton" class="cmd-emoji-import-bulk">Importer tous les emojis sélectionnés</button><p id="cmdEmojiBulkStatus" role="status"></p></section>':'');
    sheet.append(panel);
    $("#cmdEmojiClose").onclick=()=>{panel.remove();panel=null};
+   if($("#cmdEmojiBulkButton"))$("#cmdEmojiBulkButton").onclick=importFilesAsEmojis;
    drawMine();
    if($("#cmdEmojiBulkImport"))$("#cmdEmojiBulkImport").onclick=importPhotoPack;
    $("#cmdEmojiCreatorForm").onsubmit=async event=>{
