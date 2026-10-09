@@ -1,6 +1,4 @@
-/* CMD Sphere — WebGL PBR 3D portrait. Real glTF humans with rigged animations.
-   GLB reference assets: three.js (Soldier, Michelle), Khronos CC0/CC BY Fox.
-   User may upload their own textured, fully rigged, legally owned GLB characters/pets. */
+/* CMD Sphere civilian avatar editor. Original procedural civilians with interchangeable mesh garments; legacy custom GLB supported read-only. */
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import {clone as cloneSkinned} from "three/addons/utils/SkeletonUtils.js";
@@ -147,33 +145,108 @@ function setPose(frame,state){
 function setNotice(frame,message){
  const el=frame.wrapper.querySelector(".cmd-real-3d-loading");if(el){el.hidden=!message;if(message)el.textContent=message}
 }
-async function makeCivilian(state){
- const root=new THREE.Group(),skin=new THREE.MeshStandardMaterial({color:state.skin||"#e8ad7e",roughness:.9}),hair=new THREE.MeshStandardMaterial({color:state.hairColor||"#33241e",roughness:.94});
- const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.84});
- const top=mat(state.topColor||"#ffffff"),denim=mat(state.bottom==="dark"?"#292d39":state.bottom==="cargo"?"#686e5b":"#476c99"),shoe=mat(state.shoes==="boots"?"#4b382d":"#e3e6ec");
- const add=(geometry,material,x,y,z,parent=root)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);parent.add(m);return m};
- const female=state.gender==="female"||state.avatarModel==="michelle";
- add(new THREE.CapsuleGeometry(.27,.13,8,16),skin,0,2.72,0);
- add(new THREE.SphereGeometry(.285,24,16),skin,0,2.76,.015).scale.set(1,.98,.84);
- add(new THREE.SphereGeometry(.29,24,16),hair,0,2.93,-.045).scale.set(1,.42,.95);
- for(const x of [-.105,.105]){add(new THREE.SphereGeometry(.018,12,8),mat("#29212a"),x,2.77,.248)}
- add(new THREE.CapsuleGeometry(.055,.055,5,12),skin,0,2.64,.25).rotation.x=Math.PI/2;
- const torso=add(new THREE.CylinderGeometry(female?.33:.38,.31,.83,24),top,0,1.99,0);
- const collar=add(new THREE.TorusGeometry(.13,.018,8,20),mat("#ececf0"),0,2.42,.04);collar.rotation.x=Math.PI/2;
- const sleeve=(state.top==="tshirt"||state.top==="sport") ? .18 : (state.top==="dress" ? .44 : .47);
- for(const x of [-1,1]){
-  const arm=add(new THREE.CylinderGeometry(.115,.09,sleeve,14),top,x*.43,2.23,0);arm.rotation.z=x*.25;
-  const fore=add(new THREE.CylinderGeometry(.09,.075,.68-sleeve*.5,12),skin,x*(.48+sleeve*.12),1.79,0);fore.rotation.z=x*.08;
-  add(new THREE.SphereGeometry(.105,12,12),skin,x*.52,1.48,0);
-  const shorts=state.bottom==="shorts"||state.bottom==="skirt";
-  add(new THREE.CylinderGeometry(.17,.135,shorts ? .38 : .94,16),denim,x*.17,shorts ? 1.26 : .99,0);
-  if(shorts)add(new THREE.CylinderGeometry(.125,.095,.55,14),skin,x*.17,.81,0);
-  add(new THREE.BoxGeometry(.29,.19,.48),shoe,x*.17,.14,.105);
- }
- if(state.bottom==="skirt"||state.top==="dress")add(new THREE.CylinderGeometry(.3,.46,.55,24),top,0,1.42,0);
- if(state.top==="jacket"||state.top==="hoodie"){const zip=add(new THREE.BoxGeometry(.015,.68,.012),mat("#dddce0"),0,2.02,.317);zip.rotation.y=0}
- if(state.top==="suit"){add(new THREE.BoxGeometry(.1,.55,.014),mat("#e8e8e8"),0,2.04,.318)}
- root.userData.cmdCivilian=true;return root;
+function makeCivilian(state){
+  // An original, self-contained civilian mesh: no military GLB, uploads or third-party avatar service.
+  // Garments are distinct 3D meshes and are rebuilt when the outfit changes.
+  const root=new THREE.Group();
+  const female=state.gender==="female";
+  const mat=(color,roughness=.83)=>new THREE.MeshStandardMaterial({color,roughness,metalness:0});
+  const skin=mat(state.skin||"#e8ad7e",.92);
+  const hair=mat(state.hairColor||"#33241e",.87);
+  const top=mat(state.topColor||"#7549b9",.9);
+  const trim=mat("#dfd8e5"),eye=mat("#27232e",.58),lips=mat("#9c5e60");
+  const pant=mat(state.bottom==="dark"||state.bottom==="formal"?"#262b3a":state.bottom==="cargo"?"#64705a":state.bottom==="shorts"?"#a3a9c2":"#47638c");
+  const footwear=mat(state.shoes==="boots"?"#44342c":state.shoes==="formal"?"#22242d":state.shoes==="sandals"?"#c29e74":"#e7eaf0");
+  const add=(g,m,x,y,z,parent=root)=>{const mesh=new THREE.Mesh(g,m);mesh.position.set(x,y,z);parent.add(mesh);return mesh};
+  const sphere=(x,y,z,sx,sy,sz,m,parent=root)=>{const mesh=add(new THREE.SphereGeometry(1,24,16),m,x,y,z,parent);mesh.scale.set(sx,sy,sz);return mesh};
+  const torsoWidth=female?.32:.38;
+  const head=sphere(0,2.69,0,.262,.34,.245,skin);
+  sphere(0,2.37,0,.112,.16,.116,skin);
+  for(const x of [-.104,.104]){
+   sphere(x,2.725,.222,.024,.018,.011,eye);
+   const brow=add(new THREE.BoxGeometry(.092,.018,.022),hair,x,2.795,.231);brow.rotation.z=x>0?-.08:.08;
+  }
+  sphere(0,2.628,.244,.045,.071,.055,skin);
+  sphere(0,2.518,.228,.073,.017,.018,lips);
+  for(const x of [-.255,.255])sphere(x,2.688,0,.056,.09,.055,skin);
+  const hairStyle=state.hair||"short";
+  if(hairStyle!=="shaved"){
+   sphere(0,2.946,-.035,.272,hairStyle==="curly"?.155:.105,.256,hair);
+   if(hairStyle==="bob"||hairStyle==="long"){
+    for(const x of [-.236,.236])sphere(x,hairStyle==="long"?2.59:2.725,-.035,.09,hairStyle==="long"?.41:.235,.19,hair);
+   }else if(hairStyle==="ponytail"){
+    sphere(0,2.79,-.285,.105,.31,.1,hair);
+   }else if(hairStyle==="curly"){
+    for(let i=0;i<9;i++){const a=i*Math.PI*2/9;sphere(Math.sin(a)*.21,2.969,Math.cos(a)*.17,.095,.087,.095,hair)}
+   }
+  }else sphere(0,2.949,-.035,.253,.042,.228,hair);
+  const upper=sphere(0,2.017,0,torsoWidth,.47,.224,top);
+  const waist=sphere(0,1.655,0,.304,.18,.207,top);
+  if(state.top==="dress"){
+   const skirt=add(new THREE.CylinderGeometry(.30,.53,.81,32),top,0,1.40,0);skirt.scale.z=.77;
+  }else if(state.top==="jacket"||state.top==="hoodie"||state.top==="suit"){
+   const open=state.top==="jacket"||state.top==="suit";
+   const layer=mat(open?"#33313c":state.topColor||"#7549b9");
+   for(const x of [-1,1]){
+    const panel=add(new THREE.BoxGeometry(torsoWidth*.86,.77,.075),open?top:layer,x*torsoWidth*.52,2.003,.228);
+    panel.rotation.z=x*.04;
+   }
+   if(state.top==="hoodie"){
+    const hood=add(new THREE.TorusGeometry(.235,.075,9,24),top,0,2.388,-.065);hood.rotation.x=Math.PI*.18;
+    add(new THREE.BoxGeometry(.30,.19,.055),top,0,1.79,.292);
+   }else{
+    for(const x of [-1,1]){
+     const lapel=add(new THREE.BoxGeometry(.11,.39,.028),state.top==="suit"?trim:layer,x*.125,2.21,.28);lapel.rotation.z=x*-.36;
+    }
+   }
+  }else if(state.top==="shirt"){
+   for(const x of [-1,1]){
+    const collar=add(new THREE.BoxGeometry(.16,.10,.04),trim,x*.115,2.389,.216);collar.rotation.z=x*.4;
+   }
+  }else if(state.top==="sport"){
+   for(const x of [-1,1])add(new THREE.BoxGeometry(.027,.54,.014),trim,x*.215,2.05,.216);
+  }
+  const shortSleeves=["tshirt","sport","dress"].includes(state.top);
+  const arms=[];
+  for(const side of [-1,1]){
+   const pivot=new THREE.Group();pivot.position.set(side*(torsoWidth+.055),2.29,0);root.add(pivot);arms.push(pivot);
+   const sleeveLength=shortSleeves?.225:.43;
+   const sleeve=add(new THREE.CylinderGeometry(.125,.12,sleeveLength,18),top,0,-sleeveLength*.46,0,pivot);
+   sleeve.rotation.z=side*-.11;
+   add(new THREE.CylinderGeometry(.092,.074,.61,18),skin,side*.028,-.60,0,pivot);
+   sphere(side*.028,-.945,.015,.102,.105,.08,skin,pivot);
+   pivot.rotation.z=side*-.10;
+  }
+  const legs=[];
+  const skirt=state.bottom==="skirt"||state.top==="dress";
+  if(state.bottom==="skirt"&&state.top!=="dress"){
+   const garment=add(new THREE.CylinderGeometry(.30,.49,.55,24),pant,0,1.428,0);garment.scale.z=.8;
+  }
+  for(const side of [-1,1]){
+   const pivot=new THREE.Group();pivot.position.set(side*.168,1.53,0);root.add(pivot);legs.push(pivot);
+   const shortPants=skirt||state.bottom==="shorts";
+   add(new THREE.CylinderGeometry(.158,.127,shortPants?.37:.9,18),pant,0,shortPants?-.18:-.46,0,pivot);
+   if(shortPants)add(new THREE.CylinderGeometry(.125,.096,.57,18),skin,0,-.77,0,pivot);
+   if(state.shoes==="boots")add(new THREE.CylinderGeometry(.13,.15,.38,16),footwear,0,-1.21,.005,pivot);
+   const shoe=add(new THREE.BoxGeometry(.288,.18,.455),footwear,0,-1.34,.12,pivot);
+   if(state.shoes==="sneakers")add(new THREE.BoxGeometry(.30,.04,.47),trim,0,-1.44,.12,pivot);
+  }
+  root.userData.cmdCivilian=true;root.userData.cmdRig={head,arms,legs};
+  return root;
+}
+function animateCivilian(frame,now){
+ const rig=frame.person?.userData?.cmdRig;if(!rig)return;
+ const t=now*.0033,pose=frame.currentPose||"stand";
+ const stride=pose==="run"?.75:pose==="walk"?.43:pose==="dance"?.35:0;
+ rig.legs.forEach((leg,i)=>leg.rotation.x=stride*Math.sin(t*(pose==="run"?3.3:1.8)+i*Math.PI));
+ rig.arms.forEach((arm,i)=>{
+  arm.rotation.x=-stride*.7*Math.sin(t*(pose==="run"?3.3:1.8)+i*Math.PI);
+  arm.rotation.z=(i===0?-.13:.13);
+ });
+ if(pose==="wave"||pose==="peace"){rig.arms[1].rotation.z=2.48+Math.sin(t*2)*.14;rig.arms[1].rotation.x=-.25}
+ if(pose==="crossed"){rig.arms[0].rotation.z=-1.13;rig.arms[1].rotation.z=1.13;rig.arms[0].rotation.x=-.55;rig.arms[1].rotation.x=-.55}
+ if(pose==="dance"){rig.arms[0].rotation.z=-1.1+Math.sin(t*1.8)*.3;rig.arms[1].rotation.z=1.1-Math.sin(t*1.8)*.3}
+ rig.head.rotation.y=Math.sin(t*.3)*.045;
 }
 function setPerson(frame,state){
  const id=state.avatarModel==="custom"?"customAvatar":"civilian";
@@ -219,7 +292,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
