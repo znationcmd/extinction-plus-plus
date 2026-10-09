@@ -434,3 +434,12 @@
 }
 @media(max-width:360px){#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo{height:137px}}
 @media(prefers-reduced-motion:reduce){#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in{transition:none}}
+
+/* CMD Sphere dressing: mobile-first segmented categories */
+#cmdSceneSheet .cmd-dressing-categories{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:4px 2px 12px;margin:0 0 8px;position:sticky;top:0;z-index:6;background:#09090cf2}
+#cmdSceneSheet .cmd-dressing-categories::-webkit-scrollbar{display:none}
+#cmdSceneSheet .cmd-dressing-categories button{flex:0 0 auto;border:1px solid #ffffff2b;border-radius:999px;background:#242329;color:#e5e1e9;padding:11px 16px;min-height:43px;font:700 13px system-ui;white-space:nowrap}
+#cmdSceneSheet .cmd-dressing-categories button.selected{background:#f7f4fc;color:#18121e;border-color:#f7f4fc}
+#cmdSceneSheet .cmd-clothing-sections{min-width:0;display:block}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-group{margin:0 0 19px}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-card-carousel{scroll-padding-left:12px}
