@@ -12,8 +12,8 @@ const skins=["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"];
 const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"];
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
 const pets=[["none","Aucun","🚫"],["dog","Chien","🐶"],["cat","Chat","🐱"],["rabbit","Lapin","🐰"],["fox","Renard","🦊"],["bird","Oiseau","🦜"],["horse","Cheval","🐴"],["wolf","Loup","🐺"],["turtle","Tortue","🐢"]];
-const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",label:""};
-let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
+const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"illustrated",petStyle:"illustrated",label:""};
+let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
 function hex(value,fallback){return /^#[0-9a-f]{6}$/i.test(String(value))?value:fallback}
@@ -59,8 +59,10 @@ function present(s=state,img=custom){
  scenery.replaceChildren();
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
  const light=document.createElement("div");light.className="cmd-scene-scenery";light.textContent=decorateScene(s.scene);scenery.append(light);
- const person=document.createElement("div");person.className="cmd-scene-person";person.innerHTML=drawPerson(s);scenery.append(person);
- if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";animal.innerHTML=drawPet(s.pet);scenery.append(animal)}
+ const person=document.createElement("div");person.className="cmd-scene-person";
+ if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else person.innerHTML=drawPerson(s);
+ scenery.append(person);
+ if(s.pet!=="none"||(s.petStyle==="photo"&&animalPhoto)){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"&&animalPhoto){const img=new Image();img.src=animalPhoto;img.alt="Animal personnalisé";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}else animal.innerHTML=drawPet(s.pet);scenery.append(animal)}
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
 }
 function mountBanner(){
@@ -120,41 +122,45 @@ function lookGrid(){
 function contents(tab){
  if(tab==="mode")return lookGrid()+'<details class="cmd-scene-more"><summary>Personnaliser séparément chaque vêtement</summary>'+field("Haut / tenue","top",clothes)+swatches("Couleur de la tenue","topColor",outfits)+field("Pantalon / bas","bottom",pants)+field("Chaussures","shoes",footwear)+'</details>';
  if(tab==="selfie")return '<h2>Choisis ta pose</h2>'+picker("Prendre une pose","pose",poses,"person")+picker("Accessoires","accessory",accessories,"person");
- if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2>'+picker("Ils t’accompagnent sur le profil","pet",pets,"pet");
+ if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2><p class="cmd-scene-section-intro">Un animal est ajouté à côté du personnage dans le décor.</p>'+picker("Ils t’accompagnent sur le profil","pet",pets,"pet")+'<label class="cmd-scene-file">📷 Ajouter une image de mon animal (PNG/WebP à fond transparent recommandé)<input id="cmdScenePetPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdScenePetIllustration" class="cmd-scene-illustration-reset">Utiliser l’animal illustré</button>';
  if(tab==="scene")return '<h2>Choisis ton décor</h2>'+picker("Plage, ville, forêt et bien plus","scene",scenes,"scene")+'<label class="cmd-scene-file">📷 Utiliser une photo personnelle<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Le décor choisi s’affiche derrière ton personnage sur le profil CMD Sphere.</small>';
- return '<h2>Créer ton personnage</h2>'+picker("Personnage","gender",genders,"person")+swatches("Couleur de peau","skin",skins)+picker("Coiffure","hair",hairOptions.map(([id,name])=>[id,name,""]),"person")+swatches("Couleur des cheveux","hairColor",haircolors);
+ return '<h2>Créer ton personnage</h2><p class="cmd-scene-section-intro">Personnalise ton personnage ou ajoute un visuel transparent pour un rendu plus réaliste.</p>'+picker("Personnage","gender",genders,"person")+swatches("Couleur de peau","skin",skins)+picker("Coiffure","hair",hairOptions.map(([id,name])=>[id,name,""]),"person")+swatches("Couleur des cheveux","hairColor",haircolors)+'<label class="cmd-scene-file">📷 Ajouter mon personnage découpé (PNG ou WebP transparent)<input id="cmdSceneAvatarPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdSceneAvatarIllustration" class="cmd-scene-illustration-reset">Utiliser le personnage illustré</button>';
 }
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
  area.innerHTML=contents(tab);
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;renderSheet(tab);refreshEditor()}));
+ $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet")state.petStyle="illustrated";if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair")state.avatarStyle="illustrated";renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
  $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de la photo…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Photo ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
+ $("#cmdSceneAvatarPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{characterPhoto=await compressPhoto(f,true);characterDirty=true;state.avatarStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Personnage importé. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
+ $("#cmdScenePetPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{animalPhoto=await compressPhoto(f,true);animalDirty=true;state.petStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Image de l’animal importée. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
+ $("#cmdSceneAvatarIllustration")?.addEventListener("click",()=>{state.avatarStyle="illustrated";refreshEditor()});
+ $("#cmdScenePetIllustration")?.addEventListener("click",()=>{state.petStyle="illustrated";refreshEditor()});
 }
 function refreshEditor(){
  present();
  if(!preview)return;
- preview.innerHTML=drawPerson(state);
+ if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.replaceChildren(img)}else preview.innerHTML=drawPerson(state);
  const animal=$("#cmdScenePreviewPet");
- if(animal){animal.innerHTML=state.pet!=="none"?drawPet(state.pet):"";animal.hidden=state.pet==="none"}
+ if(animal){if(state.petStyle==="photo"&&animalPhoto){const img=new Image();img.src=animalPhoto;img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.innerHTML=state.pet!=="none"?drawPet(state.pet):"";animal.hidden=state.petStyle==="photo"?!animalPhoto:state.pet==="none"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
  $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
  const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
 }
-async function compressPhoto(file){
+async function compressPhoto(file,preserveTransparency=false){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>25*1024*1024)throw Error("Choisis une image PNG, JPG ou WebP de moins de 25 Mo.");
  const bitmap=await createImageBitmap(file).catch(()=>null);
  const image=bitmap||await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error("Image impossible à ouvrir"));i.src=URL.createObjectURL(file)});
  const w=image.width,h=image.height;if(!w||!h)throw Error("Image vide.");
- const ratio=Math.min(1,1400/w,900/h);
+ const ratio=preserveTransparency?Math.min(1,800/w,1000/h):Math.min(1,1400/w,900/h);
  const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));
  canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
  if(image.close)image.close();else if(image.src?.startsWith("blob:"))URL.revokeObjectURL(image.src);
- let data=canvas.toDataURL("image/webp",.8);
- if(!data.startsWith("data:image/webp"))data=canvas.toDataURL("image/jpeg",.78);
+ let data=canvas.toDataURL("image/webp",preserveTransparency?.76:.8);
+ if(!data.startsWith("data:image/webp"))data=canvas.toDataURL(preserveTransparency?"image/png":"image/jpeg",.78);
  if(data.length>2.75*1024*1024)throw Error("Image encore trop lourde. Choisis une photo plus petite.");
  return data;
 }
@@ -167,7 +173,7 @@ const navIcons={
 };
 function closeSheet(){
  if(!sheet)return;
- state={...savedState};custom=savedCustom;customDirty=false;present();sheet.hidden=true;
+ state={...savedState};custom=savedCustom;characterPhoto=savedCharacterPhoto;animalPhoto=savedAnimalPhoto;customDirty=false;characterDirty=false;animalDirty=false;present();sheet.hidden=true;
 }
 function openSheet(){
  if(!slot)return;
@@ -207,11 +213,11 @@ async function save(){
  const btn=$("#cmdSceneSave");btn.disabled=true;
  $("#cmdSceneNotice").textContent="Enregistrement sur ton compte CMD Sphere…";
  try{
-  const data={scene:state};if(customDirty)data.customBackground=custom;
+  const data={scene:state};if(customDirty)data.customBackground=custom;if(characterDirty)data.characterImage=characterPhoto;if(animalDirty)data.animalImage=animalPhoto;
   const r=await fetch("/api/profile/scene",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   const output=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(output.error||"Sauvegarde refusée");
-  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;savedState={...state};savedCustom=custom;
+  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;characterDirty=false;animalDirty=false;savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
   setTimeout(()=>{if(sheet)sheet.hidden=true},550);
  }catch(e){$("#cmdSceneNotice").textContent=e.message||"Erreur de sauvegarde"}
  finally{busy=false;btn.disabled=false}
@@ -223,7 +229,9 @@ async function initialize(){
   const data=await r.json();
   if(data.scene&&typeof data.scene==="object")state={...defaults,...data.scene};
   custom=typeof data.customBackground==="string"?data.customBackground:null;
-  savedState={...state};savedCustom=custom;
+  characterPhoto=typeof data.characterImage==="string"?data.characterImage:null;
+  animalPhoto=typeof data.animalImage==="string"?data.animalImage:null;
+  savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
   present();
  }catch(e){console.warn("[CMD profil décor]",e)}
 }
