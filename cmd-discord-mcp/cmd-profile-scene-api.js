@@ -11,7 +11,7 @@ const GENDERS=new Set(["male","female","neutral"]);
 const COLORS=new Set(["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"]);
 const HAIR_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const OUTFIT_COLORS=new Set(["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"]);
-const defaultConfig=()=>({scene:"forest",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",label:""});
+const defaultConfig=()=>({scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",label:""});
 const clean=(v,a,def)=>a.has(String(v||""))?String(v):def;
 function config(input){
  const a=input&&typeof input==="object"?input:{},d=defaultConfig(),result={...d};
