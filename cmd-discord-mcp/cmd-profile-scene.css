@@ -101,3 +101,113 @@
 #cmdSceneSheet .cmd-scene-preview #cmdSceneLabel{position:absolute;left:12px;bottom:10px;background:#151221ae;padding:7px 9px;border-radius:9px;max-width:48%;color:#fff;z-index:2}
 #cmdSceneSheet .cmd-scene-preview .cmd-scene-preview-pet{position:absolute;left:105px;bottom:22px;font-size:38px;filter:drop-shadow(0 5px 7px #0009)}
 @media(max-width:560px){#cmdSceneSheet .cmd-scene-preview{min-height:170px;max-height:190px}#cmdSceneSheet .cmd-scene-preview #cmdScenePreviewPerson{width:126px;height:188px}#cmdSceneSheet .cmd-scene-preview .cmd-scene-preview-pet{left:94px}}
+
+/* 2026 redesign — visual editor with navigation like Snapchat, in the EXISTING profile. */
+#cmdSceneSheet{align-items:center;justify-content:center;z-index:11000;background:#050507eb;overscroll-behavior:contain}
+#cmdSceneSheet .cmd-scene-sheet{position:relative;width:min(650px,100%);height:min(940px,100dvh);max-height:100dvh;background:#09090c;border:0;border-radius:20px;display:flex;flex-direction:column;min-height:0;color:#fafafa;overflow:hidden;box-shadow:0 16px 70px #000a}
+#cmdSceneSheet .cmd-scene-hero{height:clamp(325px,53dvh,560px);min-height:325px;flex:none;position:relative;isolation:isolate;overflow:hidden;background:#0c1a26}
+#cmdSceneSheet .cmd-scene-hero-landscape{position:absolute;inset:0;z-index:0;background-position:center center;background-size:cover;background-repeat:no-repeat;filter:saturate(1.08)}
+#cmdSceneSheet .cmd-scene-hero:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(180deg,#0008 0%,transparent 22%,transparent 64%,#0008 100%)}
+#cmdSceneSheet .cmd-scene-hero[data-scene="forest"] .cmd-scene-hero-landscape{background-color:#152a40;background-image:linear-gradient(90deg,#08152926,#19214424),url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="beach"] .cmd-scene-hero-landscape{background-color:#4eaaa9;background-image:linear-gradient(180deg,#0000,#30444d47),url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="seaside"] .cmd-scene-hero-landscape{background-color:#136084;background-image:linear-gradient(180deg,#0000,#101b3c3b),url("https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="waterfall"] .cmd-scene-hero-landscape{background-color:#2e5648;background-image:linear-gradient(180deg,#0000,#102a2144),url("https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="city"] .cmd-scene-hero-landscape{background-color:#34314a;background-image:linear-gradient(180deg,#0000,#11132555),url("https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="night"] .cmd-scene-hero-landscape{background-color:#0b1635;background-image:linear-gradient(180deg,#03071626,#09152833),url("https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="space"] .cmd-scene-hero-landscape{background-color:#131236;background-image:linear-gradient(180deg,#05030f22,#05061640),url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="mountains"] .cmd-scene-hero-landscape{background-color:#4c7093;background-image:linear-gradient(180deg,#0000,#08121b4d),url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=85")}
+#cmdSceneSheet .cmd-scene-hero[data-scene="custom"] .cmd-scene-hero-landscape{background-color:#202637;background-image:linear-gradient(180deg,#0002,#0004),var(--cmd-personal-scene-image)}
+#cmdSceneSheet .cmd-scene-hero[data-scene="none"] .cmd-scene-hero-landscape{background:linear-gradient(155deg,#323447,#6a5079 70%,#1b142f)}
+#cmdSceneSheet .cmd-scene-float-header{position:absolute;z-index:5;top:0;left:0;right:0;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:calc(15px + env(safe-area-inset-top,0px)) 16px 12px;background:transparent;border:0;min-height:60px;text-shadow:0 2px 4px #0009}
+#cmdSceneSheet .cmd-scene-float-header span{font-size:11px;letter-spacing:.12em;font-weight:900;white-space:nowrap;color:#fffc}
+#cmdSceneSheet .cmd-scene-float-header button{min-width:43px;min-height:43px;width:43px;height:43px;border-radius:50%;border:1px solid #ffffff30;background:#0509109c;color:#fff;font-size:25px;backdrop-filter:blur(9px);cursor:pointer}
+#cmdSceneSheet #cmdScenePreviewSave{background:#fff;color:#111;font-size:20px}
+#cmdSceneSheet .cmd-scene-hero .cmd-scene-preview{position:absolute;inset:0;z-index:2;background:transparent!important;max-height:none!important;min-height:0!important;height:100%;width:100%;padding:0;border:0;overflow:visible;display:block}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson{position:absolute;left:50%;bottom:-2%;transform:translateX(-50%);width:min(59%,305px);height:88%;max-height:none;z-index:2;filter:drop-shadow(5px 16px 14px #0007)}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson svg{height:100%;width:100%;display:block;overflow:visible}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet{position:absolute;right:8%;bottom:5%;width:clamp(94px,28%,158px);aspect-ratio:1;z-index:3;filter:drop-shadow(0 12px 13px #0009)}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet[hidden]{display:none}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet svg{width:100%;height:100%;display:block;overflow:visible}
+#cmdSceneSheet .cmd-scene-scene-tag{position:absolute;bottom:14px;left:14px;max-width:45%;z-index:4;background:#060b15a6;border:1px solid #ffffff32;border-radius:11px;color:#fff;padding:8px 12px;font-size:12px;line-height:1.4;backdrop-filter:blur(12px);white-space:normal}
+#cmdSceneSheet .cmd-scene-tabs{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;gap:0;padding:4px 7px;border:0;border-bottom:1px solid #24252b;background:#06070a;min-height:78px}
+#cmdSceneSheet .cmd-scene-tabs button{position:relative;min-width:0;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:70px;padding:7px 1px;border:0;border-radius:0;background:none;color:#b6b8c0;font-size:16px;cursor:pointer;white-space:normal}
+#cmdSceneSheet .cmd-scene-tabs button svg{width:29px;height:29px;max-width:100%;display:block}
+#cmdSceneSheet .cmd-scene-tabs button small{font:700 11px/1.15 system-ui;display:block;max-width:100%;min-height:23px;color:inherit}
+#cmdSceneSheet .cmd-scene-tabs button.selected{color:#fff;background:transparent}
+#cmdSceneSheet .cmd-scene-tabs button.selected:after{content:"";width:27px;height:3px;border-radius:5px;background:#d8baff;position:absolute;bottom:1px;left:50%;transform:translateX(-50%)}
+#cmdSceneSheet #cmdSceneOptions.cmd-scene-market{flex:1;min-height:0;padding:17px 14px 20px;background:#09090c;overflow-y:auto;scrollbar-color:#5b5b63 transparent;overscroll-behavior:contain;display:block}
+#cmdSceneSheet #cmdSceneOptions h2{font:850 21px/1.25 system-ui;margin:5px 0 18px;color:#fff;letter-spacing:-.45px}
+#cmdSceneSheet #cmdSceneOptions h3{font:800 14px system-ui;margin:14px 0 11px;color:#dedde3}
+#cmdSceneSheet .cmd-scene-chips{display:flex;overflow-x:auto;gap:8px;padding:0 1px 13px;scrollbar-width:none}
+#cmdSceneSheet .cmd-scene-chips button{flex:none;padding:9px 12px;min-height:35px;background:#25252a;color:#ddd;border:1px solid #ffffff17;border-radius:100px;font:750 12px system-ui}
+#cmdSceneSheet .cmd-scene-chips button.selected{background:#f5f1fb;color:#202025}
+#cmdSceneSheet .cmd-scene-look-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-bottom:12px}
+#cmdSceneSheet .cmd-scene-look-tile{position:relative;min-width:0;overflow:hidden;border-radius:13px;background:#2c2d30;border:2px solid transparent;padding:0 0 10px;color:#fff;text-align:center;cursor:pointer}
+#cmdSceneSheet .cmd-scene-look-tile.selected{border-color:#debbff}
+#cmdSceneSheet .cmd-scene-look-model{height:clamp(129px,20dvh,195px);position:relative;background:radial-gradient(ellipse at 50% 21%,#bbbbc7,#555862 68%,#3a3d42 100%);border-radius:12px 12px 0 0;overflow:hidden;margin-bottom:8px}
+#cmdSceneSheet .cmd-scene-look-model svg{display:block;height:155%;width:100%;position:absolute;top:0;left:0;object-fit:contain}
+#cmdSceneSheet .cmd-scene-look-tile strong{display:block;font-size:12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;padding:0 2px}
+#cmdSceneSheet .cmd-look-free{display:block;font-size:10px;color:#cecfda;margin-top:3px}
+#cmdSceneSheet .cmd-scene-card-carousel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#cmdSceneSheet .cmd-scene-catalog-card{min-width:0;display:flex;flex-direction:column;align-items:stretch;border-radius:14px;overflow:hidden;background:#25262b;border:2px solid transparent;color:#e7e7ec;padding:0 0 11px;cursor:pointer}
+#cmdSceneSheet .cmd-scene-catalog-card.selected{border-color:#d6b0f3;background:#413852}
+#cmdSceneSheet .cmd-scene-card-art{display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#5c5d64,#323338 73%);aspect-ratio:1/1;max-height:175px;width:100%;overflow:hidden}
+#cmdSceneSheet .cmd-scene-card-art svg{width:100%;height:100%;object-fit:contain;display:block}
+#cmdSceneSheet .cmd-scene-card-art .cmd-scene-person-svg{height:160%;align-self:flex-start}
+#cmdSceneSheet .cmd-scene-card-art .cmd-illustrated-pet{max-width:95%;max-height:90%;filter:drop-shadow(0 4px 5px #0005)}
+#cmdSceneSheet .cmd-scene-card-title{font-size:12px;font-weight:750;line-height:1.2;padding:10px 4px 0;overflow-wrap:anywhere}
+#cmdSceneSheet .cmd-scene-none{font-size:44px;color:#eee}
+#cmdSceneSheet .cmd-scene-choice-symbol{font-size:35px}
+#cmdSceneSheet .cmd-scene-landscape{height:100%;width:100%;display:grid;place-items:center;background-size:cover;background-position:center;color:#fff;font-size:26px;text-shadow:0 2px 5px #000b}
+#cmdSceneSheet .cmd-scenery-beach{background-image:url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-seaside{background-image:url("https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-forest{background-image:url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-waterfall{background-image:url("https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-city{background-image:url("https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-night{background-image:url("https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-space{background-image:url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-mountains{background-image:url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=360&q=65")}
+#cmdSceneSheet .cmd-scenery-custom{background:#4a425c}
+#cmdSceneSheet .cmd-scenery-none{background:linear-gradient(135deg,#865bc0,#25324a)}
+#cmdSceneSheet .cmd-scene-more{margin-top:14px;padding:12px 14px;background:#24242a;border-radius:14px}
+#cmdSceneSheet .cmd-scene-more summary{cursor:pointer;font-weight:750;font-size:13px}
+#cmdSceneSheet .cmd-scene-select-field{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+#cmdSceneSheet .cmd-scene-select-field span{font-weight:650;font-size:13px}
+#cmdSceneSheet .cmd-scene-select-field select{background:#16161a;border:1px solid #ffffff38;color:#fff;min-height:44px;border-radius:8px;padding:9px;font:inherit}
+#cmdSceneSheet .cmd-scene-swatches{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+#cmdSceneSheet .cmd-scene-swatches button{width:36px;height:36px;border-radius:50%;border:3px solid #ffffff66;cursor:pointer}
+#cmdSceneSheet .cmd-scene-swatches button.selected{outline:2px solid #ca9dee;border:3px solid #fff}
+#cmdSceneSheet .cmd-scene-file{background:#25232c;margin:13px 0;border-radius:12px;border:1px dashed #82728f;padding:13px;display:grid;gap:10px}
+#cmdSceneSheet .cmd-scene-footer{position:relative;z-index:7;flex:none;padding:6px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #28272e;background:#0e0d12}
+#cmdSceneSheet .cmd-scene-footer #cmdSceneNotice{padding:0 0 5px;min-height:0;font:650 12px/1.35 system-ui;color:#e5c7fc}
+#cmdSceneSheet .cmd-scene-footer-actions{display:flex;gap:9px}
+#cmdSceneSheet .cmd-scene-footer-actions button{min-height:44px;padding:10px 12px;border:0;border-radius:10px;color:#fff;background:#33313b;font:800 12px system-ui;cursor:pointer}
+#cmdSceneSheet .cmd-scene-footer-actions #cmdSceneSave{background:#8550bb!important;flex:1;font-size:13px}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-pet{width:104px;height:104px;font-size:initial;bottom:11%;left:auto;right:10%;z-index:2}
+#cmdSceneWrap #cmdSceneBackdrop .cmd-scene-pet svg{width:100%;height:100%;display:block}
+#cmdSceneWrap[data-scene="forest"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#040d1d35,#090f2644),url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="beach"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#071b2733,#2e94b922),url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="seaside"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#041c2844,#23739a22),url("https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="waterfall"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#03171b55,#2b807522),url("https://images.unsplash.com/photo-1433086966358-54859d0ed716?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="city"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#09072255,#3c397222),url("https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="night"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#09062155,#101f5e22),url("https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="space"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#09052155,#1d236522),url("https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+#cmdSceneWrap[data-scene="mountains"] #cmdSceneBackdrop{background-image:linear-gradient(0deg,#091f2155,#23396622),url("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1100&q=80");background-position:center;background-size:cover}
+@media(max-width:680px){
+ #cmdSceneSheet{align-items:stretch;justify-content:stretch}
+ #cmdSceneSheet .cmd-scene-sheet{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
+ #cmdSceneSheet .cmd-scene-hero{height:clamp(315px,51dvh,520px);min-height:315px}
+ #cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson{width:min(61%,295px);height:87%;bottom:-3%}
+ #cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet{right:5%;bottom:8%;width:29%;max-width:130px}
+ #cmdSceneSheet .cmd-scene-tabs{min-height:72px}
+ #cmdSceneSheet .cmd-scene-tabs button{min-height:70px}
+ #cmdSceneSheet .cmd-scene-tabs button svg{width:27px;height:27px}
+ #cmdSceneSheet .cmd-scene-tabs button small{font-size:10px}
+ #cmdSceneSheet #cmdSceneOptions.cmd-scene-market{padding:12px 12px 18px}
+ #cmdSceneSheet #cmdSceneOptions h2{font-size:19px;margin:3px 0 13px}
+ #cmdSceneSheet .cmd-scene-look-grid,#cmdSceneSheet .cmd-scene-card-carousel{gap:8px}
+ #cmdSceneSheet .cmd-scene-look-model{height:clamp(105px,18dvh,153px)}
+ #cmdSceneSheet .cmd-scene-catalog-card .cmd-scene-card-art{max-height:130px}
+}
+@media(max-height:720px){#cmdSceneSheet .cmd-scene-hero{height:42dvh;min-height:250px}#cmdSceneSheet .cmd-scene-tabs{min-height:60px}#cmdSceneSheet .cmd-scene-tabs button{min-height:60px}#cmdSceneSheet .cmd-scene-footer-actions button{min-height:39px}}
+@media(prefers-reduced-motion:reduce){#cmdSceneSheet *{animation:none!important;transition:none!important}}
