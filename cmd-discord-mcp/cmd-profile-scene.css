@@ -355,3 +355,53 @@
  #cmdSceneSheet .cmd-scene-model-photo{height:155px}
  #cmdSceneSheet .cmd-scene-model-actions .cmd-scene-built-in{min-height:193px}
 }
+
+
+/* CMD Sphere / 2026-10-09 — catalogue 3D officiel, présentation mobile premium. */
+#cmdSceneSheet .cmd-scene-hero{height:clamp(260px,40dvh,420px);min-height:260px}
+#cmdSceneSheet .cmd-scene-hero[data-scene="chalet"] .cmd-scene-hero-landscape{
+ background:linear-gradient(180deg,#100b19aa,transparent 48%,#0c10225c),url("https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=1000&fit=crop&q=85") center/cover no-repeat}
+#cmdSceneSheet .cmd-scene-hero[data-scene="crystal"] .cmd-scene-hero-landscape{
+ background:radial-gradient(ellipse at 50% 24%,#9a58c16b,transparent 65%),url("/cmd-profile/crystals.svg") center 65%/cover no-repeat,linear-gradient(140deg,#110922,#3c155f 63%,#15112e)}
+#cmdSceneWrap[data-scene="chalet"] #cmdSceneBackdrop{background:linear-gradient(#0e113155,#19132a77),url("https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=1100&fit=crop&q=85") center/cover}
+#cmdSceneWrap[data-scene="crystal"] #cmdSceneBackdrop{background:radial-gradient(ellipse at 55% 25%,#b56dfa66,transparent 68%),url("/cmd-profile/crystals.svg") center bottom/cover no-repeat,#210d38}
+#cmdSceneSheet .cmd-scenery-chalet{background:linear-gradient(#1d163455,#18132b65),url("https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=420&fit=crop&q=80") center/cover}
+#cmdSceneSheet .cmd-scenery-crystal{background:radial-gradient(ellipse at 70% 30%,#bc7ced88,transparent),url("/cmd-profile/crystals.svg") center/cover,#24103f}
+#cmdSceneSheet .cmd-avatar-premium-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 20px}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in{
+ min-width:0;min-height:0;display:flex;flex-direction:column;gap:4px;align-items:stretch;padding:0 0 10px;
+ overflow:hidden;border-radius:15px;background:linear-gradient(160deg,#282334,#100d19);
+ border:2px solid #9f83be54;color:#faf6ff;box-shadow:0 8px 25px #0007;text-align:center;
+ transition:border-color .18s,transform .18s}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in.selected{
+ border-color:#e9baff;box-shadow:0 0 0 1px #b577e8,0 0 24px #8c39d45c}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo{
+ width:100%;height:160px;flex:none;display:grid;place-items:center;
+ background:radial-gradient(ellipse at 50% 26%,#694d88b8,transparent 70%),linear-gradient(170deg,#342141,#13131d);
+ overflow:hidden}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo img{height:100%;width:100%;object-fit:cover;object-position:center 38%}
+#cmdSceneSheet .cmd-avatar-card-loading{color:#dbc8f2;font-size:11px;font-weight:700;letter-spacing:.04em}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in b{font-size:13px;margin:4px 5px 0}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in small{font-size:11px;color:#d0c2db;margin:0 4px}
+#cmdSceneSheet #cmdSceneOptions.cmd-scene-market{
+ background:linear-gradient(180deg,#0e0b15,#10091a);padding:16px 15px 24px;
+ scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#cmdSceneSheet #cmdSceneOptions h2{font-size:18px;color:#fff;margin:5px 0 10px}
+#cmdSceneSheet .cmd-scene-section-intro{font-size:12px;line-height:1.55;color:#c3b0d0}
+#cmdSceneSheet .cmd-scene-catalog-card{background:linear-gradient(165deg,#282234,#14101e);border:2px solid #a77acc38}
+#cmdSceneSheet .cmd-scene-catalog-card.selected{border-color:#dcb3ff;background:linear-gradient(145deg,#39234f,#251732)}
+#cmdSceneSheet .cmd-scene-tabs{background:#0c0913;border-top:1px solid #a05acf26;border-bottom:1px solid #a05acf36}
+#cmdSceneSheet .cmd-scene-tabs button.selected:after{background:#d9a0ff;width:33px}
+#cmdSceneSheet .cmd-scene-footer{background:#0d0a13;border-top:1px solid #9259be4d;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#cmdSceneSheet .cmd-avatar-fallback-photo,#cmdSceneBackdrop .cmd-avatar-fallback-photo{
+ width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block;
+ border-radius:46% 46% 20px 20px;mask-image:linear-gradient(#000 68%,transparent 98%);-webkit-mask-image:linear-gradient(#000 68%,transparent 98%)}
+#cmdSceneSheet .cmd-scene-model-actions:not(.cmd-avatar-premium-grid) .cmd-scene-built-in{display:none}
+@media(max-width:680px){
+ #cmdSceneSheet .cmd-avatar-premium-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo{height:165px}
+ #cmdSceneSheet .cmd-scene-hero{height:clamp(240px,37dvh,390px);min-height:240px}
+ #cmdSceneSheet #cmdSceneOptions.cmd-scene-market{padding:14px 12px 20px}
+}
+@media(max-width:360px){#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo{height:137px}}
+@media(prefers-reduced-motion:reduce){#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in{transition:none}}
