@@ -61,3 +61,43 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
  #cmdStudioPublish{grid-column:auto}
 }
 @media(prefers-reduced-motion:reduce){#cmdPromoStudio *,#cmdPromoLaunch{scroll-behavior:auto!important;transition:none!important}}
+
+/* TikTok-inspired music selector. Real songs, playable preview and trimming. */
+#cmdPromoStudio .cmd-studio-music{position:relative}
+#cmdStudioOpenMusic{background:linear-gradient(120deg,#7b46bb,#513184);border:1px solid #d7b6ff99;border-radius:12px;color:#fff;text-align:center;padding:12px 16px;min-height:47px;font:800 14px system-ui}
+#cmdPromoStudio .cmd-studio-selected-song{background:#160d21;border:1px solid #ffffff28;border-radius:12px;display:flex;flex-direction:column;gap:5px;padding:11px;line-height:1.4;overflow-wrap:anywhere}
+#cmdStudioSelectedSong strong{font-size:14px}
+#cmdStudioSelectedSong small{font-size:12px}
+#cmdStudioSelectedSong a{color:#d6b5ff;font-size:12px;font-weight:700;text-decoration:underline}
+#cmdStudioSelectedSong .cmd-music-selected-play{color:#fff;background:#4d3470;border:1px solid #ffffff35;border-radius:10px;min-height:39px;padding:8px 10px}
+#cmdStudioMusicSheet[hidden]{display:none!important}
+#cmdStudioMusicSheet{position:fixed;inset:0;z-index:11050;background:#050208df;display:flex;align-items:flex-end;justify-content:center;padding:0;font:14px system-ui;color:#fff}
+#cmdStudioMusicSheet *{box-sizing:border-box}
+#cmdStudioMusicSheet .cmd-studio-music-panel{width:min(720px,100%);height:min(91dvh,820px);background:#21172d;border:1px solid #ffffff29;border-radius:25px 25px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -15px 75px #000b}
+#cmdStudioMusicSheet .cmd-studio-music-panel header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;padding:17px 17px 11px;font-size:18px;border-bottom:1px solid #ffffff16}
+#cmdStudioCloseMusic{min-width:40px;height:40px;border:0;border-radius:10px;background:#ffffff1b;color:#fff;font-size:20px}
+#cmdStudioMusicSheet .cmd-studio-search{margin:12px 15px;display:flex;flex:none;align-items:center;gap:9px;padding:0 13px;background:#140e1c;border-radius:13px;border:1px solid #ffffff35;height:47px;color:#bea9ce;font-size:22px}
+#cmdStudioMusicQuery{flex:1;min-width:0;border:0;background:transparent;color:white;font:inherit;font-size:15px;outline:none}
+#cmdStudioMusicSheet .cmd-studio-music-genres{display:flex;gap:7px;overflow:auto;scrollbar-width:thin;flex:none;padding:4px 14px 12px}
+#cmdStudioMusicSheet .cmd-studio-music-genres button{white-space:nowrap;flex:none;min-height:34px;padding:7px 11px;border:1px solid #ffffff35;border-radius:100px;background:#352341;color:#eee4f7;font-weight:700}
+#cmdStudioMusicSheet .cmd-studio-music-results{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:10px 13px 40px;display:flex;flex-direction:column;gap:7px}
+#cmdStudioMusicResults>p{color:#ccb8da}
+#cmdStudioMusicSheet .cmd-music-row{display:flex;align-items:center;gap:9px;padding:11px 9px;border-radius:13px;border:1px solid #ffffff22;background:#30233c}
+#cmdStudioMusicSheet .cmd-music-row.chosen{border-color:#b888ed;background:#3f2c50}
+#cmdStudioMusicSheet .cmd-music-play{flex:none;width:43px;height:43px;border-radius:50%;border:1px solid #ffffff35;background:#7a4abb;color:white;font-size:17px}
+#cmdStudioMusicSheet .cmd-music-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+#cmdStudioMusicSheet .cmd-music-meta strong{font-size:13px;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+#cmdStudioMusicSheet .cmd-music-meta small{font-size:11px;color:#c5b3cf;white-space:normal}
+#cmdStudioMusicSheet .cmd-music-meta a{color:#cfa9f0;font-size:11px}
+#cmdStudioMusicSheet .cmd-music-add{flex:none;min-height:36px;padding:7px 10px;border:0;border-radius:10px;background:#8752b8;color:#fff;font-size:12px;font-weight:750}
+#cmdStudioMusicSheet .cmd-studio-music-foot{flex:none;display:flex;align-items:center;gap:12px;justify-content:space-between;padding:13px 15px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #ffffff20;background:#23192d}
+#cmdStudioMusicSheet .cmd-studio-music-foot small{font-size:11px;color:#baabcc;line-height:1.4;flex:1}
+#cmdStudioMusicDone{flex:none;border:0;border-radius:11px;background:#8254b9;color:white;font-weight:800;min-height:42px;padding:10px 16px}
+@media(max-width:490px){
+ #cmdStudioMusicSheet .cmd-studio-music-panel{height:91dvh}
+ #cmdStudioMusicSheet .cmd-music-row{gap:7px;padding:9px 6px}
+ #cmdStudioMusicSheet .cmd-music-play{width:38px;height:38px}
+ #cmdStudioMusicSheet .cmd-music-add{font-size:11px;min-height:35px;padding:7px}
+ #cmdStudioMusicSheet .cmd-studio-music-foot{flex-direction:column;align-items:stretch}
+ #cmdStudioMusicDone{width:100%}
+}
