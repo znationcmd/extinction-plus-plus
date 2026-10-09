@@ -217,7 +217,7 @@ function universePhoto(kind,value){
  const words=kind==="vehicle"?{compact:"small-car",sportscar:"sports-car",convertible:"convertible-car",scooter:"scooter",motorcycle:"motorcycle",bike:"bicycle",van:"van",truck:"pickup-truck",kart:"go-kart",boat:"sailboat",plane:"airplane",rocket:"rocket",sedan:"sedan-car",suv:"suv-car",jeep:"offroad-jeep",limousine:"limousine",bus:"bus",camper:"camper-van",helicopter:"helicopter",jetski:"jetski",yacht:"yacht"}:{cottage:"cottage-house",house:"family-house",villa:"luxury-villa",apartment:"apartment-building",castle:"castle",cabin:"wooden-cabin",beach:"beach-house",snow:"snow-cabin",tree:"treehouse",crystal:"crystal-house",modern:"modern-house",farm:"farmhouse",mansion:"mansion",penthouse:"penthouse",lighthouse:"lighthouse",japanese:"japanese-house",tiny:"tiny-house"};
  return "https://loremflickr.com/320/240/"+encodeURIComponent(words[value]||value)+"?lock="+([...value].reduce((n,c)=>n+c.charCodeAt(0),kind==="vehicle"?200:400));
 }
-const originalSheets=["vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
+const originalSheets=["catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
 const loadedSheets=new Map();
 for(let i=0;i<54;i++)scenes.push(["reference-"+i,"Fond original "+(i+1),"🖼️"]);
 function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||"");return match&&Number(match[1])<54?Number(match[1]):-1}
@@ -233,6 +233,7 @@ async function loadOriginalSheets(){
  if(sceneReferenceIndex(state.scene)>=0)present();
 }
 function applyOriginalSheets(){
+ applyScreenshotCatalogue();
  document.querySelectorAll("[data-original-sheet]").forEach(el=>{const src=loadedSheets.get(el.dataset.originalSheet);if(src)el.style.backgroundImage='url("'+src+'")'});
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage='url("'+src+'")'});
  document.querySelectorAll("[data-scene-choice='scene']").forEach(el=>{const value=el.dataset.value;if(sceneReferenceIndex(value)<0)return;const art=el.querySelector(".cmd-scene-landscape");if(art)art.style.cssText=sceneReferenceStyle(value)});
@@ -269,6 +270,15 @@ function groomCatalog(title,key,choices){
  '<button type="button" data-groom-key="'+key+'" data-groom-style="'+id+'" class="cmd-groom-card '+(state[key]===id?'selected':'')+'" aria-pressed="'+(state[key]===id)+'" aria-label="'+escape(label)+'"><span class="cmd-groom-thumb">'+sheetArt(key,choices.findIndex(x=>x[0]===id))+'</span><span>'+escape(label)+'</span></button>'
  ).join('')+'</div></section>';
 }
+const screenshotCatalogueGroups=[["vestes",60,"Vestes et tenues"],["chapeaux",100,"Chapeaux"],["lunettes",60,"Lunettes"],["cheveux",20,"Cheveux"],["barbes",20,"Barbes"],["piercings",100,"Piercings"]];
+function screenshotCatalogue(category){
+ const info=screenshotCatalogueGroups.find(x=>x[0]===category);if(!info)return "";
+ const count=info[1],rows=Math.ceil(count/5),src=loadedSheets.get("catalogue-"+category)||"";
+ return '<section class="cmd-original-gallery"><h3>'+info[2]+' · '+count+' illustrations</h3><div class="cmd-original-gallery-grid">'+Array.from({length:count},(_,i)=>'<div class="cmd-original-gallery-tile" aria-label="'+info[2]+' '+(i+1)+'"><span data-catalogue-art="'+category+'" data-catalogue-index="'+i+'" style="display:block;aspect-ratio:1;background-image:url('+JSON.stringify(src)+');background-size:500% '+(rows*100)+'%;background-position:'+(i%5*25)+'% '+(Math.floor(i/5)*100/(rows-1))+'%;background-repeat:no-repeat"></span></div>').join("")+'</div></section>';
+}
+function applyScreenshotCatalogue(){
+ document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
+}
 function avatarEditor(){
  const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
  const nav='<nav class="cmd-avatar-editor-nav" aria-label="Personnalisation de l’avatar">'+sections.map(([key,label])=>'<button type="button" data-avatar-part="'+key+'" class="'+(avatarPart===key?'selected':'')+'" aria-pressed="'+(avatarPart===key)+'">'+label+'</button>').join('')+'</nav>';
@@ -278,20 +288,20 @@ function avatarEditor(){
   '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo">'+sheetArt('avatar',avatarPresets.findIndex(x=>x.id===p.id))+'</span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 2D</small></button>').join("")+'</div>'+
   field("Personnage","gender",genders)+field("Morphologie","bodyType",bodyTypes)+swatches("Teint de peau","skin",skins);
  }else if(avatarPart==="hair"){
-  inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors);
+  inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+screenshotCatalogue("cheveux");
  }else if(avatarPart==="beard"){
-  inner='<h2>Barbes et moustaches</h2>'+groomCatalog("Choisis ta barbe","beard",beardOptions)+swatches("Couleur de la barbe","beardColor",haircolors);
+  inner='<h2>Barbes et moustaches</h2>'+groomCatalog("Choisis ta barbe","beard",beardOptions)+swatches("Couleur de la barbe","beardColor",haircolors)+screenshotCatalogue("barbes");
   }else if(avatarPart==="piercing"){
-  inner='<h2>Piercings</h2><p class="cmd-scene-section-intro">Choisis un bijou 3D : nez, sourcils, lèvres ou oreilles.</p>'+picker("Piercings","piercing",piercings,"action");
+  inner='<h2>Piercings</h2><p class="cmd-scene-section-intro">Choisis un bijou 3D : nez, sourcils, lèvres ou oreilles.</p>'+picker("Piercings","piercing",piercings,"action")+screenshotCatalogue("piercings");
  }else if(avatarPart==="face"){
   inner='<h2>Visage & expressions</h2>'+field("Forme du visage","faceShape",faceShapes)+field("Forme des yeux","eyeShape",eyeShapes)+field("Sourcils","browStyle",browStyles)+swatches("Couleur des yeux","eyeColor",eyeColors)+field("Nez","nose",noseOptions)+field("Expression","mouth",mouthOptions);
  }else{
-  inner='<h2>Accessoires</h2>'+picker("Lunettes, bijoux et chapeaux","accessory",accessories,"action");
+  inner='<h2>Accessoires</h2>'+picker("Lunettes, bijoux et chapeaux","accessory",accessories,"action")+screenshotCatalogue("lunettes")+screenshotCatalogue("chapeaux");
  }
  return nav+'<div class="cmd-avatar-editor-panel">'+inner+'</div>';
 }
 function contents(tab){
- if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
+ if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits)+screenshotCatalogue("vestes");
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return universePicker();
  if(tab==="scene")return '<h2>Mon univers</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
@@ -302,7 +312,7 @@ function renderSheet(tab){
  const previousScroll=area.scrollTop;
  const previousScroller=area.closest(".cmd-scene-options-scroll");
  const outerScroll=previousScroller?.scrollTop;
- area.innerHTML=contents(tab);applyOriginalSheets();
+ area.innerHTML=contents(tab);applyOriginalSheets();applyScreenshotCatalogue();
  area.scrollTop=previousScroll;
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
 
