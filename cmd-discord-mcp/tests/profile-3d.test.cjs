@@ -17,32 +17,24 @@ function output(){
 function bodyRequest(bytes,method="PUT"){
  return {method,headers:{"content-type":"model/gltf-binary"},async *[Symbol.asyncIterator](){yield bytes}};
 }
-test("GLB upload rejects unauthorized and corrupt data, saves private uploads",async()=>{
+test("3D catalog blocks uploads but keeps existing user assets readable",async()=>{
  const api=await import("../cmd-profile-3d-api.js");
- const records=new Map();
- const calls=[];
+ const records=new Map([["42/avatar",makeGLB()]]);
  const pool={async query(sql,params=[]){
-  calls.push(sql);
   if(sql.includes("FROM cmd_profile_3d_assets"))return {rows:records.has(params[0]+"/"+params[1])?[{glb:records.get(params[0]+"/"+params[1])}]:[]};
-  if(sql.startsWith("INSERT INTO cmd_profile_3d_assets"))records.set(params[0]+"/"+params[1],params[2]);
   if(sql.startsWith("DELETE FROM cmd_profile_3d_assets"))records.delete(params[0]+"/"+params[1]);
   return {rows:[]};
  }};
  await api.initCmdProfile3D(pool);
- assert.equal(calls.length,1);
  const route={pathname:"/api/profile/3d/avatar"};
  const denied=output();await api.handleCmdProfile3D(bodyRequest(makeGLB()),denied,route,{pool,auth:null});
  assert.equal(denied.status,401);
- const bad=output();await api.handleCmdProfile3D(bodyRequest(Buffer.from("bad glb")),bad,route,{pool,auth:{user:{id:"42"}}});
- assert.equal(bad.status,400);
- const uploaded=output();await api.handleCmdProfile3D(bodyRequest(makeGLB()),uploaded,route,{pool,auth:{user:{id:"42"}}});
- assert.equal(uploaded.status,200);
+ const blocked=output();await api.handleCmdProfile3D(bodyRequest(makeGLB()),blocked,route,{pool,auth:{user:{id:"42"}}});
+ assert.equal(blocked.status,410);
  const fetched=output();await api.handleCmdProfile3D({method:"GET"},fetched,route,{pool,auth:{user:{id:"42"}}});
  assert.equal(fetched.status,200);assert.equal(fetched.body.toString("ascii",0,4),"glTF");
  const other=output();await api.handleCmdProfile3D({method:"GET"},other,route,{pool,auth:{user:{id:"77"}}});
  assert.equal(other.status,404);
- const deleted=output();await api.handleCmdProfile3D({method:"DELETE"},deleted,route,{pool,auth:{user:{id:"42"}}});
- assert.equal(deleted.status,200);
 });
 test("3D scene config retains 3D mode, model choice and original profile ownership",async()=>{
  const api=await import("../cmd-profile-scene-api.js");
@@ -51,10 +43,16 @@ test("3D scene config retains 3D mode, model choice and original profile ownersh
  await api.initCmdProfileScene(pool);
  assert.ok(query.some(x=>x.sql.includes("cmd_avatar_scene")));
  let a=output();
- const input=Buffer.from(JSON.stringify({scene:{scene:"neonforest",gender:"female",avatarStyle:"3d",avatarModel:"michelle",petStyle:"3d",petModel:"fox",pet:"fox"}}));
+ const input=Buffer.from(JSON.stringify({scene:{scene:"neonforest",gender:"female",avatarStyle:"3d",avatarModel:"civilian",petStyle:"3d",petModel:"fox",pet:"fox",vehicle:"kart",home:"villa",hideHome:false,petName:"Milo",top:"polo",accessory:"necklace"}}));
  await api.handleCmdProfileScene({method:"POST",async *[Symbol.asyncIterator](){yield input}},a,{pathname:"/api/profile/scene"},{pool,auth:{user:{id:"42"}}});
  assert.equal(a.status,200);
- assert.equal(JSON.parse(a.body).scene.avatarModel,"michelle");
+ assert.equal(JSON.parse(a.body).scene.avatarModel,"civilian");
+ assert.equal(JSON.parse(a.body).scene.vehicle,"kart");
+ assert.equal(JSON.parse(a.body).scene.home,"villa");
+ assert.equal(JSON.parse(a.body).scene.hideHome,false);
+ assert.equal(JSON.parse(a.body).scene.petName,"Milo");
+ assert.equal(JSON.parse(a.body).scene.top,"polo");
+ assert.equal(JSON.parse(a.body).scene.accessory,"necklace");
  assert.equal(JSON.parse(a.body).scene.scene,"neonforest");
  assert.ok(query.some(x=>x.sql.startsWith("UPDATE cmd_global_profiles SET")));
 });
