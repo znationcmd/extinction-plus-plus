@@ -3909,7 +3909,12 @@ const httpServer=createServer(async(req,res)=>{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
     if(await cmdEmailRoute(req,res,url,{pool,readBody:readFormBodyJson,resetPassword:async(id,pass)=>{const pw=passwordParts(pass);await pool.query("UPDATE cmd_accounts SET password_salt=$1,password_hash=$2,updated_at=NOW() WHERE id=$3",[pw.salt,pw.hash,id]);}}))return;
-    if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:dashboardAuth(req)}))return;
+    const emojiAuth=dashboardAuth(req);
+    const emojiFounder=Boolean(emojiAuth&&(
+      (String(emojiAuth.user?.discordId||"")&&verifiedCmdFounderDiscordIds().has(String(emojiAuth.user.discordId)))||
+      (String(process.env.CMD_OWNER_USER_ID||"").trim()&&String(emojiAuth.user?.id)===String(process.env.CMD_OWNER_USER_ID).trim())
+    ));
+    if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:emojiAuth,founder:emojiFounder}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
     if(req.method==="GET"&&url.pathname==="/cmd-invite-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public, max-age=300"});res.end(readFileSync("./cmd-invite-ui.js","utf8"));return}
