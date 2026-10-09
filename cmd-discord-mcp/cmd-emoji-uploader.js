@@ -119,7 +119,7 @@
  async function imageData(file,character){
    if(file){
      if(!/^image\/(gif|png|jpeg|webp)$/.test(file.type))throw Error("Formats acceptés : PNG, JPG, WebP, GIF.");
-     if(file.size>10*1024*1024)throw Error("Fichier de plus de 10 Mo.");
+     if(file.size>25*1024*1024)throw Error("Fichier de plus de 25 Mo.");
      return await new Promise((resolve,reject)=>{
        const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));
        reader.onerror=()=>reject(Error("Lecture impossible"));reader.readAsDataURL(file);
@@ -183,8 +183,8 @@
    const input=$("#cmdEmojiBulkFiles"),notice=$("#cmdEmojiBulkFilesStatus"),button=$("#cmdEmojiBulkButton");
    const files=Array.from(input?.files||[]);
    if(!files.length){notice.textContent="Sélectionne des fichiers individuels.";return}
-   const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=10*1024*1024);
-   if(!allowed.length){notice.textContent="Aucun fichier accepté : PNG/JPG/GIF/WebP, 10 Mo par fichier.";return}
+   const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=25*1024*1024);
+   if(!allowed.length){notice.textContent="Aucun fichier accepté : PNG/JPG/GIF/WebP, 25 Mo par fichier.";return}
    button.disabled=true;let completed=0,skipped=files.length-allowed.length,failed=0;
    const names=new Set(),batch=[];let batchSize=0;
    async function sendBatch(){
@@ -202,7 +202,7 @@
      for(let i=0;i<allowed.length;i++){
        try{
          const file=allowed[i],dataUrl=await imageData(file,"");
-         if(batch.length>=10||(batch.length&&batchSize+dataUrl.length>16*1024*1024))await sendBatch();
+         if(batch.length>=10||(batch.length&&batchSize+dataUrl.length>34*1024*1024))await sendBatch();
          batch.push({name:makeBulkName(file.name,names),dataUrl,kind:String($("#cmdEmojiBulkKind")?.value||"emoji")});batchSize+=dataUrl.length;
          notice.textContent="Préparation "+(i+1)+"/"+allowed.length+" · "+completed+" enregistrés";
        }catch(e){failed++;console.warn("[CMD emoji file]",allowed[i]?.name,e)}
@@ -230,7 +230,7 @@
      '<label>Ou créer un emoji avec un symbole<input id="cmdEmojiSymbol" maxlength="8" type="text" placeholder="🦖"></label>'+
      '<label>Qui pourra l’utiliser ?<select name="scope"><option value="personal">Moi (bibliothèque personnelle)</option><option value="community">Tout CMD Sphere (partagé)</option>'+
      (canServer?'<option value="server">Membres de ce serveur</option>':'')+'</select></label>'+
-     '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 10 Mo chacun. Les GIF doivent être réellement animés.</small>'+
+     '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 25 Mo chacun. Les GIF doivent être réellement animés.</small>'+
      '<button type="submit" id="cmdEmojiSave">Enregistrer</button><p id="cmdEmojiCreatorNotice" role="status"></p></form>'+
      (bridge()?.state.libraryFounder?'<section class="cmd-emoji-bulk" style="padding:12px;border:1px solid #ffffff26;border-radius:12px;margin:12px 0;display:grid;gap:9px"><strong>Importer les emojis des captures</strong><span>Réservé au fondateur · partager avec tous</span><label>Fichier CMD au format .json<input type="file" id="cmdEmojiBulkFile" accept=".json,application/json"></label><button type="button" id="cmdEmojiBulkImport">Importer tout le pack</button><button type="button" id="cmdEmojiBulkStop" hidden>Arrêter</button><p id="cmdEmojiBulkStatus" role="status" aria-live="polite"></p></section>':'')+
      '<section class="cmd-emoji-manage"><strong>Mes emojis, GIF et autocollants</strong><div id="cmdEmojiOwned"></div></section>'+
