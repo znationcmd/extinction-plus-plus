@@ -37,15 +37,16 @@ function createCanvas(mount,kind){
  const rim=new THREE.DirectionalLight(0x8974fe,2.2);rim.position.set(3.5,4.2,-2);scene.add(rim);
  const fill=new THREE.PointLight(0xd941ef,19,11);fill.position.set(3,1,2.2);scene.add(fill);
  const base=new THREE.Group();scene.add(base);
- const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",lookKey:"",poseKey:"",activeAnimation:null,sourceAnimations:[],personMixer:null,petMixer:null,token:0,petToken:0,angle:0,last:performance.now(),lastDraw:0,running:false,kind,requested:false};
+ const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",lookKey:"",poseKey:"",activeAnimation:null,sourceAnimations:[],personMixer:null,petMixer:null,token:0,petToken:0,angle:0,last:performance.now(),lastDraw:0,running:false,kind,requested:false,zoom:1,currentPose:"stand"};
  let pointer=null;
  wrapper.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointer={x:e.clientX,id:e.pointerId};wrapper.setPointerCapture?.(e.pointerId)});
  wrapper.addEventListener("pointermove",e=>{if(!pointer||e.pointerId!==pointer.id)return;frame.angle+=(e.clientX-pointer.x)*.008;pointer.x=e.clientX});
+ wrapper.addEventListener("wheel",e=>{e.preventDefault();frame.zoom=THREE.MathUtils.clamp(frame.zoom+Math.sign(e.deltaY)*.08,.70,1.5);frame.resize()},{passive:false});
  const stop=()=>pointer=null;wrapper.addEventListener("pointerup",stop);wrapper.addEventListener("pointercancel",stop);
  frame.resize=()=>{
   if(!wrapper.isConnected)return;
   const w=Math.max(1,wrapper.clientWidth),h=Math.max(1,wrapper.clientHeight);
-  camera.aspect=w/h;camera.position.set(0,1.62,h/w>1.4?7.7:6.45);camera.lookAt(0,1.42,0);camera.updateProjectionMatrix();
+  camera.aspect=w/h;camera.position.set(0,1.62,(h/w>1.4?7.7:6.45)*frame.zoom);camera.lookAt(0,1.42,0);camera.updateProjectionMatrix();
   renderer.setSize(w,h,false);
  };
  frame.render=()=>{
@@ -116,13 +117,20 @@ function applyAppearance(group,state){
 function applyAccessory(frame,state){
  if(frame.accessoryMesh){frame.base.remove(frame.accessoryMesh);frame.accessoryMesh=null}
  const choice=state.accessory;
- if(!frame.person||!["glasses","sunglasses","cap","hat","crown"].includes(choice))return;
+ if(!frame.person||!["glasses","sunglasses","cap","hat","crown","earrings","necklace"].includes(choice))return;
  const bounds=new THREE.Box3().setFromObject(frame.person),size=new THREE.Vector3();bounds.getSize(size);
  const headY=bounds.max.y-size.y*.115;
  const group=new THREE.Group();
  const dark=new THREE.MeshStandardMaterial({color:choice==="glasses"?0xb8d7ef:0x252633,metalness:.15,roughness:.3,transparent:true,opacity:.86});
  const frameMat=new THREE.MeshStandardMaterial({color:0x282332,metalness:.35,roughness:.4});
- if(choice==="glasses"||choice==="sunglasses"){
+ if(choice==="earrings"||choice==="necklace"){
+   const jewel=new THREE.MeshStandardMaterial({color:0xe1bee8,metalness:.62,roughness:.26});
+   if(choice==="earrings"){
+    for(const x of [-.245,.245]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(.045,.013,8,16),jewel);hoop.position.set(x,headY-.18,bounds.max.z+.02);group.add(hoop)}
+   }else{
+    const chain=new THREE.Mesh(new THREE.TorusGeometry(.185,.012,8,28),jewel);chain.rotation.x=Math.PI/2.3;chain.position.set(0,headY-.62,bounds.max.z-.1);group.add(chain);
+   }
+  }else if(choice==="glasses"||choice==="sunglasses"){
   for(const x of [-.14,.14]){const lens=new THREE.Mesh(new THREE.BoxGeometry(.235,.135,.025),dark);lens.position.set(x,0,.01);group.add(lens)}
   const bridge=new THREE.Mesh(new THREE.BoxGeometry(.08,.025,.035),frameMat);bridge.position.z=.02;group.add(bridge);
   group.position.set(0,headY-.045,bounds.max.z+.045);
