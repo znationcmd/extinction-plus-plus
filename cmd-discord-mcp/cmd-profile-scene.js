@@ -4,7 +4,7 @@
 if(window.__cmdProfileScene)return;window.__cmdProfileScene=true;
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["custom","Ma photo","📷"]];
+const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["neonforest","Forêt néon","✨"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["custom","Ma photo","📷"]];
 const clothes=[["hoodie","Sweat à capuche"],["tshirt","T-shirt"],["jacket","Veste"],["shirt","Chemise"],["dress","Robe"],["sport","Sport"],["suit","Costume"],["armor","Armure"]];
 const pants=[["jeans","Jean"],["dark","Pantalon noir"],["shorts","Short"],["skirt","Jupe"],["cargo","Cargo"],["formal","Habillé"]];
 const footwear=[["sneakers","Baskets"],["boots","Bottes"],["sandals","Sandales"],["formal","Chaussures de ville"]];
@@ -49,7 +49,7 @@ function drawPerson(s){
  accessory+shoes+'</g></svg>';
 }
 function decorateScene(scene){
- const patterns={beach:"☀️　　　　🌴",seaside:"☀️　 🐚　⛵",forest:"🌲　　　🌲　🌿",waterfall:"🌳　　　💦　🌿",city:"🏙️　　　🌇",night:"✨　🌙　　　 ⭐",space:"🪐　✨　　 ⭐",mountains:"🏔️　　　　🌲",custom:"",none:""};
+ const patterns={beach:"☀️　　　　🌴",seaside:"☀️　 🐚　⛵",forest:"🌲　　　🌲　🌿",neonforest:"",waterfall:"🌳　　　💦　🌿",city:"🏙️　　　🌇",night:"✨　🌙　　　 ⭐",space:"🪐　✨　　 ⭐",mountains:"🏔️　　　　🌲",custom:"",none:""};
  return patterns[scene]||"";
 }
 function present(s=state,img=custom){
@@ -171,14 +171,14 @@ function closeSheet(){
 }
 function openSheet(){
  if(!slot)return;
- if(state.scene==="none")state.scene="forest";
+ if(state.scene==="none")state.scene="neonforest";
  if(sheet){sheet.hidden=false;refreshEditor();showTab("mode");return}
  sheet=document.createElement("div");sheet.id="cmdSceneSheet";
  sheet.setAttribute("role","dialog");sheet.setAttribute("aria-modal","true");
  sheet.setAttribute("aria-label","Personnaliser le décor du profil CMD Sphere");
  sheet.innerHTML='<div class="cmd-scene-sheet">'+
- '<div class="cmd-scene-hero" id="cmdSceneHero" data-scene="forest">'+
- '<div class="cmd-scene-hero-landscape"></div><div class="cmd-scene-hero-scene-emblem" aria-hidden="true"></div>'+
+ '<div class="cmd-scene-hero" id="cmdSceneHero" data-scene="neonforest">'+
+ '<div class="cmd-scene-hero-landscape"></div><div class="cmd-scene-hero-lights" aria-hidden="true"></div>'+
  '<header class="cmd-scene-float-header"><button type="button" id="cmdSceneClose" aria-label="Fermer sans enregistrer">✕</button><span>CMD SPHERE · MON UNIVERS</span><button type="button" id="cmdScenePreviewSave" aria-label="Enregistrer le décor">✓</button></header>'+
  '<div class="cmd-scene-preview" aria-label="Aperçu de mon avatar avec mon animal">'+
  '<div id="cmdScenePreviewPerson"></div><div id="cmdScenePreviewPet"></div>'+
