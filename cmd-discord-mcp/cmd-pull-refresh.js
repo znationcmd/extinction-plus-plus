@@ -1,109 +1,116 @@
-/* CMD Sphere: swipe down to refresh the dashboard on touch phones.
-   Existing desktop refresh action remains the source of truth.
-   No sync/import or Discord writes are triggered. */
+/* CMD Sphere — pull-to-refresh sur iOS, Android et PWA.
+   Au sommet d'un salon, recharge les messages ; ailleurs, recharge les données.
+   Ne modifie jamais un serveur Discord et n'exécute pas d'importation. */
 (function(){
   "use strict";
-  const touchPhone=window.matchMedia("(max-width:850px) and (pointer:coarse)");
-  const threshold=96;
-  let startingX=0,startingY=0,distance=0,active=false,busy=false;
-  let indicator=null;
-  function inDashboard(){return Boolean(document.querySelector(".sphere-app"));}
+  if(window.__cmdPullRefreshInstalled)return;
+  window.__cmdPullRefreshInstalled=true;
+  const phone=window.matchMedia("(max-width: 850px) and (pointer: coarse)");
+  const threshold=75;
+  let startX=0,startY=0,pulled=0,tracking=false,busy=false,indicator=null;
+  const $=s=>document.querySelector(s);
+  const visible=el=>Boolean(el&&el.getClientRects().length&&getComputedStyle(el).visibility!=="hidden");
   function blocked(){
-    return Boolean(document.querySelector(
-      "#channelOverlay.on, #serverSettingsModal.on, #cmd-bulk-sync:not([hidden]), "+
-      "#mirrorModal.on, #webhookModal.on, #botsModal.on, #addModal.on, "+
-      "[role=dialog][aria-modal=true]:not([hidden])"
-    ));
+    return ["#serverSettingsModal","#mirrorModal","#webhookModal","#botsModal","#addModal",
+      "#folderModal","#csm-server-menu","#cmd-bulk-sync"].some(q=>{
+        const el=$(q);
+        return visible(el)&&(
+          el.id==="csm-server-menu"||
+          el.classList.contains("on")||
+          el.classList.contains("csm-open")||
+          (el.id==="cmd-bulk-sync"&&!el.hidden)
+        );
+      });
   }
-  function scrollTop(el){
+  function topOfScroll(target){
     const root=document.scrollingElement||document.documentElement;
     if(window.scrollY>2||root.scrollTop>2)return false;
-    for(let node=el;node&&node!==document.body;node=node.parentElement){
+    for(let node=target;node&&node!==document.body;node=node.parentElement){
       if(node.scrollTop>2)return false;
     }
     return true;
   }
-  function allowedTarget(el){
-    if(!el||typeof el.closest!=="function")return false;
-    if(el.closest("input,textarea,select,button,a,[contenteditable=true],"+
-       ".server-rail,.rail-folder-wrap,.channel-messages,.channel-overlay,"+
-       ".user-dock,[role=dialog],"+
-       ".cmd-modal,.add-modal"))return false;
-    return scrollTop(el);
+  function eligible(target){
+    if(!target?.closest||!$(".sphere-app")||blocked())return false;
+    if(target.closest("input,textarea,select,[contenteditable=true],"+
+      ".server-rail,.rail-folder-wrap,.user-dock,.cmd-modal,.add-modal,"+
+      "#csm-server-menu,.channel-composer,.channel-compose-wrap,[role=dialog]"))return false;
+    // Les noms de salons sont des liens : on doit aussi pouvoir tirer dessus.
+    // L'interaction normale d'un lien est conservée si le mouvement reste court.
+    return topOfScroll(target);
   }
-  function badge(){
+  function chip(){
     if(indicator)return indicator;
-    const element=document.createElement("div");
-    element.id="cmd-pull-refresh-indicator";
-    element.setAttribute("role","status");
-    element.setAttribute("aria-live","polite");
-    element.textContent="↓ Glisse pour actualiser";
-    document.body.appendChild(element);
-    indicator=element;
-    return element;
+    indicator=document.createElement("div");
+    indicator.id="cmd-pull-refresh-indicator";
+    indicator.setAttribute("role","status");
+    indicator.setAttribute("aria-live","polite");
+    indicator.textContent="↓ Tirer pour actualiser";
+    document.body.appendChild(indicator);
+    return indicator;
   }
-  function label(value,ready){
-    const el=badge();
-    el.textContent=value;
+  function show(message,ready,shift=0){
+    const el=chip();
+    el.textContent=message;
     el.classList.add("visible");
-    el.classList.toggle("ready",Boolean(ready));
+    el.classList.toggle("ready",!!ready);
+    el.style.setProperty("--pull-distance",Math.min(52,shift*.35)+"px");
   }
   function hide(){
-    if(!indicator)return;
-    indicator.classList.remove("visible","ready","loading");
+    if(indicator){
+      indicator.classList.remove("visible","ready","loading");
+      indicator.style.setProperty("--pull-distance","0px");
+    }
   }
-  async function refresh(){
+  async function update(){
     if(busy)return;
     busy=true;
-    label("↻ Actualisation en cours…",true);
-    badge().classList.add("loading");
+    show("↻ Actualisation…",true,50);
+    chip().classList.add("loading");
     try{
-      if(typeof window.refreshEverything==="function"){
-        const ok=await window.refreshEverything();
-        if(ok===false)throw new Error("Chargement des données impossible");
-      }else{
-        const btn=document.querySelector("#refresh");
-        if(btn&&!btn.disabled){
-          btn.click();
-          await new Promise(resolve=>setTimeout(resolve,950));
-        }else{
-          throw new Error("Actualisation indisponible");
-        }
+      let result;
+      if($("#channelOverlay.on")&&typeof window.cmdSphereRefreshCurrentChannel==="function"){
+        result=await window.cmdSphereRefreshCurrentChannel();
+      }else if(typeof window.refreshEverything==="function"){
+        result=await window.refreshEverything();
+      }else {
+        // Les pages autres que le tableau de bord utilisent le rechargement natif.
+        location.reload();
+        return;
       }
-      label("✓ CMD Sphere actualisé",true);
+      if(result===false)throw new Error("Actualisation impossible");
+      show("✓ Actualisé",true,40);
     }catch(err){
-      label("Impossible d’actualiser : "+(err?.message||"erreur"),false);
+      show("Échec de l’actualisation : "+(err?.message||"erreur"),false,40);
     }finally{
       busy=false;
-      window.setTimeout(hide,800);
+      setTimeout(hide,1200);
     }
   }
   document.addEventListener("touchstart",event=>{
-    active=false;distance=0;
-    if(!touchPhone.matches||busy||!inDashboard()||blocked()||event.touches.length!==1)return;
-    if(!allowedTarget(event.target))return;
-    startingY=event.touches[0].clientY;
-    startingX=event.touches[0].clientX;
-    active=true;
+    tracking=false;pulled=0;
+    if(!phone.matches||busy||event.touches.length!==1||!eligible(event.target))return;
+    startX=event.touches[0].clientX;
+    startY=event.touches[0].clientY;
+    tracking=true;
   },{passive:true});
   document.addEventListener("touchmove",event=>{
-    if(!active||busy||event.touches.length!==1)return;
-    const y=event.touches[0].clientY-startingY;
-    const x=event.touches[0].clientX-startingX;
-    if(y<0||Math.abs(x)>Math.abs(y)*0.8){active=false;hide();return}
-    if(y<12)return;
-    if(!scrollTop(event.target)){active=false;hide();return}
+    if(!tracking||busy||event.touches.length!==1)return;
+    const dy=event.touches[0].clientY-startY;
+    const dx=event.touches[0].clientX-startX;
+    if(dy<0||Math.abs(dx)>Math.abs(dy)*.8){tracking=false;hide();return}
+    if(dy<8)return;
+    if(!topOfScroll(event.target)){tracking=false;hide();return}
     if(event.cancelable)event.preventDefault();
-    distance=Math.min(160,y);
-    label(distance>=threshold?"↑ Relâche pour actualiser":"↓ Glisse pour actualiser",distance>=threshold);
-    badge().style.setProperty("--pull-distance",Math.min(50,distance*.25)+"px");
+    pulled=Math.min(180,dy);
+    show(pulled>=threshold?"↑ Relâcher pour actualiser":"↓ Tirer pour actualiser",pulled>=threshold,pulled);
   },{passive:false});
   document.addEventListener("touchend",()=>{
-    if(!active)return;
-    const shouldRefresh=distance>=threshold;
-    active=false;distance=0;
-    if(shouldRefresh)refresh();else hide();
+    if(!tracking)return;
+    const ready=pulled>=threshold;
+    tracking=false;pulled=0;
+    if(ready)update();else hide();
   },{passive:true});
-  document.addEventListener("touchcancel",()=>{active=false;distance=0;hide()},{passive:true});
-  window.addEventListener("resize",()=>{if(!touchPhone.matches){active=false;hide()}});
+  document.addEventListener("touchcancel",()=>{tracking=false;pulled=0;hide()},{passive:true});
+  window.addEventListener("resize",()=>{if(!phone.matches){tracking=false;hide()}});
 })();
