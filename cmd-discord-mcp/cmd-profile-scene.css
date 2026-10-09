@@ -265,3 +265,22 @@
  }
 }
 @keyframes cmdNeonForestGlow{from{opacity:.65}to{opacity:1}}
+
+/* Photographic/transparent subject cutouts, with graceful illustrated fallback. */
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson .cmd-scene-photo-preview,
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet .cmd-scene-photo-preview{
+ display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
+ background:transparent!important;
+ filter:drop-shadow(0 8px 11px #0007);
+}
+#cmdSceneWrap .cmd-scene-photo-person img,
+#cmdSceneWrap .cmd-scene-photo-pet img{
+ display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;
+ filter:drop-shadow(0 7px 12px #0008);
+}
+#cmdSceneWrap .cmd-scene-photo-person{width:clamp(138px,36%,285px);top:0!important;height:100%!important;}
+#cmdSceneWrap .cmd-scene-photo-pet{width:clamp(90px,22%,160px)!important;height:45%!important;bottom:9%!important}
+#cmdSceneSheet .cmd-scene-illustration-reset{display:block;width:100%;min-height:42px;padding:10px 15px;margin:13px 0;background:#25252b;border:1px solid #ffffff37;border-radius:12px;color:#f4eaf8;font:750 13px system-ui;cursor:pointer}
+#cmdSceneSheet .cmd-scene-section-intro{margin:-7px 0 16px;color:#b9b9c3;font:450 13px/1.45 system-ui}
+#cmdSceneSheet #cmdSceneOptions .cmd-scene-file{font:750 13px/1.4 system-ui}
+#cmdSceneSheet #cmdSceneOptions .cmd-scene-file input{max-width:100%;font:400 12px system-ui}
