@@ -39,7 +39,7 @@ function createCanvas(mount,kind){
  const rim=new THREE.DirectionalLight(0x8974fe,2.2);rim.position.set(3.5,4.2,-2);scene.add(rim);
  const fill=new THREE.PointLight(0xd941ef,19,11);fill.position.set(3,1,2.2);scene.add(fill);
  const base=new THREE.Group();scene.add(base);
- const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",token:0,petToken:0,angle:0,last:performance.now(),lastDraw:0,running:false,kind,requested:false};
+ const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",lookKey:"",poseKey:"",activeAnimation:null,sourceAnimations:[],personMixer:null,petMixer:null,token:0,petToken:0,angle:0,last:performance.now(),lastDraw:0,running:false,kind,requested:false};
  let pointer=null;
  wrapper.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointer={x:e.clientX,id:e.pointerId};wrapper.setPointerCapture?.(e.pointerId)});
  wrapper.addEventListener("pointermove",e=>{if(!pointer||e.pointerId!==pointer.id)return;frame.angle+=(e.clientX-pointer.x)*.008;pointer.x=e.clientX});
@@ -88,10 +88,20 @@ function applyOutfit(group,color,look){
    const name=(String(mat.name||"")+" "+String(obj.name||"")).toLowerCase();
    if(/skin|head|face|hair|eye|teeth|mouth|hand|finger|neck/.test(name))return mat;
    if(!/shirt|coat|jacket|uniform|armor|body|suit|cloth|top|vest|fabric|trouser|pant|pants/.test(name))return mat;
-   const m=mat.clone();m.color.lerp(tint,look==="vivid"?.4:.24);return m;
+   const m=mat.userData?.cmdProfileMaterial?mat:mat.clone();
+   if(!m.userData.cmdProfileMaterial){m.userData.cmdProfileMaterial=true;m.userData.cmdOriginalColor=m.color.getHex()}
+   m.color.setHex(m.userData.cmdOriginalColor).lerp(tint,.38);return m;
   });
   obj.material=Array.isArray(obj.material)?replacements:replacements[0];
  });
+}
+function setPose(frame,state){
+ if(!frame.personMixer||!frame.sourceAnimations.length)return;
+ const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|tpose/i;
+ const clip=frame.sourceAnimations.find(x=>desired.test(x.name))||frame.sourceAnimations.find(x=>/idle|tpose/i.test(x.name))||frame.sourceAnimations[0];
+ if(frame.activeAnimation===clip.name)return;
+ frame.personMixer.stopAllAction();frame.personMixer.clipAction(clip).reset().fadeIn(.23).play();
+ frame.activeAnimation=clip.name;
 }
 function setNotice(frame,message){
  const el=frame.wrapper.querySelector(".cmd-real-3d-loading");if(el){el.hidden=!message;if(message)el.textContent=message}
@@ -109,19 +119,17 @@ async function setPerson(frame,state){
   cloned.rotation.y=.0;
   applyOutfit(cloned,state.topColor,state.top);
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
-  frame.mixers=[];
-  if(data.animations?.length){
-   const mixer=new THREE.AnimationMixer(cloned);
-   const clip=data.animations.find(x=>/idle/i.test(x.name))||data.animations.find(x=>/walk/i.test(x.name));
-   if(clip){mixer.clipAction(clip).play();frame.mixers.push(mixer)}
-  }
+  frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
+  frame.lookKey="";frame.poseKey="";frame.sourceAnimations=data.animations||[];
+  frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
+  if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
   frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
  }catch(e){console.warn("[CMD 3D avatar]",e);setNotice(frame,"Modèle indisponible. Utilise « Importer mon modèle 3D » ou actualise.")}
 }
 async function setPet(frame,state){
- const id=state.petModel==="custom"?"customPet":state.pet==="fox"?"fox":null;
+ const id=state.pet==="none"?null:state.petModel==="custom"?"customPet":state.pet==="fox"?"fox":null;
  if(!id){
-  if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}frame.petKey="";frame.petToken++;
+  if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}if(frame.petMixer){frame.mixers=frame.mixers.filter(x=>x!==frame.petMixer);frame.petMixer=null}frame.petKey="";frame.petToken++;
   frame.wrapper.dataset.pet3d="off";return;
  }
  if(frame.petKey===id&&frame.pet)return;
@@ -129,11 +137,12 @@ async function setPet(frame,state){
  try{
   const data=await loadGLB(modelUrls[id]);if(frame.petToken!==ticket)return;
   if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}
+  if(frame.petMixer){frame.mixers=frame.mixers.filter(x=>x!==frame.petMixer);frame.petMixer=null}
   const cloned=cloneSkinned(data.scene);normalize(cloned,.84,1.18,.26);cloned.rotation.y=-.35;
   frame.base.add(cloned);frame.pet=cloned;frame.petKey=id;frame.wrapper.dataset.pet3d="on";
   if(data.animations?.length){
    const mixer=new THREE.AnimationMixer(cloned);const clip=data.animations.find(x=>/survey|idle/i.test(x.name))||data.animations[0];
-   mixer.clipAction(clip).play();frame.mixers.push(mixer);
+   mixer.clipAction(clip).play();frame.petMixer=mixer;frame.mixers.push(mixer);
   }
  }catch(e){console.warn("[CMD 3D pet]",e);frame.wrapper.dataset.pet3d="off"}
 }
@@ -142,6 +151,8 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
+ if(frame.person){const lookKey=String(state.topColor||"")+"-"+String(state.top||"");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);frame.lookKey=lookKey}
+ if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
 function snapshot(){
