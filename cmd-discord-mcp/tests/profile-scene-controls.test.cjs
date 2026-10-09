@@ -101,3 +101,31 @@ test("CMD Sphere renders and selects each of the 68 distinct avatars, including 
   assert.equal(area.querySelectorAll("[data-imported-avatar]").length,68);
  }
 });
+
+
+test("CMD Sphere scene API saves the first and last imported avatar in 2D without resetting it to 3D",async()=>{
+ const {handleCmdProfileScene}=await import("../cmd-profile-scene-api.js");
+ for(const index of [0,67]){
+  let storedScene=null;
+  const pool={async query(sql,args){
+   if(sql.includes("UPDATE cmd_global_profiles SET cmd_avatar_scene="))storedScene=JSON.parse(args[1]);
+   return {rows:[]};
+  }};
+  const req={
+   method:"POST",
+   async *[Symbol.asyncIterator](){
+    yield Buffer.from(JSON.stringify({scene:{scene:"forest",avatarPreset:"reference-avatar-"+index,avatarStyle:"2d"}}));
+   }
+  };
+  const res={
+   status:0,body:"",writeHead(code){this.status=code;return this},
+   end(value){this.body=String(value);return this}
+  };
+  const handled=await handleCmdProfileScene(req,res,new URL("https://cmd-sphere.up.railway.app/api/profile/scene"),{pool,auth:{user:{id:"test-user"}}});
+  assert.equal(handled,true);
+  assert.equal(res.status,200,res.body);
+  assert.equal(storedScene?.avatarPreset,"reference-avatar-"+index);
+  assert.equal(storedScene?.avatarStyle,"2d");
+  assert.equal(JSON.parse(res.body).scene.avatarPreset,"reference-avatar-"+index);
+ }
+});
