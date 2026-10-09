@@ -115,6 +115,27 @@ function applyAppearance(group,state){
   node.material=Array.isArray(node.material)?node.material.map(map):map(node.material);
  });
 }
+function applyAccessory(frame,state){
+ if(frame.accessoryMesh){frame.base.remove(frame.accessoryMesh);frame.accessoryMesh=null}
+ const choice=state.accessory;
+ if(!frame.person||!["glasses","sunglasses","cap","hat","crown"].includes(choice))return;
+ const bounds=new THREE.Box3().setFromObject(frame.person),size=new THREE.Vector3();bounds.getSize(size);
+ const headY=bounds.max.y-size.y*.115;
+ const group=new THREE.Group();
+ const dark=new THREE.MeshStandardMaterial({color:choice==="glasses"?0xb8d7ef:0x252633,metalness:.15,roughness:.3,transparent:true,opacity:.86});
+ const frameMat=new THREE.MeshStandardMaterial({color:0x282332,metalness:.35,roughness:.4});
+ if(choice==="glasses"||choice==="sunglasses"){
+  for(const x of [-.14,.14]){const lens=new THREE.Mesh(new THREE.BoxGeometry(.235,.135,.025),dark);lens.position.set(x,0,.01);group.add(lens)}
+  const bridge=new THREE.Mesh(new THREE.BoxGeometry(.08,.025,.035),frameMat);bridge.position.z=.02;group.add(bridge);
+  group.position.set(0,headY-.045,bounds.max.z+.045);
+ }else{
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(choice==="crown"?.17:.22,.21,choice==="crown"?.19:.13,20),new THREE.MeshStandardMaterial({color:choice==="crown"?0xe3bb63:0x49405f,roughness:.8}));
+  group.add(hat);
+  if(choice!=="crown"){const brim=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.018,24),hat.material);brim.position.y=-.07;group.add(brim)}
+  group.position.set(0,headY+.18,0);
+ }
+ frame.base.add(group);frame.accessoryMesh=group;
+}
 function setPose(frame,state){
  if(!frame.personMixer||!frame.sourceAnimations.length)return;
  const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|breath|stand|relax/i;
@@ -140,6 +161,7 @@ async function setPerson(frame,state){
   applyOutfit(cloned,state.topColor,state.top);
   applyAppearance(cloned,state);
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
+  applyAccessory(frame,state);
   frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
   frame.lookKey="";frame.poseKey="";frame.sourceAnimations=data.animations||[];
   frame.activeAnimation="";frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
@@ -174,7 +196,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state);applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
