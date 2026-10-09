@@ -5,7 +5,7 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.quer
 const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["story","📱 Story"],["gif","✨ GIF"],["poster","🪧 Affiche"]];
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
-let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewAudio=null,mountTimer=null;
+let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
 const state={mode:"video",theme:"epic",format:"9:16",effect:"zoom",transition:"fade",filter:"natural",duration:12,music:"electro",volume:40,headline:"Rejoins notre serveur !",subtitle:"Une communauté t'attend",emoji:"🚀",title:"Publicité de mon serveur",guildId:""};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const note=t=>{const n=$("#cmdStudioNotice");if(n)n.textContent=String(t||"")};
@@ -36,7 +36,7 @@ function open(){
   field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
  }
  $("#cmdStudioSaveDraft").onclick=saveDraft;$("#cmdStudioLoadDraft").onclick=loadDraft;
- $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=exportVideo;$("#cmdStudioPublish").onclick=publish;
+ $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
  document.addEventListener("keydown",onEscape);
  loadServers();resize();render(0);
 }
@@ -48,6 +48,7 @@ function choose(btn){
  if(key==="mode"){if(value==="story")state.format="9:16";else if(value==="poster")state.format="1:1";else if(value==="video")state.format="9:16";else if(value==="gif")state.duration=6;
   $("#cmdStudioDuration").value=state.duration;$("#cmdStudioDurLabel").textContent=state.duration+" s";$$("[data-studio-format]",root).forEach(b=>b.classList.toggle("selected",b.dataset.studioFormat===state.format))}
  if(key==="format"||key==="mode")resize();
+ const exp=$("#cmdStudioExport");if(exp)exp.textContent=state.mode==="gif"?"✨ Exporter GIF (sans musique)":"🎬 Exporter avec musique";
  render(0);
 }
 function close(){
@@ -144,7 +145,8 @@ function stop(){
  playing=false;cancelAnimationFrame(raf);raf=0;
  if($("#cmdStudioPlay"))$("#cmdStudioPlay").textContent="▶ Prévisualiser";
  for(const c of clips)if(c.video)c.element.pause();
- if(previewAudio){previewAudio.pause();previewAudio=null}
+ if(previewAudio){previewAudio.pause();URL.revokeObjectURL(previewAudio.src);previewAudio=null}
+ if(previewCtx){void previewCtx.close().catch(()=>{});previewCtx=null}
 }
 function playFrame(){
  if(!playing)return;
@@ -157,6 +159,7 @@ function togglePreview(){
  stop();playing=true;playStart=performance.now();$("#cmdStudioPlay").textContent="⏸ Arrêter";
  for(const c of clips)if(c.video){try{c.element.currentTime=0;void c.element.play().catch(()=>{})}catch{}}
  if(musicFile&&state.music==="file"){previewAudio=new Audio(URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;previewAudio.play().catch(()=>{})}
+ else if(state.music!=="none"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
  playFrame();
 }
 function blobDownload(blob,filename){
@@ -177,6 +180,17 @@ function synthMusic(audio,dest,total){
   const amp=.045*vol;gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(amp,when+.025);gain.gain.exponentialRampToValueAtTime(.0001,when+.29);
   osc.connect(gain);gain.connect(dest);osc.start(when);osc.stop(when+.31);
  }
+}
+async function exportGif(){
+ if(!window.CMDEncodeAnimatedGif){note("Encodeur GIF non disponible. Actualise CMD Sphere.");return}
+ stop();const btn=$("#cmdStudioExport");btn.disabled=true;note("Création du GIF animé en cours…");
+ try{
+  const ratio=canvas.width/canvas.height,w=ratio>1?480:ratio===1?380:300,h=Math.round(w/ratio);
+  const blob=await window.CMDEncodeAnimatedGif({source:canvas,draw:async t=>render(t),duration:state.duration,fps:7,width:w,height:h,onProgress:(done,total)=>{if(done%5===0||done===total)note("Animation "+done+"/"+total+" images…")}});
+  if(!blob.size)throw Error("GIF vide");recorded=blob;$("#cmdStudioPublish").disabled=blob.size>60*1024*1024;
+  blobDownload(blob,"CMD-Sphere-Publicite.gif");note("GIF animé exporté : "+(blob.size/1048576).toFixed(1)+" Mo. Un GIF ne peut pas contenir de musique.");
+ }catch(error){note("Export GIF impossible : "+(error.message||error))}
+ finally{btn.disabled=false}
 }
 async function exportVideo(){
  if($("#cmdStudioExport").disabled)return;stop();note("Préparation de la vidéo et de la musique…");
