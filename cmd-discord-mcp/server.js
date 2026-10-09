@@ -165,7 +165,7 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
-    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261009avatar2"></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261009avatar2" defer></script></body>');
+    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261009neonprofile5"></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261009neonprofile5" defer></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
