@@ -114,3 +114,12 @@
 #channelEmojiSheet .cmd-media-fav[aria-pressed="true"]{color:#ff679b}
 #channelEmojiSheet .cmd-media-credit{display:block;min-width:0;padding:4px 2px 2px;color:#d5b6ee;text-align:center;font:500 10px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #channelEmojiSheet .cmd-media-category:focus-visible,#channelEmojiSheet .cmd-media-fav:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
+
+/* GIFs et autocollants : vraies vignettes animées et affichage adapté au mobile. */
+#channelEmojiSheet .cmd-emoji-grid-v2.cmd-media-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:stretch}
+#channelEmojiSheet .cmd-media-tile{aspect-ratio:1.1;min-height:80px;border-radius:10px;background:#1f142a;border:1px solid #ffffff1c;padding:2px}
+#channelEmojiSheet .cmd-media-tile img{height:100%;width:100%;max-height:none;max-width:none;object-fit:contain;border-radius:8px}
+#channelMessages img.cmd-chat-gif{display:block;width:min(340px,85%);height:auto;max-height:340px;object-fit:contain;border-radius:12px;margin:8px 0}
+#channelMessages img.cmd-chat-sticker{display:block;width:min(180px,70vw);max-height:180px;object-fit:contain;margin:7px 0;background:transparent}
+#channelMessages .cmd-chat-gif-link{display:inline-block;max-width:100%}
+@media(max-width:400px){#channelEmojiSheet .cmd-media-tile{min-height:65px}}
