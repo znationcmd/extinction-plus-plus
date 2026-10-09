@@ -6,6 +6,7 @@ import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativ
 import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
 import {freeMessageTranslation} from "./cmd-translation.js";
 import crypto from "node:crypto";
+import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js";
 import {initCmdEmailDb,cmdEmailRoute,sendCmdAccountMail,attachFounderEmail,normalizeEmail} from "./cmd-account-email.js";
 import {initDeveloperDb,developerRoute} from "./cmd-developer-api.js";
 import {initCmdOAuthDb,handleCmdOAuth} from "./cmd-oauth-identity.js";
@@ -3908,6 +3909,7 @@ const httpServer=createServer(async(req,res)=>{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
     if(await cmdEmailRoute(req,res,url,{pool,readBody:readFormBodyJson,resetPassword:async(id,pass)=>{const pw=passwordParts(pass);await pool.query("UPDATE cmd_accounts SET password_salt=$1,password_hash=$2,updated_at=NOW() WHERE id=$3",[pw.salt,pw.hash,id]);}}))return;
+    if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:dashboardAuth(req)}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
     if(req.method==="GET"&&url.pathname==="/cmd-invite-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public, max-age=300"});res.end(readFileSync("./cmd-invite-ui.js","utf8"));return}
@@ -4799,7 +4801,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
