@@ -10,6 +10,7 @@ import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js"
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
+import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {handleCmdStudioMusic} from "./cmd-studio-music.js";
 import {seedCmdPhotoEmojis} from "./cmd-emoji-photo-seed.js";
 import {initCmdBubbleColors,cmdBubbleColorsRoute} from "./cmd-bubble-colors.js";
@@ -165,7 +166,7 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
-    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261009neonprofile5"></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261009neonprofile5" defer></script></body>');
+    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261009real3d8"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261009real3d8" defer></script><script type="module" src="/cmd-profile-3d.js?v=20261009real3d8"></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
@@ -3921,6 +3922,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCmdGifSearch(req,res,url,{auth:emojiAuth}))return;
     if(await handleCmdPromos(req,res,url,{pool,auth:emojiAuth,baseUrl}))return;
     if(await handleCmdProfileScene(req,res,url,{pool,auth:emojiAuth}))return;
+    if(await handleCmdProfile3D(req,res,url,{pool,auth:emojiAuth}))return;
     if(await handleCmdStudioMusic(req,res,url,{auth:emojiAuth}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
@@ -4687,6 +4689,9 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":css?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL(css?"./cmd-chat-polish.css":"./cmd-chat-polish.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-profile-3d.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-profile-3d.js",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&(url.pathname==="/cmd-promo-studio.js"||url.pathname==="/cmd-promo-studio.css"||url.pathname==="/cmd-gif-encoder.js"||url.pathname==="/cmd-profile-scene.js"||url.pathname==="/cmd-profile-scene.css")){
       const css=url.pathname.endsWith(".css");res.writeHead(200,{"content-type":css?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL(url.pathname.startsWith("/cmd-profile-scene.")?(css?"./cmd-profile-scene.css":"./cmd-profile-scene.js"):css?"./cmd-promo-studio.css":url.pathname==="/cmd-gif-encoder.js"?"./cmd-gif-encoder.js":"./cmd-promo-studio.js",import.meta.url),"utf8"));return;
@@ -4825,7 +4830,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
