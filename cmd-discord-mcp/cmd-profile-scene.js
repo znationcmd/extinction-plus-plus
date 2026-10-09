@@ -255,7 +255,7 @@ function lookGrid(){
 let avatarPart="person";
 function groomCatalog(title,key,choices){
  return '<section class="cmd-groom-section"><h3>'+title+'</h3><p>Appuie sur un style pour l’essayer immédiatement sur ton avatar.</p><div class="cmd-groom-grid">'+choices.map(([id,label])=>
- '<button type="button" data-groom-key="'+key+'" data-groom-style="'+id+'" class="cmd-groom-card '+(state[key]===id?'selected':'')+'" aria-pressed="'+(state[key]===id)+'" aria-label="'+escape(label)+'"><span class="cmd-groom-thumb"><span class="cmd-groom-loading">3D</span></span><span>'+escape(label)+'</span></button>'
+ '<button type="button" data-groom-key="'+key+'" data-groom-style="'+id+'" class="cmd-groom-card '+(state[key]===id?'selected':'')+'" aria-pressed="'+(state[key]===id)+'" aria-label="'+escape(label)+'"><span class="cmd-groom-thumb">'+sheetArt(key,choices.findIndex(x=>x[0]===id))+'</span><span>'+escape(label)+'</span></button>'
  ).join('')+'</div></section>';
 }
 function avatarEditor(){
@@ -264,7 +264,7 @@ function avatarEditor(){
  let inner='';
  if(avatarPart==="person"){
   inner='<h2>Personnalise ton avatar CMD Sphere</h2><p class="cmd-scene-section-intro">Personnages originaux stylisés en 3D · touche un modèle puis change ses traits et sa tenue.</p>'+
-  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><span class="cmd-groom-loading">3D</span></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
+  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo">'+sheetArt('avatar',avatarPresets.findIndex(x=>x.id===p.id))+'</span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
   field("Personnage","gender",genders)+field("Morphologie","bodyType",bodyTypes)+swatches("Teint de peau","skin",skins);
  }else if(avatarPart==="hair"){
   inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors);
