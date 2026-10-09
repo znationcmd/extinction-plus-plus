@@ -344,8 +344,8 @@ function renderSheet(tab){
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
- $("[data-imported-avatar]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarPreset="reference-avatar-"+button.dataset.importedAvatar;state.avatarStyle="2d";renderSheet("avatar");refreshEditor()}));
- $("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
+ $$("[data-imported-avatar]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarPreset="reference-avatar-"+button.dataset.importedAvatar;state.avatarStyle="2d";renderSheet("avatar");refreshEditor()}));
+ $$("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
   const p=avatarPresets.find(p=>p.id===button.dataset.avatarPreset);if(!p)return;
   Object.assign(state,{avatarPreset:p.id,avatarModel:p.model,gender:p.gender,avatarStyle:"3d",top:p.top,bottom:p.bottom,topColor:p.topColor,skin:p.skin,hair:p.hair,hairColor:p.hairColor,beard:p.beard||"none",beardColor:p.beardColor||p.hairColor,accessory:"none"});
   renderSheet("avatar");refreshEditor();
