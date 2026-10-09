@@ -1,6 +1,11 @@
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
 const SCENES=new Set(["beach","seaside","forest","neonforest","waterfall","city","night","space","mountains","chalet","crystal","custom","none"]);
-const HAIR=new Set(["short","long","curly","bob","shaved","ponytail"]);
+const HAIR=new Set(["short","long","curly","bob","shaved","ponytail","buzz","fade","crop","undercut","quiff","swept","wavy","afro","braids","locs"]);
+const BEARDS=new Set(["none","stubble","short","trimmed","full","long","goatee","mustache"]);
+const FACE_SHAPES=new Set(["oval","round","square","heart"]);
+const BROW_STYLES=new Set(["natural","thick","thin","arched"]);
+const EYE_SHAPES=new Set(["normal","wide","almond"]);
+const BEARD_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const TOPS=new Set(["hoodie","tshirt","jacket","shirt","polo","sweater","coat","dress","sport","suit","armor"]);
 const BOTTOMS=new Set(["jeans","dark","shorts","skirt","cargo","formal"]);
 const SHOES=new Set(["sneakers","boots","sandals","formal"]);
@@ -21,11 +26,11 @@ const HOMES=new Set(["none","cottage","house","villa","apartment","castle","cabi
 const COLORS=new Set(["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"]);
 const HAIR_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const OUTFIT_COLORS=new Set(["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"]);
-const defaultConfig=()=>({scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
+const defaultConfig=()=>({scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
 const clean=(v,a,def)=>a.has(String(v||""))?String(v):def;
 function config(input){
  const a=input&&typeof input==="object"?input:{},d=defaultConfig(),result={...d};
- for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
+ for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,beard:BEARDS,beardColor:BEARD_COLORS,faceShape:FACE_SHAPES,browStyle:BROW_STYLES,eyeShape:EYE_SHAPES,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
  result.label=String(a.label||"").trim().slice(0,42);
  result.petName=String(a.petName||"").trim().slice(0,40);
  result.hideHome=a.hideHome!==false;
