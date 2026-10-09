@@ -69,6 +69,38 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
    const q=await pool.query("SELECT e.id,e.creator_user_id,e.scope,e.guild_id,e.name,e.mime_type,e.animated,e.size_bytes,g.name AS server_name FROM cmd_sphere_emojis e LEFT JOIN cmd_native_guilds g ON g.id=e.guild_id WHERE e.scope='community' OR (e.scope='personal' AND e.creator_user_id=$1) OR (e.scope='server' AND ($3::boolean OR e.guild_id=$2)) ORDER BY e.created_at DESC LIMIT 500 OFFSET $4",[uid,gid||null,all,page]);
    reply(res,200,{emojis:q.rows.map(r=>item(r,uid,m)),role:m,founder,hasMore:q.rows.length===500,nextOffset:page+q.rows.length});return true;
   }
+  if(req.method==="POST"&&url.pathname==="/api/cmd-emojis/bulk"){
+   if(!founder)throw fail("Importation groupée réservée au fondateur.",403);
+   const chunks=[];let total=0;
+   for await(const chunk of req){total+=chunk.length;if(total>12*1024*1024)throw fail("Lot trop volumineux.",413);chunks.push(chunk)}
+   let payload;try{payload=JSON.parse(Buffer.concat(chunks).toString("utf8"))}catch{throw fail("Pack JSON incorrect.")}
+   const entries=payload.items;
+   if(!Array.isArray(entries)||!entries.length||entries.length>60)throw fail("Envoie de 1 à 60 emojis par lot.");
+   const names=new Set(),rows=[];
+   for(const entry of entries){
+    const name=String(entry.name||"").trim();
+    if(!/^[\p{L}\p{N}_-]{2,32}$/u.test(name))throw fail("Nom d'emoji invalide: "+name.slice(0,40));
+    if(names.has(name))throw fail("Deux emojis ont le même nom dans le lot.");names.add(name);
+    const match=/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(entry.dataUrl||""));
+    if(!match)throw fail("Image incorrecte pour "+name);
+    const bytes=Buffer.from(match[2],"base64");
+    if(!bytes.length||bytes.length>MAX_BYTES)throw fail("Emoji trop volumineux: "+name);
+    const type=sniff(bytes);if(type.mime!=="image/"+match[1])throw fail("Mauvais format: "+name);
+    const [w,h]=bounds(bytes,type.mime);if(w>1024||h>1024)throw fail("Dimensions trop grandes: "+name);
+    rows.push({name,bytes,mime:type.mime,animated:type.animated});
+   }
+   const values=[],segments=[];
+   for(let i=0;i<rows.length;i++){
+    const r=rows[i],ix=values.length;
+    values.push(crypto.randomUUID(),uid,r.name,r.mime,r.animated,r.bytes,r.bytes.length);
+    segments.push("($"+(ix+1)+",$"+(ix+2)+",$"+(ix+3)+",$"+(ix+4)+",$"+(ix+5)+",$"+(ix+6)+",$"+(ix+7)+")");
+   }
+   const query="INSERT INTO cmd_sphere_emojis(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,scope,guild_id) SELECT v.id::uuid,v.creator_user_id,v.name,v.mime_type,v.animated::boolean,v.bytes::bytea,v.size_bytes::integer,'community',NULL FROM (VALUES "+
+     segments.join(",")+
+     ") AS v(id,creator_user_id,name,mime_type,animated,bytes,size_bytes) WHERE NOT EXISTS (SELECT 1 FROM cmd_sphere_emojis prior WHERE prior.creator_user_id=v.creator_user_id AND prior.scope='community' AND prior.name=v.name) RETURNING id";
+   const result=await pool.query(query,values);
+   reply(res,201,{ok:true,created:result.rowCount,skipped:rows.length-result.rowCount,total:rows.length});return true;
+  }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis"){
    const data=await readUpload(req),scope=String(data.scope||"personal"),gid=scope==="server"?String(data.guildId||""):null;
    if(!["personal","server","community"].includes(scope))throw fail("Visibilité incorrecte");
