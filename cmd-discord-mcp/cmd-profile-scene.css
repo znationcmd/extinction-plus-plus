@@ -443,3 +443,27 @@
 #cmdSceneSheet .cmd-clothing-sections{min-width:0;display:block}
 #cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-group{margin:0 0 19px}
 #cmdSceneSheet .cmd-clothing-sections .cmd-scene-card-carousel{scroll-padding-left:12px}
+
+/* CMD Sphere 2026 immersive profile editor */
+#cmdSceneSheet .cmd-scene-sheet{border-radius:0;background:#050507}
+#cmdSceneSheet .cmd-scene-hero{height:clamp(360px,57dvh,610px);min-height:360px}
+#cmdSceneSheet .cmd-scene-float-header{padding-inline:18px}
+#cmdSceneSheet .cmd-scene-float-header #cmdScenePreviewSave{width:auto;min-width:110px;padding:0 17px;border-radius:999px;background:#fff;color:#15121b;font:800 13px system-ui}
+#cmdSceneSheet .cmd-scene-tabs{background:#060608;border:0;border-bottom:1px solid #ffffff20;gap:0;padding:8px 5px 10px}
+#cmdSceneSheet .cmd-scene-tabs button{background:transparent;border:0;border-radius:12px;color:#9d9da7;min-height:63px;padding:7px 2px}
+#cmdSceneSheet .cmd-scene-tabs button.selected{background:transparent;color:#fff}
+#cmdSceneSheet .cmd-scene-tabs button.selected:after{content:"";display:block;width:60%;height:3px;margin:7px auto -8px;border-radius:4px;background:#a77eff}
+#cmdSceneSheet .cmd-scene-tabs button small{font-size:10px;font-weight:700;line-height:1.25}
+#cmdSceneSheet #cmdSceneOptions{background:#050507;padding:22px 17px 34px;gap:18px}
+#cmdSceneSheet #cmdSceneOptions h2{font-size:21px;letter-spacing:-.025em;margin:0}
+#cmdSceneSheet .cmd-scene-section-intro{color:#a7a4b0;line-height:1.45;font-size:12px}
+#cmdSceneSheet .cmd-scene-catalog-card{background:#25252a;border-radius:15px;overflow:hidden}
+#cmdSceneSheet .cmd-scene-catalog-card.selected{outline:2px solid #fff;outline-offset:-2px}
+#cmdSceneSheet .cmd-scene-card-art svg{width:100%;height:100%;max-height:145px;object-fit:contain}
+#cmdSceneSheet .cmd-scene-footer{background:#08080b}
+@media(max-width:560px){
+ #cmdSceneSheet .cmd-scene-sheet{height:100dvh;max-height:100dvh}
+ #cmdSceneSheet .cmd-scene-hero{height:53dvh;min-height:315px}
+ #cmdSceneSheet .cmd-scene-tabs button small{font-size:9px}
+ #cmdSceneSheet #cmdSceneOptions{padding:19px 14px 34px}
+}
