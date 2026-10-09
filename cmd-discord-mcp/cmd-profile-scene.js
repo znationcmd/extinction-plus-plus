@@ -282,7 +282,7 @@ function screenshotCatalogue(category){
 function applyScreenshotCatalogue(){
  document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
 }
-function importedAvatarArt(i){return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-collection-212" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:800% 2700%;background-position:'+(i%8*100/7)+'% '+(Math.floor(i/8)*100/26)+'%"></span>'}
+function importedAvatarArt(i){const src=loadedSheets.get("avatar-collection-212");return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-collection-212" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:800% 2700%;background-position:'+(i%8*100/7)+'% '+(Math.floor(i/8)*100/26)+'%;'+(src?'background-image:url('+JSON.stringify(src)+');':'')+'"></span>'}
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Image originale · 2D</small></button>').join("")}
 function avatarEditor(){
  const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
@@ -359,11 +359,13 @@ function installStickerStyles(){
  css.textContent+="#cmdSceneSheet .cmd-pet-symbol{display:flex;width:100%;height:100%;min-height:85px;align-items:center;justify-content:center;font-size:clamp(45px,8vw,95px);background:transparent!important}";
  css.textContent+="#cmdSceneSheet .cmd-sticker-avatar-live{background:none!important;aspect-ratio:220/350;max-height:100%;overflow:visible}#cmdSceneSheet .cmd-bitmoji-silhouette{width:100%;height:100%;display:block;object-fit:contain}#cmdSceneSheet #cmdScenePreviewPet{background:transparent!important;display:flex;align-items:flex-end;justify-content:center}#cmdSceneSheet #cmdScenePreviewPet[hidden]{display:none!important}#cmdSceneSheet #cmdStickerObjects{background:transparent!important}";
  css.textContent+="#cmdSceneSheet .cmd-imported-avatar-art{background-color:transparent!important;filter:none!important}#cmdSceneSheet .cmd-imported-avatar-preview{width:100%;height:100%;display:block!important}#cmdSceneSheet .cmd-imported-avatar-choice .cmd-scene-model-photo{background:transparent!important}";
+ css.textContent+="#cmdSceneSheet .cmd-scene-hero .cmd-scene-preview{display:flex!important;align-items:flex-end!important;justify-content:center!important;z-index:30!important}#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPerson{display:flex!important;visibility:visible!important;opacity:1!important;z-index:31!important}#cmdSceneSheet .cmd-imported-avatar-preview .cmd-imported-avatar-art{display:block!important;width:100%!important;height:100%!important;opacity:1!important;visibility:visible!important}#cmdSceneSheet .cmd-real-3d-editor{display:none!important}";
  document.head.append(css);
 }
 function refreshEditor(){
  present();
  installStickerStyles();
+ if(!preview)preview=$("#cmdScenePreviewPerson");
  if(!preview)return;
  renderStickerPreview();
  return;
