@@ -135,8 +135,8 @@ function renderSheet(tab){
  area.innerHTML=contents(tab);
  if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
  if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
- $("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
+ $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
+ $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle=true3DPets.has(state.pet)?"3d":"photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
@@ -146,7 +146,7 @@ function renderSheet(tab){
  $("#cmdSceneAvatarIllustration")?.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier";refreshEditor()});
  $("#cmdScenePetIllustration")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
  $("#cmdScenePet3D")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
- $("[data-person-model]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=button.dataset.personModel;state.gender=state.avatarModel==="michelle"?"female":"male";refreshEditor()}));
+ $$("[data-person-model]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=button.dataset.personModel;state.gender=state.avatarModel==="michelle"?"female":"male";refreshEditor()}));
  $("#cmdSceneAvatarGLB")?.addEventListener("change",e=>upload3D(e,"avatar"));
  $("#cmdScenePetGLB")?.addEventListener("change",e=>upload3D(e,"pet"));
 }
