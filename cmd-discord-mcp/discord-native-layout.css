@@ -664,3 +664,21 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
  .sphere-app .cmd-dev-bot-shortcut{flex-direction:column;align-items:stretch;padding:9px}
  .sphere-app .cmd-dev-bot-shortcut .btn{width:100%;min-height:40px}
 }
+
+/* 2026-10-09 — CMD Sphere: salons en premier, actions dans le menu du serveur.
+   Les destinations et les écrans existants restent disponibles par le menu. */
+.sphere-app.cmd-native-selected .cmd-overview,
+.sphere-app.cmd-native-selected .cmd-server-head-actions,
+.sphere-app.cmd-native-selected .cmd-server-quick {display:none!important}
+.sphere-app.cmd-native-selected .cmd-server-heading {cursor:pointer;min-height:42px}
+.sphere-app.cmd-native-selected .cmd-server-heading strong::after {content:"⌄";font-size:16px;font-weight:700;color:#d4c7e5;margin-left:7px}
+.sphere-app.cmd-native-selected .cmd-server-settings {display:none!important}
+.sphere-app.cmd-native-selected .cmd-server-channels {padding-top:7px!important}
+.sphere-app.cmd-native-selected .cmd-server-head {padding-top:10px!important;padding-bottom:10px!important}
+.sphere-app.cmd-native-selected .cmd-server-search {margin-top:8px!important}
+#csm-server-menu .csm-server-menu-section {margin:10px 10px 3px;padding-top:12px;border-top:1px solid #ffffff22;color:#bdb5c9;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:750}
+#csm-server-menu .csm-server-menu-body a {border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:15px 11px;min-height:48px;width:100%;text-align:left;font-weight:750;border-radius:9px;text-decoration:none}
+#csm-server-menu .csm-server-menu-body a:hover,
+#csm-server-menu .csm-server-menu-body a:focus-visible,
+#csm-server-menu .csm-server-menu-body button:focus-visible {background:#ffffff16;outline:2px solid #b4a0f2;outline-offset:-2px}
+#csm-server-menu .csm-server-menu-body a span {margin-left:auto;color:#a6a0ae}
