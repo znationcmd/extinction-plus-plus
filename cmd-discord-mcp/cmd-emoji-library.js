@@ -1,11 +1,11 @@
 /* CMD Sphere emoji library: private, server and community; PNG/GIF/WebP/JPG. */
 import crypto from "node:crypto";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_BYTES=1024*1024;
+const MAX_BYTES=10*1024*1024; // 10 Mo par emoji, GIF ou autocollant
 function fail(message,status=400){const e=new Error(message);e.status=status;return e}
 function reply(res,status,body){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(body))}
 async function readUpload(req){
- const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>2*1024*1024)throw fail("Image trop volumineuse.",413);chunks.push(chunk)}
+ const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>15*1024*1024)throw fail("Image trop volumineuse (10 Mo maximum par fichier).",413);chunks.push(chunk)}
  try{return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}")}catch{throw fail("Données incorrectes.")}
 }
 function sniff(b){
@@ -35,11 +35,12 @@ async function role(pool,user,gid){
 }
 function item(r,uid,memberRole){
  return {id:r.id,name:r.name,scope:r.scope,guildId:r.guild_id,mime:r.mime_type,animated:r.animated,
- url:"/api/cmd-emojis/file/"+r.id,size:r.size_bytes,serverName:r.server_name||null,mine:String(r.creator_user_id)===String(uid),
+ url:"/api/cmd-emojis/file/"+r.id,kind:r.kind||"emoji",size:r.size_bytes,serverName:r.server_name||null,mine:String(r.creator_user_id)===String(uid),
  canDelete:String(r.creator_user_id)===String(uid)||(r.scope==="server"&&["owner","admin"].includes(memberRole))};
 }
 export async function initCmdEmojiLibrary(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_emojis (id UUID PRIMARY KEY, creator_user_id TEXT NOT NULL, scope TEXT NOT NULL CHECK(scope IN ('personal','server','community')), guild_id UUID REFERENCES cmd_native_guilds(id) ON DELETE CASCADE, name VARCHAR(48) NOT NULL, mime_type VARCHAR(30) NOT NULL, animated BOOLEAN NOT NULL DEFAULT FALSE, bytes BYTEA NOT NULL, size_bytes INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+ await pool.query("ALTER TABLE cmd_sphere_emojis ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'emoji'");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_emojis_scope_idx ON cmd_sphere_emojis(scope,guild_id,created_at DESC)");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_emojis_owner_idx ON cmd_sphere_emojis(creator_user_id,created_at DESC)");
 }
@@ -66,19 +67,20 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
    if(gid&&!m&&!founder)throw fail("Tu n'es pas membre de ce serveur.",403);
    const all=founder&&url.searchParams.get("all")==="1";
    const page=Math.max(0,Math.min(100000,Number.parseInt(url.searchParams.get("offset")||"0",10)||0));
-   const q=await pool.query("SELECT e.id,e.creator_user_id,e.scope,e.guild_id,e.name,e.mime_type,e.animated,e.size_bytes,g.name AS server_name FROM cmd_sphere_emojis e LEFT JOIN cmd_native_guilds g ON g.id=e.guild_id WHERE e.scope='community' OR (e.scope='personal' AND e.creator_user_id=$1) OR (e.scope='server' AND ($3::boolean OR e.guild_id=$2)) ORDER BY e.created_at DESC LIMIT 500 OFFSET $4",[uid,gid||null,all,page]);
+   const q=await pool.query("SELECT e.id,e.creator_user_id,e.scope,e.guild_id,e.name,e.mime_type,e.animated,e.size_bytes,e.kind,g.name AS server_name FROM cmd_sphere_emojis e LEFT JOIN cmd_native_guilds g ON g.id=e.guild_id WHERE e.scope='community' OR (e.scope='personal' AND e.creator_user_id=$1) OR (e.scope='server' AND ($3::boolean OR e.guild_id=$2)) ORDER BY e.created_at DESC LIMIT 500 OFFSET $4",[uid,gid||null,all,page]);
    reply(res,200,{emojis:q.rows.map(r=>item(r,uid,m)),role:m,founder,hasMore:q.rows.length===500,nextOffset:page+q.rows.length});return true;
   }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis/bulk"){
    if(!founder)throw fail("Importation groupée réservée au fondateur.",403);
    const chunks=[];let total=0;
-   for await(const chunk of req){total+=chunk.length;if(total>12*1024*1024)throw fail("Lot trop volumineux.",413);chunks.push(chunk)}
+   for await(const chunk of req){total+=chunk.length;if(total>20*1024*1024)throw fail("Lot trop volumineux.",413);chunks.push(chunk)}
    let payload;try{payload=JSON.parse(Buffer.concat(chunks).toString("utf8"))}catch{throw fail("Pack JSON incorrect.")}
    const entries=payload.items;
    if(!Array.isArray(entries)||!entries.length||entries.length>60)throw fail("Envoie de 1 à 60 emojis par lot.");
    const names=new Set(),rows=[];
    for(const entry of entries){
-    const name=String(entry.name||"").trim();
+    const name=String(entry.name||"").trim(),kind=String(entry.kind||"emoji");
+    if(!["emoji","gif","sticker"].includes(kind))throw fail("Catégorie inconnue: "+name);
     if(!/^[\p{L}\p{N}_-]{2,32}$/u.test(name))throw fail("Nom d'emoji invalide: "+name.slice(0,40));
     if(names.has(name))throw fail("Deux emojis ont le même nom dans le lot.");names.add(name);
     const match=/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(entry.dataUrl||""));
@@ -86,35 +88,38 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
     const bytes=Buffer.from(match[2],"base64");
     if(!bytes.length||bytes.length>MAX_BYTES)throw fail("Emoji trop volumineux: "+name);
     const type=sniff(bytes);if(type.mime!=="image/"+match[1])throw fail("Mauvais format: "+name);
+    if(kind==="gif"&&!type.animated)throw fail("Pour la catégorie GIF, choisis un GIF ou WebP réellement animé: "+name);
     const [w,h]=bounds(bytes,type.mime);if(w>1024||h>1024)throw fail("Dimensions trop grandes: "+name);
-    rows.push({name,bytes,mime:type.mime,animated:type.animated});
+    rows.push({name,bytes,mime:type.mime,animated:type.animated,kind});
    }
    const values=[],segments=[];
    for(let i=0;i<rows.length;i++){
     const r=rows[i],ix=values.length;
-    values.push(crypto.randomUUID(),uid,r.name,r.mime,r.animated,r.bytes,r.bytes.length);
-    segments.push("($"+(ix+1)+",$"+(ix+2)+",$"+(ix+3)+",$"+(ix+4)+",$"+(ix+5)+",$"+(ix+6)+",$"+(ix+7)+")");
+    values.push(crypto.randomUUID(),uid,r.name,r.mime,r.animated,r.bytes,r.bytes.length,r.kind);
+    segments.push("("+Array.from({length:8},(_,k)=>"$"+(ix+k+1)).join(",")+")");
    }
-   const query="INSERT INTO cmd_sphere_emojis(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,scope,guild_id) SELECT v.id::uuid,v.creator_user_id,v.name,v.mime_type,v.animated::boolean,v.bytes::bytea,v.size_bytes::integer,'community',NULL FROM (VALUES "+
+   const query="INSERT INTO cmd_sphere_emojis(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,kind,scope,guild_id) SELECT v.id::uuid,v.creator_user_id,v.name,v.mime_type,v.animated::boolean,v.bytes::bytea,v.size_bytes::integer,v.kind,'community',NULL FROM (VALUES "+
      segments.join(",")+
-     ") AS v(id,creator_user_id,name,mime_type,animated,bytes,size_bytes) WHERE NOT EXISTS (SELECT 1 FROM cmd_sphere_emojis prior WHERE prior.creator_user_id=v.creator_user_id AND prior.scope='community' AND prior.name=v.name) RETURNING id";
+     ") AS v(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,kind) WHERE NOT EXISTS (SELECT 1 FROM cmd_sphere_emojis prior WHERE prior.creator_user_id=v.creator_user_id AND prior.scope='community' AND prior.name=v.name AND prior.kind=v.kind) RETURNING id";
    const result=await pool.query(query,values);
    reply(res,201,{ok:true,created:result.rowCount,skipped:rows.length-result.rowCount,total:rows.length});return true;
   }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis"){
-   const data=await readUpload(req),scope=String(data.scope||"personal"),gid=scope==="server"?String(data.guildId||""):null;
+   const data=await readUpload(req),scope=String(data.scope||"personal"),kind=String(data.kind||"emoji"),gid=scope==="server"?String(data.guildId||""):null;
+   if(!["emoji","gif","sticker"].includes(kind))throw fail("Catégorie incorrecte.");
    if(!["personal","server","community"].includes(scope))throw fail("Visibilité incorrecte");
    const m=scope==="server"?await role(pool,uid,gid):null;
    if(scope==="server"&&!["owner","admin"].includes(m))throw fail("Seul un administrateur peut ajouter des emojis au serveur.",403);
    const name=String(data.name||"").trim();if(!/^[\p{L}\p{N}_-]{2,32}$/u.test(name))throw fail("Nom : 2 à 32 caractères, lettres, chiffres, tiret ou _.");
    const parsed=/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(data.dataUrl||""));
    if(!parsed)throw fail("Sélectionne un fichier PNG, JPG, GIF ou WebP.");
-   const bytes=Buffer.from(parsed[2],"base64");if(!bytes.length||bytes.length>MAX_BYTES)throw fail("1 Mo maximum par emoji.");
+   const bytes=Buffer.from(parsed[2],"base64");if(!bytes.length||bytes.length>MAX_BYTES)throw fail("10 Mo maximum par emoji, GIF ou autocollant.");
    const type=sniff(bytes);if(type.mime!=="image/"+parsed[1])throw fail("Le contenu et le format ne correspondent pas.");
+   if(kind==="gif"&&!type.animated)throw fail("Choisis une vraie animation GIF ou WebP pour la catégorie GIF.");
    const [w,h]=bounds(bytes,type.mime);if(w>1024||h>1024)throw fail("Dimensions maximales : 1024 × 1024 pixels.");
    const q=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_sphere_emojis WHERE scope=$1 AND (($1='server' AND guild_id=$2) OR ($1<>'server' AND creator_user_id=$3))",[scope,gid,uid]);
    const limit=founder?25000:(scope==="server"?250:100);if(Number(q.rows[0]?.n||0)>=limit)throw fail("Collection pleine ("+limit+").");
-   const ins=await pool.query("INSERT INTO cmd_sphere_emojis(id,creator_user_id,scope,guild_id,name,mime_type,animated,bytes,size_bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,creator_user_id,scope,guild_id,name,mime_type,animated,size_bytes",[crypto.randomUUID(),uid,scope,gid,name,type.mime,type.animated,bytes,bytes.length]);
+   const ins=await pool.query("INSERT INTO cmd_sphere_emojis(id,creator_user_id,scope,guild_id,name,mime_type,animated,bytes,size_bytes,kind) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,creator_user_id,scope,guild_id,name,mime_type,animated,size_bytes,kind",[crypto.randomUUID(),uid,scope,gid,name,type.mime,type.animated,bytes,bytes.length,kind]);
    reply(res,201,{emoji:item(ins.rows[0],uid,m)});return true;
   }
   if(req.method==="DELETE"&&url.pathname.startsWith("/api/cmd-emojis/")){
