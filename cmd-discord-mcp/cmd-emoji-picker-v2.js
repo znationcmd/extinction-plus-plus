@@ -63,10 +63,13 @@
     return state.items;
   }
   let drawGeneration=0;
+  let photoPreviewObserver=null;
   let allPacksGeneration=0;
   function drawItems(){
     const root=$("#cmdEmojiResults");if(!root)return;
     const generation=++drawGeneration;
+    photoPreviewObserver?.disconnect();
+    photoPreviewObserver=null;
     const oldTop=root.scrollTop;
     root.replaceChildren();
     if(state.tab==="gif"&&!["mine","community","server","all"].includes(state.selected)){
@@ -80,6 +83,7 @@
     if(!filtered.length){root.innerHTML='<p class="cmd-emoji-hint">Aucun emoji accessible pour cette sélection. Choisis un autre serveur ou les emojis standards.</p>';return}
     let displayed=0,filling=false;
     const grid=document.createElement("div");grid.className="cmd-emoji-grid-v2";root.appendChild(grid);
+    if("IntersectionObserver" in window){photoPreviewObserver=new IntersectionObserver(entries=>{for(const item of entries)item.target.classList.toggle("cmd-photo-visible",item.isIntersecting)},{root,rootMargin:"70px"})}
     root.scrollTop=oldTop;
     function more(){
       if(generation!==drawGeneration||filling||displayed>=filtered.length||!root.isConnected)return;
@@ -88,7 +92,7 @@
         const e=filtered[i],btn=document.createElement("button");btn.type="button";btn.className="cmd-emoji-icon-v2";
         btn.title=(e.packName?e.packName+" · ":"")+e.name;btn.setAttribute("aria-label",e.name);
         if(e.kind==="unicode")btn.textContent=e.value;
-        else{const img=document.createElement("img");img.src=e.image;img.alt=e.name;img.loading="lazy";img.decoding="async";img.onerror=()=>btn.remove();btn.appendChild(img)}
+        else{const img=document.createElement("img");img.src=e.image;img.alt=e.name;img.loading="lazy";img.decoding="async";img.onerror=()=>btn.remove();if(e.kind==="cmd"&&!e.animated){img.classList.add("cmd-photo-motion");photoPreviewObserver?.observe(img)}btn.appendChild(img)}
         btn.addEventListener("click",()=>insert(e));fragment.appendChild(btn);
       }
       grid.appendChild(fragment);displayed=end;filling=false;
