@@ -54,7 +54,7 @@ function createCanvas(mount,kind){
   const insideHidden=!!wrapper.closest("[hidden]");
   if(!document.hidden&&visible&&!insideHidden&&now-frame.lastDraw>(reduced?140:35)){
    frame.lastDraw=now;
-   if(!reduced)frame.mixers.forEach(m=>m.update(delta));
+   if(!reduced){frame.mixers.forEach(m=>m.update(delta));animateCivilian(frame,now)}
    base.rotation.y+=(frame.angle-base.rotation.y)*.06;
    if(!reduced&&frame.person)frame.person.position.y=Math.sin(now*.00135)*.013;
    renderer.render(scene,camera);
@@ -314,10 +314,7 @@ async function renderAvatarCards(){
    if(!preset)continue;
    let picture=avatarThumbCache.get(preset.id);
    if(!picture){
-    const model=await loadGLB(modelUrls[preset.model]);
-    const scene=new THREE.Scene(),root=cloneSkinned(model.scene);
-    normalize(root,3.05,0,0);
-    applyOutfit(root,preset.topColor,preset.top);applyAppearance(root,preset);
+    const scene=new THREE.Scene(),root=makeCivilian(preset);
     scene.add(root);scene.add(new THREE.HemisphereLight(0xe7e2fc,0x483251,3.0));
     const main=new THREE.DirectionalLight(0xffeddc,3.2);main.position.set(-2.7,5,6);scene.add(main);
     const rim=new THREE.DirectionalLight(0x9c70ff,2.0);rim.position.set(2,4,-3);scene.add(rim);
