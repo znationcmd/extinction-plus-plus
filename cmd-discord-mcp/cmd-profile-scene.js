@@ -73,44 +73,76 @@ function mountBanner(){
  const edit=$("#profileForm"),section=document.createElement("div");
  if(edit){section.className="cmd-scene-form-entry";section.innerHTML='<h3>🎭 Mon décor et mon personnage</h3><p>Apparaît dans la bannière de ce profil, sans remplacer ta photo, ton pseudo ni tes autres informations.</p><button type="button" id="cmdSceneFromProfile">Personnaliser mon décor</button>';edit.querySelector("h2")?.after(section);$("#cmdSceneFromProfile").onclick=()=>{document.querySelector("#modal")?.classList.remove("on");openSheet()}}
 }
-function field(title,id,array){return '<label>'+title+'<select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
-function picker(label,key,opts){
- return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-choice-grid">'+opts.map(([value,name,emoji])=>'<button type="button" data-scene-choice="'+key+'" data-value="'+escape(value)+'" class="'+(state[key]===value?"selected":"")+'">'+(emoji?'<span>'+emoji+'</span>':"")+'<small>'+escape(name)+'</small></button>').join("")+'</div></div>';
+/* Self-contained illustrated pets instead of emoji heads in the actual scene. */
+function drawPet(kind){
+ if(kind==="none")return "";
+ const palettes={dog:["#b78555","#e6c5a3","#6b4135"],cat:["#d4a66b","#f4d7b9","#634c44"],rabbit:["#c9c7ca","#f5eef0","#9a8a99"],fox:["#ce7437","#ffe0bd","#743a22"],wolf:["#8995a2","#dde1e5","#536173"],horse:["#9c7655","#e6bda1","#4b3429"],bird:["#5ab7a7","#b6e5c9","#336982"],turtle:["#74a66a","#b1d89b","#456e53"]};
+ const colors=palettes[kind]||palettes.dog,[main,light,dark]=colors,ear=kind==="rabbit"?"long":kind==="cat"||kind==="fox"||kind==="wolf"?"triangle":"flop";
+ if(kind==="bird")return '<svg viewBox="0 0 180 190" class="cmd-illustrated-pet" role="img" aria-label="Oiseau"><defs><linearGradient id="bird-feather" x2=".4" y2="1"><stop stop-color="'+light+'"/><stop offset="1" stop-color="'+main+'"/></linearGradient></defs><ellipse cx="98" cy="164" rx="61" ry="10" fill="#0003"/><path d="M55 121 Q35 35 103 39 Q152 44 145 112 Q137 153 88 151 Q52 144 55 121Z" fill="url(#bird-feather)" stroke="'+dark+'" stroke-width="3"/><path d="M62 101 Q16 85 22 54 Q42 80 61 70Z" fill="'+dark+'"/><path d="M89 114 Q135 78 128 132 Q116 150 89 135Z" fill="'+main+'"/><circle cx="117" cy="75" r="7" fill="#172e34"/><circle cx="119" cy="73" r="2" fill="#fff"/><path d="M142 91 L173 103 L145 111Z" fill="#ffb73d"/><path d="M89 146 L85 168 M112 146 L115 168" stroke="'+dark+'" stroke-width="5"/><path d="M78 169 L94 169 M108 169 L124 169" stroke="'+dark+'" stroke-width="4"/></svg>';
+ if(kind==="turtle")return '<svg viewBox="0 0 180 190" class="cmd-illustrated-pet" role="img" aria-label="Tortue"><defs><linearGradient id="turtle-shell" x2="1" y2="1"><stop stop-color="#9dbd76"/><stop offset="1" stop-color="#2a6c60"/></linearGradient></defs><ellipse cx="92" cy="165" rx="70" ry="11" fill="#0004"/><path d="M32 140 Q24 93 76 73 Q122 67 143 126 L139 144Z" fill="url(#turtle-shell)" stroke="#2c5a4b" stroke-width="6"/><path d="M79 79 L65 112 L89 143 L120 114 L104 76 M31 124 L65 112 M120 114 L143 121" fill="none" stroke="#2b5949" stroke-width="4"/><ellipse cx="141" cy="125" rx="34" ry="25" fill="'+main+'"/><circle cx="155" cy="115" r="5" fill="#12281f"/><circle cx="157" cy="113" r="2" fill="#fff"/><path d="M144 135 Q155 144 165 133" fill="none" stroke="#446d4b" stroke-width="3"/><ellipse cx="49" cy="148" rx="16" ry="10" fill="'+main+'"/><ellipse cx="113" cy="150" rx="16" ry="10" fill="'+main+'"/></svg>';
+ const ears=ear==="long"?'<ellipse cx="56" cy="41" rx="17" ry="40" transform="rotate(-12 56 41)" fill="'+main+'"/><ellipse cx="56" cy="40" rx="8" ry="28" transform="rotate(-12 56 40)" fill="#e7aeba"/><ellipse cx="116" cy="38" rx="17" ry="42" transform="rotate(13 116 38)" fill="'+main+'"/><ellipse cx="116" cy="39" rx="8" ry="30" transform="rotate(13 116 39)" fill="#e7aeba"/>':ear==="triangle"?'<path d="M35 79 L35 16 L78 46 L112 47 L144 16 L145 81Z" fill="'+main+'" stroke="'+dark+'" stroke-width="4"/><path d="M44 35 L46 62 L70 48 M131 35 L130 62 L108 48" fill="#e9afb0"/>':'<path d="M37 74 Q-7 46 22 31 Q46 22 57 64 M117 65 Q140 20 161 34 Q180 54 138 81" fill="'+dark+'" stroke="'+main+'" stroke-width="7"/>';
+ const body=kind==="horse"?'<path d="M58 102 Q36 126 49 158 L121 163 Q136 147 125 112Z" fill="'+main+'"/><path d="M128 110 Q153 84 157 58 L135 56 L116 90Z" fill="'+main+'"/><path d="M134 47 L148 31 L159 67 L136 74Z" fill="'+dark+'"/>':'<ellipse cx="93" cy="131" rx="56" ry="42" fill="'+main+'"/><ellipse cx="96" cy="137" rx="33" ry="25" fill="'+light+'"/>';
+ const tail=kind==="fox"||kind==="wolf"?'<path d="M39 128 Q4 106 12 77 Q25 91 60 99" fill="'+main+'" stroke="'+dark+'" stroke-width="3"/>':kind==="dog"?'<path d="M46 133 Q11 139 15 108" fill="none" stroke="'+dark+'" stroke-width="14" stroke-linecap="round"/>':'';
+ const muzzle=kind==="horse"?'<path d="M55 84 Q64 71 100 75 L126 112 Q111 137 83 130Z" fill="'+light+'"/>':'<ellipse cx="89" cy="95" rx="30" ry="22" fill="'+light+'"/><path d="M86 91 L95 91 L91 100Z" fill="'+dark+'"/>';
+ const head=kind==="horse"?'<path d="M59 51 Q47 60 54 98 Q67 124 116 111 L127 86 Q121 45 84 41Z" fill="'+main+'" stroke="'+dark+'" stroke-width="4"/>':'<ellipse cx="90" cy="77" rx="56" ry="51" fill="'+main+'" stroke="'+dark+'" stroke-width="3"/>';
+ return '<svg viewBox="0 0 180 190" class="cmd-illustrated-pet" role="img" aria-label="'+(pets.find(p=>p[0]===kind)?.[1]||"Animal")+'"><defs><linearGradient id="pet-coat-'+kind+'" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+light+'"/><stop offset="1" stop-color="'+main+'"/></linearGradient></defs><ellipse cx="91" cy="174" rx="65" ry="10" fill="#0003"/>'+tail+body+'<ellipse cx="51" cy="162" rx="22" ry="15" fill="'+main+'"/><ellipse cx="135" cy="162" rx="22" ry="15" fill="'+main+'"/>'+ears+head+muzzle+'<ellipse cx="66" cy="80" rx="7" ry="9" fill="#20232b"/><ellipse cx="117" cy="80" rx="7" ry="9" fill="#20232b"/><circle cx="68" cy="76" r="2.5" fill="#fff"/><circle cx="119" cy="76" r="2.5" fill="#fff"/><path d="M79 105 Q92 117 107 104" stroke="'+dark+'" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="68" cy="95" rx="9" ry="5" fill="#efaa9c" opacity=".65"/><ellipse cx="121" cy="95" rx="9" ry="5" fill="#efaa9c" opacity=".65"/></svg>';
+}
+const looks=[
+ {name:"Street",style:"street",top:"hoodie",bottom:"jeans",shoes:"sneakers",topColor:"#7549b9",accessory:"cap"},
+ {name:"Sport",style:"sport",top:"sport",bottom:"shorts",shoes:"sneakers",topColor:"#ffffff",accessory:"none"},
+ {name:"Chic",style:"chic",top:"suit",bottom:"formal",shoes:"formal",topColor:"#212331",accessory:"sunglasses"},
+ {name:"Été",style:"summer",top:"tshirt",bottom:"shorts",shoes:"sandals",topColor:"#e6a53a",accessory:"none"},
+ {name:"Ville",style:"street",top:"jacket",bottom:"dark",shoes:"boots",topColor:"#237a9b",accessory:"glasses"},
+ {name:"Soirée",style:"chic",top:"dress",bottom:"skirt",shoes:"formal",topColor:"#d24e79",accessory:"none"},
+ {name:"MilSim",style:"rp",top:"armor",bottom:"cargo",shoes:"boots",topColor:"#317f67",accessory:"cap"},
+ {name:"Décontracté",style:"street",top:"shirt",bottom:"jeans",shoes:"sneakers",topColor:"#ffffff",accessory:"none"},
+ {name:"Nocturne",style:"chic",top:"jacket",bottom:"cargo",shoes:"boots",topColor:"#212331",accessory:"headphones"}
+];
+const poses=[["stand","Debout","🧍"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
+const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]];
+const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
+const hairOptions=[["short","Courts"],["long","Longs"],["curly","Bouclés"],["bob","Carré"],["shaved","Très courts"],["ponytail","Queue de cheval"]];
+const tabs=[["mode","Mode","♧"],["selfie","Selfie","◉"],["pet","Animal de compagnie","♧"],["scene","Scène","▧"],["avatar","Avatar","◉"]];
+function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
+function picker(label,key,opts,visual){
+ return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
+   const visualMarkup=visual==="pet"?(value==="none"?'<span class="cmd-scene-none">∅</span>':drawPet(value)):visual==="person"?drawPerson({...state,[key]:value}):visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
+  }).join("")+'</div></section>';
 }
 function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-swatches">'+values.map(c=>'<button type="button" aria-label="'+c+'" data-scene-color="'+key+'" data-value="'+c+'" class="'+(state[key]===c?"selected":"")+'" style="background:'+c+'"></button>').join("")+'</div></div>'}
-const tabs=[["mode","Mode","👗"],["selfie","Selfie","📸"],["pet","Animal","🐾"],["scene","Scène","🏖️"],["avatar","Avatar","🧑"]];
+let lookCategory="all";
+function lookGrid(){
+ const filtered=looks.map((x,index)=>({...x,index})).filter(x=>lookCategory==="all"||x.style===lookCategory);
+ return '<h2>Essayer un nouveau look</h2><div class="cmd-scene-chips">'+[["all","Tous"],["street","Street"],["sport","Sport"],["chic","Chic"],["summer","Été"],["rp","RP / MilSim"]].map(([id,name])=>'<button type="button" data-look-category="'+id+'" class="'+(lookCategory===id?"selected":"")+'">'+name+'</button>').join("")+'</div>'+
+ '<div class="cmd-scene-look-grid">'+filtered.map(look=>'<button type="button" class="cmd-scene-look-tile '+(state.top===look.top&&state.topColor===look.topColor&&state.bottom===look.bottom?"selected":"")+'" data-look="'+look.index+'" aria-label="Essayer le look '+escape(look.name)+'"><div class="cmd-scene-look-model">'+drawPerson({...state,...look})+'</div><strong>'+escape(look.name)+'</strong><span class="cmd-look-free">Inclus</span></button>').join("")+'</div>';
+}
 function contents(tab){
- if(tab==="mode")return field("Haut / tenue","top",clothes)+swatches("Couleur des vêtements","topColor",outfits)+field("Bas","bottom",pants)+field("Chaussures","shoes",footwear)+'<label>Marque ou collection (texte libre, non officiel)<input data-scene-field="label" maxlength="42" placeholder="Ex. collection sportive"></label>';
- if(tab==="selfie")return picker("Pose","pose",[["stand","Debout","🧍"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]])+picker("Accessoires","accessory",[["none","Sans","—"],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]]);
- if(tab==="pet")return picker("Mon animal de compagnie","pet",pets);
- if(tab==="scene")return picker("Mon fond de profil","scene",scenes)+'<label class="cmd-scene-file">📷 Importer ma propre image<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Ta photo est optimisée sur cet appareil, puis enregistrée sur ton compte.</small>';
- return picker("Personnage","gender",[["male","Homme","🧑"],["female","Femme","👩"],["neutral","Personnalisé","🧑‍🎨"]])+swatches("Carnation","skin",skins)+field("Cheveux","hair",[["short","Courts"],["long","Longs"],["curly","Bouclés"],["bob","Carré"],["shaved","Très courts"],["ponytail","Queue de cheval"]])+swatches("Couleur des cheveux","hairColor",haircolors);
+ if(tab==="mode")return lookGrid()+'<details class="cmd-scene-more"><summary>Personnaliser séparément chaque vêtement</summary>'+field("Haut / tenue","top",clothes)+swatches("Couleur de la tenue","topColor",outfits)+field("Pantalon / bas","bottom",pants)+field("Chaussures","shoes",footwear)+'</details>';
+ if(tab==="selfie")return '<h2>Choisis ta pose</h2>'+picker("Prendre une pose","pose",poses,"person")+picker("Accessoires","accessory",accessories,"person");
+ if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2>'+picker("Ils t’accompagnent sur le profil","pet",pets,"pet");
+ if(tab==="scene")return '<h2>Choisis ton décor</h2>'+picker("Plage, ville, forêt et bien plus","scene",scenes,"scene")+'<label class="cmd-scene-file">📷 Utiliser une photo personnelle<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Le décor choisi s’affiche derrière ton personnage sur le profil CMD Sphere.</small>';
+ return '<h2>Créer ton personnage</h2>'+picker("Personnage","gender",genders,"person")+swatches("Couleur de peau","skin",skins)+picker("Coiffure","hair",hairOptions.map(([id,name])=>[id,name,""]),"person")+swatches("Couleur des cheveux","hairColor",haircolors);
 }
 function renderSheet(tab){
- const root=$("#cmdSceneOptions");if(!root)return;
- root.innerHTML=contents(tab);
- $$("[data-scene-field]",root).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $$("[data-scene-choice]",root).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;renderSheet(tab);refreshEditor()}));
- $$("[data-scene-color]",root).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
- $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de ton image…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Image personnelle ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
+ const area=$("#cmdSceneOptions");if(!area)return;
+ area.innerHTML=contents(tab);
+ $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
+ $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;renderSheet(tab);refreshEditor()}));
+ $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
+ $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
+ $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
+ $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de la photo…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Photo ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
 }
 function refreshEditor(){
  present();
  if(!preview)return;
  preview.innerHTML=drawPerson(state);
- if(state.pet!=="none"){
-  const pet=document.createElement("span");
-  pet.className="cmd-scene-preview-pet";
-  pet.textContent=(pets.find(x=>x[0]===state.pet)||pets[1])[2];
-  preview.append(pet);
- }
+ const animal=$("#cmdScenePreviewPet");
+ if(animal){animal.innerHTML=state.pet!=="none"?drawPet(state.pet):"";animal.hidden=state.pet==="none"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
- $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun");
- const box=preview.closest(".cmd-scene-preview");
- if(box){
-  box.dataset.scene=state.scene;
-  box.style.backgroundImage=state.scene==="custom"&&custom?'linear-gradient(#0002,#0007),url("'+custom.replace(/["\\]/g,"")+'")':"";
- }
+ $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
+ const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
 }
 async function compressPhoto(file){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>25*1024*1024)throw Error("Choisis une image PNG, JPG ou WebP de moins de 25 Mo.");
