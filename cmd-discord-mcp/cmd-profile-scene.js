@@ -12,7 +12,7 @@ const skins=["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"];
 const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"];
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
 const pets=[["none","Aucun","🚫"],["dog","Chien","🐶"],["cat","Chat","🐱"],["rabbit","Lapin","🐰"],["fox","Renard","🦊"],["bird","Oiseau","🦜"],["horse","Cheval","🐴"],["wolf","Loup","🐺"],["turtle","Tortue","🐢"]];
-const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"illustrated",petStyle:"illustrated",label:""};
+const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"soldier",petModel:"fox",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
@@ -122,23 +122,27 @@ function lookGrid(){
 function contents(tab){
  if(tab==="mode")return lookGrid()+'<details class="cmd-scene-more"><summary>Personnaliser séparément chaque vêtement</summary>'+field("Haut / tenue","top",clothes)+swatches("Couleur de la tenue","topColor",outfits)+field("Pantalon / bas","bottom",pants)+field("Chaussures","shoes",footwear)+'</details>';
  if(tab==="selfie")return '<h2>Choisis ta pose</h2>'+picker("Prendre une pose","pose",poses,"person")+picker("Accessoires","accessory",accessories,"person");
- if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2><p class="cmd-scene-section-intro">Un animal est ajouté à côté du personnage dans le décor.</p>'+picker("Ils t’accompagnent sur le profil","pet",pets,"pet")+'<label class="cmd-scene-file">📷 Ajouter une image de mon animal (PNG/WebP à fond transparent recommandé)<input id="cmdScenePetPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdScenePetIllustration" class="cmd-scene-illustration-reset">Utiliser l’animal illustré</button>';
+ if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2><p class="cmd-scene-section-intro">Renard 3D animé disponible · pour un chien, chat ou autre animal 3D détaillé, importe un modèle GLB que tu possèdes.</p>'+picker("Ils t’accompagnent sur le profil","pet",pets,"pet")+'<label class="cmd-scene-file">🐾 Importer un animal en vraie 3D (.glb) <input id="cmdScenePetGLB" type="file" accept=".glb,model/gltf-binary"></label><button type="button" id="cmdScenePet3D" class="cmd-scene-illustration-reset">Repasser en 3D</button>'+'<label class="cmd-scene-file">📷 Ajouter une image de mon animal (PNG/WebP à fond transparent recommandé)<input id="cmdScenePetPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdScenePetIllustration" class="cmd-scene-illustration-reset">Utiliser l’animal illustré</button>';
  if(tab==="scene")return '<h2>Choisis ton décor</h2>'+picker("Plage, ville, forêt et bien plus","scene",scenes,"scene")+'<label class="cmd-scene-file">📷 Utiliser une photo personnelle<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label><small>Le décor choisi s’affiche derrière ton personnage sur le profil CMD Sphere.</small>';
- return '<h2>Créer ton personnage</h2><p class="cmd-scene-section-intro">Personnalise ton personnage ou ajoute un visuel transparent pour un rendu plus réaliste.</p>'+picker("Personnage","gender",genders,"person")+swatches("Couleur de peau","skin",skins)+picker("Coiffure","hair",hairOptions.map(([id,name])=>[id,name,""]),"person")+swatches("Couleur des cheveux","hairColor",haircolors)+'<label class="cmd-scene-file">📷 Ajouter mon personnage découpé (PNG ou WebP transparent)<input id="cmdSceneAvatarPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdSceneAvatarIllustration" class="cmd-scene-illustration-reset">Utiliser le personnage illustré</button>';
+ return '<h2>Créer ton personnage en 3D</h2><p class="cmd-scene-section-intro">Modèles humains 3D animés et texturés. Tu peux importer ton propre personnage GLB détaillé. Les vêtements et expressions disponibles dépendent du modèle.</p>'+'<div class="cmd-scene-model-actions"><button type="button" data-person-model="soldier">Personnage masculin 3D</button><button type="button" data-person-model="michelle">Personnage féminin 3D</button></div><label class="cmd-scene-file">🧑 Importer mon personnage 3D (.glb)<input id="cmdSceneAvatarGLB" type="file" accept=".glb,model/gltf-binary"></label>'+picker("Personnage","gender",genders,"person")+swatches("Couleur de peau","skin",skins)+picker("Coiffure","hair",hairOptions.map(([id,name])=>[id,name,""]),"person")+swatches("Couleur des cheveux","hairColor",haircolors)+'<label class="cmd-scene-file">📷 Ajouter mon personnage découpé (PNG ou WebP transparent)<input id="cmdSceneAvatarPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="cmdSceneAvatarIllustration" class="cmd-scene-illustration-reset">Utiliser le personnage illustré</button>';
 }
 function renderSheet(tab){
  const area=$("#cmdSceneOptions");if(!area)return;
  area.innerHTML=contents(tab);
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet")state.petStyle="illustrated";if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair")state.avatarStyle="illustrated";renderSheet(tab);refreshEditor()}));
+ $("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet")state.petStyle="3d";if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
  $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de la photo…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Photo ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
  $("#cmdSceneAvatarPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{characterPhoto=await compressPhoto(f,true);characterDirty=true;state.avatarStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Personnage importé. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
  $("#cmdScenePetPhoto")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{animalPhoto=await compressPhoto(f,true);animalDirty=true;state.petStyle="photo";refreshEditor();$("#cmdSceneNotice").textContent="Image de l’animal importée. Enregistre ton profil."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
- $("#cmdSceneAvatarIllustration")?.addEventListener("click",()=>{state.avatarStyle="illustrated";refreshEditor()});
- $("#cmdScenePetIllustration")?.addEventListener("click",()=>{state.petStyle="illustrated";refreshEditor()});
+ $("#cmdSceneAvatarIllustration")?.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=state.gender==="female"?"michelle":"soldier";refreshEditor()});
+ $("#cmdScenePetIllustration")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
+ $("#cmdScenePet3D")?.addEventListener("click",()=>{state.petStyle="3d";refreshEditor()});
+ $("[data-person-model]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarStyle="3d";state.avatarModel=button.dataset.personModel;state.gender=state.avatarModel==="michelle"?"female":"male";refreshEditor()}));
+ $("#cmdSceneAvatarGLB")?.addEventListener("change",e=>upload3D(e,"avatar"));
+ $("#cmdScenePetGLB")?.addEventListener("change",e=>upload3D(e,"pet"));
 }
 function refreshEditor(){
  present();
@@ -149,6 +153,23 @@ function refreshEditor(){
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
  $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun animal");
  const hero=$("#cmdSceneHero");if(hero){hero.dataset.scene=state.scene;hero.style.setProperty("--cmd-personal-scene-image",state.scene==="custom"&&custom?'url("'+custom.replace(/["\\]/g,"")+'")':"none")}
+ document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
+}
+async function upload3D(event,kind){
+ const input=event.target,file=input.files?.[0];if(!file)return;
+ const message=$("#cmdSceneNotice");message.textContent="Importation du modèle 3D en cours…";
+ try{
+  if(!/\.glb$/i.test(file.name)||file.size>12*1024*1024||file.size<24)throw Error("Fichier .glb de 12 Mo maximum requis.");
+  const response=await fetch("/api/profile/3d/"+kind,{method:"PUT",headers:{"content-type":"model/gltf-binary"},body:file,credentials:"same-origin"});
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||"Enregistrement du modèle impossible");
+  if(kind==="avatar"){state.avatarStyle="3d";state.avatarModel="custom"}
+  else{state.petStyle="3d";state.petModel="custom";if(state.pet==="none")state.pet="dog"}
+  window.cmdProfile3D?.invalidateCustom?.(kind);
+  refreshEditor();
+  message.textContent="Modèle 3D importé. Enregistre aussi ton profil.";
+ }catch(error){message.textContent=error.message||"Erreur d'importation."}
+ finally{input.value=""}
 }
 async function compressPhoto(file,preserveTransparency=false){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>25*1024*1024)throw Error("Choisis une image PNG, JPG ou WebP de moins de 25 Mo.");
@@ -173,7 +194,7 @@ const navIcons={
 };
 function closeSheet(){
  if(!sheet)return;
- state={...savedState};custom=savedCustom;characterPhoto=savedCharacterPhoto;animalPhoto=savedAnimalPhoto;customDirty=false;characterDirty=false;animalDirty=false;present();sheet.hidden=true;
+ state={...savedState};custom=savedCustom;characterPhoto=savedCharacterPhoto;animalPhoto=savedAnimalPhoto;customDirty=false;characterDirty=false;animalDirty=false;present();sheet.hidden=true;document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
 }
 function openSheet(){
  if(!slot)return;
@@ -228,12 +249,15 @@ async function initialize(){
   const r=await fetch("/api/profile/scene",{credentials:"same-origin",cache:"no-store"});if(!r.ok)return;
   const data=await r.json();
   if(data.scene&&typeof data.scene==="object")state={...defaults,...data.scene};
+  if(state.avatarStyle==="illustrated")state.avatarStyle="3d";
+  if(state.petStyle==="illustrated")state.petStyle="3d";
   custom=typeof data.customBackground==="string"?data.customBackground:null;
   characterPhoto=typeof data.characterImage==="string"?data.characterImage:null;
   animalPhoto=typeof data.animalImage==="string"?data.animalImage:null;
   savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
-  present();
+  present();document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
  }catch(e){console.warn("[CMD profil décor]",e)}
 }
+window.cmdSphereSceneState=()=>({...state});
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialize);else initialize();
 })();
