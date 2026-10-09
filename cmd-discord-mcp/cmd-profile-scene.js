@@ -290,7 +290,7 @@ function avatarEditor(){
  let inner='';
  if(avatarPart==="person"){
   inner='<h2>Personnalise ton avatar CMD Sphere</h2><p class="cmd-scene-section-intro">Personnages illustrés en 2D · touche un modèle puis change ses traits et sa tenue.</p>'+
-  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo">'+'<span class="cmd-avatar-card-fallback">'+drawAvatarSticker({...state,gender:p.gender||"male",avatarPreset:p.id})+'</span>'+'</span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 2D</small></button>').join("")+importedAvatarCards()+'</div>'+
+  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards()+'</div>'+
   field("Personnage","gender",genders)+field("Morphologie","bodyType",bodyTypes)+swatches("Teint de peau","skin",skins);
  }else if(avatarPart==="hair"){
   inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+screenshotCatalogue("cheveux");
