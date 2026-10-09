@@ -6,7 +6,7 @@ import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import {clone as cloneSkinned} from "three/addons/utils/SkeletonUtils.js";
 THREE.Cache.enabled=true;
 const loader=new GLTFLoader();
-const modelUrls={soldier:"/cmd-three/models/Soldier.glb",michelle:"/cmd-three/models/Michelle.glb",fox:"/cmd-three/models/Fox.glb",customAvatar:"/api/profile/3d/avatar",customPet:"/api/profile/3d/pet"};
+const modelUrls={soldier:"/cmd-three/models/Soldier.glb",michelle:"/cmd-three/models/Michelle.glb",fox:"/cmd-three/models/Fox.glb",cat:"/cmd-three/models/Cat.glb",horse:"/cmd-three/models/Horse.glb",parrot:"/cmd-three/models/Parrot.glb",flamingo:"/cmd-three/models/Flamingo.glb",stork:"/cmd-three/models/Stork.glb",duck:"/cmd-three/models/Duck.glb",customAvatar:"/api/profile/3d/avatar",customPet:"/api/profile/3d/pet"};
 const models=new Map();
 let editor=null,banner=null,currentState=null,visible=true;
 const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches||false;
@@ -125,10 +125,11 @@ async function setPerson(frame,state){
   if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
   frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
   if(frame.kind==="editor")window.requestAnimationFrame(()=>renderLookCards());
- }catch(e){console.warn("[CMD 3D avatar]",e);setNotice(frame,"Modèle indisponible. Utilise « Importer mon modèle 3D » ou actualise.")}
+ }catch(e){console.warn("[CMD 3D avatar]",e);setNotice(frame,"Impossible de charger ce modèle 3D pour le moment. Réessaie en changeant de personnage.")}
 }
 async function setPet(frame,state){
- const id=state.pet==="none"?null:state.petModel==="custom"?"customPet":state.pet==="fox"?"fox":null;
+ const knownPets={fox:"fox",cat:"cat",horse:"horse",bird:"parrot",duck:"duck",flamingo:"flamingo",stork:"stork"};
+ const id=state.pet==="none"?null:(knownPets[state.pet]||null);
  if(!id){
   if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}if(frame.petMixer){frame.mixers=frame.mixers.filter(x=>x!==frame.petMixer);frame.petMixer=null}frame.petKey="";frame.petToken++;
   frame.wrapper.dataset.pet3d="off";return;
