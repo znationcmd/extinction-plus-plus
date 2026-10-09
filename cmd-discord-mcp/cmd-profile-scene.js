@@ -119,12 +119,15 @@ function picker(label,key,opts,visual){
 function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-swatches">'+values.map(c=>'<button type="button" aria-label="'+c+'" data-scene-color="'+key+'" data-value="'+c+'" class="'+(state[key]===c?"selected":"")+'" style="background:'+c+'"></button>').join("")+'</div></div>'}
 let lookCategory="all";
 function lookGrid(){
- const filtered=looks.map((x,index)=>({...x,index})).filter(x=>lookCategory==="all"||x.style===lookCategory);
- return '<h2>Essayer un nouveau look</h2><div class="cmd-scene-chips">'+[["all","Tous"],["street","Street"],["sport","Sport"],["chic","Chic"],["summer","Été"],["rp","RP / MilSim"]].map(([id,name])=>'<button type="button" data-look-category="'+id+'" class="'+(lookCategory===id?"selected":"")+'">'+name+'</button>').join("")+'</div>'+
- '<div class="cmd-scene-look-grid">'+filtered.map(look=>'<button type="button" class="cmd-scene-look-tile '+(state.top===look.top&&state.topColor===look.topColor&&state.bottom===look.bottom?"selected":"")+'" data-look="'+look.index+'" aria-label="Essayer le look '+escape(look.name)+'"><div class="cmd-scene-look-model">'+'<span class="cmd-real-portrait-loader">Aperçu 3D</span>'+'</div><strong>'+escape(look.name)+'</strong><span class="cmd-look-free">Inclus</span></button>').join("")+'</div>';
+ return '<div class="cmd-clothing-sections">'+
+ '<h3>Hauts</h3>'+picker("T-shirts, chemises et vestes","top",clothes,"clothing")+
+ '<h3>Pantalons</h3>'+picker("Jeans, cargos et shorts","bottom",pants,"clothing")+
+ '<h3>Chaussures</h3>'+picker("Baskets, bottes et autres","shoes",footwear,"clothing")+
+ '<h3>Accessoires</h3>'+picker("Lunettes, casquettes et plus","accessory",accessories,"clothing")+
+ '</div>';
 }
 function contents(tab){
- if(tab==="mode")return '<h2>Choisis ton look</h2><p class="cmd-scene-section-intro">Change la couleur du vêtement sur ton personnage 3D.</p>'+lookGrid()+swatches("Couleur de la tenue","topColor",outfits);
+ if(tab==="mode")return '<h2>Personnaliser ma tenue</h2><p class="cmd-scene-section-intro">Choisis tes vêtements et accessoires. Les modèles 3D actuellement disponibles ne possèdent pas encore de garde-robe interchangeable : ces choix seront conservés mais ne changeront pas la géométrie des vêtements.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
  if(tab==="selfie")return '<h2>Animations et poses</h2>'+picker("Animations du personnage","pose",state.gender==="female"?[["dance","Danse","♪"],["stand","Repos","◉"]]:[["stand","Repos","◉"],["walk","Marche","→"],["run","Course","↗"]],"action");
  if(tab==="pet")return '<h2>Choisis ton animal de compagnie</h2><p class="cmd-scene-section-intro">Chat, renard, cheval et oiseaux en 3D. Chien, lapin, loup et tortue avec photo en attendant un modèle 3D autorisé.</p>'+picker("Compagnons","pet",pets,"pet");
  if(tab==="scene")return '<h2>Choisis ton décor</h2>'+picker("Paysages","scene",scenes,"scene")+'<label class="cmd-scene-file">📷 Choisir ma propre photo<input id="cmdSceneUpload" type="file" accept="image/jpeg,image/png,image/webp"></label>';
