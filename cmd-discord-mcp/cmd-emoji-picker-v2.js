@@ -26,6 +26,14 @@
       if (/\p{Emoji_Presentation}/u.test(char)||/\p{Extended_Pictographic}/u.test(char)) res.push(char);
     }return res;
   }).concat(["❤️","♥️","✔️","✅","☑️","☹️","☺️","✌️","⚠️","☠️","✈️","☕","☀️","⭐","🌈","🫶","🇫🇷","🇬🇧","🇺🇸","🇩🇪","🇪🇸","🇮🇹","🇯🇵","🇰🇷","🇨🇳","🇨🇦","🇮🇪","🏳️‍🌈","🏴‍☠️","👨‍👩‍👧","👩‍💻","🧑‍🚀","👨‍🚒","👮‍♂️","👩‍⚕️","🤦‍♂️","🫡","🫠"]))].map((char,i)=>({kind:"unicode",id:"u-"+i,name:char,value:char}));
+  const fullUnicode=(()=>{
+    const map=new Map();
+    for(const [value,name] of Array.isArray(window.CMD_UNICODE_EMOJIS)?window.CMD_UNICODE_EMOJIS:[]){
+      if(typeof value==="string"&&value&&!map.has(value))map.set(value,{kind:"unicode",id:"unicode-"+map.size,value,name:String(name||value),packName:"Unicode"});
+    }
+    for(const e of glyphs)if(!map.has(e.value))map.set(e.value,e);
+    return [...map.values()];
+  })();
   const pName = item => String(item?.name||"").trim().slice(0,80);
   function parsePack(data,pack,kind){
     const root=data?.extras||data||{};
@@ -48,9 +56,9 @@
     $("#channelEmojiSheet")?.classList.remove("on");
   }
   function listFor(){
-    if(state.selected==="all")return [...glyphs,...state.library,...state.items];
+    if(state.selected==="all")return [...fullUnicode,...state.library,...state.items];
     if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected));
-    if(state.selected==="unicode")return glyphs;
+    if(state.selected==="unicode")return fullUnicode;
     if(state.selected==="recent")return state.recent.filter(e=>state.tab==="emoji"?e.kind!=="sticker":e.kind==="sticker");
     return state.items;
   }
@@ -84,6 +92,7 @@
         btn.addEventListener("click",()=>insert(e));fragment.appendChild(btn);
       }
       grid.appendChild(fragment);displayed=end;filling=false;
+      if(oldTop>root.scrollTop)root.scrollTop=Math.min(oldTop,Math.max(0,root.scrollHeight-root.clientHeight));
       if(displayed<filtered.length)setTimeout(more,0);
     }
     more();
