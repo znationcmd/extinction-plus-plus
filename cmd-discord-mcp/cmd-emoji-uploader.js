@@ -3,7 +3,7 @@
  const $=s=>document.querySelector(s);
  const bridge=()=>window.__cmdEmojiPickerBridge;
  const UUID=/^[0-9a-f-]{36}$/i;
- let pending=null,lastFetch=0,lastGuild="",panel=null;
+ let pending=null,lastFetch=0,lastGuild="",panel=null,nextOffset=0,hasMore=false,pageLoading=false;
  const activeGuild=()=>String($("#workspace")?.dataset.nativeGuildId||"");
  const label=s=>String(s||"").trim();
  function normalize(e){
@@ -21,15 +21,39 @@
        if(!q.ok)throw Error("Bibliothèque non disponible");
        const data=await q.json();
        p.state.library=(data.emojis||[]).filter(e=>UUID.test(String(e.id||""))).map(normalize);
+       nextOffset=Number(data.nextOffset||0);hasMore=Boolean(data.hasMore);
        p.state.libraryRole=data.role||null;p.state.libraryGuild=gid;
        lastGuild=gid;lastFetch=Date.now();
      }catch(e){
        p.state.library=[];p.state.libraryRole=null;p.state.libraryGuild=gid;
+       nextOffset=0;hasMore=false;
        $("#cmdEmojiCreatorNotice")&&( $("#cmdEmojiCreatorNotice").textContent=e.message );
      }finally{p.draw();pending=null}
    })();
    return pending;
  }
+ async function fetchNextLibrary(){
+   const p=bridge(),gid=activeGuild();
+   if(!p||pending||pageLoading||!hasMore||lastGuild!==gid)return;
+   pageLoading=true;
+   const oldTop=$("#cmdEmojiResults")?.scrollTop||0;
+   try{
+     const route="/api/cmd-emojis?offset="+encodeURIComponent(nextOffset)+(gid?"&guildId="+encodeURIComponent(gid):"");
+     const r=await fetch(route,{credentials:"same-origin",cache:"no-store"});
+     if(!r.ok)throw Error("Suite du catalogue indisponible");
+     const data=await r.json();
+     const fresh=(data.emojis||[]).filter(e=>UUID.test(String(e.id||""))).map(normalize);
+     const known=new Set(p.state.library.map(e=>e.id));
+     p.state.library.push(...fresh.filter(e=>!known.has(e.id)));
+     hasMore=Boolean(data.hasMore);nextOffset=Number(data.nextOffset||nextOffset+fresh.length);
+     p.draw();
+     const root=$("#cmdEmojiResults");if(root)root.scrollTop=oldTop;
+   }catch(error){
+     hasMore=false;
+     const notice=$("#cmdEmojiCreatorNotice");if(notice)notice.textContent=error.message;
+   }finally{pageLoading=false}
+ }
+ window.cmdEmojiFetchNext=fetchNextLibrary;
  window.cmdEmojiRefreshLibrary=getLibrary;
  function drawMine(){
    const root=$("#cmdEmojiOwned");if(!root)return;
