@@ -13,7 +13,7 @@ const PETS=new Set(["none","dog","cat","rabbit","fox","bird","horse","wolf","tur
 const POSES=new Set(["stand","wave","peace","crossed","walk","run","dance"]);
 const ACCESSORIES=new Set(["none","glasses","sunglasses","hat","cap","headphones","earrings","necklace","crown","roundglasses","aviator","mask","beanie","bucket","cowboy","hoops","studs"]);
 const GENDERS=new Set(["male","female","neutral"]);
-const STYLES=new Set(["3d","illustrated","photo"]);
+const STYLES=new Set(["3d","2d","illustrated","photo"]);
 const AVATAR_MODELS=new Set(["civilian","soldier","michelle","custom"]);
 const PRESETS=new Set(["guardian","nocturne","azur","luna","nova","iris",...Array.from({length:68},(_,i)=>"reference-avatar-"+i)]);
 const PET_MODELS=new Set(["fox","cat","horse","parrot","duck","flamingo","stork","dog","rabbit","wolf","turtle","custom"]);
