@@ -94,7 +94,24 @@ function renderSheet(tab){
  $$("[data-scene-color]",root).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $("#cmdSceneUpload")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;$("#cmdSceneNotice").textContent="Préparation de ton image…";try{custom=await compressPhoto(f);customDirty=true;state.scene="custom";renderSheet(tab);refreshEditor();$("#cmdSceneNotice").textContent="Image personnelle ajoutée. Appuie sur Enregistrer."}catch(error){$("#cmdSceneNotice").textContent=error.message}finally{e.target.value=""}});
 }
-function refreshEditor(){present();if(preview){preview.innerHTML=drawPerson(state);const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";$("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun")}}
+function refreshEditor(){
+ present();
+ if(!preview)return;
+ preview.innerHTML=drawPerson(state);
+ if(state.pet!=="none"){
+  const pet=document.createElement("span");
+  pet.className="cmd-scene-preview-pet";
+  pet.textContent=(pets.find(x=>x[0]===state.pet)||pets[1])[2];
+  preview.append(pet);
+ }
+ const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
+ $("#cmdSceneLabel").textContent=sceneName+" · "+(pets.find(x=>x[0]===state.pet)?.[1]||"Aucun");
+ const box=preview.closest(".cmd-scene-preview");
+ if(box){
+  box.dataset.scene=state.scene;
+  box.style.backgroundImage=state.scene==="custom"&&custom?'linear-gradient(#0002,#0007),url("'+custom.replace(/["\\]/g,"")+'")':"";
+ }
+}
 async function compressPhoto(file){
  if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>25*1024*1024)throw Error("Choisis une image PNG, JPG ou WebP de moins de 25 Mo.");
  const bitmap=await createImageBitmap(file).catch(()=>null);
