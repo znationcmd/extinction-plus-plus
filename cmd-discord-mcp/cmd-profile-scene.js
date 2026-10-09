@@ -271,9 +271,9 @@ function renderSheet(tab){
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
  if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
  if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
- $("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
- $("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="3d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
- $("[data-universe-tab]",area).forEach(e=>e.addEventListener("click",()=>{universeCategory=e.dataset.universeTab;renderSheet(tab)}));
+ $$("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
+ $$("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="3d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
+ $$("[data-universe-tab]",area).forEach(e=>e.addEventListener("click",()=>{universeCategory=e.dataset.universeTab;renderSheet(tab)}));
  $$("[data-universe-name]",area).forEach(e=>e.addEventListener("input",()=>{state.petName=e.value.slice(0,40)}));
  $$("[data-universe-privacy]",area).forEach(e=>e.addEventListener("change",()=>{state.hideHome=e.checked}));
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
