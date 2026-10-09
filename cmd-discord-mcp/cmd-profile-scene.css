@@ -561,3 +561,31 @@
 #cmdShareDisable{background:#513144}
 .cmd-share-panel input{width:100%;margin-top:13px;font:14px system-ui;background:#09080c;color:#fff;border:1px solid #ffffff44;border-radius:10px;padding:10px}
 @media(max-width:520px){#cmdSceneShare{right:8px;bottom:8px;min-height:39px;font-size:11px;padding:7px 10px}.cmd-share-panel{padding:17px}.cmd-share-actions{gap:7px}}
+
+/* CMD Sphere original hair and beard editor — mobile-first, large visual choices. */
+#cmdSceneSheet .cmd-avatar-editor-nav{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:3px 0 12px;margin:0 -1px 14px;border-bottom:1px solid #ffffff22}
+#cmdSceneSheet .cmd-avatar-editor-nav::-webkit-scrollbar{display:none}
+#cmdSceneSheet .cmd-avatar-editor-nav button{flex:0 0 auto;scroll-snap-align:start;touch-action:manipulation;min-height:43px;border:1px solid #ffffff36;border-radius:25px;background:#28232f;color:#f0e8f5;font:750 13px system-ui;padding:9px 14px}
+#cmdSceneSheet .cmd-avatar-editor-nav button.selected{background:#ece2f6;color:#211729;border-color:#ece2f6;box-shadow:0 0 0 2px #a975d66e}
+#cmdSceneSheet .cmd-avatar-editor-panel{min-height:0;padding-bottom:22px}
+#cmdSceneSheet .cmd-avatar-editor-panel h2{font-size:21px;line-height:1.26;margin:5px 0 9px}
+#cmdSceneSheet .cmd-groom-section>h3{font:800 16px system-ui;margin:12px 0 6px}
+#cmdSceneSheet .cmd-groom-section>p{font:13px/1.4 system-ui;color:#cabfd1;margin:0 0 13px}
+#cmdSceneSheet .cmd-groom-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:9px 0 18px}
+#cmdSceneSheet .cmd-groom-card{appearance:none;min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:0;overflow:hidden;background:linear-gradient(155deg,#332a42,#13111b);color:#f9f3fc;border:2px solid #6a576f;border-radius:17px;text-align:center;padding:0 0 10px;cursor:pointer;touch-action:manipulation;transition:border-color .15s,transform .15s}
+#cmdSceneSheet .cmd-groom-card.selected{border-color:#e9beff;background:linear-gradient(160deg,#563877,#21162f);box-shadow:0 0 0 1px #af70ec,0 2px 17px #9f4dc841}
+#cmdSceneSheet .cmd-groom-card:active{transform:scale(.97)}
+#cmdSceneSheet .cmd-groom-thumb{display:grid;place-items:center;position:relative;width:100%;aspect-ratio:1/1.08;min-height:95px;margin-bottom:8px;background:radial-gradient(ellipse at 51% 37%,#77628e,#23182f 65%,#100d17)}
+#cmdSceneSheet .cmd-groom-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+#cmdSceneSheet .cmd-groom-card>span:last-child{font:700 12px/1.25 system-ui;padding:0 5px;min-height:30px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere}
+#cmdSceneSheet .cmd-groom-loading{font:700 13px system-ui;color:#e9d5fa88;letter-spacing:.1em}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo .cmd-groom-loading{margin:auto}
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-model-photo img{object-fit:contain}
+#cmdSceneSheet .cmd-avatar-editor-panel .cmd-scene-swatches{margin-bottom:24px}
+@media(max-width:390px){
+ #cmdSceneSheet .cmd-avatar-editor-nav{gap:6px}
+ #cmdSceneSheet .cmd-avatar-editor-nav button{font-size:12px;padding-inline:11px}
+ #cmdSceneSheet .cmd-groom-grid{gap:7px}
+ #cmdSceneSheet .cmd-groom-card{border-radius:13px}
+ #cmdSceneSheet .cmd-groom-thumb{min-height:85px}
+}
