@@ -467,3 +467,13 @@
  #cmdSceneSheet .cmd-scene-tabs button small{font-size:9px}
  #cmdSceneSheet #cmdSceneOptions{padding:19px 14px 34px}
 }
+
+/* CMD Sphere universe catalogue */
+.cmd-universe-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 21px;border-bottom:1px solid #ffffff2b}
+.cmd-universe-nav button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-height:70px;border:0;border-bottom:3px solid transparent;background:transparent;color:#9d9ca6;font:600 13px system-ui;cursor:pointer}
+.cmd-universe-nav button span{font-size:26px}
+.cmd-universe-nav button.selected{color:#fff;border-bottom-color:#fff}
+.cmd-universe-nav button small{font-size:12px}
+.cmd-universe-privacy{display:flex;align-items:center;gap:12px;padding:17px 15px;border-radius:15px;background:#202024;color:#fff;font:600 13px system-ui}
+.cmd-universe-privacy input{accent-color:#8661e8;width:20px;height:20px}
+[data-universe-name]{width:100%;min-height:44px;border-radius:12px;border:1px solid #ffffff36;background:#202025;color:white;padding:10px 13px;font:500 15px system-ui}
