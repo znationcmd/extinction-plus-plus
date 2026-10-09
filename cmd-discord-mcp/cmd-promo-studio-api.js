@@ -47,7 +47,7 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
   send(res,200,{items:q.rows.map(p=>({...p,url:"/pub/"+p.id,mediaUrl:"/api/cmd-promos/file/"+p.id}))});return true;
  }
  if(req.method==="POST"&&path==="/api/cmd-promos"){
-  const gid=txt(req.headers["x-cmd-guild-id"],64),title=txt(req.headers["x-cmd-title"],100)||"Publicité de serveur",kind=txt(req.headers["x-cmd-kind"],20)||"video",mime=txt(String(req.headers["content-type"]||"").split(";")[0],40);
+  const gid=txt(req.headers["x-cmd-guild-id"],64),rawTitle=txt(req.headers["x-cmd-title"],300),title=txt((()=>{try{return decodeURIComponent(rawTitle)}catch{return rawTitle}})(),100)||"Publicité de serveur",kind=txt(req.headers["x-cmd-kind"],20)||"video",mime=txt(String(req.headers["content-type"]||"").split(";")[0],40);
   if(!UUID.test(gid)){send(res,400,{error:"Choisis un serveur CMD Sphere."});return true}
   if(!MIME.has(mime)){send(res,415,{error:"Format non accepté. Utilise MP4, WebM, PNG, JPEG, WebP ou GIF."});return true}
   const role=await pool.query("SELECT membership_role FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[gid,String(auth.user.id)]);
