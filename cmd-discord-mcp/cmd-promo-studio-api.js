@@ -1,0 +1,74 @@
+/* CMD Sphere Promo Studio: publish a server video, not a Discord API operation. */
+import crypto from "node:crypto";
+const MAX_MEDIA=60*1024*1024;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MIME=new Set(["video/webm","video/mp4","image/png","image/jpeg","image/webp","image/gif"]);
+const txt=(v,n=100)=>String(v||"").trim().slice(0,n);
+function send(res,status,data){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(data))}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fileValid(data,mime){
+ if(data.length<12)return false;
+ if(mime==="video/webm")return data.subarray(0,4).toString("hex")==="1a45dfa3";
+ if(mime==="video/mp4")return data.subarray(4,8).toString("ascii")==="ftyp";
+ if(mime==="image/png")return data.subarray(0,8).toString("hex")==="89504e470d0a1a0a";
+ if(mime==="image/gif")return ["GIF87a","GIF89a"].includes(data.subarray(0,6).toString());
+ if(mime==="image/webp")return data.subarray(0,4).toString()==="RIFF"&&data.subarray(8,12).toString()==="WEBP";
+ if(mime==="image/jpeg")return data.subarray(0,3).toString("hex")==="ffd8ff";
+ return false;
+}
+export async function initCmdPromos(pool){
+ await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_promos(id UUID PRIMARY KEY, guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE, owner_user_id TEXT NOT NULL, title VARCHAR(100) NOT NULL, format VARCHAR(30) NOT NULL, kind VARCHAR(20) NOT NULL DEFAULT 'video', media BYTEA NOT NULL, bytes INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+ await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_promos_guild_idx ON cmd_sphere_promos(guild_id,created_at DESC)");
+}
+export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
+ const path=url.pathname;
+ if(!path.startsWith("/api/cmd-promos")&&!path.startsWith("/pub/"))return false;
+ const match=/^\/(?:api\/cmd-promos\/file|pub)\/([0-9a-f-]{36})$/i.exec(path);
+ if(match){
+  if(!UUID.test(match[1])){send(res,400,{error:"Publication incorrecte"});return true}
+  const q=await pool.query("SELECT p.id,p.title,p.format,p.media,p.bytes,p.created_at,g.name,g.invite_code FROM cmd_sphere_promos p JOIN cmd_native_guilds g ON g.id=p.guild_id WHERE p.id=$1 LIMIT 1",[match[1]]);
+  if(!q.rows.length){send(res,404,{error:"Publication introuvable"});return true}
+  const p=q.rows[0];
+  if(path.startsWith("/api/")){
+   res.writeHead(200,{"content-type":p.format,"content-length":p.media.length,"cache-control":"public, max-age=86400","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; sandbox","accept-ranges":"none"});res.end(p.media);return true
+  }
+  const link=String(baseUrl||"").replace(/\/$/,"")+"/pub/"+p.id,media=String(baseUrl||"").replace(/\/$/,"")+"/api/cmd-promos/file/"+p.id;
+  const video=p.format.startsWith("video/"),image=p.format.startsWith("image/");
+  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta property="og:title" content="'+esc(p.title)+'"><meta property="og:description" content="Publicité CMD Sphere · '+esc(p.name)+'"><title>'+esc(p.title)+' · CMD Sphere</title><style>body{background:#10111b;color:white;font:16px system-ui;margin:0;padding:22px}.wrap{max-width:680px;margin:auto}video,img{width:100%;max-height:78vh;object-fit:contain;border-radius:18px;background:black}a{color:#e1b9ff}h1{overflow-wrap:anywhere}</style></head><body><main class="wrap"><h1>'+esc(p.title)+'</h1><p>Publicité pour '+esc(p.name)+'</p>'+(video?'<video src="'+esc(media)+'" controls autoplay loop playsinline></video>':image?'<img src="'+esc(media)+'" alt="Publicité CMD Sphere">':'')+'<p><a href="'+esc(link)+'">Lien de la publication</a> · <a href="'+esc(String(baseUrl||"").replace(/\/$/,"")+'/cmd-sphere')+'">Ouvrir CMD Sphere</a></p></main></body></html>';
+  res.writeHead(200,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY"});res.end(html);return true;
+ }
+ if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere."});return true}
+ if(req.method==="GET"&&path==="/api/cmd-promos"){
+  const gid=txt(url.searchParams.get("guildId"),64);
+  if(!UUID.test(gid)){send(res,400,{error:"Choisis un serveur."});return true}
+  const member=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[gid,String(auth.user.id)]);
+  if(!member.rows.length){send(res,403,{error:"Tu dois rejoindre le serveur."});return true}
+  const q=await pool.query("SELECT id,title,format,kind,bytes,created_at FROM cmd_sphere_promos WHERE guild_id=$1 ORDER BY created_at DESC LIMIT 100",[gid]);
+  send(res,200,{items:q.rows.map(p=>({...p,url:"/pub/"+p.id,mediaUrl:"/api/cmd-promos/file/"+p.id}))});return true;
+ }
+ if(req.method==="POST"&&path==="/api/cmd-promos"){
+  const gid=txt(req.headers["x-cmd-guild-id"],64),title=txt(req.headers["x-cmd-title"],100)||"Publicité de serveur",kind=txt(req.headers["x-cmd-kind"],20)||"video",mime=txt(String(req.headers["content-type"]||"").split(";")[0],40);
+  if(!UUID.test(gid)){send(res,400,{error:"Choisis un serveur CMD Sphere."});return true}
+  if(!MIME.has(mime)){send(res,415,{error:"Format non accepté. Utilise MP4, WebM, PNG, JPEG, WebP ou GIF."});return true}
+  const role=await pool.query("SELECT membership_role FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[gid,String(auth.user.id)]);
+  if(!["owner","admin"].includes(String(role.rows[0]?.membership_role||""))){send(res,403,{error:"Seuls les propriétaires et administrateurs peuvent publier une publicité pour ce serveur."});return true}
+  const count=await pool.query("SELECT COUNT(*)::int AS total FROM cmd_sphere_promos WHERE guild_id=$1",[gid]);
+  if(Number(count.rows[0]?.total||0)>=100){send(res,409,{error:"Ce serveur a atteint la limite de 100 publicités. Supprime une ancienne publication."});return true}
+  const chunks=[];let size=0,overflow=false;
+  for await(const chunk of req){size+=chunk.length;if(size>MAX_MEDIA){overflow=true;break}chunks.push(chunk)}
+  if(overflow){req.resume();send(res,413,{error:"La publicité exportée dépasse 60 Mo. Réduis la durée ou la résolution."});return true}
+  const bytes=Buffer.concat(chunks);
+  if(!fileValid(bytes,mime)){send(res,400,{error:"Fichier multimédia invalide."});return true}
+  const id=crypto.randomUUID();
+  await pool.query("INSERT INTO cmd_sphere_promos(id,guild_id,owner_user_id,title,format,kind,media,bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,gid,String(auth.user.id),title,mime,kind,bytes,bytes.length]);
+  send(res,201,{id,url:"/pub/"+id,mediaUrl:"/api/cmd-promos/file/"+id});return true;
+ }
+ if(req.method==="DELETE"&&/^\/api\/cmd-promos\/[0-9a-f-]{36}$/i.test(path)){
+  const id=path.split("/").pop();if(!UUID.test(id)){send(res,400,{error:"Identifiant incorrect"});return true}
+  const q=await pool.query("SELECT p.owner_user_id,p.guild_id,m.membership_role FROM cmd_sphere_promos p LEFT JOIN cmd_native_members m ON m.guild_id=p.guild_id AND m.user_id=$2 WHERE p.id=$1",[id,String(auth.user.id)]);
+  const p=q.rows[0];if(!p){send(res,404,{error:"Publicité introuvable"});return true}
+  if(p.owner_user_id!==String(auth.user.id)&&!["owner","admin"].includes(p.membership_role)){send(res,403,{error:"Suppression interdite"});return true}
+  await pool.query("DELETE FROM cmd_sphere_promos WHERE id=$1",[id]);send(res,200,{ok:true});return true;
+ }
+ send(res,405,{error:"Méthode non autorisée"});return true;
+}
