@@ -125,3 +125,53 @@ body.cmd-premium-body:before{content:"";position:fixed;inset:0;pointer-events:no
  .cmd-premium-profile #cmdPmSocialForm{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){.cmd-premium-profile *,body.cmd-premium-body:before{animation:none!important}}
+
+
+/* Profil principal : cristaux facettés, hiérarchie stable et cartes lisibles. */
+.cmd-premium-profile .topbar{box-shadow:0 9px 20px #0a031454}
+.cmd-premium-profile .titleRow{display:flex;align-items:center;min-width:0;gap:9px}
+.cmd-premium-profile .titleRow .title{min-width:0;white-space:nowrap}
+.cmd-premium-profile .topbar select{min-width:0;max-width:100%}
+.cmd-pm-crystal-crown{
+ height:154px;margin-bottom:-15px;
+ background-image:linear-gradient(180deg,#1b0b245e,transparent 45%),url("/cmd-profile/crystals.svg");
+ background-size:100% 100%,auto 190px;background-repeat:no-repeat,repeat-x;
+ background-position:center bottom,center bottom;
+ filter:drop-shadow(0 12px 14px #8e49de55)}
+.cmd-premium-profile .hero.cmd-pm-hero{
+ border-radius:19px!important;box-shadow:0 21px 45px #0008,0 0 0 1px #bd7cf436}
+.cmd-premium-profile .hero.cmd-pm-hero .banner{
+ height:218px!important;background-position:center center!important;
+ border-radius:18px 18px 0 0}
+.cmd-premium-profile .hero.cmd-pm-hero .body{
+ background:linear-gradient(150deg,#401851f4,#271335f6 53%,#170e29f6)!important;
+ padding:17px 17px 20px!important}
+.cmd-premium-profile .hero.cmd-pm-hero .nameLine{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.cmd-premium-profile .hero.cmd-pm-hero .nameLine .display{
+ font-size:clamp(19px,4.8vw,25px)!important;font-weight:900;line-height:1.3;
+ text-shadow:0 2px 10px #0c021855;overflow-wrap:anywhere}
+.cmd-premium-profile .hero.cmd-pm-hero .handle{font-size:13px;opacity:.93;margin-top:5px}
+.cmd-premium-profile .hero.cmd-pm-hero .badges{gap:7px!important;margin:14px 0!important}
+.cmd-premium-profile .hero.cmd-pm-hero .badges>*{
+ font-size:11px!important;padding:6px 8px!important;line-height:1.3;
+ background:#3a2450b5;border:1px solid #b987e352;border-radius:10px}
+.cmd-premium-profile .hero.cmd-pm-hero .nameplate{background:#24163add!important;max-height:none!important}
+.cmd-premium-profile .hero.cmd-pm-hero .avatar{
+ border:5px solid #4d2b64;box-shadow:0 0 0 2px #ba78fb8a,0 8px 20px #0c0516b5}
+.cmd-premium-profile .hero.cmd-pm-hero .bannerEdit{
+ z-index:8;max-width:calc(100% - 20px);
+ white-space:normal;text-align:center}
+.cmd-premium-profile .cmd-pm-card{transition:background-color .15s}
+.cmd-premium-profile .cmd-pm-bottom{max-width:480px}
+@media(max-width:580px){
+ .cmd-pm-crystal-crown{height:135px;margin-bottom:-13px;background-size:100% 100%,auto 155px}
+ .cmd-premium-profile .hero.cmd-pm-hero .banner{height:191px!important}
+ .cmd-premium-profile .hero.cmd-pm-hero .body{padding:14px!important}
+ .cmd-premium-profile .hero.cmd-pm-hero .badges>*{font-size:10px!important;padding:5px 7px!important}
+ .cmd-premium-profile .cmd-pm-bottom{margin-bottom:calc(10px + env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){
+ .cmd-premium-profile .titleRow .title{font-size:21px}
+ .cmd-premium-profile .titleRow{padding-inline:9px}
+ .cmd-premium-profile .hero.cmd-pm-hero .banner{height:170px!important}
+}
