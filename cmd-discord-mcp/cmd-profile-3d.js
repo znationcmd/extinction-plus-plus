@@ -124,6 +124,7 @@ async function setPerson(frame,state){
   frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
   if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
   frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
+  if(frame.kind==="editor")window.requestAnimationFrame(()=>renderLookCards());
  }catch(e){console.warn("[CMD 3D avatar]",e);setNotice(frame,"Modèle indisponible. Utilise « Importer mon modèle 3D » ou actualise.")}
 }
 async function setPet(frame,state){
@@ -155,6 +156,42 @@ function update(frame,state){
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
+const lookThumbCache=new Map();
+function renderLookCards(){
+ const area=document.querySelector("#cmdSceneOptions"),frame=editor;
+ if(!area||!frame?.person||!frame.renderer||!frame.wrapper.isConnected||frame.wrapper.closest("[hidden]"))return;
+ const tiles=area.querySelectorAll(".cmd-scene-look-tile[data-look]");
+ if(!tiles.length)return;
+ const state=snapshot(),cacheKey=frame.modelKey+"-"+state.gender;
+ const w=126,h=172,renderer=frame.renderer;
+ try{
+  frame.camera.aspect=w/h;
+  frame.camera.position.set(0,1.54,6.8);frame.camera.lookAt(0,1.52,0);frame.camera.updateProjectionMatrix();
+  renderer.setSize(w,h,false);
+  for(const tile of tiles){
+   const ix=Number(tile.dataset.look),look=window.cmdSphereLookList?.[ix];
+   if(!look)continue;
+   const key=cacheKey+"-"+String(look.topColor);
+   let data=lookThumbCache.get(key);
+   if(!data){
+    applyOutfit(frame.person,look.topColor,look.top);
+    frame.scene.updateMatrixWorld(true);
+    renderer.render(frame.scene,frame.camera);
+    data=renderer.domElement.toDataURL("image/png");
+    if(lookThumbCache.size>20)lookThumbCache.delete(lookThumbCache.keys().next().value);
+    lookThumbCache.set(key,data);
+   }
+   const holder=tile.querySelector(".cmd-scene-look-model");
+   if(!holder)continue;
+   const image=new Image();image.className="cmd-scene-3d-look";image.loading="lazy";image.alt="Aperçu du vêtement en 3D";image.src=data;
+   holder.replaceChildren(image);tile.classList.add("cmd-scene-3d-look-ready");
+  }
+ }catch(e){console.warn("[CMD 3D looks]",e.message)}
+ finally{
+  applyOutfit(frame.person,state.topColor,state.top);
+  frame.resize();frame.renderer.render(frame.scene,frame.camera);
+ }
+}
 function snapshot(){
  return window.cmdSphereSceneState?.()||currentState||{avatarStyle:"illustrated"};
 }
@@ -169,5 +206,5 @@ function refresh(){
 }
 document.addEventListener("cmd-avatar-3d:update",refresh);
 document.addEventListener("visibilitychange",()=>visible=!document.hidden);
-window.cmdProfile3D={refresh,invalidateCustom:kind=>{const url=modelUrls[kind==="pet"?"customPet":"customAvatar"];models.delete(url);if(editor){if(kind==="pet")editor.petKey="";else editor.modelKey=""}if(banner){if(kind==="pet")banner.petKey="";else banner.modelKey=""}refresh()}};
+window.cmdProfile3D={refresh,renderLookCards,invalidateCustom:kind=>{const url=modelUrls[kind==="pet"?"customPet":"customAvatar"];models.delete(url);if(editor){if(kind==="pet")editor.petKey="";else editor.modelKey=""}if(banner){if(kind==="pet")banner.petKey="";else banner.modelKey=""}refresh()}};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refresh);else refresh();
