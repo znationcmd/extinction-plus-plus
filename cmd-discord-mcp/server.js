@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { initCmdStarsDb,handleCmdStars } from "./cmd-stars.js";
+import { cmdBoostCount,requireCmdBoosts,handleCmdServerBoosts } from "./cmd-boost-levels.js";
 import { CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS,renderCmdPremiumSvg } from "./cmd-premium-art.js";
 import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
 import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
@@ -285,7 +286,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       qs('#folderForm').onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.currentTarget),serverKeys=f.getAll('serverKey');try{await api('/api/folders/save',{method:'POST',body:JSON.stringify({id:existing?.id||'',name:f.get('name'),color:f.get('color'),serverKeys})});await loadGuilds();openFolderManager();toast('Dossier enregistré')}catch(e){toast(e.message,false)}};
     }catch(e){box.innerHTML='<h2>Dossiers</h2><p>'+esc(e.message)+'</p>'}
   }
-  async function selectGuild(g,el,railEl){qs('.sphere-app')?.classList.remove('cmd-native-selected');document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));el&&el.classList.add('active');railEl&&railEl.classList.add('active');S.guild=g;S.nativeGuild=null;S.bot=g.availableBots[0]?.id||null;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+esc(x.name)+'</span>').join('');qs('#refresh').disabled=!g.installed;if(!g.installed){qs('#workspace').className='empty';qs('#workspace').innerHTML='<h2>'+esc(g.name)+'</h2><p>Ce Discord est visible car tu le gères, mais aucun bot CMD n’y est installé. Il reste grisé dans la barre à gauche.</p><button class="btn primary" onclick="openAdd(\'import\')">Importer / connecter</button>';return}await loadStructure()}
+  async function selectGuild(g,el,railEl){closeDiscordChannel();qs('.sphere-app')?.classList.remove('cmd-native-selected');document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));el&&el.classList.add('active');railEl&&railEl.classList.add('active');S.guild=g;S.nativeGuild=null;S.bot=g.availableBots[0]?.id||null;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+esc(x.name)+'</span>').join('');qs('#refresh').disabled=!g.installed;if(!g.installed){qs('#workspace').className='empty';qs('#workspace').innerHTML='<h2>'+esc(g.name)+'</h2><p>Ce Discord est visible car tu le gères, mais aucun bot CMD n’y est installé. Il reste grisé dans la barre à gauche.</p><button class="btn primary" onclick="openAdd(\'import\')">Importer / connecter</button>';return}await loadStructure()}
   function nativeChannelListItem(gid,x){
     const openable=['text','announcement','forum'].includes(String(x.type||'')),unread=Number(x.unread_count||0);
     const badge=unread?'<span class="cmd-channel-badge">'+Math.min(99,unread)+'</span>':'';
@@ -299,6 +300,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     try{const out=await api('/api/native/action',{method:'POST',body:JSON.stringify(body)});toast(out.warning||'Modification CMD Sphere enregistrée',!out.warning);await selectNative(S.nativeGuild)}catch(e){toast(e.message,false)}
   }
   async function selectNative(g,railEl){
+    closeDiscordChannel();
     document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));railEl&&railEl.classList.add('active');
     qs('.sphere-app')?.classList.add('cmd-native-selected');
     S.guild=null;S.bot=null;S.structure=null;S.nativeGuild=g;qs('#refresh').disabled=false;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML='<span class="bot">CMD Sphere · autonome</span>';
@@ -313,7 +315,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       }
       qs('#workspace').className='';
       const headIcon=d.guild.icon?'<img src="'+esc(String(d.guild.icon))+'" alt="">':'';
-      const heading='<header class="cmd-server-head"><div class="cmd-server-heading">'+headIcon+'<div><strong>'+esc(d.guild.name)+'</strong><small>'+Number(d.guild.member_count||1)+' membres · '+(d.guild.source_discord_id?'Serveur Discord importé':'Communauté CMD Sphere')+'</small>'+(d.guild.founder_auto_boost?'<small style="color:#86f8ef;font-weight:800">👑 ★ Boost fondateur permanent</small>':"")+'</div><button type="button" class="cmd-server-settings" data-csm-open-settings aria-label="Paramètres du serveur">⚙</button></div><label class="cmd-server-search"><span>⌕</span><input id="cmdChannelSearch" type="search" aria-label="Rechercher un salon" placeholder="Rechercher des salons…" autocomplete="off"></label><div class="cmd-server-head-actions"><button type="button" id="cmdInviteCopy">👥 Inviter</button><a href="/stars">★ Booster</a><a href="/profile?server='+encodeURIComponent(String(g.id))+'">Profil du serveur</a></div></header>';
+      const heading='<header class="cmd-server-head"'+(d.guild.server_banner&&String(d.guild.server_banner).startsWith('data:image/')&&String(d.guild.server_banner).includes(';base64,')?' style="background-image:linear-gradient(0deg,#121421ee,#121421aa),url('+esc(String(d.guild.server_banner))+');background-position:center;background-size:cover"':'')+'><div class="cmd-server-heading">'+headIcon+'<div><strong>'+esc(d.guild.name)+'</strong><small>'+Number(d.guild.member_count||1)+' membres · '+(d.guild.source_discord_id?'Serveur Discord importé':'Communauté CMD Sphere')+'</small>'+(d.guild.founder_auto_boost?'<small style="color:#86f8ef;font-weight:800">👑 ★ Boost fondateur permanent</small>':"")+'</div><button type="button" class="cmd-server-settings" data-csm-open-settings aria-label="Paramètres du serveur">⚙</button></div><label class="cmd-server-search"><span>⌕</span><input id="cmdChannelSearch" type="search" aria-label="Rechercher un salon" placeholder="Rechercher des salons…" autocomplete="off"></label><div class="cmd-server-head-actions"><button type="button" id="cmdInviteCopy">👥 Inviter</button><a href="/server-boosts/'+encodeURIComponent(String(g.id))+'">💎 Niveaux & avantages</a><a href="/stars">★ Ajouter un boost</a><a href="/profile?server='+encodeURIComponent(String(g.id))+'">Profil du serveur</a></div></header>';
       const categories=cats.map(c=>'<section class="cmd-server-section" data-category><button class="cmd-category-toggle" type="button" aria-expanded="true"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 5 5 6 5-6"/></svg><span>'+esc(c.name)+'</span></button>'+(admin?'<button type="button" class="cmd-category-settings" data-csm-channel-settings="'+esc(String(c.id))+'" aria-label="Modifier la catégorie '+esc(c.name)+'">⚙</button>':'')+'<div class="cmd-category-children">'+chs.filter(x=>String(x.source_parent_id||'')===String(c.source_channel_id||c.id)).map(x=>nativeChannelListItem(g.id,x)).join('')+'</div></section>').join('');
       const parentIds=new Set(cats.map(c=>String(c.source_channel_id||c.id)));
       const ungrouped=chs.filter(x=>!x.source_parent_id||!parentIds.has(String(x.source_parent_id))).map(x=>nativeChannelListItem(g.id,x)).join('');
@@ -354,12 +356,6 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       });
       if(admin)qs('#workspace').querySelectorAll('[data-native-channel]').forEach(row=>{const gear=document.createElement('button');gear.type='button';gear.className='cmd-channel-settings';gear.dataset.csmChannelSettings=row.dataset.nativeChannel;gear.setAttribute('aria-label','Modifier le salon '+row.dataset.nativeName);gear.textContent='⚙';row.insertAdjacentElement('afterend',gear)});
       const query=new URLSearchParams(location.search),channelId=query.get('openChannel');
-      if(!channelId&&window.matchMedia?.('(max-width:850px)').matches){
-        const textChannels=chs.filter(x=>['text','announcement','forum'].includes(String(x.type||'')));
-        let last='';try{last=sessionStorage.getItem('cmd-last-channel-'+g.id)||''}catch{}
-        const selected=textChannels.find(x=>String(x.id)===last)||textChannels.slice().sort((a,b)=>Number(b.archived_count||0)-Number(a.archived_count||0))[0];
-        if(selected)await openNativeChannel(g.id,selected.id,selected.name);
-      }
       if(channelId&&String(query.get('openNative'))===String(g.id)&&!window.__openedNativeChannelFromQuery){
         const target=chs.find(x=>String(x.id)===String(channelId)&&['text','announcement','forum'].includes(String(x.type||'')));
         if(target){window.__openedNativeChannelFromQuery=true;await openNativeChannel(g.id,target.id,target.name)}
@@ -970,6 +966,7 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS default_notifications TEXT NOT NULL DEFAULT 'mentions'");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS show_boost_bar BOOLEAN NOT NULL DEFAULT TRUE");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS founder_auto_boost BOOLEAN NOT NULL DEFAULT FALSE");
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS server_banner TEXT");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS welcome_message BOOLEAN NOT NULL DEFAULT TRUE");
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -2734,8 +2731,8 @@ async function listNativeGuilds(auth){
   await ensureFounderBoosts(auth);
   const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
     (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count,
-    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts b WHERE b.guild_id=g.id AND b.expires_at>NOW())+CASE WHEN g.founder_auto_boost THEN 1 ELSE 0 END) AS boost_count,
-    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.user_id=$1 AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts b WHERE b.guild_id=g.id AND b.user_id=$1 AND b.expires_at>NOW())+CASE WHEN g.founder_auto_boost AND g.owner_user_id=$1 THEN 1 ELSE 0 END) AS my_boost_count,
+    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts b WHERE b.guild_id=g.id AND b.expires_at>NOW())+CASE WHEN g.founder_auto_boost THEN 7 ELSE 0 END) AS boost_count,
+    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.user_id=$1 AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts b WHERE b.guild_id=g.id AND b.user_id=$1 AND b.expires_at>NOW())+CASE WHEN g.founder_auto_boost AND g.owner_user_id=$1 THEN 7 ELSE 0 END) AS my_boost_count,
     (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
       LEFT JOIN cmd_native_channel_reads rd ON rd.user_id=$1 AND rd.channel_id=msg.channel_id
       WHERE msg.guild_id=g.id AND msg.sender_user_id<>$1 AND msg.created_at>COALESCE(rd.last_read_at,'1970-01-01'::timestamptz)) AS unread_count
@@ -3242,7 +3239,7 @@ async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
 async function nativeGuildDetail(auth,id){
   const member=await requireNativeMember(auth,id);
   await ensureFounderBoosts(auth);
-  const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count, ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts ss WHERE ss.guild_id=g.id AND ss.expires_at>NOW())+CASE WHEN g.founder_auto_boost THEN 1 ELSE 0 END) boost_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
+  const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count, ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts ss WHERE ss.guild_id=g.id AND ss.expires_at>NOW())+CASE WHEN g.founder_auto_boost THEN 7 ELSE 0 END) boost_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
   if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const [channels,roles]=await Promise.all([
     pool.query(`SELECT c.*,
@@ -3363,6 +3360,7 @@ async function updateNativeServerIdentity(auth,input){
   if(!name)throw new Error("Nom du serveur requis.");
   const description=safeText(input.description||"",1000);
   const image=input.iconDataUrl?safeImageData(input.iconDataUrl,2800000,"Icône"):null;
+  if(image&&/^data:image\/gif/i.test(image))await requireCmdBoosts(pool,guildId,2);
   const notifications=input.defaultNotifications==="all"?"all":"mentions";
   const r=await pool.query(
     "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=$4,icon=COALESCE($5,icon),default_notifications=$6,welcome_message=$7,updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,source_discord_id",
@@ -3375,8 +3373,11 @@ async function updateNativeServerIdentity(auth,input){
 async function updateNativeServerStyle(auth,input){
   const guildId=String(input.guildId||"");await requireNativeOwner(auth,guildId);
   const tag=safeText(input.serverTag,12).replace(/[\r\n]/g,"");
+  const boosts=await cmdBoostCount(pool,guildId);
+  if(tag&&boosts.boosts<3)throw new Error("Tag de serveur disponible à partir de 3 boosts.");
   const packs={star:"💎",viking:"🪓",heart:"💗",goat:"🐐",radioactive:"☢️"};
   const pack=Object.hasOwn(packs,String(input.badgePack||""))?String(input.badgePack):"star";
+  if(pack!=="star"&&boosts.boosts<2)throw new Error("Les packs de badges sont débloqués à partir de 2 boosts.");
   const icon=safeText(input.serverTagIcon,8)||packs[pack]||"✦";
   const style=["plain","prism","glow"].includes(String(input.serverTagStyle||""))?String(input.serverTagStyle):"prism";
   const r=await pool.query('UPDATE cmd_native_guilds SET server_tag=$2,server_tag_icon=$3,server_tag_style=$4,badge_pack=$5,updated_at=NOW() WHERE id=$1 RETURNING id,name,server_tag,server_tag_icon,server_tag_style,badge_pack',[guildId,tag||null,icon,style,pack]);
@@ -3390,6 +3391,7 @@ async function updateNativeRoleStyle(auth,input){
   const a=/^#[0-9A-Fa-f]{6}$/.test(String(input.gradientStart||""))?String(input.gradientStart):"#8b5cf6";
   const b=/^#[0-9A-Fa-f]{6}$/.test(String(input.gradientEnd||""))?String(input.gradientEnd):"#ec4899";
   const icon=safeText(input.roleIcon,8)||null;
+  if((visualStyle!=="solid"||icon)&&Number((await cmdBoostCount(pool,guildId)).boosts)<3)throw new Error("Styles dégradés et icônes de rôle : 3 boosts nécessaires.");
   const r=await pool.query('UPDATE cmd_native_roles SET visual_style=$3,gradient_start=$4,gradient_end=$5,role_icon=$6 WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) RETURNING id,name,visual_style,gradient_start,gradient_end,role_icon',[guildId,roleId,visualStyle,a,b,icon]);
   if(!r.rows[0])throw new Error("Rôle introuvable.");
   return r.rows[0];
@@ -3905,6 +3907,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(await handleCmdOAuth(req,res,url,{pool,auth:dashboardAuth(req),html,sendJson,readBody:readFormBodyJson}))return;
     if(await handleCmdStars(req,res,url,{pool,baseUrl,auth:dashboardAuth(req),html,sendJson,redirect,readBodyJson:readFormBodyJson,isFounder:isCmdOwner,getPremiumState,listNativeGuilds}))return;
+    if(await handleCmdServerBoosts(req,res,url,{pool,baseUrl,auth:dashboardAuth(req),html,sendJson,redirect,readBodyJson:readFormBodyJson,requireNativeOwner,requireNativeMember}))return;
     if(await developerRoute(req,res,url,{pool,auth:dashboardAuth(req),baseUrl,sendJson,html,readBody:readFormBodyJson,requireNativeAdmin,requireNativeMember}))return;
     if(req.method==="GET"&&(url.pathname==="/"||url.pathname==="/dashboard")){
       const auth=dashboardAuth(req);
