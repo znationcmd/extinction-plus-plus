@@ -100,3 +100,17 @@
  #channelEmojiSheet .cmd-emoji-grid-v2.cmd-media-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  #channelEmojiSheet .cmd-media-tile{aspect-ratio:1.25}
 }
+
+
+/* Discover GIFs and stickers with touch-friendly categories and saved favorites. */
+#channelEmojiSheet #cmdMediaCategories:not([hidden]){display:flex;flex:0 0 auto;gap:7px;padding:2px 0 6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#channelEmojiSheet #cmdMediaCategories[hidden]{display:none}
+#channelEmojiSheet #cmdMediaCategories::-webkit-scrollbar{display:none}
+#channelEmojiSheet .cmd-media-category{flex:0 0 auto;border:1px solid #ffffff25;border-radius:24px;min-height:34px;padding:7px 13px;background:#ffffff12;color:#f6eefa;font:650 13px system-ui;white-space:nowrap;cursor:pointer}
+#channelEmojiSheet .cmd-media-category.active{background:#8251ae;color:white;border-color:#bc94eb}
+#channelEmojiSheet .cmd-media-card{position:relative;min-width:0;max-width:100%;border-radius:12px}
+#channelEmojiSheet .cmd-media-card .cmd-media-tile{width:100%;overflow:hidden;display:grid;place-items:center}
+#channelEmojiSheet .cmd-media-fav{position:absolute;top:5px;right:5px;z-index:1;display:grid;place-items:center;width:32px;height:32px;min-height:32px;padding:0;border:1px solid #ffffff56;border-radius:50%;background:#140d18c9;color:#fff;font-size:23px;line-height:1;cursor:pointer}
+#channelEmojiSheet .cmd-media-fav[aria-pressed="true"]{color:#ff679b}
+#channelEmojiSheet .cmd-media-credit{display:block;min-width:0;padding:4px 2px 2px;color:#d5b6ee;text-align:center;font:500 10px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#channelEmojiSheet .cmd-media-category:focus-visible,#channelEmojiSheet .cmd-media-fav:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
