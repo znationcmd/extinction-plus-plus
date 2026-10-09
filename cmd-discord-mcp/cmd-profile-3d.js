@@ -184,14 +184,14 @@ function makeCivilian(state){
   const waist=sphere(0,1.655,0,.304,.18,.207,top);
   if(state.top==="dress"){
    const skirt=add(new THREE.CylinderGeometry(.30,.53,.81,32),top,0,1.40,0);skirt.scale.z=.77;
-  }else if(state.top==="jacket"||state.top==="hoodie"||state.top==="suit"){
+  }else if(state.top==="jacket"||state.top==="hoodie"||state.top==="sweater"||state.top==="coat"||state.top==="suit"){
    const open=state.top==="jacket"||state.top==="suit";
    const layer=mat(open?"#33313c":state.topColor||"#7549b9");
    for(const x of [-1,1]){
     const panel=add(new THREE.BoxGeometry(torsoWidth*.86,.77,.075),open?top:layer,x*torsoWidth*.52,2.003,.228);
     panel.rotation.z=x*.04;
    }
-   if(state.top==="hoodie"){
+   if(state.top==="hoodie"||state.top==="sweater"){
     const hood=add(new THREE.TorusGeometry(.235,.075,9,24),top,0,2.388,-.065);hood.rotation.x=Math.PI*.18;
     add(new THREE.BoxGeometry(.30,.19,.055),top,0,1.79,.292);
    }else{
@@ -199,14 +199,14 @@ function makeCivilian(state){
      const lapel=add(new THREE.BoxGeometry(.11,.39,.028),state.top==="suit"?trim:layer,x*.125,2.21,.28);lapel.rotation.z=x*-.36;
     }
    }
-  }else if(state.top==="shirt"){
+  }else if(state.top==="shirt"||state.top==="polo"){
    for(const x of [-1,1]){
     const collar=add(new THREE.BoxGeometry(.16,.10,.04),trim,x*.115,2.389,.216);collar.rotation.z=x*.4;
    }
   }else if(state.top==="sport"){
    for(const x of [-1,1])add(new THREE.BoxGeometry(.027,.54,.014),trim,x*.215,2.05,.216);
   }
-  const shortSleeves=["tshirt","sport","dress"].includes(state.top);
+  const shortSleeves=["tshirt","sport","dress","polo"].includes(state.top);
   const arms=[];
   for(const side of [-1,1]){
    const pivot=new THREE.Group();pivot.position.set(side*(torsoWidth+.055),2.29,0);root.add(pivot);arms.push(pivot);
@@ -248,6 +248,60 @@ function animateCivilian(frame,now){
  if(pose==="dance"){rig.arms[0].rotation.z=-1.1+Math.sin(t*1.8)*.3;rig.arms[1].rotation.z=1.1-Math.sin(t*1.8)*.3}
  rig.head.rotation.y=Math.sin(t*.3)*.045;
 }
+
+function createWorldMiniature(kind,type){
+ if(!kind||kind==="none")return null;
+ const root=new THREE.Group(),paint=new THREE.MeshStandardMaterial({color:type==="home"?0xcab7a0:0x9365d0,roughness:.65}),glass=new THREE.MeshStandardMaterial({color:0x85b4cc,roughness:.26}),dark=new THREE.MeshStandardMaterial({color:0x292532,roughness:.9}),roof=new THREE.MeshStandardMaterial({color:0x5c4967,roughness:.76});
+ const add=(geo,mat,x,y,z)=>{const mesh=new THREE.Mesh(geo,mat);mesh.position.set(x,y,z);root.add(mesh);return mesh};
+ if(type==="home"){
+  const high=["apartment","castle","villa"].includes(kind)?1.65:1;
+  add(new THREE.BoxGeometry(1,high,.85),paint,0,high/2,0);
+  if(["cottage","house","cabin","beach","snow","tree"].includes(kind)){const m=add(new THREE.ConeGeometry(.81,.5,4),roof,0,high+.25,0);m.rotation.y=Math.PI/4}
+  else add(new THREE.BoxGeometry(1.11,.14,.95),roof,0,high+.07,0);
+  add(new THREE.BoxGeometry(.24,.5,.02),dark,0,.25,.43);
+  for(const x of [-.34,.34])for(let y=.61;y<high;y+=.45)add(new THREE.BoxGeometry(.22,.23,.02),glass,x,y,.44);
+  if(kind==="tree")root.position.y=.4;
+  root.scale.setScalar(.5);root.position.x=-1.13;root.position.z=-1;
+ }else{
+  const tiny=["motorcycle","scooter","bike","kart"].includes(kind);
+  if(kind==="rocket"){
+   add(new THREE.CylinderGeometry(.25,.25,1.2,18),paint,0,.7,0);
+   add(new THREE.ConeGeometry(.26,.4,18),roof,0,1.48,0);
+  }else if(kind==="plane"){
+   add(new THREE.CapsuleGeometry(.23,.6,6,12),paint,0,.6,0).rotation.x=Math.PI/2;
+   add(new THREE.BoxGeometry(1.7,.08,.26),roof,0,.67,0);
+  }else if(kind==="boat"){
+   const hull=add(new THREE.SphereGeometry(.7,20,12),paint,0,.35,0);hull.scale.set(.6,.3,1.25);
+   add(new THREE.BoxGeometry(.5,.35,.48),glass,0,.64,0);
+  }else{
+   add(new THREE.BoxGeometry(tiny?1.05:1.58,tiny?.25:.37,tiny?.45:.83),paint,0,.51,0);
+   if(!tiny)add(new THREE.BoxGeometry(.9,.40,.74),glass,0,.89,0);
+   for(const x of (tiny?[-.44,.44]:[-.56,.56]))for(const z of [-.39,.39]){
+    const w=add(new THREE.CylinderGeometry(tiny?.17:.23,tiny?.17:.23,.15,16),dark,x,.23,z);w.rotation.z=Math.PI/2;
+   }
+  }
+  root.scale.setScalar(.4);root.position.set(1.1,.01,.2);
+ }
+ return root;
+}
+function updateWorld(frame,state){
+ const key=String(state.vehicle||"none")+":"+String(state.home||"none");
+ if(frame.worldKey===key)return;
+ if(frame.worldGroup)frame.base.remove(frame.worldGroup);
+ const props=new THREE.Group(),car=createWorldMiniature(state.vehicle,"vehicle"),house=createWorldMiniature(state.home,"home");
+ if(car)props.add(car);if(house)props.add(house);
+ frame.base.add(props);frame.worldGroup=props;frame.worldKey=key;
+}
+function makeProceduralPet(kind){
+ const root=new THREE.Group(),shade=kind==="wolf"?0x8996a8:kind==="fox"?0xd28c55:kind==="rabbit"?0xe6dddf:kind==="cat"?0xb2a4a9:0xb8916b;
+ const fur=new THREE.MeshStandardMaterial({color:shade,roughness:.9}),eyes=new THREE.MeshStandardMaterial({color:0x282632});
+ const ball=(x,y,z,a,b,c,m=fur)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),m);o.position.set(x,y,z);o.scale.set(a,b,c);root.add(o);return o};
+ ball(0,.48,0,.28,.32,.4);ball(0,.87,.31,.26,.26,.25);
+ for(const x of [-.11,.11]){ball(x,.94,.54,.027,.026,.017,eyes);ball(x,.19,.29,.09,.18,.11);ball(x,.19,-.21,.09,.18,.11)}
+ ball(0,.82,.56,.04,.037,.023,eyes);
+ for(const x of [-.18,.18])ball(x,kind==="rabbit"?1.19:1.075,.24,.073,kind==="rabbit"?.28:.15,.082);
+ return root;
+}
 function setPerson(frame,state){
  const id=state.avatarModel==="custom"?"customAvatar":"civilian";
  if(frame.modelKey===id&&frame.person){frame.wrapper.classList.add("cmd-real-3d-ready");return}
@@ -268,7 +322,7 @@ function setPerson(frame,state){
 }
 async function setPet(frame,state){
  const knownPets={fox:"fox",cat:"cat",horse:"horse",bird:"parrot",duck:"duck",flamingo:"flamingo",stork:"stork"};
- const id=state.pet==="none"?null:(knownPets[state.pet]||null);
+ const id=state.pet==="none"?null:(knownPets[state.pet]||"procedural:"+state.pet);
  if(!id){
   if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}if(frame.petMixer){frame.mixers=frame.mixers.filter(x=>x!==frame.petMixer);frame.petMixer=null}frame.petKey="";frame.petToken++;
   frame.wrapper.dataset.pet3d="off";return;
@@ -276,7 +330,7 @@ async function setPet(frame,state){
  if(frame.petKey===id&&frame.pet)return;
  const ticket=++frame.petToken;
  try{
-  const data=await loadGLB(modelUrls[id]);if(frame.petToken!==ticket)return;
+  const data=id.startsWith("procedural:")?{scene:makeProceduralPet(state.pet),animations:[]}:await loadGLB(modelUrls[id]);if(frame.petToken!==ticket)return;
   if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}
   if(frame.petMixer){frame.mixers=frame.mixers.filter(x=>x!==frame.petMixer);frame.petMixer=null}
   const cloned=cloneSkinned(data.scene);normalize(cloned,.84,1.18,.26);cloned.rotation.y=-.35;
@@ -285,7 +339,7 @@ async function setPet(frame,state){
    const mixer=new THREE.AnimationMixer(cloned);const clip=data.animations.find(x=>/survey|idle/i.test(x.name))||data.animations[0];
    mixer.clipAction(clip).play();frame.petMixer=mixer;frame.mixers.push(mixer);
   }
- }catch(e){console.warn("[CMD 3D pet]",e);frame.wrapper.dataset.pet3d="off"}
+ }catch(e){console.warn("[CMD 3D pet]",e);if(frame.petToken!==ticket)return;const pet=makeProceduralPet(state.pet);normalize(pet,.84,1.18,.26);if(frame.pet)frame.base.remove(frame.pet);frame.base.add(pet);frame.pet=pet;frame.petKey=id;frame.wrapper.dataset.pet3d="on"}
 }
 function update(frame,state){
  if(!frame)return;
@@ -295,6 +349,7 @@ function update(frame,state){
  if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
+ updateWorld(frame,state);
 }
 const avatarThumbCache=new Map();
 let avatarThumbBusy=false;
