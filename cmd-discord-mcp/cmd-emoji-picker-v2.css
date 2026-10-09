@@ -67,3 +67,11 @@
 #channelEmojiSheet .cmd-emoji-creator .cmd-emoji-import-bulk{display:block;width:100%;min-height:47px;padding:12px 14px;margin:10px 0;border:0;border-radius:10px;background:#8456b4;color:#fff;font:800 14px system-ui;white-space:normal;cursor:pointer}
 #channelEmojiSheet .cmd-emoji-creator .cmd-emoji-import-bulk:disabled{opacity:.5;cursor:wait}
 #channelEmojiSheet #cmdEmojiBulkStatus{line-height:1.5;overflow-wrap:anywhere;color:#e9d7f8;min-height:24px}
+
+/* Subtle illustrative movement for imported static thumbnails (not original animated emoji files). */
+@media (prefers-reduced-motion:no-preference){
+ #channelEmojiSheet .cmd-emoji-icon-v2 img[src^="/api/cmd-emojis/file/"]:hover,
+ #channelEmojiSheet .cmd-emoji-icon-v2:focus-visible img[src^="/api/cmd-emojis/file/"],
+ #channelMessages img.cmd-inline-emoji-v2[src^="/api/cmd-emojis/file/"]:hover{animation:cmd-emoji-photo-wiggle 750ms ease-in-out infinite alternate;transform-origin:center}
+}
+@keyframes cmd-emoji-photo-wiggle{0%{transform:translateY(0) rotate(-4deg)}100%{transform:translateY(-3px) rotate(4deg)}}

@@ -7,6 +7,7 @@ import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
 import {freeMessageTranslation} from "./cmd-translation.js";
 import crypto from "node:crypto";
 import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js";
+import {seedCmdPhotoEmojis} from "./cmd-emoji-photo-seed.js";
 import {initCmdBubbleColors,cmdBubbleColorsRoute} from "./cmd-bubble-colors.js";
 import {initCmdEmailDb,cmdEmailRoute,sendCmdAccountMail,attachFounderEmail,normalizeEmail} from "./cmd-account-email.js";
 import {initDeveloperDb,developerRoute} from "./cmd-developer-api.js";
@@ -4824,7 +4825,7 @@ httpServer.listen(port,"0.0.0.0",async()=>{
         }else console.log('[founder] Native founder username already exists, no password was changed');
       }
     }catch(err){console.error('[founder] Founder account provisioning failed: '+err.message)}
-    await attachFounderEmail(pool);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+    await attachFounderEmail(pool);setTimeout(()=>seedCmdPhotoEmojis(pool).catch(e=>console.error("[cmd-photo-emojis]",e.message)),2000);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
