@@ -132,6 +132,47 @@
    ctx.fillText(character.trim(),64,65,122);
    return cv.toDataURL("image/png");
  }
+ async function importPhotoPack(){
+   const file=$("#cmdEmojiBulkFile")?.files?.[0],button=$("#cmdEmojiBulkImport"),status=$("#cmdEmojiBulkStatus");
+   if(!file){status.textContent="Sélectionne le fichier .json fourni dans ChatGPT.";return}
+   if(file.size>45*1024*1024){status.textContent="Fichier trop volumineux.";return}
+   button.disabled=true;let paused=false;
+   const stop=$("#cmdEmojiBulkStop");
+   if(stop){stop.hidden=false;stop.onclick=()=>{paused=true;status.textContent="Arrêt après le lot en cours…"}}
+   try{
+    status.textContent="Lecture du pack…";
+    const pack=JSON.parse(await file.text());
+    if(pack.format!=="cmd-emoji-pack-v1"||!Array.isArray(pack.items))throw Error("Pack JSON non reconnu.");
+    const items=pack.items.filter(x=>x&&typeof x.name==="string"&&typeof x.dataUrl==="string");
+    if(!items.length)throw Error("Pack vide.");
+    const key="cmd-emoji-import-"+file.name+"-"+items.length;
+    let index=Number(localStorage.getItem(key)||0);
+    if(!Number.isSafeInteger(index)||index<0||index>=items.length)index=0;
+    let created=0,skipped=0;
+    while(index<items.length&&!paused){
+     const batch=items.slice(index,index+40);
+     let lastError=null,success=null;
+     for(let attempt=0;attempt<3&&!success;attempt++){
+      try{
+       const res=await fetch("/api/cmd-emojis/bulk",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({items:batch})});
+       const data=await res.json().catch(()=>({}));
+       if(!res.ok)throw Error(data.error||"Serveur indisponible ("+res.status+")");
+       success=data;
+      }catch(error){lastError=error;if(attempt<2)await new Promise(r=>setTimeout(r,1000*(attempt+1)))}
+     }
+     if(!success)throw lastError||Error("Import impossible");
+     created+=Number(success.created||0);skipped+=Number(success.skipped||0);
+     index+=batch.length;localStorage.setItem(key,String(index));
+     status.textContent=index+" / "+items.length+" emojis traités · "+created+" nouveaux · "+skipped+" déjà présents";
+     if(index%400===0)await new Promise(r=>setTimeout(r,100));
+    }
+    if(!paused){
+     localStorage.removeItem(key);status.textContent="Terminé : "+items.length+" emojis vérifiés, "+created+" ajoutés, "+skipped+" déjà présents. Visibles par toute la communauté.";
+     void getLibrary(true);
+    }else status.textContent="Import interrompu à "+index+"/"+items.length+". Reprends plus tard avec le même fichier.";
+   }catch(error){status.textContent="Import non terminé : "+(error.message||"erreur");console.warn("[CMD emoji bulk]",error)}
+   finally{button.disabled=false;if(stop)stop.hidden=true}
+  }
  async function openCreator(){
    const sheet=$("#channelEmojiSheet");if(!sheet)return;
    if(panel){panel.remove();panel=null;return}
@@ -147,10 +188,12 @@
      (canServer?'<option value="server">Membres de ce serveur</option>':'')+'</select></label>'+
      '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 1 Mo. Choisis uniquement des images autorisées.</small>'+
      '<button type="submit" id="cmdEmojiSave">Enregistrer</button><p id="cmdEmojiCreatorNotice" role="status"></p></form>'+
+     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-bulk" style="padding:12px;border:1px solid #ffffff26;border-radius:12px;margin:12px 0;display:grid;gap:9px"><strong>Importer les emojis des captures</strong><span>Réservé au fondateur · partager avec tous</span><label>Fichier CMD au format .json<input type="file" id="cmdEmojiBulkFile" accept=".json,application/json"></label><button type="button" id="cmdEmojiBulkImport">Importer tout le pack</button><button type="button" id="cmdEmojiBulkStop" hidden>Arrêter</button><p id="cmdEmojiBulkStatus" role="status" aria-live="polite"></p></section>':'')+
      '<section class="cmd-emoji-manage"><strong>Mes emojis et ceux que je peux gérer</strong><div id="cmdEmojiOwned"></div></section>';
    sheet.append(panel);
    $("#cmdEmojiClose").onclick=()=>{panel.remove();panel=null};
    drawMine();
+   if($("#cmdEmojiBulkImport"))$("#cmdEmojiBulkImport").onclick=importPhotoPack;
    $("#cmdEmojiCreatorForm").onsubmit=async event=>{
      event.preventDefault();const form=event.currentTarget,notice=$("#cmdEmojiCreatorNotice"),btn=$("#cmdEmojiSave");
      btn.disabled=true;notice.textContent="Enregistrement…";
