@@ -6,7 +6,7 @@ const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["stor
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
-let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0;
+let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
 const state={mode:"video",theme:"epic",format:"9:16",effect:"zoom",transition:"fade",filter:"natural",duration:12,music:"electro",musicStart:0,volume:40,headline:"Rejoins notre serveur !",subtitle:"Une communauté t'attend",emoji:"🚀",title:"Publicité de mon serveur",guildId:""};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const note=t=>{const n=$("#cmdStudioNotice");if(n)n.textContent=String(t||"")};
@@ -15,7 +15,7 @@ function open(){
  if(root){root.hidden=false;document.body.classList.add("cmd-studio-active");return}
  root=document.createElement("section");root.id="cmdPromoStudio";root.setAttribute("role","dialog");root.setAttribute("aria-modal","true");root.setAttribute("aria-label","Studio publicité CMD Sphere");
  root.innerHTML='<header class="cmd-studio-header"><b>🎬 CMD Sphere · Studio Pub</b><button type="button" id="cmdStudioClose" aria-label="Fermer">✕</button></header>'+
- '<div class="cmd-studio-main"><div class="cmd-studio-preview"><canvas id="cmdStudioCanvas" width="540" height="960" aria-label="Prévisualisation animée"></canvas><div class="cmd-studio-playbar"><button type="button" id="cmdStudioPlay">▶ Prévisualiser</button><span id="cmdStudioClock">0:00 / 0:12</span></div><small>La musique et l’animation sont assemblées lors de l’export vidéo.</small></div>'+
+ '<div class="cmd-studio-main"><div class="cmd-studio-preview"><canvas id="cmdStudioCanvas" width="540" height="960" aria-label="Prévisualisation animée"></canvas><div class="cmd-studio-playbar"><button type="button" id="cmdStudioPlay">▶ Aperçu avec musique</button><span id="cmdStudioClock">0:00 / 0:12</span></div><input id="cmdStudioSeek" class="cmd-studio-seek" type="range" min="0" max="12" step="0.1" value="0" aria-label="Avancer ou reculer dans la vidéo"><small>Lecture synchronisée de la vidéo, de ses effets et de sa musique. Déplace la barre pour choisir un moment.</small></div>'+
  '<div class="cmd-studio-controls"><h2>Que veux-tu créer ?</h2><div class="cmd-studio-choices" id="cmdStudioModes">'+buttonHTML(MODES,"mode")+'</div>'+
  '<div class="cmd-studio-card"><h3>1. Images et vidéos</h3><label class="cmd-studio-upload">＋ Ajouter photos ou vidéos<input id="cmdStudioMedia" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" multiple></label><div id="cmdStudioFiles" class="cmd-studio-files"></div><small>Choisis plusieurs images pour un diaporama. Les fichiers sources peuvent dépasser 10 Mo (150 Mo par fichier).</small></div>'+
  '<div class="cmd-studio-card"><h3>2. Format et modèle</h3><div class="cmd-studio-choices">'+buttonHTML([["9:16","📱 Vertical"],["1:1","⬛ Carré"],["16:9","🖥️ Horizontal"]],"format")+'</div><div id="cmdStudioThemes" class="cmd-studio-choices cmd-studio-themes">'+buttonHTML(Object.entries(THEMES).map(([k,v])=>[k,v[0]]),"theme")+'</div></div>'+
@@ -28,6 +28,7 @@ function open(){
  canvas=$("#cmdStudioCanvas");ctx=canvas.getContext("2d",{alpha:false});
  $("#cmdStudioClose").onclick=close;
  $("#cmdStudioPlay").onclick=togglePreview;
+ $("#cmdStudioSeek").oninput=e=>{const time=Number(e.target.value)||0;stop();previewCursor=time;render(time)};
  $("#cmdStudioOpenMusic").onclick=openMusicSheet;
  $("#cmdStudioCloseMusic").onclick=$("#cmdStudioMusicDone").onclick=()=>{stopAudition();$("#cmdStudioMusicSheet").hidden=true};
  $("#cmdStudioMusicQuery").addEventListener("input",e=>{clearTimeout(musicSearchTimer);const term=e.target.value.trim();musicSearchTimer=setTimeout(()=>searchMusic(term),400)});
@@ -149,11 +150,12 @@ function render(time=0){
  if(state.emoji){ctx.font=Math.round(w*.13)+"px system-ui";ctx.fillText(state.emoji.slice(0,8),w*.5,h*.43)}
  ctx.font="bold "+Math.round(w*.037)+"px system-ui";ctx.fillStyle="#ebc8ff";ctx.fillText("Rejoins la communauté ✦",w/2,h*.95);
  if(state.music==="library"&&selectedTrack&&state.mode!=="gif"){ctx.font=Math.max(10,Math.round(w*.019))+"px system-ui";ctx.fillStyle="#f3e7ff";ctx.fillText(("♪ "+selectedTrack.title+" · "+selectedTrack.artist+" · "+selectedTrack.license).slice(0,92),w/2,h*.985)}
- const clk=$("#cmdStudioClock");if(clk)clk.textContent="0:"+String(Math.floor(Math.min(state.duration,t))).padStart(2,"0")+" / 0:"+String(state.duration).padStart(2,"0");
+ const clk=$("#cmdStudioClock");if(clk)clk.textContent=clock(t)+" / "+clock(state.duration);
+ const seek=$("#cmdStudioSeek");if(seek){seek.max=state.duration;seek.value=Math.min(state.duration,t)}
 }
 function stop(){
  playing=false;cancelAnimationFrame(raf);raf=0;
- if($("#cmdStudioPlay"))$("#cmdStudioPlay").textContent="▶ Prévisualiser";
+ if($("#cmdStudioPlay"))$("#cmdStudioPlay").textContent="▶ Aperçu avec musique";
  for(const c of clips)if(c.video)c.element.pause();
  if(previewAudio){previewAudio.pause();if(previewAudio.src.startsWith("blob:"))URL.revokeObjectURL(previewAudio.src);previewAudio=null}
  if(previewCtx){void previewCtx.close().catch(()=>{});previewCtx=null}
@@ -161,17 +163,17 @@ function stop(){
 function playFrame(){
  if(!playing)return;
  const time=(performance.now()-playStart)/1000;
- if(time>=state.duration){stop();render(state.duration);return}
- render(time);raf=requestAnimationFrame(playFrame);
+ if(time>=state.duration){stop();previewCursor=0;render(state.duration);return}
+ previewCursor=time;render(time);raf=requestAnimationFrame(playFrame);
 }
 function togglePreview(){
  if(playing){stop();return}
- stop();playing=true;playStart=performance.now();$("#cmdStudioPlay").textContent="⏸ Arrêter";
+ stop();playing=true;playStart=performance.now()-previewCursor*1000;$("#cmdStudioPlay").textContent="⏸ Arrêter";
  for(const c of clips)if(c.video){try{c.element.currentTime=0;void c.element.play().catch(()=>{})}catch{}}
  stopAudition();
  if((state.music==="file"&&musicFile)||(state.music==="library"&&selectedTrack)){
    previewAudio=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;
-   previewAudio.onloadedmetadata=()=>{try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2))}catch{}};
+   previewAudio.onloadedmetadata=()=>{try{previewAudio.currentTime=Math.min((state.musicStart||0)+previewCursor,Math.max(0,(previewAudio.duration||0)-.2))}catch{}};
    previewAudio.onended=()=>{if(playing){try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2));void previewAudio.play().catch(()=>{})}catch{}}};
    previewAudio.play().catch(e=>note("Aperçu musical indisponible : "+e.message));
  }
