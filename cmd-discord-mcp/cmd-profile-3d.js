@@ -119,21 +119,28 @@ function applyAccessory(frame,state){
  const choice=state.accessory;
  if(!frame.person||!["glasses","sunglasses","cap","hat","crown","earrings","necklace"].includes(choice))return;
  const bounds=new THREE.Box3().setFromObject(frame.person),size=new THREE.Vector3();bounds.getSize(size);
- const headY=bounds.max.y-size.y*.115;
+ const civilian=!!frame.person.userData.cmdCivilian;
+ const headY=civilian?2.68:bounds.max.y-size.y*.115;
  const group=new THREE.Group();
  const dark=new THREE.MeshStandardMaterial({color:choice==="glasses"?0xb8d7ef:0x252633,metalness:.15,roughness:.3,transparent:true,opacity:.86});
  const frameMat=new THREE.MeshStandardMaterial({color:0x282332,metalness:.35,roughness:.4});
  if(choice==="earrings"||choice==="necklace"){
    const jewel=new THREE.MeshStandardMaterial({color:0xe1bee8,metalness:.62,roughness:.26});
    if(choice==="earrings"){
-    for(const x of [-.245,.245]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(.045,.013,8,16),jewel);hoop.position.set(x,headY-.18,bounds.max.z+.02);group.add(hoop)}
+    for(const x of [-.275,.275]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(.045,.013,8,16),jewel);hoop.position.set(x,headY-.14,civilian?.115:bounds.max.z+.02);group.add(hoop)}
    }else{
-    const chain=new THREE.Mesh(new THREE.TorusGeometry(.185,.012,8,28),jewel);chain.rotation.x=Math.PI/2.3;chain.position.set(0,headY-.62,bounds.max.z-.1);group.add(chain);
+    const chain=new THREE.Mesh(new THREE.TorusGeometry(.185,.012,8,28),jewel);chain.rotation.x=Math.PI/2.3;chain.position.set(0,headY-.57,civilian?.198:bounds.max.z-.1);group.add(chain);
    }
   }else if(choice==="glasses"||choice==="sunglasses"){
-  for(const x of [-.14,.14]){const lens=new THREE.Mesh(new THREE.BoxGeometry(.235,.135,.025),dark);lens.position.set(x,0,.01);group.add(lens)}
-  const bridge=new THREE.Mesh(new THREE.BoxGeometry(.08,.025,.035),frameMat);bridge.position.z=.02;group.add(bridge);
-  group.position.set(0,headY-.045,bounds.max.z+.045);
+  for(const x of [-.143,.143]){
+   const lens=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),dark);
+   lens.scale.set(.115,.081,.014);lens.position.set(x,0,.012);group.add(lens);
+   const rim=new THREE.Mesh(new THREE.TorusGeometry(.111,.010,8,28),frameMat);
+   rim.scale.y=.73;rim.position.set(x,0,.026);group.add(rim);
+  }
+  const bridge=new THREE.Mesh(new THREE.CylinderGeometry(.011,.011,.08,12),frameMat);
+  bridge.rotation.z=Math.PI/2;bridge.position.z=.033;group.add(bridge);
+  group.position.set(0,headY+.040,civilian?.287:bounds.max.z+.045);
  }else{
   const hat=new THREE.Mesh(new THREE.CylinderGeometry(choice==="crown"?.17:.22,.21,choice==="crown"?.19:.13,20),new THREE.MeshStandardMaterial({color:choice==="crown"?0xe3bb63:0x49405f,roughness:.8}));
   group.add(hat);
@@ -319,6 +326,10 @@ function makeCivilian(state){
  return root;
 }
 
+function releaseCivilian(group){
+ if(!group?.userData?.cmdCivilian)return;
+ group.traverse(node=>{if(!node.isMesh)return;node.geometry?.dispose();const materials=Array.isArray(node.material)?node.material:[node.material];materials.forEach(mat=>mat?.dispose())});
+}
 function animateCivilian(frame,now){
  const rig=frame.person?.userData?.cmdRig;if(!rig)return;
  const t=now*.0033,pose=frame.currentPose||"stand";
@@ -393,7 +404,7 @@ function setPerson(frame,state){
  const token=++frame.token;
  const install=(cloned,animations=[])=>{
   if(frame.token!==token)return;
-  if(frame.person)frame.base.remove(frame.person);
+  if(frame.person){frame.base.remove(frame.person);releaseCivilian(frame.person)}
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
   frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
   frame.lookKey="";frame.poseKey="";frame.sourceAnimations=animations;
@@ -431,7 +442,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.bodyType,state.skin,state.eyeColor,state.nose,state.mouth,state.hairColor,state.hair,state.beard,state.beardColor,state.faceShape,state.browStyle,state.eyeShape,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.bodyType,state.skin,state.eyeColor,state.nose,state.mouth,state.hairColor,state.hair,state.beard,state.beardColor,state.faceShape,state.browStyle,state.eyeShape,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);releaseCivilian(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
  updateWorld(frame,state);
