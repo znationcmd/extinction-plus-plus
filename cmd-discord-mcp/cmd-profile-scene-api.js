@@ -1,5 +1,5 @@
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
-const SCENES=new Set(["beach","seaside","forest","neonforest","waterfall","city","night","space","mountains","chalet","crystal","custom","none"]);
+const SCENES=new Set(["beach","seaside","forest","neonforest","waterfall","city","night","space","mountains","chalet","crystal","desert","garden","sunset","rain","snowfall","aurora","underwater","palace","custom","none",...Array.from({length:54},(_,i)=>"reference-"+i)]);
 const HAIR=new Set(["short","long","curly","bob","shaved","ponytail","buzz","fade","crop","undercut","quiff","swept","wavy","afro","braids","locs"]);
 const BEARDS=new Set(["none","stubble","short","trimmed","full","long","goatee","mustache"]);
 const FACE_SHAPES=new Set(["oval","round","square","heart"]);
