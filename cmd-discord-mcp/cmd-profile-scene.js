@@ -316,10 +316,10 @@ function renderSheet(tab){
  area.scrollTop=previousScroll;
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
 
- if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
+ /* The profile editor is 2D: do not launch the old 3D preview renderer. */
  $("[data-sticker-category]",area).forEach(el=>el.addEventListener("click",()=>{const category=el.dataset.stickerCategory;const n=Number(el.dataset.stickerIndex);if(!Number.isInteger(n))return;const target={vestes:"top",chapeaux:"accessory",lunettes:"accessory",cheveux:"hair",barbes:"beard",piercings:"piercing"}[category];if(!target)return;const options={vestes:clothes,chapeaux:[["hat"],["cap"]],lunettes:[["glasses"],["sunglasses"]],cheveux:[["short"],["long"],["curly"],["ponytail"],["bob"],["shaved"]],barbes:[["none"],["mustache"],["goatee"],["stubble"],["long"]],piercings:piercings}[category];if(Array.isArray(options)&&options.length){const option=options[n%options.length];if(Array.isArray(option))state[target]=option[0]}el.closest(".cmd-original-gallery")?.querySelectorAll(".cmd-original-gallery-tile").forEach(tile=>tile.classList.toggle("selected",tile===el));refreshEditor()}));
  $("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
- $$("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="3d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
+ $$("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="2d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
  $$("[data-universe-tab]",area).forEach(e=>e.addEventListener("click",()=>{universeCategory=e.dataset.universeTab;renderSheet(tab)}));
  $$("[data-universe-name]",area).forEach(e=>e.addEventListener("input",()=>{state.petName=e.value.slice(0,40)}));
  $$("[data-universe-privacy]",area).forEach(e=>e.addEventListener("change",()=>{state.hideHome=e.checked}));
@@ -336,8 +336,7 @@ function renderSheet(tab){
 }
 function renderStickerPreview(){
  const host=$("#cmdScenePreviewPerson");if(!host)return;
- const avatar=loadedSheets.get("avatar");
- const n=Math.max(0,avatarPresets.findIndex(p=>p.id===state.avatarPreset))%16;
+ // Clothing and silhouette share the same 2D coordinate system.
  host.innerHTML='<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D avec vêtements ajustés">'+drawPerson(state)+'</div>';
  const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
  const hero=$("#cmdSceneHero");if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?loadedSheets.get("scenes"):(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"600% 900%":"cover","important");hero.style.setProperty("background-position",reference>=0?(reference%6*20)+"% "+(Math.floor(reference/6)*12.5)+"%":"center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16):"");applyOriginalSheets()}}
