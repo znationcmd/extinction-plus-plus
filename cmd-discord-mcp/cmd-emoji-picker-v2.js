@@ -108,7 +108,11 @@
         if(state.tab!=="emoji")btn.classList.add("cmd-media-tile");
         if(e.kind==="unicode")btn.textContent=e.value;
         else{const img=document.createElement("img");img.src=e.image;img.alt=e.name;img.loading="lazy";img.decoding="async";img.onerror=()=>btn.remove();if(e.kind==="cmd"&&!e.animated){img.classList.add("cmd-photo-motion");photoPreviewObserver?.observe(img)}btn.appendChild(img)}
-        btn.addEventListener("click",()=>insert(e));fragment.appendChild(btn);
+        btn.addEventListener("click",()=>insert(e));
+        if(e.kind==="webgif"&&/^https:\/\/commons\.wikimedia\.org\//.test(e.sourceUrl||"")){
+          const wrapper=document.createElement("div");wrapper.className="cmd-public-gif-item";wrapper.appendChild(btn);
+          const credit=document.createElement("a");credit.href=e.sourceUrl;credit.target="_blank";credit.rel="noopener noreferrer";credit.textContent="Source / licence";wrapper.appendChild(credit);fragment.appendChild(wrapper);
+        }else fragment.appendChild(btn);
       }
       grid.appendChild(fragment);displayed=end;filling=false;
       if(oldTop>root.scrollTop)root.scrollTop=Math.min(oldTop,Math.max(0,root.scrollHeight-root.clientHeight));
