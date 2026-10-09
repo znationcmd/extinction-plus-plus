@@ -378,3 +378,10 @@
 #cmdSceneSheet .cmd-scene-tabs button{min-width:0;padding-inline:2px;line-height:1.25}
 #cmdSceneSheet .cmd-scene-save-row{position:sticky;bottom:0;z-index:20;padding-bottom:max(8px,env(safe-area-inset-bottom))}
 @media(max-width:410px){#cmdSceneSheet #cmdSceneOptions{padding-inline:10px!important}#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-grid{gap:6px!important}}
+
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-card-carousel{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px!important;overflow:visible!important}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-card{min-width:0!important;width:100%!important;padding:0!important;overflow:hidden;border-radius:15px!important;background:#231d30!important;border:1px solid #564462!important}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-card.selected{border:2px solid #d7a3ff!important;background:#352343!important}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-card-art{height:auto!important;aspect-ratio:1!important;min-height:0!important;width:100%!important;background:radial-gradient(circle at 45% 30%,#625270,#302638 68%,#241e2c)!important;display:flex!important;align-items:center!important;justify-content:center!important;padding:7px!important;box-sizing:border-box!important}
+#cmdSceneSheet .cmd-clothing-sections .cmd-garment-art{display:block!important;width:100%!important;height:100%!important;max-width:138px;max-height:138px;filter:drop-shadow(0 8px 5px #0005)}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-card-title{font-size:12px!important;line-height:1.25!important;min-height:42px!important;padding:8px 3px!important;display:grid!important;place-items:center!important;text-align:center!important}
