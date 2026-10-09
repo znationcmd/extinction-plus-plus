@@ -89,7 +89,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
     if(!bytes.length||bytes.length>MAX_BYTES)throw fail("Emoji trop volumineux: "+name);
     const type=sniff(bytes);if(type.mime!=="image/"+match[1])throw fail("Mauvais format: "+name);
     if(kind==="gif"&&!type.animated)throw fail("Pour la catégorie GIF, choisis un GIF ou WebP réellement animé: "+name);
-    const [w,h]=bounds(bytes,type.mime);if(w>1024||h>1024)throw fail("Dimensions trop grandes: "+name);
+    const [w,h]=bounds(bytes,type.mime);if(w>4096||h>4096)throw fail("Dimensions trop grandes: "+name);
     rows.push({name,bytes,mime:type.mime,animated:type.animated,kind});
    }
    const values=[],segments=[];
@@ -116,7 +116,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
    const bytes=Buffer.from(parsed[2],"base64");if(!bytes.length||bytes.length>MAX_BYTES)throw fail("10 Mo maximum par emoji, GIF ou autocollant.");
    const type=sniff(bytes);if(type.mime!=="image/"+parsed[1])throw fail("Le contenu et le format ne correspondent pas.");
    if(kind==="gif"&&!type.animated)throw fail("Choisis une vraie animation GIF ou WebP pour la catégorie GIF.");
-   const [w,h]=bounds(bytes,type.mime);if(w>1024||h>1024)throw fail("Dimensions maximales : 1024 × 1024 pixels.");
+   const [w,h]=bounds(bytes,type.mime);if(w>4096||h>4096)throw fail("Dimensions maximales : 4096 × 4096 pixels.");
    const q=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_sphere_emojis WHERE scope=$1 AND (($1='server' AND guild_id=$2) OR ($1<>'server' AND creator_user_id=$3))",[scope,gid,uid]);
    const limit=founder?25000:(scope==="server"?250:100);if(Number(q.rows[0]?.n||0)>=limit)throw fail("Collection pleine ("+limit+").");
    const ins=await pool.query("INSERT INTO cmd_sphere_emojis(id,creator_user_id,scope,guild_id,name,mime_type,animated,bytes,size_bytes,kind) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id,creator_user_id,scope,guild_id,name,mime_type,animated,size_bytes,kind",[crypto.randomUUID(),uid,scope,gid,name,type.mime,type.animated,bytes,bytes.length,kind]);
