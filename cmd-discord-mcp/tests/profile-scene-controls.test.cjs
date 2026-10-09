@@ -82,3 +82,19 @@ test("CMD Sphere dressing, scene and pet/vehicle switches remain clickable",()=>
  click("universe-tab","home");
  assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="villa"));
 });
+
+
+test("CMD Sphere renders and selects each of the 68 distinct avatars, including last",()=>{
+ const {area,window,click,render}=makeEditor();
+ render("avatar");
+ const avatarButtons=area.querySelectorAll("[data-imported-avatar]");
+ assert.equal(avatarButtons.length,68,"All 68 unique avatar choices must be present");
+ assert.equal(new Set(avatarButtons.map(button=>button.dataset.importedAvatar)).size,68);
+ for(let i=0;i<68;i++){
+  click("imported-avatar",String(i));
+  const state=window.cmdSphereSceneState();
+  assert.equal(state.avatarPreset,"reference-avatar-"+i);
+  assert.equal(state.avatarStyle,"2d");
+  assert.equal(area.querySelectorAll("[data-imported-avatar]").length,68);
+ }
+});
