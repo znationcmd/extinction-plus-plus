@@ -162,7 +162,7 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009simple6"></head>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261008"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009swipe3"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008fullcircle4"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261009simple6"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
@@ -759,6 +759,13 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     finally{if(b){b.disabled=false;b.textContent='↻ Actualiser'}}
   }
   window.refreshEverything=refreshEverything;
+  // Recharge les messages du salon ouvert sans fermer la discussion ni changer de serveur.
+  window.cmdSphereRefreshCurrentChannel=async function(){
+    if(!CHAT.open)return false;
+    if(CHAT.loading)return false;
+    await loadDiscordMessages(true,false);
+    return true;
+  };
   let mirrorPoll=null;
   function closeMirrorManager(){qs('#mirrorModal').classList.remove('on');clearInterval(mirrorPoll);mirrorPoll=null}
   async function mirrorRender(){
