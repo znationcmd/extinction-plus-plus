@@ -164,7 +164,7 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009polished7"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
-    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009community5"></head>').replace(/<\/body>/i,'<script defer src="/cmd-emoji-picker-v2.js?v=20261009scroll8"></script><script defer src="/cmd-emoji-uploader.js?v=20261009scroll8"></script></body>');
+    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009community5"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009all"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009all"></script><script defer src="/cmd-emoji-uploader.js?v=20261009all"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008fullcircle4"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261009simple6"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
@@ -4673,6 +4673,7 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-message-translate.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-unicode-emojis.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-unicode-emojis.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-emoji-uploader.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-emoji-uploader.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&(url.pathname==="/cmd-emoji-picker-v2.js"||url.pathname==="/cmd-emoji-picker-v2.css")){
       const css=url.pathname.endsWith(".css");
