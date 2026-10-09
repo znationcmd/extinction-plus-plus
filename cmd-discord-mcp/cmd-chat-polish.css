@@ -53,3 +53,123 @@
  #channelOverlay .channel-composer #channelSend{max-width:58px;min-width:53px;padding:0 3px;font-size:11px}
  #channelOverlay .channel-composer button{min-width:31px;width:31px;flex-basis:31px}
 }
+
+/* CMD Sphere mobile chat correction: prioritize compact header and visible message bubbles, 2026-10-09 */
+.sphere-app #channelOverlay.channel-overlay.on {
+  width:100dvw!important; max-width:100dvw!important; min-width:0!important;
+  overflow:hidden!important; grid-template-rows:auto minmax(0,1fr) auto!important;
+}
+.sphere-app #channelOverlay .channel-head {
+  display:grid!important; grid-template-columns:32px minmax(0,1fr) auto!important;
+  align-items:center!important; grid-auto-rows:minmax(36px,auto)!important;
+  gap:8px!important; box-sizing:border-box!important;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 10px 8px!important;
+  min-height:0!important; width:100%!important; max-width:100dvw!important;
+  overflow:visible!important;
+}
+.sphere-app #channelOverlay .channel-back {
+  grid-column:1!important; grid-row:1!important; width:32px!important;
+  min-width:32px!important; height:40px!important; padding:0!important;
+}
+.sphere-app #channelOverlay .channel-head-main {
+  grid-column:2!important; grid-row:1!important; min-width:0!important;
+  max-width:100%!important; width:auto!important;
+  overflow:hidden!important; flex:1 1 0!important;
+}
+.sphere-app #channelOverlay .channel-head-main b {
+  display:block!important; white-space:nowrap!important;
+  overflow:hidden!important; text-overflow:ellipsis!important;
+  overflow-wrap:normal!important; max-width:100%!important; font-size:17px!important;
+}
+.sphere-app #channelOverlay .channel-head-main small {
+  white-space:nowrap!important; overflow:hidden!important;
+  text-overflow:ellipsis!important; max-width:100%!important; font-size:11px!important;
+}
+.sphere-app #channelOverlay .channel-actions {
+  grid-column:3!important; grid-row:1!important; display:flex!important;
+  flex:0 0 auto!important; flex-wrap:nowrap!important; width:auto!important;
+  min-width:0!important; max-width:130px!important; margin:0!important; padding:0!important;
+  justify-content:flex-end!important; align-items:center!important; gap:3px!important;
+  overflow:visible!important;
+}
+.sphere-app #channelOverlay .channel-actions>.btn {flex:0 0 auto!important; width:35px!important; min-width:35px!important; height:36px!important; padding:4px!important; font-size:12px!important}
+.sphere-app #channelOverlay .channel-head-main>[id$="Toggle"] {display:none!important}
+.sphere-app #channelOverlay #cmdChatSourcesPanel .btn {display:block!important}
+.sphere-app #channelOverlay #channelMessages {
+  box-sizing:border-box!important; width:100%!important; max-width:100%!important;
+  min-width:0!important; padding:10px 12px 20px!important;
+  overflow-x:hidden!important; overflow-y:auto!important;
+}
+.sphere-app #channelOverlay .cmd-message-warning {
+  display:block!important; position:relative!important; width:100%!important;
+  max-width:100%!important; min-width:0!important; box-sizing:border-box!important;
+  padding:10px 12px!important; border-radius:12px!important; margin:4px 0 14px!important;
+  background:#614c242e!important; color:#ebd7ab!important; font-size:12px!important;
+  line-height:1.4!important; white-space:normal!important;
+  word-break:break-word!important; overflow-wrap:anywhere!important;
+  overflow:hidden!important;
+}
+.sphere-app #channelOverlay .cmd-message-warning a {word-break:break-word!important; overflow-wrap:anywhere!important}
+.sphere-app #channelOverlay .discord-message {
+  display:flex!important; flex-direction:row!important; justify-content:flex-start!important;
+  align-items:flex-end!important; gap:8px!important;
+  width:100%!important; min-width:0!important; max-width:100%!important;
+  padding:6px 0!important; margin:0!important; box-sizing:border-box!important;
+  overflow:visible!important;
+}
+.sphere-app #channelOverlay .discord-message .msg-avatar {
+  flex:0 0 32px!important; width:32px!important; min-width:32px!important;
+  height:32px!important; align-self:flex-end!important;
+}
+.sphere-app #channelOverlay .discord-message .msg-main {
+  box-sizing:border-box!important; flex:0 1 auto!important;
+  width:fit-content!important; min-width:0!important; max-width:min(81%,560px)!important;
+  padding:10px 12px!important; margin:0!important;
+  background:var(--cmd-message-bubble,#424652)!important;
+  border:1px solid #ffffff24!important; border-radius:16px 16px 16px 5px!important;
+  box-shadow:0 2px 6px #0003!important; overflow:visible!important;
+  overflow-wrap:anywhere!important; word-break:break-word!important;
+}
+.sphere-app #channelOverlay .discord-message.cmd-own-message {
+  flex-direction:row-reverse!important; justify-content:flex-start!important;
+}
+.sphere-app #channelOverlay .discord-message.cmd-own-message .msg-main {
+  background:var(--cmd-message-bubble,#5141bc)!important;
+  border-radius:16px 16px 5px 16px!important;
+}
+.sphere-app #channelOverlay .discord-message .msg-text,
+.sphere-app #channelOverlay .discord-message .msg-meta,
+.sphere-app #channelOverlay .discord-message .msg-reply,
+.sphere-app #channelOverlay .discord-message .msg-embed,
+.sphere-app #channelOverlay .discord-message .msg-file,
+.sphere-app #channelOverlay .discord-message .msg-empty {
+  max-width:100%!important; min-width:0!important;
+  white-space:pre-wrap!important; overflow-wrap:anywhere!important;
+  word-break:break-word!important; overflow:visible!important;
+}
+.sphere-app #channelOverlay .discord-message .msg-meta{display:flex!important; flex-wrap:wrap!important; gap:4px 7px!important; margin-bottom:4px!important}
+.sphere-app #channelOverlay .discord-message .msg-meta b {font-size:12px!important}
+.sphere-app #channelOverlay .discord-message .msg-meta time {font-size:10px!important}
+.sphere-app #channelOverlay .discord-message .msg-text{font-size:14px!important;line-height:1.42!important}
+.sphere-app #channelOverlay .channel-compose-wrap {
+  box-sizing:border-box!important; width:100%!important; max-width:100dvw!important;
+  min-width:0!important; padding:6px 9px calc(9px + env(safe-area-inset-bottom,0px))!important;
+}
+.sphere-app #channelOverlay .channel-composer {
+  display:flex!important; align-items:flex-end!important; gap:4px!important;
+  width:100%!important; max-width:100%!important; min-width:0!important;
+  overflow:hidden!important;
+}
+.sphere-app #channelOverlay .channel-composer textarea {
+  width:0!important; min-width:0!important; flex:1 1 0!important;
+  max-width:100%!important; font-size:16px!important;
+}
+.sphere-app #channelOverlay .channel-composer #channelSend {
+  flex:0 0 auto!important; min-width:53px!important; max-width:57px!important;
+}
+@media(max-width:420px) {
+  .sphere-app #channelOverlay .channel-head {gap:5px!important; padding-left:7px!important; padding-right:7px!important}
+  .sphere-app #channelOverlay .channel-head-main b {font-size:16px!important}
+  .sphere-app #channelOverlay .channel-actions {max-width:117px!important}
+  .sphere-app #channelOverlay .discord-message .msg-main {max-width:calc(100vw - 67px)!important}
+}
