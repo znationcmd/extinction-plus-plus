@@ -36,3 +36,29 @@
  #channelEmojiSheet .cmd-emoji-icon-v2{font-size:28px}
 }
 @media(max-width:400px){#channelEmojiSheet .cmd-emoji-grid-v2{gap:3px}}
+
+/* CMD Sphere: création et gestion des emojis statiques / GIF animés. */
+#channelEmojiSheet .cmd-emoji-top{display:flex;gap:8px;align-items:center}
+#channelEmojiSheet .cmd-emoji-top input{flex:1;min-width:0}
+#channelEmojiSheet #cmdEmojiCreate{flex:none;border:1px solid #ffffff35;background:#58336e;border-radius:11px;color:#fff;font-weight:800;padding:11px 12px;min-height:44px}
+#channelEmojiSheet .cmd-emoji-creator{
+ position:absolute;inset:0;background:#2b1532;overflow:auto;z-index:5;
+ border-radius:20px 20px 0 0;padding:16px 14px calc(22px + env(safe-area-inset-bottom));
+ font-size:14px;line-height:1.45;-webkit-overflow-scrolling:touch
+}
+#channelEmojiSheet .cmd-emoji-creator-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;gap:10px;font-size:18px}
+#channelEmojiSheet .cmd-emoji-creator-head button{color:#fff;background:#ffffff20;border:0;border-radius:9px;width:36px;height:36px;font-size:20px}
+#channelEmojiSheet .cmd-emoji-creator label{display:grid;gap:6px;margin:12px 0;font-weight:650}
+#channelEmojiSheet .cmd-emoji-creator input,#channelEmojiSheet .cmd-emoji-creator select{
+ width:100%;max-width:100%;box-sizing:border-box;min-height:44px;border:1px solid #ffffff33;
+ border-radius:9px;padding:9px 10px;background:#1b0e22;color:white;font:inherit}
+#channelEmojiSheet .cmd-emoji-creator input[type=file]{font-size:13px}
+#channelEmojiSheet .cmd-emoji-creator small{font-size:12px;color:#cdbbd4;display:block}
+#channelEmojiSheet #cmdEmojiSave{margin:14px 0 0;width:100%;min-height:46px;color:#fff;background:#8251ae;border:0;border-radius:10px;font:800 15px system-ui}
+#channelEmojiSheet #cmdEmojiSave:disabled{opacity:.55;cursor:wait}
+#channelEmojiSheet #cmdEmojiCreatorNotice{min-height:24px;margin:8px 0;color:#e6cee9}
+#channelEmojiSheet .cmd-emoji-manage{margin-top:14px;padding-top:12px;border-top:1px solid #ffffff2c}
+#channelEmojiSheet .cmd-emoji-owned{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #ffffff10}
+#channelEmojiSheet .cmd-emoji-owned img{width:37px;height:37px;object-fit:contain}
+#channelEmojiSheet .cmd-emoji-owned span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#channelEmojiSheet .cmd-emoji-owned button{background:#64203b;color:#fff;border:1px solid #ffffff27;border-radius:8px;padding:8px}
