@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { initCmdStarsDb,handleCmdStars } from "./cmd-stars.js";
-import { cmdBoostCount,requireCmdBoosts,handleCmdServerBoosts } from "./cmd-boost-levels.js";
+import { cmdBoostCount,cmdBoostLevel,requireCmdBoosts,requireCmdExtraPerk,handleCmdServerBoosts } from "./cmd-boost-levels.js";
 import { CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS,renderCmdPremiumSvg } from "./cmd-premium-art.js";
 import { listNativeWebhooks,createNativeWebhook,receiveNativeWebhook,deleteNativeWebhook } from "./native-webhooks.js";
 import {restoreAllMirrors,getImportDiagnostics} from "./cmd-import-restore.js";
@@ -320,7 +320,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const parentIds=new Set(cats.map(c=>String(c.source_channel_id||c.id)));
       const ungrouped=chs.filter(x=>!x.source_parent_id||!parentIds.has(String(x.source_parent_id))).map(x=>nativeChannelListItem(g.id,x)).join('');
       const adminTools=admin?'<details id="cmdServerAdmin" class="cmd-native-tools"><summary>⚙ Gestion du serveur (catégories et salons)</summary>'+create+'<h3>Rôles du serveur</h3>'+(d.roles||[]).map(r=>'<p>'+esc(r.name)+'</p>').join('')+'</details>':'';
-      const activeBoosts=Number(d.guild.boost_count||0),cmdTier=activeBoosts>=7?3:activeBoosts>=5?2:activeBoosts>=2?1:0;
+      const activeBoosts=Number(d.guild.boost_count||0),cmdTier=Number(d.guild.boost_level||0);
       const overview='<style>.cmd-overview{margin:12px 0 18px;padding:15px;border:1px solid #65588c;background:linear-gradient(135deg,#27213d,#1b2335);border-radius:15px;color:#f4efff}.cmd-overview h2{margin:0 0 6px;font-size:20px}.cmd-overview p{font-size:12px;color:#cfc1e3;margin:0 0 13px}.cmd-overview-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.cmd-overview-tiles a,.cmd-overview-tiles button{border:1px solid #635a84;background:#27283f;color:#f2e9ff;padding:11px 9px;border-radius:11px;text-decoration:none;font-weight:730;font-size:12px;min-width:0;text-align:left;cursor:pointer}.cmd-overview-tiles a:hover,.cmd-overview-tiles button:hover{border-color:#a88af0;background:#33294e}.cmd-overview-tiles span{display:block;color:#b9afce;font-weight:450;font-size:11px;margin-top:5px}.cmd-overview-stats{display:flex;gap:9px;flex-wrap:wrap;margin:7px 0 13px}.cmd-overview-stats strong{display:inline-block;background:#37304c;border:1px solid #745b9f;padding:6px 9px;border-radius:9px;font-size:11px}@media(max-width:800px){.cmd-overview-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-overview{padding:12px}.cmd-overview-tiles a,.cmd-overview-tiles button{font-size:11px;padding:9px 7px}}</style><section class="cmd-overview" aria-label="Vue d’ensemble du serveur"><h2>🏠 Vue d’ensemble · '+esc(g.name)+'</h2><p>Choisis ce que tu veux gérer. Les salons s’ouvrent seulement quand tu cliques dessus.</p><div class="cmd-overview-stats"><strong>👥 '+Number(d.guild.member_count||1)+' membres</strong><strong>💎 '+activeBoosts+' boosts · niveau '+cmdTier+'</strong><strong>'+((d.guild.founder_auto_boost)?'👑 Fondateur à vie':'🌐 Communauté CMD Sphere')+'</strong></div><div class="cmd-overview-tiles"><a href="#cmdServerChannels"># Catégories & salons<span>Voir tous les salons</span></a><a href="/server-boosts/'+encodeURIComponent(String(g.id))+'">💎 Boosts & niveaux<span>Avantages et améliorations</span></a><a href="/stars">⭐ Étoiles & Premium<span>Booster ta communauté</span></a><a href="/shop">🛍️ Boutique<span>Décorations et récompenses</span></a><a href="/profile?server='+encodeURIComponent(String(g.id))+'">👤 Profils<span>Identité et personnalisations</span></a>'+(admin?'<a href="#cmdServerAdmin">⚙ Salons & rôles<span>Créer, modifier, organiser</span></a>':'<a href="/servers/add">➕ Rejoindre un serveur<span>Découvrir les communautés</span></a>')+'</div></section>';
       qs('#workspace').innerHTML='<div class="cmd-server-panel">'+heading+overview+'<nav id="cmdServerChannels" class="cmd-server-channels" aria-label="Salons du serveur"><a class="cmd-server-quick" href="#cmdChannelSearch" id="cmdSearchShortcut">⌕ Chercher des salons</a>'+categories+ungrouped+(!categories&&!ungrouped?'<p class="cmd-channel-search-empty">Aucun salon synchronisé.</p>':'')+adminTools+'</nav></div>';
       if(admin){qs('#nativeCatForm').onsubmit=e=>nativeSubmit(e,'create_category',g.id);qs('#nativeChForm').onsubmit=e=>nativeSubmit(e,'create_channel',g.id)}
@@ -1103,6 +1103,7 @@ async function initNativeDb(){
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_user_idx ON cmd_server_boosts(user_id,active)');
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_server_boosts_guild_idx ON cmd_server_boosts(guild_id,active)');
+  await pool.query("CREATE TABLE IF NOT EXISTS cmd_server_boost_perks(guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,perk TEXT NOT NULL CHECK(perk IN('tag','roleStyles')),active BOOLEAN NOT NULL DEFAULT TRUE,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(guild_id,perk))");
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_founder_app_tickets(
     token_hash TEXT PRIMARY KEY,
     app TEXT NOT NULL,
@@ -3243,6 +3244,7 @@ async function nativeGuildDetail(auth,id){
   await ensureFounderBoosts(auth);
   const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count, ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+(SELECT COUNT(*)::int FROM cmd_star_boosts ss WHERE ss.guild_id=g.id AND ss.expires_at>NOW())+CASE WHEN g.founder_auto_boost THEN 7 ELSE 0 END) boost_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
   if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
+  const boostState=await cmdBoostCount(pool,id);g.rows[0].boost_level=cmdBoostLevel(boostState.levelBoosts);g.rows[0].boost_allocated=boostState.allocated;
   const [channels,roles]=await Promise.all([
     pool.query(`SELECT c.*,
       (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
@@ -3376,10 +3378,10 @@ async function updateNativeServerStyle(auth,input){
   const guildId=String(input.guildId||"");await requireNativeOwner(auth,guildId);
   const tag=safeText(input.serverTag,12).replace(/[\r\n]/g,"");
   const boosts=await cmdBoostCount(pool,guildId);
-  if(tag&&boosts.boosts<3)throw new Error("Tag de serveur disponible à partir de 3 boosts.");
+  if(tag&&!boosts.extras.tag)throw new Error("Active l’avantage Tag du serveur avec 3 boosts supplémentaires.");
   const packs={star:"💎",viking:"🪓",heart:"💗",goat:"🐐",radioactive:"☢️"};
   const pack=Object.hasOwn(packs,String(input.badgePack||""))?String(input.badgePack):"star";
-  if(pack!=="star"&&boosts.boosts<2)throw new Error("Les packs de badges sont débloqués à partir de 2 boosts.");
+  if(pack!=="star"&&boosts.levelBoosts<2)throw new Error("Les packs de badges sont débloqués à partir de 2 boosts.");
   const icon=safeText(input.serverTagIcon,8)||packs[pack]||"✦";
   const style=["plain","prism","glow"].includes(String(input.serverTagStyle||""))?String(input.serverTagStyle):"prism";
   const r=await pool.query('UPDATE cmd_native_guilds SET server_tag=$2,server_tag_icon=$3,server_tag_style=$4,badge_pack=$5,updated_at=NOW() WHERE id=$1 RETURNING id,name,server_tag,server_tag_icon,server_tag_style,badge_pack',[guildId,tag||null,icon,style,pack]);
@@ -3393,7 +3395,8 @@ async function updateNativeRoleStyle(auth,input){
   const a=/^#[0-9A-Fa-f]{6}$/.test(String(input.gradientStart||""))?String(input.gradientStart):"#8b5cf6";
   const b=/^#[0-9A-Fa-f]{6}$/.test(String(input.gradientEnd||""))?String(input.gradientEnd):"#ec4899";
   const icon=safeText(input.roleIcon,8)||null;
-  if((visualStyle!=="solid"||icon)&&Number((await cmdBoostCount(pool,guildId)).boosts)<3)throw new Error("Styles dégradés et icônes de rôle : 3 boosts nécessaires.");
+  if(visualStyle!=="solid")await requireCmdExtraPerk(pool,guildId,"roleStyles");
+  if(icon)await requireCmdBoosts(pool,guildId,5);
   const r=await pool.query('UPDATE cmd_native_roles SET visual_style=$3,gradient_start=$4,gradient_end=$5,role_icon=$6 WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) RETURNING id,name,visual_style,gradient_start,gradient_end,role_icon',[guildId,roleId,visualStyle,a,b,icon]);
   if(!r.rows[0])throw new Error("Rôle introuvable.");
   return r.rows[0];
