@@ -355,3 +355,26 @@
  #cmdSceneSheet .cmd-scene-model-photo{height:155px}
  #cmdSceneSheet .cmd-scene-model-actions .cmd-scene-built-in{min-height:193px}
 }
+
+/* 2026-10: compact mobile-first creator controls inspired by familiar avatar editors.
+   Own design and assets; does not reproduce proprietary Snapchat interface. */
+#cmdSceneSheet #cmdSceneOptions{padding:16px 14px 26px!important;overflow-x:hidden}
+#cmdSceneSheet #cmdSceneOptions>h2{font-size:22px!important;line-height:1.2;margin:5px 0 8px!important;letter-spacing:-.45px}
+#cmdSceneSheet #cmdSceneOptions .cmd-scene-section-intro{font-size:12px;line-height:1.5;color:#baaacb;margin:0 0 16px;max-width:48ch}
+#cmdSceneSheet .cmd-clothing-sections{display:grid;gap:12px}
+#cmdSceneSheet .cmd-clothing-sections>h3{font-size:15px!important;margin:8px 0 -6px!important;color:#fff}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-group{padding:10px 0 4px!important;margin:0!important;border:0!important;background:transparent!important}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-group>h3{font-size:11px!important;color:#bca9cb;margin:0 0 10px!important;font-weight:600}
+#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px!important;overflow:visible!important}
+#cmdSceneSheet .cmd-clothing-sections [data-scene-choice]{min-width:0!important;max-width:100%;min-height:72px!important;border:1px solid #665475!important;border-radius:13px!important;background:linear-gradient(155deg,#302638,#1e1a29)!important;box-shadow:none!important;padding:9px 4px!important}
+#cmdSceneSheet .cmd-clothing-sections [data-scene-choice].selected{border:2px solid #d996ff!important;background:linear-gradient(155deg,#59316e,#2d213c)!important;box-shadow:0 0 12px #9b44db42!important}
+#cmdSceneSheet .cmd-clothing-sections [data-scene-choice] .cmd-scene-card-label{font-size:12px!important;white-space:normal;line-height:1.25}
+#cmdSceneSheet .cmd-scene-fieldset{margin-top:15px}
+#cmdSceneSheet .cmd-scene-swatches{display:flex;gap:9px;flex-wrap:wrap}
+#cmdSceneSheet .cmd-scene-swatches button{width:36px;height:36px;border-radius:50%;border:2px solid #fff3}
+#cmdSceneSheet .cmd-scene-swatches button.selected{outline:2px solid #c68fff;outline-offset:3px}
+#cmdSceneSheet #cmdSceneOptions .cmd-scene-model-actions{gap:10px}
+#cmdSceneSheet .cmd-scene-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+#cmdSceneSheet .cmd-scene-tabs button{min-width:0;padding-inline:2px;line-height:1.25}
+#cmdSceneSheet .cmd-scene-save-row{position:sticky;bottom:0;z-index:20;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+@media(max-width:410px){#cmdSceneSheet #cmdSceneOptions{padding-inline:10px!important}#cmdSceneSheet .cmd-clothing-sections .cmd-scene-catalog-grid{gap:6px!important}}
