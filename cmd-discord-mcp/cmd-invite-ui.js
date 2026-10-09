@@ -46,7 +46,7 @@
  let lastGuildId="";
  const process=()=>{
   const root=document.querySelector("#workspace"),id=root?.dataset.nativeGuildId,header=document.querySelector(".cmd-server-head-actions");
-  if(!id||!header||!header.isConnected){lastGuildId="";return}
+  if(!id||!header||!header.isConnected||!document.querySelector(".sphere-app.cmd-native-selected")){lastGuildId="";shareBtn.onclick=()=>open(appLink,"Partage CMD Sphere. Pour inviter dans un serveur précis, ouvre ce serveur puis utilise son lien d’invitation.");return}
   if(lastGuildId===id&&header.querySelector(".cmd-invite-inline"))return;
   lastGuildId=id;
   header.querySelector(".cmd-invite-inline")?.remove();
