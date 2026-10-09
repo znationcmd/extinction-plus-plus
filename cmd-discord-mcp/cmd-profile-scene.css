@@ -1,0 +1,81 @@
+/* CMD Sphere: the avatar scene is a background in the ORIGINAL profile, not a second profile. */
+#cmdSceneWrap{position:relative;width:100%;overflow:hidden;background:#2a1d34}
+#cmdSceneWrap #bannerTap{width:100%;display:block;position:relative;isolation:isolate}
+#cmdSceneBackdrop{position:absolute;inset:0;z-index:0;display:none;pointer-events:none;overflow:hidden}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop{display:block}
+#cmdSceneWrap .bannerEdit{position:absolute;z-index:3}
+#cmdSceneEdit{position:absolute;z-index:4;top:12px;right:12px;max-width:calc(100% - 24px);border:1px solid #f4defb66;border-radius:15px;background:#211329d9;color:#fff;font:800 13px system-ui;min-height:42px;padding:9px 13px;box-shadow:0 5px 15px #0006;backdrop-filter:blur(8px);cursor:pointer}
+#cmdSceneEdit:focus-visible{outline:2px solid white;outline-offset:2px}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop{background:linear-gradient(140deg,#5c78ba,#272348)}
+#cmdSceneWrap[data-scene="beach"] #cmdSceneBackdrop{background:linear-gradient(180deg,#4aaddc 0%,#86d6e8 46%,#f5e3a7 47%,#bc9c6a 100%)}
+#cmdSceneWrap[data-scene="seaside"] #cmdSceneBackdrop{background:linear-gradient(180deg,#5779b6 0%,#a9d8f3 49%,#1677aa 50%,#13516d 100%)}
+#cmdSceneWrap[data-scene="forest"] #cmdSceneBackdrop{background:radial-gradient(circle at 74% 25%,#a7caef 0,#506e98 27%,transparent 55%),linear-gradient(170deg,#193d45 12%,#195b59 53%,#0a2534 100%)}
+#cmdSceneWrap[data-scene="waterfall"] #cmdSceneBackdrop{background:linear-gradient(90deg,#193b34 0%,#2b6b5f 22%,#a1d7e5 46%,#e6f7f9 55%,#2b7879 75%,#103b39 100%)}
+#cmdSceneWrap[data-scene="city"] #cmdSceneBackdrop{background:linear-gradient(180deg,#af91c6,#d8aeb6 44%,#504e6f 46%,#181b37 100%)}
+#cmdSceneWrap[data-scene="night"] #cmdSceneBackdrop{background:radial-gradient(circle at 20% 18%,#6d4f9a,transparent 40%),linear-gradient(130deg,#0b182d,#101029 70%,#17183a)}
+#cmdSceneWrap[data-scene="space"] #cmdSceneBackdrop{background:radial-gradient(circle at 25% 30%,#844ca8aa,transparent 45%),radial-gradient(circle at 83% 35%,#3a91b799,transparent 37%),linear-gradient(130deg,#070d20,#231037)}
+#cmdSceneWrap[data-scene="mountains"] #cmdSceneBackdrop{background:linear-gradient(165deg,#90b9cf 12%,#b6d4dd 43%,#4d7090 44%,#2f5366 80%,#0f3a43)}
+#cmdSceneWrap[data-scene="custom"] #cmdSceneBackdrop{background:#28323d}
+#cmdSceneBackdrop .cmd-scene-personal-image{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.86)}
+#cmdSceneBackdrop .cmd-scene-scenery{position:absolute;inset:0;z-index:0;text-align:left;display:flex;align-items:center;font-size:clamp(26px,7vw,52px);opacity:.65;white-space:pre;letter-spacing:.1em;transform:translateY(9px);text-shadow:0 6px 15px #16102244}
+#cmdSceneBackdrop .cmd-scene-person{position:absolute;left:50%;top:-7%;height:118%;width:auto;aspect-ratio:220/350;z-index:1;transform:translateX(-50%);filter:drop-shadow(0 7px 12px #0008);transform-origin:50% 80%}
+#cmdSceneBackdrop .cmd-scene-person svg{height:100%;width:100%;overflow:visible}
+#cmdSceneBackdrop .cmd-scene-pet{position:absolute;left:70%;bottom:15%;z-index:2;font-size:clamp(28px,8vw,65px);filter:drop-shadow(1px 9px 7px #0009);line-height:1}
+#cmdSceneBackdrop .cmd-scene-brand{position:absolute;left:50%;bottom:6%;z-index:2;max-width:44%;padding:4px 9px;border-radius:9px;background:#0006;color:white;text-shadow:0 1px 3px #000;font:800 11px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+@media(prefers-reduced-motion:no-preference){#cmdSceneBackdrop .cmd-scene-person{animation:cmdProfileFigureFloat 3.5s ease-in-out infinite alternate}#cmdSceneBackdrop .cmd-scene-pet{animation:cmdProfilePetWiggle 2.5s ease-in-out infinite alternate}}
+@keyframes cmdProfileFigureFloat{from{transform:translateX(-50%) translateY(0)}to{transform:translateX(-50%) translateY(-5px)}}
+@keyframes cmdProfilePetWiggle{50%{transform:rotate(5deg) translateY(-3px)}}
+#profileForm .cmd-scene-form-entry{margin:12px 0 17px;border:1px solid #a876d655;border-radius:15px;background:#453051;padding:12px 13px}
+#profileForm .cmd-scene-form-entry h3{margin:0 0 5px;font-size:16px}
+#profileForm .cmd-scene-form-entry p{font-size:12px;color:#dbcae7;margin:0 0 11px;line-height:1.4}
+#profileForm .cmd-scene-form-entry button{width:100%;border:0;border-radius:9px;min-height:43px;background:#8c55c4;color:white;font:800 14px system-ui}
+#cmdSceneSheet[hidden]{display:none!important}
+#cmdSceneSheet{position:fixed;inset:0;z-index:1100;display:flex;align-items:flex-end;justify-content:center;background:#000c;color:#f5f0fd;font:15px system-ui;padding:0;overflow:hidden}
+#cmdSceneSheet *{box-sizing:border-box}
+#cmdSceneSheet .cmd-scene-sheet{width:min(780px,100%);height:min(96dvh,960px);background:#211829;border:1px solid #ffffff24;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -18px 80px #000b}
+#cmdSceneSheet header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 17px 10px;font-size:16px}
+#cmdSceneClose{border:0;border-radius:10px;background:#ffffff1c;color:white;min-width:39px;height:39px;font-size:21px}
+#cmdSceneSheet .cmd-scene-header-note{padding:0 17px 9px;color:#cfc0d9;font-size:12px;line-height:1.35}
+#cmdSceneSheet .cmd-scene-preview{min-height:110px;max-height:185px;padding:2px 13px 8px;flex:none;display:flex;align-items:center;justify-content:center;gap:15px;background:radial-gradient(ellipse at 60% 50%,#65488670,#251a30 65%)}
+#cmdScenePreviewPerson{width:90px;height:150px;flex:none}
+#cmdScenePreviewPerson svg{width:100%;height:100%}
+#cmdSceneLabel{font-size:13px;color:#e9d9f7;max-width:140px;line-height:1.4}
+#cmdSceneSheet .cmd-scene-tabs{flex:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:9px 11px;border-top:1px solid #ffffff19;border-bottom:1px solid #ffffff15}
+#cmdSceneSheet .cmd-scene-tabs button{border:0;background:#ffffff10;border-radius:10px;color:#cfbdd7;padding:9px 3px;min-height:52px;font-size:19px}
+#cmdSceneSheet .cmd-scene-tabs button small{display:block;font:750 11px system-ui;margin-top:3px}
+#cmdSceneSheet .cmd-scene-tabs button.selected{background:#7850a3;color:#fff}
+#cmdSceneSheet #cmdSceneOptions{padding:12px 16px 40px;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:15px;flex:1}
+#cmdSceneSheet #cmdSceneOptions>label{display:grid;gap:7px;font-size:13px;font-weight:700}
+#cmdSceneSheet #cmdSceneOptions select,#cmdSceneSheet #cmdSceneOptions input[type=text],#cmdSceneSheet #cmdSceneOptions input:not([type]){background:#170f20;color:white;border:1px solid #ffffff30;border-radius:10px;padding:9px 10px;width:100%;min-height:43px;font:14px system-ui}
+#cmdSceneSheet .cmd-scene-fieldset>strong{display:block;margin:0 0 9px;color:#e9dfef;font-size:13px}
+#cmdSceneSheet .cmd-scene-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+#cmdSceneSheet .cmd-scene-choice-grid button{background:#34253f;border:1px solid #ffffff26;color:#f4e9fa;border-radius:12px;min-height:74px;padding:10px 4px}
+#cmdSceneSheet .cmd-scene-choice-grid button span{display:block;font-size:29px;line-height:1.15}
+#cmdSceneSheet .cmd-scene-choice-grid button small{display:block;font-size:11px;margin-top:5px}
+#cmdSceneSheet .cmd-scene-choice-grid button.selected{background:#68488d;border:2px solid #d3b5f3}
+#cmdSceneSheet .cmd-scene-swatches{display:flex;flex-wrap:wrap;gap:10px}
+#cmdSceneSheet .cmd-scene-swatches button{width:38px;height:38px;border-radius:50%;border:3px solid #ffffff66}
+#cmdSceneSheet .cmd-scene-swatches button.selected{border:3px solid white;outline:3px solid #996bc8}
+#cmdSceneSheet .cmd-scene-file{border-radius:12px;border:1px dashed #bd8cda;padding:13px;background:#3a284c;display:grid;gap:9px}
+#cmdSceneSheet .cmd-scene-file input{max-width:100%;font-size:12px}
+#cmdSceneSheet #cmdSceneOptions small{color:#baacc6;font-size:11px;line-height:1.5}
+#cmdSceneSheet #cmdSceneNotice{flex:none;min-height:20px;padding:2px 15px;color:#ecd6ff;font-size:13px;margin:0;line-height:1.3}
+#cmdSceneSheet footer{flex:none;display:flex;gap:9px;padding:11px 12px calc(12px + env(safe-area-inset-bottom));background:#201527;border-top:1px solid #ffffff1f}
+#cmdSceneSheet footer button{border:0;border-radius:11px;padding:11px 10px;min-height:46px;color:#fff;background:#4a3855;font:800 13px system-ui}
+#cmdSceneSave{background:#8651bd!important;flex:1}
+#cmdSceneSave:disabled{opacity:.5}
+@media(max-width:560px){
+ #cmdSceneWrap #bannerTap{height:210px}
+ #cmdSceneEdit{top:9px;right:9px;padding:8px 11px;font-size:12px}
+ #cmdSceneBackdrop .cmd-scene-person{height:115%;top:-7%;left:55%}
+ #cmdSceneBackdrop .cmd-scene-pet{left:73%;bottom:16%}
+ #cmdSceneSheet .cmd-scene-sheet{height:94dvh}
+ #cmdSceneSheet .cmd-scene-preview{max-height:145px;min-height:110px}
+ #cmdScenePreviewPerson{height:124px;width:78px}
+ #cmdSceneSheet .cmd-scene-tabs{gap:3px;padding:8px 7px}
+ #cmdSceneSheet .cmd-scene-tabs button{font-size:17px}
+ #cmdSceneSheet .cmd-scene-tabs button small{font-size:10px}
+ #cmdSceneSheet .cmd-scene-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:360px){#cmdSceneSheet .cmd-scene-tabs button small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){#cmdSceneBackdrop *{animation:none!important}}
