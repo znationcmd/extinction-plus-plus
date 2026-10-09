@@ -370,9 +370,18 @@ function drawAvatarSticker(s){
  return svg.replace('class="cmd-scene-person-svg"','class="cmd-scene-person-svg cmd-bitmoji-silhouette"').replace('<g filter="url(#cmdSceneShadow)">','<g>');
 }
 function renderStickerPreview(){
- const host=$("#cmdScenePreviewPerson");if(!host)return;
- // Clothing and silhouette share the same 2D coordinate system.
- const chosen=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||"");const idx=chosen?Number(chosen[1]):-1;host.innerHTML=idx>=0&&idx<importedAvatarCount?'<div class="cmd-sticker-avatar-live cmd-imported-avatar-preview" role="img" aria-label="Avatar importé">'+importedAvatarArt(idx)+'</div>':'<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D">'+drawAvatarSticker(state)+'</div>';
+ const host=$("#cmdScenePreviewPerson"),hero=$("#cmdSceneHero");if(!host||!hero)return;
+ // The legacy 3D/canvas layers can cover the avatar on mobile Safari.
+ // Draw the exact same preview as a direct hero child with its own stacking context.
+ const chosen=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||"");
+ const idx=chosen?Number(chosen[1]):-1;
+ const imported=idx>=0&&idx<importedAvatarCount?importedAvatarTiles[idx]:null;
+ const previewArt=imported?'<img class="cmd-live-avatar-image" src="'+imported+'" alt="Avatar '+(idx+1)+'">':drawAvatarSticker(state);
+ host.innerHTML='<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D">'+previewArt+'</div>';
+ let live=hero.querySelector("#cmdAvatarLiveOverlay");
+ if(!live){live=document.createElement("div");live.id="cmdAvatarLiveOverlay";live.setAttribute("role","img");live.setAttribute("aria-label","Aperçu du personnage CMD Sphere");hero.append(live)}
+ live.innerHTML=previewArt;
+ live.dataset.avatar=idx>=0?String(idx):"illustrated";
  const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
  const hero=$("#cmdSceneHero");if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?loadedSheets.get("scenes"):(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"600% 900%":"cover","important");hero.style.setProperty("background-position",reference>=0?(reference%6*20)+"% "+(Math.floor(reference/6)*12.5)+"%":"center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16):"");applyOriginalSheets()}}
 }
