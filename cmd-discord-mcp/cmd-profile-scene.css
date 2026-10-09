@@ -653,3 +653,48 @@
     width:min(65%,225px);height:105%;left:50%;top:-4%;
   }
 }
+
+/* Clean mobile 2D universe catalogue — no store prices, crowns or oversized sprites. */
+#cmdSceneSheet #cmdAvatarLiveOverlay{
+ position:absolute!important;left:50%!important;top:12%!important;bottom:0!important;
+ height:88%!important;width:min(52%,270px)!important;
+ display:flex!important;align-items:flex-end!important;justify-content:center!important;
+ transform:translateX(-50%)!important;z-index:40!important;
+ pointer-events:none!important;overflow:visible!important;background:transparent!important;
+}
+#cmdSceneSheet #cmdAvatarLiveOverlay>img,
+#cmdSceneSheet #cmdAvatarLiveOverlay>svg{
+ display:block!important;max-width:100%!important;width:100%!important;height:100%!important;
+ object-fit:contain!important;object-position:center bottom!important;overflow:visible!important;
+}
+#cmdSceneSheet #cmdAvatarLiveOverlay svg{height:100%!important;width:auto!important;}
+#cmdSceneSheet #cmdScenePreviewPerson{pointer-events:none!important}
+#cmdSceneSheet .cmd-universe-item-image{
+ display:block!important;width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;object-fit:contain!important;
+ object-position:center center!important;background:transparent!important;border:0!important;
+ box-shadow:none!important;filter:none!important;
+}
+#cmdSceneSheet .cmd-scene-card-art .cmd-pet-art{
+ width:100%!important;max-height:180px!important;object-fit:contain!important;
+}
+#cmdSceneSheet .cmd-scene-card-art,
+#cmdSceneSheet .cmd-scene-landscape{
+ overflow:hidden!important;min-width:0!important;background-repeat:no-repeat!important;
+ background-position:center!important;
+}
+#cmdSceneSheet .cmd-scene-landscape{
+ background-size:cover!important;image-rendering:auto!important;
+ border-radius:12px!important;
+}
+#cmdSceneSheet .cmd-scene-catalog-card::before,
+#cmdSceneSheet .cmd-scene-catalog-card::after{content:none!important;}
+#cmdSceneBackdrop .cmd-scene-pet img,
+#cmdSceneBackdrop .cmd-scene-pet .cmd-pet-art{
+ width:100%!important;height:100%!important;object-fit:contain!important;
+ object-position:center bottom!important;
+}
+@media(max-width:600px){
+ #cmdSceneSheet #cmdAvatarLiveOverlay{top:10%!important;height:90%!important;width:min(58%,225px)!important;}
+ #cmdSceneSheet .cmd-scene-card-art .cmd-pet-art{max-height:145px!important;}
+}
