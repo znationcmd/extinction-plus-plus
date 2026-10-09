@@ -255,31 +255,60 @@ function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||
 function sceneReferenceStyle(value){
  const n=sceneReferenceIndex(value);if(n<0)return "";
  const picture=sceneTiles[n];
- return picture?"background-image:url("+JSON.stringify(picture)+");background-size:cover;background-position:center;background-repeat:no-repeat":"background-color:#181427;";
+ return picture?"background-image:url("+JSON.stringify(picture)+");background-size:contain;background-position:center;background-repeat:no-repeat":"background-color:#181427;";
 }
 
 function sheetArt(sheet,index){const x=index%4,y=Math.floor(index/4)%4;return '<span class="cmd-original-catalog-art" data-original-sheet="'+sheet+'" style="display:block;width:100%;height:100%;min-height:84px;background-size:400% 400%;background-position:'+(x*100/3)+'% '+(y*100/3)+'%;background-repeat:no-repeat;border-radius:10px"></span>'}
 async function prepareUniverseTiles(name,cols,rows,target,removeCornerBadges=false){
  const src=loadedSheets.get(name);if(!src)return;
- const img=new Image();img.src=src;try{await img.decode()}catch(e){console.warn("[CMD Sphere]",name,"image indisponible",e);return}
+ const img=new Image();img.src=src;
+ try{await img.decode()}catch(e){console.warn("[CMD Sphere catalogue]",name,e);return}
  const w=Math.floor(img.naturalWidth/cols),h=Math.floor(img.naturalHeight/rows);
- if(!w||!h)return;
- // Original scene sheet contains premium stars painted into the top-left corner.
- // Exclude that header strip on the rendered tile, without deforming the scene.
- const trim=removeCornerBadges?Math.min(21,Math.round(h*.18)):0;
+ if(w<2||h<2)return;
  for(let n=0;n<cols*rows;n++){
-  const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h-trim;
-  const ctx=canvas.getContext("2d");if(!ctx)continue;
+  const tile=document.createElement("canvas");tile.width=w;tile.height=h;
+  const ctx=tile.getContext("2d",{willReadFrequently:true});if(!ctx)continue;
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-  ctx.drawImage(img,(n%cols)*w,Math.floor(n/cols)*h+trim,w,h-trim,0,0,w,h-trim);
-  target[n]=canvas.toDataURL("image/webp",.93);
+  ctx.drawImage(img,(n%cols)*w,Math.floor(n/cols)*h,w,h,0,0,w,h);
+  if(removeCornerBadges){
+   // Restore the full scene: replace small top-left star/badge without removing top artwork.
+   const bw=Math.min(16,Math.floor(w*.16)),bh=Math.min(17,Math.floor(h*.18));
+   if(bw>=3&&bh>=3){
+    const data=ctx.getImageData(0,0,w,h).data;let contrast=0;
+    for(let yy=2;yy<bh;yy++)for(let xx=2;xx<bw;xx++){
+     const a=(yy*w+xx)*4,b=(yy*w+Math.min(w-1,bw+xx))*4;
+     contrast+=Math.abs(data[a]-data[b])+Math.abs(data[a+1]-data[b+1])+Math.abs(data[a+2]-data[b+2]);
+    }
+    if(contrast/(3*(bw-2)*(bh-2))>24){
+     const patch=document.createElement("canvas");patch.width=bw;patch.height=bh;
+     const pctx=patch.getContext("2d");
+     pctx.drawImage(tile,bw,0,bw,bh,0,0,bw,bh);
+     ctx.save();ctx.translate(bw,0);ctx.scale(-1,1);ctx.drawImage(patch,0,0);ctx.restore();
+    }
+   }
+   target[n]=tile.toDataURL("image/webp",.94);continue;
+  }
+  // Every animal and house is a separate PNG with transparent bounds.
+  const px=ctx.getImageData(0,0,w,h).data;
+  let left=w,top=h,right=-1,bottom=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   if(px[(y*w+x)*4+3]<8)continue;
+   if(x<left)left=x;if(x>right)right=x;if(y<top)top=y;if(y>bottom)bottom=y;
+  }
+  if(right<left){target[n]=null;continue}
+  const pad=3,sprite=document.createElement("canvas");
+  sprite.width=right-left+1+pad*2;sprite.height=bottom-top+1+pad*2;
+  const out=sprite.getContext("2d");if(!out)continue;
+  out.drawImage(tile,left,top,right-left+1,bottom-top+1,pad,pad,right-left+1,bottom-top+1);
+  target[n]=sprite.toDataURL("image/png");
  }
 }
+
 async function loadOriginalSheets(){
  const loadOne=async name=>{
   try{
-   const fresh=name==="avatar-68-final";
-   const url="/catalogue/"+name+".b64.txt"+(fresh?"?avatarFix=20261009-2":"");
+   const fresh=["avatar-68-final","pets","homes","scenes"].includes(name);
+   const url="/catalogue/"+name+".b64.txt"+(fresh?"?catalogueFix=20261009-5":"");
    const r=await fetch(url,{cache:fresh?"no-store":"force-cache"});
    if(!r.ok)return;
    const raw=(await r.text()).trim();
@@ -430,7 +459,7 @@ function renderStickerPreview(){
  live.innerHTML=previewArt;
  live.dataset.avatar=idx>=0?String(idx):"illustrated";
  const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
- if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?sceneTiles[reference]:(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size","cover","important");hero.style.setProperty("background-position","center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?(homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]?'<img class="cmd-universe-item-image" src="'+homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]+'" alt="Maison" loading="lazy">':sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16)):"");applyOriginalSheets()}}
+ if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?sceneTiles[reference]:(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"contain":"cover","important");hero.style.setProperty("background-position","center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?universeArtwork("vehicle",state.vehicle,vehicles.find(v=>v[0]===state.vehicle)?.[2]):"")+(state.home!=="none"?(homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]?'<img class="cmd-universe-item-image" src="'+homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]+'" alt="Maison" loading="lazy">':sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16)):"");applyOriginalSheets()}}
 }
 function installStickerStyles(){
  if(document.getElementById("cmdStickerStyle"))return;
