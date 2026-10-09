@@ -52,7 +52,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth}){
    const id=url.pathname.slice(21);if(!UUID.test(id))throw fail("Emoji incorrect");
    const q=await pool.query("SELECT * FROM cmd_sphere_emojis WHERE id=$1 LIMIT 1",[id]);const row=q.rows[0];if(!row)throw fail("Emoji introuvable",404);
    const m=row.scope==="server"?await role(pool,uid,row.guild_id):null;
-   if(row.scope==="personal"&&row.creator_user_id!==uid||row.scope==="server"&&!m)throw fail("Accès refusé",403);
+   if(row.scope==="server"&&!m)throw fail("Accès refusé",403);
    res.writeHead(200,{"content-type":row.mime_type,"content-length":row.bytes.length,"cache-control":"private, max-age=300","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; sandbox","cross-origin-resource-policy":"same-origin"});res.end(row.bytes);return true;
   }
   if(req.method==="GET"&&url.pathname==="/api/cmd-emojis"){
