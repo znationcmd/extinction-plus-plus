@@ -150,6 +150,7 @@ function applyAccessory(frame,state){
  frame.base.add(group);frame.accessoryMesh=group;
 }
 function setPose(frame,state){
+ frame.currentPose=state.pose||"stand";
  if(!frame.personMixer||!frame.sourceAnimations.length)return;
  const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|breath|stand|relax/i;
  const clip=frame.sourceAnimations.find(x=>desired.test(x.name))||frame.sourceAnimations.find(x=>/idle|breath|stand|relax|walk/i.test(x.name))||frame.sourceAnimations.find(x=>!/tpose|t-pose|bindpose|restpose/i.test(x.name))||frame.sourceAnimations[0];
