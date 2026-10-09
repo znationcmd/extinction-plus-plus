@@ -35,6 +35,9 @@ function makeEditor(){
  const document={
   readyState:"loading",
   querySelector(selector){return selector==="#cmdSceneOptions"?area:null},
+  getElementById(){return null},
+  createElement(){return {id:"",textContent:"",style:{}}},
+  head:{append(){}},
   addEventListener(){},querySelectorAll(){return []}
  };
  const window={requestAnimationFrame(){}};
