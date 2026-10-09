@@ -298,13 +298,23 @@ async function action(which){
 }
 function menu(){
  document.getElementById('csm-server-menu')?.remove();
- const root=document.createElement('div');root.id='csm-server-menu';root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body"><div class="csm-server-menu-handle"></div><h3>Menu du serveur</h3>'+
- [['invites','👥 Inviter des membres'],['channels','＋ Créer ou modifier un salon'],['roles','🛡️ Gérer les rôles'],['overview','⚙️ Paramètres du serveur']].map(([k,l])=>'<button type="button" data-csm-menu-tab="'+k+'">'+l+' <span>›</span></button>').join('')+
- '<button type="button" data-csm-menu-tab="close">Fermer</button></section>';
+ const guildId=String(state()?.nativeGuild?.id||ctx?.data?.guild?.id||'');
+ const code=encodeURIComponent(guildId);
+ const root=document.createElement('div');root.id='csm-server-menu';
+ root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Menu du serveur"><div class="csm-server-menu-handle"></div><h3>Menu du serveur</h3>'+
+  [['invites','👥 Inviter des membres'],['overview','⚙️ Paramètres du serveur'],['channels','＃ Gérer les salons et catégories'],['roles','🛡️ Gérer les rôles']].map(([k,l])=>'<button type="button" data-csm-menu-tab="'+k+'">'+l+' <span>›</span></button>').join('')+
+  '<div class="csm-server-menu-section">Boosts et boutique</div>'+
+  (guildId?'<a href="/server-boosts/'+code+'">💎 Boosts et avantages <span>›</span></a>':'')+
+  '<a href="/stars">⭐ Étoiles et boosts <span>›</span></a>'+
+  '<a href="/shop">🛍️ Boutique <span>›</span></a>'+
+  (guildId?'<a href="/profile?server='+code+'">👤 Profil du serveur <span>›</span></a>':'')+
+  '<button type="button" data-csm-menu-tab="close">✕ Fermer</button></section>';
  document.body.appendChild(root);
  const shut=()=>root.remove();
  root.querySelector('.csm-server-menu-shade').addEventListener('click',shut);
  root.querySelectorAll('[data-csm-menu-tab]').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.csmMenuTab;shut();if(t!=='close')open(t)}));
+ root.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();shut()}});
+ root.querySelector('[data-csm-menu-tab]')?.focus();
 }
 function install(){
  const button=$('#serverSettingsBtn');if(button)button.onclick=()=>open();
