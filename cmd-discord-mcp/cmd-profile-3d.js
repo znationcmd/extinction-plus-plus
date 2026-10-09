@@ -147,28 +147,51 @@ function setPose(frame,state){
 function setNotice(frame,message){
  const el=frame.wrapper.querySelector(".cmd-real-3d-loading");if(el){el.hidden=!message;if(message)el.textContent=message}
 }
-async function setPerson(frame,state){
- const id=state.avatarModel==="custom"?"customAvatar":state.avatarModel==="michelle"?"michelle":state.avatarModel==="soldier"?"soldier":state.gender==="female"?"michelle":"soldier";
+async function makeCivilian(state){
+ const root=new THREE.Group(),skin=new THREE.MeshStandardMaterial({color:state.skin||"#e8ad7e",roughness:.9}),hair=new THREE.MeshStandardMaterial({color:state.hairColor||"#33241e",roughness:.94});
+ const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.84});
+ const top=mat(state.topColor||"#ffffff"),denim=mat(state.bottom==="dark"?"#292d39":state.bottom==="cargo"?"#686e5b":"#476c99"),shoe=mat(state.shoes==="boots"?"#4b382d":"#e3e6ec");
+ const add=(geometry,material,x,y,z,parent=root)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);parent.add(m);return m};
+ const female=state.gender==="female"||state.avatarModel==="michelle";
+ add(new THREE.CapsuleGeometry(.27,.13,8,16),skin,0,2.72,0);
+ add(new THREE.SphereGeometry(.285,24,16),skin,0,2.76,.015).scale.set(1,.98,.84);
+ add(new THREE.SphereGeometry(.29,24,16),hair,0,2.93,-.045).scale.set(1,.42,.95);
+ for(const x of [-.105,.105]){add(new THREE.SphereGeometry(.018,12,8),mat("#29212a"),x,2.77,.248)}
+ add(new THREE.CapsuleGeometry(.055,.055,5,12),skin,0,2.64,.25).rotation.x=Math.PI/2;
+ const torso=add(new THREE.CylinderGeometry(female?.33:.38,.31,.83,24),top,0,1.99,0);
+ const collar=add(new THREE.TorusGeometry(.13,.018,8,20),mat("#ececf0"),0,2.42,.04);collar.rotation.x=Math.PI/2;
+ const sleeve=state.top==="tshirt"||state.top==="sport"?.18:state.top==="dress"?.44:.47;
+ for(const x of [-1,1]){
+  const arm=add(new THREE.CylinderGeometry(.115,.09,sleeve,14),top,x*.43,2.23,0);arm.rotation.z=x*.25;
+  const fore=add(new THREE.CylinderGeometry(.09,.075,.68-sleeve*.5,12),skin,x*(.48+sleeve*.12),1.79,0);fore.rotation.z=x*.08;
+  add(new THREE.SphereGeometry(.105,12,12),skin,x*.52,1.48,0);
+  const shorts=state.bottom==="shorts"||state.bottom==="skirt";
+  add(new THREE.CylinderGeometry(.17,.135,shorts?.38:.94,16),denim,x*.17,shorts?1.26:.99,0);
+  if(shorts)add(new THREE.CylinderGeometry(.125,.095,.55,14),skin,x*.17,.81,0);
+  add(new THREE.BoxGeometry(.29,.19,.48),shoe,x*.17,.14,.105);
+ }
+ if(state.bottom==="skirt"||state.top==="dress")add(new THREE.CylinderGeometry(.3,.46,.55,24),top,0,1.42,0);
+ if(state.top==="jacket"||state.top==="hoodie"){const zip=add(new THREE.BoxGeometry(.015,.68,.012),mat("#dddce0"),0,2.02,.317);zip.rotation.y=0}
+ if(state.top==="suit"){add(new THREE.BoxGeometry(.1,.55,.014),mat("#e8e8e8"),0,2.04,.318)}
+ root.userData.cmdCivilian=true;return root;
+}
+function setPerson(frame,state){
+ const id=state.avatarModel==="custom"?"customAvatar":"civilian";
  if(frame.modelKey===id&&frame.person){frame.wrapper.classList.add("cmd-real-3d-ready");return}
- const token=++frame.token;setNotice(frame,"Chargement du personnage 3D…");
- try{
-  const data=await loadGLB(modelUrls[id]);
+ const token=++frame.token;
+ const install=(cloned,animations=[])=>{
   if(frame.token!==token)return;
-  if(frame.person){frame.base.remove(frame.person);frame.person=null}
-  const cloned=cloneSkinned(data.scene);
-  normalize(cloned,3.15,-.1,0);
-  cloned.rotation.y=.0;
-  applyOutfit(cloned,state.topColor,state.top);
-  applyAppearance(cloned,state);
+  if(frame.person)frame.base.remove(frame.person);
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
-  applyAccessory(frame,state);
   frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
-  frame.lookKey="";frame.poseKey="";frame.sourceAnimations=data.animations||[];
-  frame.activeAnimation="";frame.personMixer=data.animations?.length?new THREE.AnimationMixer(cloned):null;
+  frame.lookKey="";frame.poseKey="";frame.sourceAnimations=animations;
+  frame.activeAnimation="";frame.personMixer=animations.length?new THREE.AnimationMixer(cloned):null;
   if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
-  frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
-  if(frame.kind==="editor")window.requestAnimationFrame(()=>renderLookCards());
- }catch(e){console.warn("[CMD 3D avatar]",e);setNotice(frame,"Impossible de charger ce modèle 3D pour le moment. Réessaie en changeant de personnage.")}
+  applyAccessory(frame,state);frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
+ };
+ if(id==="civilian"){install(makeCivilian(state));return}
+ setNotice(frame,"Chargement du personnage 3D…");
+ loadGLB(modelUrls[id]).then(data=>{if(frame.token!==token)return;const cloned=cloneSkinned(data.scene);normalize(cloned,3.15,-.1,0);install(cloned,data.animations||[])}).catch(e=>{console.warn("[CMD 3D avatar]",e);setNotice(frame,"Impossible de charger le personnage personnalisé.")});
 }
 async function setPet(frame,state){
  const knownPets={fox:"fox",cat:"cat",horse:"horse",bird:"parrot",duck:"duck",flamingo:"flamingo",stork:"stork"};
@@ -196,7 +219,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state);applyAccessory(frame,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
