@@ -437,37 +437,59 @@ function update(frame,state){
  updateWorld(frame,state);
 }
 const avatarThumbCache=new Map();
-let avatarThumbBusy=false;
-
+let avatarThumbBusy=false,avatarThumbQueued=false;
 async function renderAvatarCards(){
- if(avatarThumbBusy)return;
- const buttons=[...document.querySelectorAll("#cmdSceneOptions [data-avatar-preset]")];
+ if(avatarThumbBusy){avatarThumbQueued=true;return}
+ const buttons=[...document.querySelectorAll("#cmdSceneOptions [data-avatar-preset],#cmdSceneOptions [data-groom-key]")];
  if(!buttons.length)return;
  avatarThumbBusy=true;
- let renderer=null;
+ let renderer;
  try{
   renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:"low-power"});
-  renderer.setPixelRatio(1);renderer.setSize(176,218,false);
-  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
-  for(const button of buttons){
-   const preset=window.cmdSphereAvatarPresets?.find(p=>p.id===button.dataset.avatarPreset);
-   if(!preset)continue;
-   let picture=avatarThumbCache.get(preset.id);
+  renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+  const state=snapshot();
+  for(let i=0;i<buttons.length;i++){
+   const button=buttons[i];if(!button.isConnected)continue;
+   const preset=button.dataset.avatarPreset?window.cmdSphereAvatarPresets?.find(p=>p.id===button.dataset.avatarPreset):null;
+   const key=button.dataset.groomKey;
+   const variant=button.dataset.groomStyle;
+   if(!preset&&(!key||!variant))continue;
+   const appearance=preset?{...state,...preset}:{...state,[key]:variant};
+   const faceOnly=!!key;
+   const cacheKey=preset?"preset|"+preset.id:"groom|"+key+"|"+variant+"|"+[state.gender,state.skin,state.hairColor,state.beard,state.beardColor,state.hair,state.faceShape,state.browStyle,state.eyeShape,state.mouth,state.nose].join("|");
+   let picture=avatarThumbCache.get(cacheKey);
    if(!picture){
-    const scene=new THREE.Scene(),root=makeCivilian(preset);
-    scene.add(root);scene.add(new THREE.HemisphereLight(0xe7e2fc,0x483251,3.0));
-    const main=new THREE.DirectionalLight(0xffeddc,3.2);main.position.set(-2.7,5,6);scene.add(main);
-    const rim=new THREE.DirectionalLight(0x9c70ff,2.0);rim.position.set(2,4,-3);scene.add(rim);
-    const camera=new THREE.PerspectiveCamera(31,176/218,.1,40);
-    camera.position.set(0,1.8,6.4);camera.lookAt(0,2.0,0);
-    renderer.render(scene,camera);picture=renderer.domElement.toDataURL("image/png");
-    avatarThumbCache.set(preset.id,picture);
+    const w=faceOnly?138:176,h=faceOnly?150:218;
+    renderer.setSize(w,h,false);
+    const scene=new THREE.Scene(),figure=makeCivilian(appearance);
+    scene.add(figure);scene.add(new THREE.HemisphereLight(0xf8efff,0x655073,2.8));
+    const keyLight=new THREE.DirectionalLight(0xffe7d8,3.2);keyLight.position.set(-3,6,5);scene.add(keyLight);
+    const rim=new THREE.DirectionalLight(0xcbb1ff,2.2);rim.position.set(2,4,-3);scene.add(rim);
+    const camera=new THREE.PerspectiveCamera(faceOnly?36:31,w/h,.1,25);
+    if(faceOnly){camera.position.set(0,2.66,1.75);camera.lookAt(0,2.67,0)}
+    else{camera.position.set(0,1.69,6.45);camera.lookAt(0,1.57,0)}
+    renderer.render(scene,camera);
+    picture=renderer.domElement.toDataURL("image/png");
+    if(avatarThumbCache.size>=48)avatarThumbCache.delete(avatarThumbCache.keys().next().value);
+    avatarThumbCache.set(cacheKey,picture);
+    figure.traverse(mesh=>{
+     if(mesh.isMesh){mesh.geometry?.dispose();const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];for(const mat of mats)mat?.dispose()}
+    });
    }
-   const holder=document.querySelector('#cmdSceneOptions [data-avatar-preset="'+preset.id+'"] .cmd-scene-model-photo');
-   if(holder&&picture){const img=new Image();img.alt="Portrait 3D "+preset.name;img.src=picture;holder.replaceChildren(img)}
+   const holder=button.querySelector(faceOnly?".cmd-groom-thumb":".cmd-scene-model-photo");
+   if(holder&&picture){
+    const img=new Image();img.alt=faceOnly?"Aperçu 3D "+(button.getAttribute("aria-label")||""):("Avatar 3D "+preset.name);
+    img.src=picture;img.loading="lazy";holder.replaceChildren(img);
+   }
+   // Time-slice GPU previews so the iPhone can keep scrolling and tapping.
+   if(i%4===3)await new Promise(resolve=>requestAnimationFrame(resolve));
   }
- }catch(error){console.warn("[CMD Sphere portraits intégrés]",error)}
- finally{renderer?.dispose();renderer?.forceContextLoss();avatarThumbBusy=false}
+ }catch(error){console.warn("[CMD Sphere portraits 3D]",error)}
+ finally{
+  renderer?.dispose();renderer?.forceContextLoss();avatarThumbBusy=false;
+  if(avatarThumbQueued){avatarThumbQueued=false;requestAnimationFrame(renderAvatarCards)}
+ }
 }
 const lookThumbCache=new Map();
 function renderLookCards(){
