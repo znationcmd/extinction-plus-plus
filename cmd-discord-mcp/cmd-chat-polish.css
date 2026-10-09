@@ -1,0 +1,55 @@
+/* CMD Sphere chat polish for iPhone, Android, desktop */
+#channelOverlay.channel-overlay{box-sizing:border-box;width:100vw;max-width:100vw;min-width:0;overflow:hidden;grid-template-rows:auto minmax(0,1fr) auto}
+#channelOverlay .channel-head{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:7px;padding:calc(10px + env(safe-area-inset-top)) 10px 10px;min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+#channelOverlay .channel-back{grid-column:1;min-width:40px;width:40px;height:42px;padding:0}
+#channelOverlay .channel-head-main{grid-column:2;min-width:0;max-width:100%;overflow:hidden}
+#channelOverlay .channel-head-main b,#channelOverlay .channel-head-main small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+#channelOverlay .channel-head-main b{font-size:clamp(15px,4.5vw,20px)}
+#channelOverlay .channel-actions{grid-column:3;display:flex;align-items:center;gap:4px;flex:none;white-space:nowrap}
+#channelOverlay .channel-actions .btn{padding:8px;font-size:15px;min-height:38px}
+#channelOverlay .channel-actions .cmd-chat-compact{min-width:38px;min-height:38px;padding:7px 8px;border:1px solid #ffffff2b;background:#ffffff10;color:white;border-radius:9px;font-size:17px}
+#channelOverlay .channel-head-main #cmdChannelSourceToggle,#channelOverlay .channel-head-main #cmdArchiveHistoryToggle,#channelOverlay .channel-head-main #cmdLiveMessagesToggle{display:none!important}
+#channelOverlay #cmdChatSourcesPanel{position:fixed;right:12px;top:calc(86px + env(safe-area-inset-top));z-index:100;max-width:min(320px,90vw);width:max-content;display:none;flex-direction:column;gap:7px;background:#22232c;border:1px solid #ffffff30;border-radius:14px;padding:11px;box-shadow:0 14px 30px #0009}
+#channelOverlay #cmdChatSourcesPanel.open{display:flex}
+#channelOverlay #cmdChatSourcesPanel .btn{display:block!important;white-space:normal;max-width:290px;text-align:left;margin:0!important;min-height:42px}
+#channelOverlay #cmdChatColorPanel{position:fixed;right:10px;top:calc(86px + env(safe-area-inset-top));z-index:100;display:none;gap:10px;flex-direction:column;background:#25212c;border:1px solid #ffffff40;padding:13px;border-radius:14px;box-shadow:0 14px 30px #0009}
+#channelOverlay #cmdChatColorPanel.open{display:flex}
+#channelOverlay #cmdChatColorPanel strong{font-size:13px;color:#e5e7eb}
+#channelOverlay .cmd-chat-color-options{display:grid;grid-template-columns:repeat(5,34px);gap:10px}
+#channelOverlay .cmd-chat-color-options button{width:34px;height:34px;border:2px solid #ffffff55;border-radius:50%;cursor:pointer}
+#channelOverlay .cmd-chat-color-options button[aria-pressed=true]{outline:2px solid white;outline-offset:2px}
+#channelOverlay .channel-messages{min-width:0;max-width:100vw;overflow-x:hidden;overflow-y:auto;box-sizing:border-box;overscroll-behavior:contain;padding:12px max(10px,env(safe-area-inset-left)) 20px max(10px,env(safe-area-inset-right))}
+#channelOverlay .discord-message{display:flex;align-items:flex-end;gap:8px;max-width:100%;width:100%;padding:7px 0;box-sizing:border-box;overflow:visible}
+#channelOverlay .discord-message:hover{background:transparent}
+#channelOverlay .discord-message .msg-avatar{height:33px;width:33px;min-width:33px;flex:none;margin-bottom:3px}
+#channelOverlay .discord-message .msg-main{display:block;box-sizing:border-box;min-width:0;max-width:min(84%,620px);width:fit-content;flex:0 1 auto;background:var(--cmd-message-bubble,#40424c);border:1px solid #ffffff12;border-radius:17px 17px 17px 5px;padding:10px 12px;box-shadow:0 2px 5px #0002}
+#channelOverlay .discord-message.cmd-own-message{flex-direction:row-reverse;justify-content:flex-start}
+#channelOverlay .discord-message.cmd-own-message .msg-main{background:var(--cmd-message-bubble,#5141bc);border-radius:17px 17px 5px 17px;color:#fff}
+#channelOverlay .discord-message .msg-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+#channelOverlay .discord-message .msg-meta b{font-size:12px;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
+#channelOverlay .discord-message .msg-meta time{font-size:10px;white-space:nowrap}
+#channelOverlay .discord-message .msg-text{line-height:1.45;white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%;min-width:0;color:#fff}
+#channelOverlay .discord-message .msg-reply,#channelOverlay .discord-message .msg-embed,#channelOverlay .discord-message .msg-file,#channelOverlay .discord-message .msg-reactions{min-width:0;max-width:100%;overflow-wrap:anywhere;box-sizing:border-box}
+#channelOverlay .discord-message .msg-image{max-width:100%;height:auto;object-fit:contain}
+#channelOverlay .discord-message .cmd-translation-tools{max-width:100%;display:flex;flex-wrap:wrap}
+#channelOverlay .discord-message .reply-mini{margin-left:auto;flex:none}
+#channelOverlay .channel-compose-wrap{padding:4px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-right));min-width:0;max-width:100%;overflow:hidden;box-sizing:border-box}
+#channelOverlay .channel-composer{display:flex;align-items:flex-end;gap:4px;min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+#channelOverlay .channel-composer textarea{min-width:0;width:100%;flex:1 1 40px;min-height:41px;max-height:150px;font-size:16px;line-height:1.35;overflow-y:auto}
+#channelOverlay .channel-composer button{flex:0 0 36px;min-width:36px;width:36px;height:40px;padding:0 3px}
+#channelOverlay .channel-composer #channelSend{flex:0 0 auto;width:auto;max-width:86px;min-width:57px;padding:0 7px;font-size:12px}
+#channelOverlay .send-note{font-size:11px;line-height:1.3;opacity:.6;max-height:2.6em;overflow:hidden}
+#channelEmojiSheet .emoji-tabs{align-items:center;min-width:0}
+#channelEmojiSheet .emoji-tabs [data-emoji-tab]{font-size:clamp(12px,3.3vw,15px);padding:11px 3px}
+#channelEmojiSheet #cmdEmojiBackKeyboard{flex:0 0 auto!important;width:38px;min-width:38px;height:38px;border:1px solid #ffffff30;background:#694b78;color:white;border-radius:10px;font-size:19px;padding:0;white-space:nowrap}
+#channelEmojiSheet .cmd-emoji-grid-v2 .cmd-emoji-icon-v2{touch-action:manipulation}
+@media(max-width:500px){
+ #channelOverlay .channel-head{grid-template-columns:30px minmax(0,1fr) auto;gap:5px;padding-left:8px;padding-right:8px}
+ #channelOverlay .channel-back{font-size:25px;width:30px;min-width:30px}
+ #channelOverlay .channel-head-main b{font-size:17px}
+ #channelOverlay .channel-actions .btn{padding:6px;font-size:14px}
+ #channelOverlay .channel-actions .cmd-chat-compact{min-width:32px;padding:4px;font-size:16px}
+ #channelOverlay .discord-message .msg-main{max-width:calc(100vw - 66px)}
+ #channelOverlay .channel-composer #channelSend{max-width:58px;min-width:53px;padding:0 3px;font-size:11px}
+ #channelOverlay .channel-composer button{min-width:31px;width:31px;flex-basis:31px}
+}
