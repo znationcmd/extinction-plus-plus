@@ -18,12 +18,18 @@ function universePicker(){const groups=[["pet","Animaux","🐾"],["vehicle","Vé
 const skins=["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"];
 const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"];
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
-const pets=[["none","Aucun",""],["cat","Chat",""],["fox","Renard",""],["horse","Cheval",""],["bird","Perroquet","🦜"],["duck","Canard","🦆"],["flamingo","Flamant rose","🦩"],["stork","Cigogne","🐦"],["dog","Chien",""],["rabbit","Lapin",""],["wolf","Loup",""],["turtle","Tortue",""],["hamster","Hamster","🐹"],["panda","Panda","🐼"],["lion","Lion","🦁"],["tiger","Tigre","🐯"],["bear","Ours","🐻"],["deer","Cerf","🦌"],["penguin","Pingouin","🐧"],["owl","Hibou","🦉"],["dolphin","Dauphin","🐬"],["shark","Requin","🦈"],["butterfly","Papillon","🦋"],["dragon","Dragon","🐉"]];
+const pets=[["none","Aucun",""],["cat","Chat",""],["fox","Renard",""],["horse","Cheval",""],["bird","Perroquet","🦜"],["duck","Canard","🦆"],["flamingo","Flamant rose","🦩"],["stork","Cigogne","🐦"],["dog","Chien",""],["rabbit","Lapin",""],["wolf","Loup",""],["turtle","Tortue",""],["hamster","Hamster","🐹"],["panda","Panda","🐼"],["lion","Lion","🦁"],["tiger","Tigre","🐯"],["bear","Ours","🐻"],["deer","Cerf","🦌"],["penguin","Pingouin","🐧"],["owl","Hibou","🦉"],["dolphin","Dauphin","🐬"],["shark","Requin","🦈"],["butterfly","Papillon","🦋"],["dragon","Dragon","🐉"],["dog-spotted","Chien tacheté","🐶"],["dog-golden","Chien doré","🐶"],["dog-husky","Husky","🐺"],["dog-puppy","Chiot","🐶"],["cat-tabby","Chat tigré","🐱"],["cat-blue","Chat gris","🐱"],["cat-ginger","Chat roux","🐱"],["cat-black","Chat noir","🐈"],["cat-siamese","Chat siamois","🐱"],["dog-bulldog","Bouledogue","🐶"],["dog-terrier","Terrier","🐶"],["dog-shepherd","Berger","🐕"],["dog-pug","Carlin","🐶"]];
 const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
 const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
-const originalPetIndex={dog:1,cat:6,rabbit:13,fox:18,horse:17,turtle:12,tiger:8};
-const petSymbol={bird:"🦜",duck:"🦆",flamingo:"🦩",stork:"🐦",wolf:"🐺",hamster:"🐹",panda:"🐼",lion:"🦁",bear:"🐻",deer:"🦌",penguin:"🐧",owl:"🦉",dolphin:"🐬",shark:"🦈",butterfly:"🦋",dragon:"🐉"};
-function originalPetArt(value){if(value==="none")return "";const n=originalPetIndex[value];if(n===undefined){const item=pets.find(x=>x[0]===value);return '<span class="cmd-pet-symbol" role="img" aria-label="'+escape(item?.[1]||value)+'">'+(petSymbol[value]||item?.[2]||"🐾")+'</span>'}return '<span data-original-pet="'+value+'" role="img" aria-label="'+escape(pets.find(x=>x[0]===value)?.[1]||value)+'" style="display:block;width:100%;height:100%;min-height:100px;background-repeat:no-repeat;background-size:400% 500%;background-position:'+(n%4*100/3)+'% '+(Math.floor(n/4)*25)+'%;background-image:url('+JSON.stringify(loadedSheets.get("pets")||"")+')"></span>'}
+const originalPetIndex={dog:4,cat:8,"dog-spotted":1,"dog-golden":5,"dog-husky":17,"dog-puppy":11,"cat-tabby":8,"cat-blue":9,"cat-ginger":13,"cat-black":14,"cat-siamese":7,"dog-bulldog":10,"dog-terrier":3,"dog-shepherd":2,"dog-pug":19};
+const petSymbol={fox:"🦊",horse:"🐴",rabbit:"🐰",turtle:"🐢",tiger:"🐯",bird:"🦜",duck:"🦆",flamingo:"🦩",stork:"🐦",wolf:"🐺",hamster:"🐹",panda:"🐼",lion:"🦁",bear:"🐻",deer:"🦌",penguin:"🐧",owl:"🦉",dolphin:"🐬",shark:"🦈",butterfly:"🦋",dragon:"🐉"};
+function originalPetArt(value){
+ if(value==="none")return "";
+ const item=pets.find(x=>x[0]===value),index=originalPetIndex[value];
+ const art=index===undefined?null:petTiles[index];
+ if(art)return '<img class="cmd-universe-item-image cmd-pet-art" src="'+art+'" alt="'+escape(item?.[1]||value)+'" loading="lazy" decoding="async">';
+ return '<span class="cmd-pet-symbol" role="img" aria-label="'+escape(item?.[1]||value)+'">'+(petSymbol[value]||item?.[2]||"🐾")+'</span>';
+}
 function petArt(value){return originalPetArt(value)}
 const defaults={scene:"none",avatarPreset:"guardian",gender:"male",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
@@ -96,7 +102,14 @@ function present(s=state,img=custom){
   person.append(img);person.classList.add("cmd-scene-selected-avatar");
  }else if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {const photo=s.gender==="female"?"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=420&fit=crop&q=80":"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=420&fit=crop&q=80";person.innerHTML='<img class="cmd-avatar-fallback-photo" src="'+photo+'" alt="Portrait de remplacement en cas d’indisponibilité du modèle 3D">';}
  scenery.append(person);
- if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[s.pet]||"";img.alt="Animal réaliste";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}scenery.append(animal)}
+ if(s.pet!=="none"){
+  const animal=document.createElement("div");animal.className="cmd-scene-pet";
+  const tileIndex=originalPetIndex[s.pet],src=tileIndex===undefined?null:petTiles[tileIndex];
+  if(src){const pic=new Image();pic.src=src;pic.alt="Animal "+s.pet;pic.className="cmd-universe-item-image";animal.append(pic)}
+  else if(s.petStyle==="photo"&&animalPhoto){const pic=new Image();pic.src=animalPhoto;pic.alt="Animal";animal.append(pic)}
+  else animal.innerHTML=originalPetArt(s.pet);
+  scenery.append(animal);
+ }
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
 }
 async function shareProfile(){
@@ -226,11 +239,32 @@ function universePhoto(kind,value){
 const importedAvatarCount=68;
 const originalSheets=["avatar-68-final","catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
 const loadedSheets=new Map();
+const petTiles=[],sceneTiles=[],homeTiles=[];
 for(let i=0;i<54;i++)scenes.push(["reference-"+i,"Fond original "+(i+1),"🖼️"]);
 function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||"");return match&&Number(match[1])<54?Number(match[1]):-1}
-function sceneReferenceStyle(value){const n=sceneReferenceIndex(value);if(n<0)return "";return "background-image:url("+JSON.stringify(loadedSheets.get("scenes")||"") +");background-size:600% 900%;background-position:"+(n%6*20)+"% "+(Math.floor(n/6)*12.5)+"%;background-repeat:no-repeat"}
+function sceneReferenceStyle(value){
+ const n=sceneReferenceIndex(value);if(n<0)return "";
+ const picture=sceneTiles[n];
+ return picture?"background-image:url("+JSON.stringify(picture)+");background-size:cover;background-position:center;background-repeat:no-repeat":"background-color:#181427;";
+}
 
 function sheetArt(sheet,index){const x=index%4,y=Math.floor(index/4)%4;return '<span class="cmd-original-catalog-art" data-original-sheet="'+sheet+'" style="display:block;width:100%;height:100%;min-height:84px;background-size:400% 400%;background-position:'+(x*100/3)+'% '+(y*100/3)+'%;background-repeat:no-repeat;border-radius:10px"></span>'}
+async function prepareUniverseTiles(name,cols,rows,target,removeCornerBadges=false){
+ const src=loadedSheets.get(name);if(!src)return;
+ const img=new Image();img.src=src;try{await img.decode()}catch(e){console.warn("[CMD Sphere]",name,"image indisponible",e);return}
+ const w=Math.floor(img.naturalWidth/cols),h=Math.floor(img.naturalHeight/rows);
+ if(!w||!h)return;
+ // Original scene sheet contains premium stars painted into the top-left corner.
+ // Exclude that header strip on the rendered tile, without deforming the scene.
+ const trim=removeCornerBadges?Math.min(21,Math.round(h*.18)):0;
+ for(let n=0;n<cols*rows;n++){
+  const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h-trim;
+  const ctx=canvas.getContext("2d");if(!ctx)continue;
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+  ctx.drawImage(img,(n%cols)*w,Math.floor(n/cols)*h+trim,w,h-trim,0,0,w,h-trim);
+  target[n]=canvas.toDataURL("image/webp",.93);
+ }
+}
 async function loadOriginalSheets(){
  const loadOne=async name=>{
   try{
@@ -253,7 +287,10 @@ async function loadOriginalSheets(){
   renderSheet(currentTab);refreshEditor();
  }
  await Promise.all(originalSheets.filter(name=>name!=="avatar-68-final").map(loadOne));
+ await Promise.all([prepareUniverseTiles("pets",4,5,petTiles),prepareUniverseTiles("scenes",6,9,sceneTiles,true),prepareUniverseTiles("homes",4,4,homeTiles)]);
  applyOriginalSheets();
+ if(slot)present();
+ if(sheet&&!sheet.hidden){const active=sheet.querySelector("[data-scene-tab].selected")?.dataset.sceneTab||"avatar";renderSheet(active);refreshEditor()}
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage="url("+JSON.stringify(src)+")"});
  if(sceneReferenceIndex(state.scene)>=0)present();
  if(sheet&&!sheet.hidden)refreshEditor();
@@ -334,7 +371,7 @@ function contents(tab){
  if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits)+screenshotCatalogue("vestes");
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return universePicker();
- if(tab==="scene")return '<h2>Mon univers</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
+ if(tab==="scene")return '<h2>Mes scènes</h2><p class="cmd-scene-section-intro">Décors individuels, sans prix ni couronne, adaptés à tous les écrans.</p>'+picker("Paysages","scene",scenes,"scene");
  return avatarEditor();
 }
 function renderSheet(tab){
@@ -354,7 +391,7 @@ function renderSheet(tab){
  $$("[data-universe-name]",area).forEach(e=>e.addEventListener("input",()=>{state.petName=e.value.slice(0,40)}));
  $$("[data-universe-privacy]",area).forEach(e=>e.addEventListener("change",()=>{state.hideHome=e.checked}));
  $$("[data-scene-field]",area).forEach(e=>e.addEventListener("input",()=>{state[e.dataset.sceneField]=e.value;refreshEditor()}));
- $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle="photo";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel="civilian"}renderSheet(tab);refreshEditor()}));
+ $$("[data-scene-choice]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneChoice]=e.dataset.value;if(e.dataset.sceneChoice==="pet"){state.petStyle="2d";state.petModel=state.pet==="bird"?"parrot":state.pet}if(e.dataset.sceneChoice==="gender"||e.dataset.sceneChoice==="hair"){state.avatarStyle="3d";state.avatarModel="civilian"}renderSheet(tab);refreshEditor()}));
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
@@ -383,7 +420,7 @@ function renderStickerPreview(){
  live.innerHTML=previewArt;
  live.dataset.avatar=idx>=0?String(idx):"illustrated";
  const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
- if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?loadedSheets.get("scenes"):(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"600% 900%":"cover","important");hero.style.setProperty("background-position",reference>=0?(reference%6*20)+"% "+(Math.floor(reference/6)*12.5)+"%":"center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16):"");applyOriginalSheets()}}
+ if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?sceneTiles[reference]:(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size","cover","important");hero.style.setProperty("background-position","center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?(homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]?'<img class="cmd-universe-item-image" src="'+homeTiles[Math.max(0,homes.findIndex(v=>v[0]===state.home)-1)%16]+'" alt="Maison" loading="lazy">':sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16)):"");applyOriginalSheets()}}
 }
 function installStickerStyles(){
  if(document.getElementById("cmdStickerStyle"))return;
