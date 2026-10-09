@@ -119,7 +119,7 @@
  async function imageData(file,character){
    if(file){
      if(!/^image\/(gif|png|jpeg|webp)$/.test(file.type))throw Error("Formats acceptés : PNG, JPG, WebP, GIF.");
-     if(file.size>1024*1024)throw Error("Fichier de plus de 1 Mo.");
+     if(file.size>10*1024*1024)throw Error("Fichier de plus de 10 Mo.");
      return await new Promise((resolve,reject)=>{
        const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||""));
        reader.onerror=()=>reject(Error("Lecture impossible"));reader.readAsDataURL(file);
@@ -183,8 +183,8 @@
    const input=$("#cmdEmojiBulkFiles"),notice=$("#cmdEmojiBulkFilesStatus"),button=$("#cmdEmojiBulkButton");
    const files=Array.from(input?.files||[]);
    if(!files.length){notice.textContent="Sélectionne des fichiers individuels.";return}
-   const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=1024*1024);
-   if(!allowed.length){notice.textContent="Aucun fichier accepté : PNG/JPG/GIF/WebP, 1 Mo par fichier.";return}
+   const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=10*1024*1024);
+   if(!allowed.length){notice.textContent="Aucun fichier accepté : PNG/JPG/GIF/WebP, 10 Mo par fichier.";return}
    button.disabled=true;let completed=0,skipped=files.length-allowed.length,failed=0;
    const names=new Set(),batch=[];let batchSize=0;
    async function sendBatch(){
@@ -202,8 +202,8 @@
      for(let i=0;i<allowed.length;i++){
        try{
          const file=allowed[i],dataUrl=await imageData(file,"");
-         if(batch.length>=10||batchSize+dataUrl.length>7*1024*1024)await sendBatch();
-         batch.push({name:makeBulkName(file.name,names),dataUrl});batchSize+=dataUrl.length;
+         if(batch.length>=10||(batch.length&&batchSize+dataUrl.length>16*1024*1024))await sendBatch();
+         batch.push({name:makeBulkName(file.name,names),dataUrl,kind:String($("#cmdEmojiBulkKind")?.value||"emoji")});batchSize+=dataUrl.length;
          notice.textContent="Préparation "+(i+1)+"/"+allowed.length+" · "+completed+" enregistrés";
        }catch(e){failed++;console.warn("[CMD emoji file]",allowed[i]?.name,e)}
      }
@@ -221,19 +221,22 @@
    await getLibrary();
    panel=document.createElement("div");panel.id="cmdEmojiCreator";panel.className="cmd-emoji-creator";
    const role=bridge()?.state.libraryRole,canServer=["owner","admin"].includes(role)&&Boolean(bridge()?.state.libraryGuild);
+   const defaultKind=["emoji","gif","sticker"].includes(bridge()?.state.tab)?bridge().state.tab:"emoji";
    panel.innerHTML='<form id="cmdEmojiCreatorForm">'+
-     '<div class="cmd-emoji-creator-head"><strong>Créer un emoji</strong><button type="button" id="cmdEmojiClose" aria-label="Fermer">✕</button></div>'+
-     '<label>Nom de l’emoji<input name="name" type="text" required minlength="2" maxlength="32" placeholder="ex. mon_dino"></label>'+
+     '<div class="cmd-emoji-creator-head"><strong>Créer un emoji, GIF ou autocollant</strong><button type="button" id="cmdEmojiClose" aria-label="Fermer">✕</button></div>'+
+     '<label>Nom de la création<input name="name" type="text" required minlength="2" maxlength="32" placeholder="ex. mon_dino"></label>'+ 
+     '<label>Type<select name="kind" id="cmdEmojiKind"><option value="emoji">Emoji</option><option value="gif">GIF animé</option><option value="sticker">Autocollant (fixe ou animé)</option></select></label>'+
      '<label>Image / GIF animé<input id="cmdEmojiFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>'+
      '<label>Ou créer un emoji avec un symbole<input id="cmdEmojiSymbol" maxlength="8" type="text" placeholder="🦖"></label>'+
      '<label>Qui pourra l’utiliser ?<select name="scope"><option value="personal">Moi (bibliothèque personnelle)</option><option value="community">Tout CMD Sphere (partagé)</option>'+
      (canServer?'<option value="server">Membres de ce serveur</option>':'')+'</select></label>'+
-     '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 1 Mo. Choisis uniquement des images autorisées.</small>'+
+     '<small>Fichiers PNG, JPG, WebP ou GIF animé, jusqu’à 10 Mo chacun. Les GIF doivent être réellement animés.</small>'+
      '<button type="submit" id="cmdEmojiSave">Enregistrer</button><p id="cmdEmojiCreatorNotice" role="status"></p></form>'+
      (bridge()?.state.libraryFounder?'<section class="cmd-emoji-bulk" style="padding:12px;border:1px solid #ffffff26;border-radius:12px;margin:12px 0;display:grid;gap:9px"><strong>Importer les emojis des captures</strong><span>Réservé au fondateur · partager avec tous</span><label>Fichier CMD au format .json<input type="file" id="cmdEmojiBulkFile" accept=".json,application/json"></label><button type="button" id="cmdEmojiBulkImport">Importer tout le pack</button><button type="button" id="cmdEmojiBulkStop" hidden>Arrêter</button><p id="cmdEmojiBulkStatus" role="status" aria-live="polite"></p></section>':'')+
-     '<section class="cmd-emoji-manage"><strong>Mes emojis et ceux que je peux gérer</strong><div id="cmdEmojiOwned"></div></section>'+
-     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-manage"><strong>Importation multiple du fondateur</strong><p>Choisis tous les fichiers emojis d’origine (PNG, JPG, WebP ou GIF). Chaque fichier deviendra un emoji indépendant, y compris animé.</p><label>Fichiers emojis<input id="cmdEmojiBulkFiles" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label><button type="button" id="cmdEmojiBulkButton" class="cmd-emoji-import-bulk">Importer tous les emojis sélectionnés</button><p id="cmdEmojiBulkFilesStatus" role="status"></p></section>':'');
+     '<section class="cmd-emoji-manage"><strong>Mes emojis, GIF et autocollants</strong><div id="cmdEmojiOwned"></div></section>'+
+     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-manage"><strong>Importation multiple du fondateur</strong><p>Chaque fichier devient un emoji, GIF ou autocollant indépendant, avec son animation d’origine.</p><label>Type des fichiers<select id="cmdEmojiBulkKind"><option value="emoji">Emojis</option><option value="gif">GIF animés</option><option value="sticker">Autocollants</option></select></label><label>Fichiers<input id="cmdEmojiBulkFiles" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label><button type="button" id="cmdEmojiBulkButton" class="cmd-emoji-import-bulk">Importer tous les emojis sélectionnés</button><p id="cmdEmojiBulkFilesStatus" role="status"></p></section>':'');
    sheet.append(panel);
+   $("#cmdEmojiKind").value=defaultKind;
    $("#cmdEmojiClose").onclick=()=>{panel.remove();panel=null};
    if($("#cmdEmojiBulkButton"))$("#cmdEmojiBulkButton").onclick=importFilesAsEmojis;
    drawMine();
@@ -245,11 +248,11 @@
        const name=label(form.elements.name.value);
        if(!/^[\p{L}\p{N}_-]{2,32}$/u.test(name))throw Error("Nom de 2 à 32 caractères, lettres/chiffres, tiret ou _.");
        const dataUrl=await imageData($("#cmdEmojiFile").files[0],$("#cmdEmojiSymbol").value);
-       const scope=String(form.elements.scope.value);
-       const r=await fetch("/api/cmd-emojis",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({name,scope,guildId:activeGuild()||null,dataUrl})});
+       const scope=String(form.elements.scope.value),kind=String(form.elements.kind.value);
+       const r=await fetch("/api/cmd-emojis",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({name,scope,kind,guildId:activeGuild()||null,dataUrl})});
        const output=await r.json();if(!r.ok)throw Error(output.error||"Erreur d'import");
-       notice.textContent="Emoji ajouté avec succès.";
-       form.reset();const p=bridge();p.state.selected=scope==="personal"?"mine":scope;
+       notice.textContent=(kind==="gif"?"GIF":kind==="sticker"?"Autocollant":"Emoji")+" ajouté avec succès.";
+       form.reset();const p=bridge();p.state.tab=kind;p.state.selected=scope==="personal"?"mine":scope;
        await getLibrary(true);drawMine();
      }catch(e){notice.textContent=e.message||"Erreur"}
      finally{btn.disabled=false}
