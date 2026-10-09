@@ -608,3 +608,9 @@
 #cmdSceneSheet .cmd-original-gallery-tile{overflow:hidden;min-width:0;border-radius:12px;background:#282433;border:1px solid #ffffff24}
 #cmdSceneSheet .cmd-original-gallery-tile span{width:100%;height:auto;image-rendering:auto}
 @media(max-width:390px){#cmdSceneSheet .cmd-original-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Restore 2D editor previews and avatar cards */
+#cmdSceneSheet #cmdScenePreviewPerson{visibility:visible!important;opacity:1!important}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor.cmd-real-3d-ready~.cmd-scene-preview #cmdScenePreviewPerson{visibility:visible!important}
+#cmdSceneSheet .cmd-avatar-card-fallback{display:flex;width:100%;height:100%;min-height:150px;align-items:center;justify-content:center;background:transparent}
+#cmdSceneSheet .cmd-avatar-card-fallback svg{height:100%;width:auto;max-width:100%;display:block}
