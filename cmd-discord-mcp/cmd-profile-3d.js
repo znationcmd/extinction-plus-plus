@@ -107,7 +107,7 @@ function setNotice(frame,message){
  const el=frame.wrapper.querySelector(".cmd-real-3d-loading");if(el){el.hidden=!message;if(message)el.textContent=message}
 }
 async function setPerson(frame,state){
- const id=state.avatarModel==="custom"?"customAvatar":state.gender==="female"?"michelle":"soldier";
+ const id=state.avatarModel==="custom"?"customAvatar":state.avatarModel==="michelle"?"michelle":state.avatarModel==="soldier"?"soldier":state.gender==="female"?"michelle":"soldier";
  if(frame.modelKey===id&&frame.person){frame.wrapper.classList.add("cmd-real-3d-ready");return}
  const token=++frame.token;setNotice(frame,"Chargement du personnage 3D…");
  try{
