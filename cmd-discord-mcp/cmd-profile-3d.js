@@ -3,6 +3,7 @@
    User may upload their own textured, fully rigged, legally owned GLB characters/pets. */
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
+import {clone as cloneSkinned} from "three/addons/utils/SkeletonUtils.js";
 THREE.Cache.enabled=true;
 const loader=new GLTFLoader();
 const modelUrls={soldier:"/cmd-three/models/Soldier.glb",michelle:"/cmd-three/models/Michelle.glb",fox:"/cmd-three/models/Fox.glb",customAvatar:"/api/profile/3d/avatar",customPet:"/api/profile/3d/pet"};
@@ -38,7 +39,7 @@ function createCanvas(mount,kind){
  const rim=new THREE.DirectionalLight(0x8974fe,2.2);rim.position.set(3.5,4.2,-2);scene.add(rim);
  const fill=new THREE.PointLight(0xd941ef,19,11);fill.position.set(3,1,2.2);scene.add(fill);
  const base=new THREE.Group();scene.add(base);
- const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",token:0,angle:0,last:performance.now(),running:false,kind,requested:false};
+ const frame={wrapper,renderer,camera,scene,base,mixers:[],person:null,pet:null,modelKey:"",petKey:"",token:0,petToken:0,angle:0,last:performance.now(),running:false,kind,requested:false};
  let pointer=null;
  wrapper.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;pointer={x:e.clientX,id:e.pointerId};wrapper.setPointerCapture?.(e.pointerId)});
  wrapper.addEventListener("pointermove",e=>{if(!pointer||e.pointerId!==pointer.id)return;frame.angle+=(e.clientX-pointer.x)*.008;pointer.x=e.clientX});
@@ -101,7 +102,7 @@ async function setPerson(frame,state){
   const data=await loadGLB(modelUrls[id]);
   if(frame.token!==token)return;
   if(frame.person){frame.base.remove(frame.person);frame.person=null}
-  const cloned=data.scene.clone(true); // animated SkinnedMesh requires clone skeleton; handled by model's own root and default static pose
+  const cloned=cloneSkinned(data.scene);
   normalize(cloned,3.15,-.1,0);
   cloned.rotation.y=.0;
   applyOutfit(cloned,state.topColor,state.top);
@@ -126,7 +127,7 @@ async function setPet(frame,state){
  try{
   const data=await loadGLB(modelUrls[id]);if(frame.petToken!==ticket)return;
   if(frame.pet){frame.base.remove(frame.pet);frame.pet=null}
-  const cloned=data.scene.clone(true);normalize(cloned,.84,1.18,.26);cloned.rotation.y=-.35;
+  const cloned=cloneSkinned(data.scene);normalize(cloned,.84,1.18,.26);cloned.rotation.y=-.35;
   frame.base.add(cloned);frame.pet=cloned;frame.petKey=id;frame.wrapper.dataset.pet3d="on";
   if(data.animations?.length){
    const mixer=new THREE.AnimationMixer(cloned);const clip=data.animations.find(x=>/survey|idle/i.test(x.name))||data.animations[0];
@@ -136,7 +137,8 @@ async function setPet(frame,state){
 }
 function update(frame,state){
  if(!frame)return;
- if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");return}
+ if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
+ frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
  void setPet(frame,state);
 }
