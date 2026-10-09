@@ -35,7 +35,7 @@ async function role(pool,user,gid){
 }
 function item(r,uid,memberRole){
  return {id:r.id,name:r.name,scope:r.scope,guildId:r.guild_id,mime:r.mime_type,animated:r.animated,
- url:"/api/cmd-emojis/file/"+r.id,size:r.size_bytes,mine:String(r.creator_user_id)===String(uid),
+ url:"/api/cmd-emojis/file/"+r.id,size:r.size_bytes,serverName:r.server_name||null,mine:String(r.creator_user_id)===String(uid),
  canDelete:String(r.creator_user_id)===String(uid)||(r.scope==="server"&&["owner","admin"].includes(memberRole))};
 }
 export async function initCmdEmojiLibrary(pool){
@@ -43,7 +43,7 @@ export async function initCmdEmojiLibrary(pool){
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_emojis_scope_idx ON cmd_sphere_emojis(scope,guild_id,created_at DESC)");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_emojis_owner_idx ON cmd_sphere_emojis(creator_user_id,created_at DESC)");
 }
-export async function handleCmdEmojiLibrary(req,res,url,{pool,auth}){
+export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false}){
  if(!url.pathname.startsWith("/api/cmd-emojis"))return false;
  const uid=String(auth?.user?.id||"");
  if(!uid){reply(res,401,{error:"Connexion CMD Sphere requise."});return true}
@@ -52,14 +52,22 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth}){
    const id=url.pathname.slice(21);if(!UUID.test(id))throw fail("Emoji incorrect");
    const q=await pool.query("SELECT * FROM cmd_sphere_emojis WHERE id=$1 LIMIT 1",[id]);const row=q.rows[0];if(!row)throw fail("Emoji introuvable",404);
    const m=row.scope==="server"?await role(pool,uid,row.guild_id):null;
-   if(row.scope==="server"&&!m)throw fail("Accès refusé",403);
+   if(row.scope==="personal"&&String(row.creator_user_id)!==uid)throw fail("Emoji privé : accès refusé",403);
+   if(row.scope==="server"&&!m&&!founder)throw fail("Accès refusé",403);
    res.writeHead(200,{"content-type":row.mime_type,"content-length":row.bytes.length,"cache-control":"private, max-age=300","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; sandbox","cross-origin-resource-policy":"same-origin"});res.end(row.bytes);return true;
+  }
+  if(req.method==="GET"&&url.pathname==="/api/cmd-emojis/servers"){
+   if(!founder)throw fail("Accès réservé au fondateur.",403);
+   const q=await pool.query("SELECT g.id,g.name,g.icon,COUNT(e.id)::int AS emoji_count FROM cmd_native_guilds g INNER JOIN cmd_sphere_emojis e ON e.guild_id=g.id AND e.scope='server' GROUP BY g.id,g.name,g.icon ORDER BY g.name LIMIT 500");
+   reply(res,200,{servers:q.rows,founder:true});return true;
   }
   if(req.method==="GET"&&url.pathname==="/api/cmd-emojis"){
    const gid=String(url.searchParams.get("guildId")||""),m=gid?await role(pool,uid,gid):null;
-   if(gid&&!m)throw fail("Tu n'es pas membre de ce serveur.",403);
-   const q=await pool.query("SELECT id,creator_user_id,scope,guild_id,name,mime_type,animated,size_bytes FROM cmd_sphere_emojis WHERE scope='community' OR (scope='personal' AND creator_user_id=$1) OR (scope='server' AND guild_id=$2) ORDER BY created_at DESC LIMIT 1500",[uid,gid||null]);
-   reply(res,200,{emojis:q.rows.map(r=>item(r,uid,m)),role:m});return true;
+   if(gid&&!m&&!founder)throw fail("Tu n'es pas membre de ce serveur.",403);
+   const all=founder&&url.searchParams.get("all")==="1";
+   const page=Math.max(0,Math.min(100000,Number.parseInt(url.searchParams.get("offset")||"0",10)||0));
+   const q=await pool.query("SELECT e.id,e.creator_user_id,e.scope,e.guild_id,e.name,e.mime_type,e.animated,e.size_bytes,g.name AS server_name FROM cmd_sphere_emojis e LEFT JOIN cmd_native_guilds g ON g.id=e.guild_id WHERE e.scope='community' OR (e.scope='personal' AND e.creator_user_id=$1) OR (e.scope='server' AND ($3::boolean OR e.guild_id=$2)) ORDER BY e.created_at DESC LIMIT 500 OFFSET $4",[uid,gid||null,all,page]);
+   reply(res,200,{emojis:q.rows.map(r=>item(r,uid,m)),role:m,founder,hasMore:q.rows.length===500,nextOffset:page+q.rows.length});return true;
   }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis"){
    const data=await readUpload(req),scope=String(data.scope||"personal"),gid=scope==="server"?String(data.guildId||""):null;
