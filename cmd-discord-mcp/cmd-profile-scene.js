@@ -230,7 +230,9 @@ async function loadOriginalSheets(){
  await Promise.all(originalSheets.map(async name=>{
   try{const r=await fetch("/catalogue/"+name+".b64.txt",{cache:"force-cache"});if(!r.ok)return;const raw=(await r.text()).trim();if(!raw.startsWith("UklG"))return;loadedSheets.set(name,"data:image/webp;base64,"+raw)}catch(e){}
  }));
+ await prepareImportedAvatarTiles();
  applyOriginalSheets();
+ if(sheet&&!sheet.hidden){renderSheet("avatar");refreshEditor()}
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage="url("+JSON.stringify(src)+")"});
  if(sceneReferenceIndex(state.scene)>=0)present();
  if(sheet&&!sheet.hidden){applyOriginalSheets();refreshEditor()}
@@ -282,7 +284,9 @@ function screenshotCatalogue(category){
 function applyScreenshotCatalogue(){
  document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
 }
-function importedAvatarArt(i){const src=loadedSheets.get("avatar-68-final");return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-68-final" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:1700% 400%;background-position:'+(i%17*100/16)+'% '+(Math.floor(i/17)*100/3)+'%;'+(src?'background-image:url('+JSON.stringify(src)+');':'')+'"></span>'}
+const importedAvatarTiles=[];
+async function prepareImportedAvatarTiles(){const src=loadedSheets.get("avatar-68-final");if(!src)return;const im=new Image();im.src=src;try{await im.decode()}catch(e){return}const w=Math.floor(im.naturalWidth/17),h=Math.floor(im.naturalHeight/4);for(let i=0;i<68;i++){const c=document.createElement("canvas");c.width=w;c.height=h;const ctx=c.getContext("2d");if(!ctx)continue;ctx.drawImage(im,(i%17)*w,Math.floor(i/17)*h,w,h,0,0,w,h);importedAvatarTiles[i]=c.toDataURL("image/png")}}
+function importedAvatarArt(i){const src=importedAvatarTiles[i];return src?'<img class="cmd-imported-avatar-art" src="'+src+'" alt="Avatar '+(i+1)+'" loading="lazy" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'<span class="cmd-imported-avatar-loading">Chargement…</span>'}
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Image originale · 2D</small></button>').join("")}
 function avatarEditor(){
  const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
