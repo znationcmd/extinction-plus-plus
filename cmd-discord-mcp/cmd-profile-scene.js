@@ -113,6 +113,15 @@ const avatarPresets=[
  {id:"iris",name:"Iris",model:"michelle",gender:"female",top:"suit",bottom:"formal",topColor:"#ffffff",hair:"bob",hairColor:"#58372a",skin:"#905a3d"}
 ];
 window.cmdSphereAvatarPresets=avatarPresets;
+const portraitPhotos={
+ guardian:"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=360&h=440&fit=crop&q=80",
+ nocturne:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=360&h=440&fit=crop&q=80",
+ azur:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=360&h=440&fit=crop&q=80",
+ luna:"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=360&h=440&fit=crop&q=80",
+ nova:"https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=360&h=440&fit=crop&q=80",
+ iris:"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=360&h=440&fit=crop&q=80"
+};
+
 const poses=[["stand","Debout","🧍"],["walk","Marche","🚶"],["run","Course","🏃"],["dance","Danse","💃"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
 const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["crown","Couronne","👑"]];
 const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
@@ -138,7 +147,7 @@ function contents(tab){
  if(tab==="pet")return '<h2>Animaux de compagnie</h2><p class="cmd-scene-section-intro">Animaux intégrés : modèles 3D animés et photographies pour les espèces sans modèle.</p>'+picker("Compagnons","pet",pets,"pet");
  if(tab==="scene")return '<h2>Décors officiels</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
  return '<h2>Avatars 3D CMD Sphere</h2><p class="cmd-scene-section-intro">Choisis ton personnage, puis personnalise son apparence.</p>'+
- '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><span class="cmd-avatar-card-loading">Portrait 3D</span></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
+ '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><img loading="lazy" src="'+portraitPhotos[p.id]+'" alt="Illustration de secours, remplacée par l’aperçu 3D"></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
  swatches("Teint de peau","skin",skins)+field("Coiffure","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+picker("Accessoires","accessory",accessories,"action");
 }
 function renderSheet(tab){
