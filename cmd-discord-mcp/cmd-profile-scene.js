@@ -204,7 +204,7 @@ function renderSheet(tab){
 function refreshEditor(){
  present();
  if(!preview)return;
- if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.replaceChildren(img)}else preview.innerHTML='<span class="cmd-real-avatar-loading">Préparation du portrait 3D…</span>';
+ if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";if(!preview.querySelector(".cmd-scene-photo-preview")||preview.querySelector(".cmd-scene-photo-preview").src!==img.src)preview.replaceChildren(img)}else{preview.querySelectorAll(".cmd-scene-photo-preview,.cmd-real-avatar-loading").forEach(el=>el.remove());}
  const animal=$("#cmdScenePreviewPet");
  if(animal){if(state.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[state.pet]||"";img.alt="Mon animal";img.className="cmd-scene-photo-preview";animal.replaceChildren(img)}else animal.replaceChildren();animal.hidden=state.pet==="none"||state.petStyle==="3d"}
  const sceneName=scenes.find(x=>x[0]===state.scene)?.[1]||"Décor";
