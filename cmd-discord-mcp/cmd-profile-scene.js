@@ -144,7 +144,7 @@ function garmentArt(value){
 }
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="clothing"?'<span class="cmd-clothing-icon" aria-hidden="true">'+(clothingIcons[value]||"👕")+'</span>':visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="clothing"?garmentArt(value):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
@@ -165,10 +165,10 @@ function lookGrid(){
  sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key,values,"clothing")).join("")+'</div>';
 }
 function contents(tab){
- if(tab==="mode")return '<h2>Personnaliser ma tenue</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Les vêtements interchangeables en 3D sont encore en préparation.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
+ if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Les vêtements interchangeables en 3D sont encore en préparation.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
- if(tab==="pet")return '<h2>Animaux de compagnie</h2><p class="cmd-scene-section-intro">Animaux intégrés : modèles 3D animés et photographies pour les espèces sans modèle.</p>'+picker("Compagnons","pet",pets,"pet");
- if(tab==="scene")return '<h2>Décors officiels</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
+ if(tab==="pet")return '<h2>Mes animaux de compagnie</h2><p class="cmd-scene-section-intro">Animaux intégrés : modèles 3D animés et photographies pour les espèces sans modèle.</p>'+picker("Compagnons","pet",pets,"pet");
+ if(tab==="scene")return '<h2>Mon univers</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
  return '<h2>Avatars 3D CMD Sphere</h2><p class="cmd-scene-section-intro">Choisis ton personnage, puis personnalise son apparence.</p>'+
  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo"><img loading="lazy" src="'+portraitPhotos[p.id]+'" alt="Illustration de secours, remplacée par l’aperçu 3D"></span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 3D</small></button>').join("")+'</div>'+
  swatches("Teint de peau","skin",skins)+field("Coiffure","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+picker("Accessoires","accessory",accessories,"action");
@@ -240,7 +240,7 @@ function openSheet(){
  sheet.innerHTML='<div class="cmd-scene-sheet">'+
  '<div class="cmd-scene-hero" id="cmdSceneHero" data-scene="neonforest">'+
  '<div class="cmd-scene-hero-landscape"></div><div class="cmd-scene-hero-lights" aria-hidden="true"></div>'+
- '<header class="cmd-scene-float-header"><button type="button" id="cmdSceneClose" aria-label="Fermer sans enregistrer">✕</button><span>CMD SPHERE · MON UNIVERS</span><button type="button" id="cmdScenePreviewSave" aria-label="Enregistrer le décor">✓</button></header>'+
+ '<header class="cmd-scene-float-header"><button type="button" id="cmdSceneClose" aria-label="Fermer sans enregistrer">✕</button><span>CMD SPHERE · MON UNIVERS</span><button type="button" id="cmdScenePreviewSave" aria-label="Enregistrer le décor">Enregistrer</button></header>'+
  '<div class="cmd-scene-preview" aria-label="Aperçu de mon avatar avec mon animal">'+
  '<div id="cmdScenePreviewPerson"></div><div id="cmdScenePreviewPet"></div>'+
  '</div><div class="cmd-scene-scene-tag" id="cmdSceneLabel">Aperçu en direct</div>'+
