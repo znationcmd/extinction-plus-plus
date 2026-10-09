@@ -43,6 +43,7 @@
  shareBtn.type="button";shareBtn.className="cmd-invite-launch cmd-invite-floating";shareBtn.textContent="🔗 Inviter des amis";
  shareBtn.onclick=()=>open(appLink,"Partage CMD Sphere. Pour inviter dans un serveur précis, ouvre ce serveur puis utilise son lien d’invitation.");
  document.body.append(shareBtn);
+ const messageToolbar=document.querySelector("#newGroup");if(messageToolbar){shareBtn.classList.remove("cmd-invite-floating");shareBtn.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin:8px 0;min-height:42px";messageToolbar.insertAdjacentElement("afterend",shareBtn)}
  let lastGuildId="";
  const process=()=>{
   const root=document.querySelector("#workspace"),id=root?.dataset.nativeGuildId,header=document.querySelector(".cmd-server-head-actions");
