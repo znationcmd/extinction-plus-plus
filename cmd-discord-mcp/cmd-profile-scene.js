@@ -151,15 +151,21 @@ function picker(label,key,opts,visual){
 function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-swatches">'+values.map(c=>'<button type="button" aria-label="'+c+'" data-scene-color="'+key+'" data-value="'+c+'" class="'+(state[key]===c?"selected":"")+'" style="background:'+c+'"></button>').join("")+'</div></div>'}
 let lookCategory="all";
 function lookGrid(){
- return '<div class="cmd-clothing-sections">'+
- '<h3>Hauts</h3>'+picker("T-shirts, chemises et vestes","top",clothes,"clothing")+
- '<h3>Pantalons</h3>'+picker("Jeans, cargos et shorts","bottom",pants,"clothing")+
- '<h3>Chaussures</h3>'+picker("Baskets, bottes et autres","shoes",footwear,"clothing")+
- '<h3>Accessoires</h3>'+picker("Lunettes, casquettes et plus","accessory",accessories,"clothing")+
- '</div>';
+ const groups=[
+ ["all","Tout"],["top","Hauts"],["bottom","Pantalons"],["shoes","Chaussures"],["accessory","Accessoires"]
+ ];
+ const navigation='<nav class="cmd-dressing-categories" aria-label="Catégories du dressing">'+groups.map(([key,label])=>'<button type="button" data-look-category="'+key+'" class="'+(lookCategory===key?"selected":"")+'" aria-pressed="'+(lookCategory===key)+'">'+label+'</button>').join("")+'</nav>';
+ const sections=[
+ ["top","Hauts","T-shirts, chemises, vestes",clothes],
+ ["bottom","Pantalons","Jeans, cargos, shorts",pants],
+ ["shoes","Chaussures","Baskets, bottes et autres",footwear],
+ ["accessory","Accessoires","Lunettes, casquettes et plus",accessories]
+ ];
+ return '<div class="cmd-clothing-sections">'+navigation+
+ sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key,values,"clothing")).join("")+'</div>';
 }
 function contents(tab){
- if(tab==="mode")return '<h2>Personnaliser ma tenue</h2><p class="cmd-scene-section-intro">Choisis tes vêtements et accessoires. Les modèles 3D actuellement disponibles ne possèdent pas encore de garde-robe interchangeable : ces choix seront conservés mais ne changeront pas la géométrie des vêtements.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
+ if(tab==="mode")return '<h2>Personnaliser ma tenue</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Les vêtements interchangeables en 3D sont encore en préparation.</p>'+lookGrid()+swatches("Couleur","topColor",outfits);
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return '<h2>Animaux de compagnie</h2><p class="cmd-scene-section-intro">Animaux intégrés : modèles 3D animés et photographies pour les espèces sans modèle.</p>'+picker("Compagnons","pet",pets,"pet");
  if(tab==="scene")return '<h2>Décors officiels</h2><p class="cmd-scene-section-intro">Choisis un paysage fourni par CMD Sphere, sans importation.</p>'+picker("Paysages","scene",scenes,"scene");
@@ -252,7 +258,7 @@ function openSheet(){
  sheet.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();closeSheet()}});
  showTab("mode");
 }
-function showTab(tab){
+function showTab(tab){\n if(tab==="mode")lookCategory="all";
  $$("[data-scene-tab]",sheet).forEach(b=>{const on=b.dataset.sceneTab===tab;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
  renderSheet(tab);refreshEditor();
  const area=$("#cmdSceneOptions");if(area)area.scrollTop=0;
