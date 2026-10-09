@@ -104,10 +104,32 @@
       if(!res.ok)throw Error("Serveurs non disponibles");
       const data=await res.json();
       const found=(data.guilds||[]).filter(g=>g.installed&&(g.availableBots||[]).length&&digits(g.id));
-      state.packs=found.map(g=>({id:String(g.id),name:String(g.name||"Serveur"),icon:icon(g),bot:String(g.availableBots[0].id||"")}));
+      state.packs=found.map(g=>({id:String(g.id),name:String(g.name||"Serveur"),icon:icon(g),bot:String(g.availableBots[0].id||""),bots:[...new Set((g.availableBots||[]).map(b=>String(b.id||"")).filter(Boolean))]}));
       draw();
       if(state.selected==="all")await loadAllPacks();
     }catch{draw()}
+  }
+  async function fetchPackItems(pack,kind){
+    // Different installed CMD bots can expose different custom emojis.
+    // Merge by original Discord emoji ID, not by screenshot/grid position.
+    const cacheKey=pack.id+":"+kind;
+    if(state.cache.has(cacheKey))return state.cache.get(cacheKey);
+    const combined=[],seen=new Set();
+    const bots=[...new Set([...(pack.bots||[]),pack.bot].filter(Boolean))];
+    for(const bot of bots){
+      try{
+        const url="/api/dashboard/extras?guildId="+encodeURIComponent(pack.id)+"&bot="+encodeURIComponent(bot);
+        const response=await fetch(url,{credentials:"same-origin",cache:"no-store"});
+        if(!response.ok)continue;
+        const list=parsePack(await response.json(),pack,kind);
+        for(const entry of list){
+          const key=entry.kind+":"+entry.id;
+          if(!seen.has(key)){seen.add(key);combined.push(entry)}
+        }
+      }catch(error){console.warn("[CMD Sphere emoji pack]",pack.name,error?.message||error)}
+    }
+    state.cache.set(cacheKey,combined);
+    return combined;
   }
   async function loadAllPacks(){
     const generation=++allPacksGeneration;
@@ -115,17 +137,7 @@
     state.items=[];draw();
     for(const pack of state.packs){
       if(generation!==allPacksGeneration||state.selected!=="all")return;
-      const key=pack.id+":"+kind;
-      let batch=state.cache.get(key);
-      if(!batch){
-        try{
-          const path="/api/dashboard/extras?guildId="+encodeURIComponent(pack.id)+(pack.bot?"&bot="+encodeURIComponent(pack.bot):"");
-          const r=await fetch(path,{credentials:"same-origin",cache:"no-store"});
-          if(!r.ok)continue;
-          batch=parsePack(await r.json(),pack,kind);
-          state.cache.set(key,batch);
-        }catch{continue}
-      }
+      const batch=await fetchPackItems(pack,kind);
       state.items.push(...batch);
       if(generation!==allPacksGeneration||state.selected!=="all")return;
       if(state.items.length)draw();
@@ -137,18 +149,11 @@
   }
   async function loadPack(pack){
     if(!pack)return;
-    const key=pack.id+":"+(state.tab==="sticker"?"sticker":"emoji");
-    if(state.cache.has(key)){state.items=state.cache.get(key);draw();return}
+    const requested=state.selected,kind=state.tab==="sticker"?"sticker":"emoji";
     state.loading=true;draw();
-    try{
-      const path="/api/dashboard/extras?guildId="+encodeURIComponent(pack.id)+(pack.bot?"&bot="+encodeURIComponent(pack.bot):"");
-      const response=await fetch(path,{cache:"no-store",credentials:"same-origin"});
-      if(!response.ok)throw new Error("Ce pack est inaccessible");
-      const data=await response.json();
-      state.items=parsePack(data,pack,state.tab==="sticker"?"sticker":"emoji");
-      state.cache.set(key,state.items);
-    }catch{state.items=[]}
-    state.loading=false;draw();
+    const items=await fetchPackItems(pack,kind);
+    if(state.selected!==requested||state.tab!==kind&&!(state.tab==="emoji"&&kind==="emoji"))return;
+    state.items=items;state.loading=false;draw();
   }
   function draw(){
     const box=$("#emojiContent");if(!box)return;
