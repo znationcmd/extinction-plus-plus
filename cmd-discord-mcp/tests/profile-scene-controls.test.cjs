@@ -129,3 +129,43 @@ test("CMD Sphere scene API saves the first and last imported avatar in 2D withou
   assert.equal(JSON.parse(res.body).scene.avatarPreset,"reference-avatar-"+index);
  }
 });
+
+
+test("CMD Sphere catalogue offers every pet, vehicle, home and scene as an independent selectable option",()=>{
+ const {area,window,render}=makeEditor();
+ const choose=(key,value)=>{
+  const el=area.querySelectorAll("[data-scene-choice]").find(button=>button.dataset.sceneChoice===key&&button.dataset.value===value);
+  assert.ok(el,"Missing "+key+" option: "+value);
+  el.click();
+  assert.equal(window.cmdSphereSceneState()[key],value);
+ };
+ const switchUniverse=(name)=>{
+  const el=area.querySelectorAll("[data-universe-tab]").find(button=>button.dataset.universeTab===name);
+  assert.ok(el);el.click();
+ };
+ render("pet");
+ const pets=area.querySelectorAll("[data-scene-choice]").filter(b=>b.dataset.sceneChoice==="pet").map(b=>b.dataset.value);
+ assert.ok(pets.length>=37,"Missing pet catalogue variants");
+ assert.equal(new Set(pets).size,pets.length,"Duplicate pet choices");
+ for(const pet of pets)choose("pet",pet);
+ assert.equal(window.cmdSphereSceneState().petStyle,"2d");
+ switchUniverse("vehicle");
+ const vehicles=area.querySelectorAll("[data-scene-choice]").filter(b=>b.dataset.sceneChoice==="vehicle").map(b=>b.dataset.value);
+ assert.ok(vehicles.length>=22,"Vehicle catalogue incomplete");
+ for(const vehicle of vehicles)choose("vehicle",vehicle);
+ switchUniverse("home");
+ const homes=area.querySelectorAll("[data-scene-choice]").filter(b=>b.dataset.sceneChoice==="home").map(b=>b.dataset.value);
+ assert.ok(homes.length>=18,"Home catalogue incomplete");
+ for(const home of homes)choose("home",home);
+ render("scene");
+ for(const index of [0,17,53])choose("scene","reference-"+index);
+});
+
+test("CMD Sphere trims pet and house sprites into PNGs, preserving scene proportions",()=>{
+ const source=fs.readFileSync(path.join(__dirname,"../cmd-profile-scene.js"),"utf8");
+ assert.match(source,/sprite\.toDataURL\("image\/png"\)/);
+ assert.match(source,/sprite\.width=right-left\+1\+pad\*2/);
+ assert.match(source,/sceneTiles\[n\]/);
+ assert.match(source,/background-size:contain/);
+ assert.doesNotMatch(source,/const trim=removeCornerBadges/,"Scene artwork should not be cropped just to remove crowns");
+});
