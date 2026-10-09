@@ -305,7 +305,7 @@ function renderSheet(tab){
  area.innerHTML=contents(tab);applyOriginalSheets();
  area.scrollTop=previousScroll;
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
- if(tab==="mode")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderLookCards?.());
+
  if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
  $$("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
  $$("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="3d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
@@ -323,9 +323,26 @@ function renderSheet(tab){
   renderSheet("avatar");refreshEditor();
  }));
 }
+function renderStickerPreview(){
+ const host=$("#cmdScenePreviewPerson");if(!host)return;
+ const avatar=loadedSheets.get("avatar");
+ const n=Math.max(0,avatarPresets.findIndex(p=>p.id===state.avatarPreset))%16;
+ host.innerHTML=avatar?'<div class="cmd-sticker-avatar" role="img" aria-label="Avatar autocollant" style="background-image:url('+JSON.stringify(avatar)+');background-position:'+(n%4*100/3)+'% '+(Math.floor(n/4)*100/3)+'%"></div>':'<div class="cmd-sticker-avatar-fallback">'+drawPerson(state)+'</div>';
+ const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
+ const hero=$("#cmdSceneHero");if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16):"");applyOriginalSheets()}}
+}
+function installStickerStyles(){
+ if(document.getElementById("cmdStickerStyle"))return;
+ const css=document.createElement("style");css.id="cmdStickerStyle";
+ css.textContent='#cmdSceneSheet .cmd-scene-preview{position:relative;display:flex;justify-content:center;align-items:end;gap:12px;isolation:isolate}#cmdSceneSheet #cmdScenePreviewPerson{position:relative;z-index:2;width:48%;height:92%;display:flex;align-items:end;justify-content:center}#cmdSceneSheet #cmdScenePreviewPerson canvas,#cmdSceneSheet #cmdScenePreviewPerson .cmd-civilian-2d-fallback{display:none!important}#cmdSceneSheet .cmd-sticker-avatar{width:100%;height:100%;background-size:400% 400%;background-repeat:no-repeat;background-color:transparent;filter:drop-shadow(0 5px 6px #0008)}#cmdSceneSheet #cmdScenePreviewPet{position:relative;z-index:3;width:24%;height:40%;align-self:end;filter:drop-shadow(0 4px 5px #0008)}#cmdSceneSheet #cmdScenePreviewPet [data-original-pet]{min-height:100%!important}#cmdStickerObjects{position:absolute;inset:auto 3% 3% auto;z-index:1;display:flex;width:35%;height:32%;gap:4px;pointer-events:none}#cmdStickerObjects .cmd-original-catalog-art{min-height:100%!important;filter:drop-shadow(0 4px 6px #0008)}#cmdSceneHero .cmd-scene-hero-landscape,#cmdSceneHero .cmd-scene-hero-lights{opacity:0!important;pointer-events:none}';
+ document.head.append(css);
+}
 function refreshEditor(){
  present();
+ installStickerStyles();
  if(!preview)return;
+ renderStickerPreview();
+ return;
  if(state.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Mon personnage";img.className="cmd-scene-photo-preview";preview.querySelectorAll(".cmd-civilian-2d-fallback").forEach(el=>el.remove());if(!preview.querySelector(".cmd-scene-photo-preview")||preview.querySelector(".cmd-scene-photo-preview").src!==img.src)preview.append(img)}else{
    preview.querySelectorAll(".cmd-scene-photo-preview,.cmd-real-avatar-loading").forEach(el=>el.remove());
    let fallback=preview.querySelector(".cmd-civilian-2d-fallback");
@@ -426,7 +443,7 @@ async function initialize(){
   const data=await r.json();
   if(data.scene&&typeof data.scene==="object")state={...defaults,...data.scene};
   if(state.avatarStyle==="illustrated")state.avatarStyle="3d";
-  if(state.petStyle==="illustrated")state.petStyle="3d";
+  if(state.petStyle==="illustrated"||state.petStyle==="3d")state.petStyle="photo";
   custom=typeof data.customBackground==="string"?data.customBackground:null;
   characterPhoto=typeof data.characterImage==="string"?data.characterImage:null;
   animalPhoto=typeof data.animalImage==="string"?data.animalImage:null;
