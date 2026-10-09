@@ -72,12 +72,49 @@ function present(s=state,img=custom){
  if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";if(s.petStyle==="photo"){const img=new Image();img.src=animalPhoto||petImages[s.pet]||"";img.alt="Animal réaliste";animal.append(img);animal.classList.add("cmd-scene-photo-pet")}scenery.append(animal)}
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
 }
+async function shareProfile(){
+ const existing=$("#cmdShareOverlay");if(existing){existing.hidden=false;return}
+ const overlay=document.createElement("div");
+ overlay.id="cmdShareOverlay";overlay.className="cmd-share-overlay";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label","Partager mon profil");
+ overlay.innerHTML='<div class="cmd-share-panel"><h2>Partager mon profil</h2><p>Tu décides si une version publique de ton profil est visible. Ta maison virtuelle reste masquée si tu as choisi cette option, et aucune adresse personnelle n’est publiée.</p><div id="cmdShareState" role="status">Vérification de la confidentialité…</div><div class="cmd-share-actions"><button type="button" id="cmdShareEnable">Activer le partage</button><button type="button" id="cmdShareCopy">Copier le lien</button><button type="button" id="cmdShareNative">Partager…</button><button type="button" id="cmdSharePreview">Voir l’aperçu</button><button type="button" id="cmdShareDisable">Rendre privé</button><button type="button" id="cmdShareClose">Fermer</button></div></div>';
+ document.body.append(overlay);
+ const status=$("#cmdShareState",overlay),buttons=["cmdShareEnable","cmdShareCopy","cmdShareNative","cmdSharePreview","cmdShareDisable"].map(id=>$("#"+id,overlay));
+ const set=(message)=>status.textContent=message;
+ let enabled=false,link="";
+ const update=()=>{for(const b of buttons)b.hidden=false;$("#cmdShareEnable",overlay).hidden=enabled;$("#cmdShareDisable",overlay).hidden=!enabled;for(const id of ["cmdShareCopy","cmdShareNative","cmdSharePreview"])$("#"+id,overlay).disabled=!enabled};
+ const call=async(method="GET",data)=>{
+  const r=await fetch("/api/profile/share",{method,credentials:"same-origin",headers:{"content-type":"application/json"},body:data?JSON.stringify(data):undefined});
+  const out=await r.json();if(!r.ok)throw Error(out.error||"Partage indisponible");
+  enabled=out.enabled;link=new URL(out.url,location.origin).href;update();return out;
+ };
+ $("#cmdShareClose",overlay).onclick=()=>overlay.hidden=true;
+ overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.hidden=true});
+ overlay.addEventListener("keydown",e=>{if(e.key==="Escape")overlay.hidden=true});
+ $("#cmdShareEnable",overlay).onclick=async()=>{
+  if(!window.confirm("Publier ton nom, ta photo, ta bannière, ta présentation et les éléments de profil non masqués via un lien accessible à toute personne qui le possède ?"))return;
+  try{await call("POST",{enabled:true});set("Le lien de ton profil est désormais activé.")}catch(e){set(e.message)}
+ };
+ $("#cmdShareDisable",overlay).onclick=async()=>{try{await call("POST",{enabled:false});set("Ton profil partagé est redevenu privé.")}catch(e){set(e.message)}};
+ $("#cmdShareCopy",overlay).onclick=async()=>{
+  if(!enabled)return;try{await navigator.clipboard.writeText(link);set("Lien copié.")}catch{const field=document.createElement("input");field.value=link;overlay.querySelector(".cmd-share-panel").append(field);field.select();set("Sélectionne le lien pour le copier.")}
+ };
+ $("#cmdSharePreview",overlay).onclick=()=>{if(enabled)window.open(link,"_blank","noopener,noreferrer")};
+ $("#cmdShareNative",overlay).onclick=async()=>{
+  if(!enabled)return;
+  if(navigator.share){try{await navigator.share({title:"Mon profil CMD Sphere",url:link});set("Menu de partage ouvert.")}catch(e){if(e.name!=="AbortError")set("Partage indisponible : utilise « Copier le lien ».")}}
+  else{try{await navigator.clipboard.writeText(link);set("Lien copié : partage-le dans ton application.")}catch{set("Utilise « Copier le lien ».")}}
+ };
+ update();
+ try{await call();set(enabled?"Ton profil est public par lien. Tu peux désactiver le partage à tout moment.":"Ton profil est privé. Active le partage si tu souhaites diffuser un lien.")}catch(e){set(e.message);for(const b of buttons)b.disabled=true}
+}
+
 function mountBanner(){
  const banner=$("#bannerTap");if(!banner||$("#cmdSceneWrap"))return;
  const wrap=document.createElement("div");wrap.id="cmdSceneWrap";wrap.className="cmd-scene-wrap";
  banner.before(wrap);wrap.append(banner);
  scenery=document.createElement("span");scenery.id="cmdSceneBackdrop";scenery.className="cmd-scene-backdrop";scenery.setAttribute("aria-hidden","true");banner.prepend(scenery);
  const btn=document.createElement("button");btn.id="cmdSceneEdit";btn.type="button";btn.textContent="🎭 Avatar & décor";btn.setAttribute("aria-label","Personnaliser mon avatar, mon animal et mon décor de profil");btn.onclick=e=>{e.preventDefault();e.stopPropagation();openSheet()};wrap.append(btn);
+  const shareButton=document.createElement("button");shareButton.type="button";shareButton.id="cmdSceneShare";shareButton.textContent="↗ Partager le profil";shareButton.onclick=e=>{e.preventDefault();e.stopPropagation();void shareProfile()};wrap.append(shareButton);
  slot=wrap;
  const edit=$("#profileForm"),section=document.createElement("div");
  if(edit){section.className="cmd-scene-form-entry";section.innerHTML='<h3>🎭 Personnalisation CMD Sphere</h3><p>Ouvre « Avatar & décor » sur ta bannière pour modifier ton personnage, tes tenues et ton univers.</p>';edit.querySelector("h2")?.after(section)}
