@@ -75,3 +75,12 @@
  #channelMessages img.cmd-inline-emoji-v2[src^="/api/cmd-emojis/file/"]:hover{animation:cmd-emoji-photo-wiggle 750ms ease-in-out infinite alternate;transform-origin:center}
 }
 @keyframes cmd-emoji-photo-wiggle{0%{transform:translateY(0) rotate(-4deg)}100%{transform:translateY(-3px) rotate(4deg)}}
+
+/* Source photo crops remain static assets; this is illustrative UI motion only. */
+@media (prefers-reduced-motion:no-preference){
+ #channelEmojiSheet .cmd-emoji-icon-v2 img.cmd-photo-motion.cmd-photo-visible,
+ #channelMessages img.cmd-inline-emoji-v2[src^="/api/cmd-emojis/file/"]{
+  animation:cmd-emoji-photo-breathe 2.4s ease-in-out infinite alternate;transform-origin:center;will-change:transform;
+ }
+}
+@keyframes cmd-emoji-photo-breathe{0%{transform:translateY(0) scale(.97) rotate(-2deg)}100%{transform:translateY(-2px) scale(1.045) rotate(2deg)}}
