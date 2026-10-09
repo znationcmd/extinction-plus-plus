@@ -232,17 +232,31 @@ function sceneReferenceStyle(value){const n=sceneReferenceIndex(value);if(n<0)re
 
 function sheetArt(sheet,index){const x=index%4,y=Math.floor(index/4)%4;return '<span class="cmd-original-catalog-art" data-original-sheet="'+sheet+'" style="display:block;width:100%;height:100%;min-height:84px;background-size:400% 400%;background-position:'+(x*100/3)+'% '+(y*100/3)+'%;background-repeat:no-repeat;border-radius:10px"></span>'}
 async function loadOriginalSheets(){
- await Promise.all(originalSheets.map(async name=>{
-  try{const r=await fetch("/catalogue/"+name+".b64.txt",{cache:"force-cache"});if(!r.ok)return;const raw=(await r.text()).trim();if(!raw.startsWith("UklG"))return;loadedSheets.set(name,"data:image/webp;base64,"+raw)}catch(e){}
- }));
+ const loadOne=async name=>{
+  try{
+   const fresh=name==="avatar-68-final";
+   const url="/catalogue/"+name+".b64.txt"+(fresh?"?avatarFix=20261009-2":"");
+   const r=await fetch(url,{cache:fresh?"no-store":"force-cache"});
+   if(!r.ok)return;
+   const raw=(await r.text()).trim();
+   if(!raw.startsWith("UklG"))return;
+   loadedSheets.set(name,"data:image/webp;base64,"+raw);
+  }catch(e){console.warn("[CMD Sphere catalogue]",name,e)}
+ };
+ // Do not wait for pets, landscape or accessory catalogues before showing the 68 avatars.
+ await loadOne("avatar-68-final");
  await prepareImportedAvatarTiles();
  applyOriginalSheets();
- // Repaint the public-facing banner after the image sheet decodes, even if the profile state loaded first.
  if(slot)present();
- if(sheet&&!sheet.hidden){renderSheet("avatar");refreshEditor()}
+ if(sheet&&!sheet.hidden){
+  const currentTab=sheet.querySelector("[data-scene-tab].selected")?.dataset.sceneTab||"avatar";
+  renderSheet(currentTab);refreshEditor();
+ }
+ await Promise.all(originalSheets.filter(name=>name!=="avatar-68-final").map(loadOne));
+ applyOriginalSheets();
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage="url("+JSON.stringify(src)+")"});
  if(sceneReferenceIndex(state.scene)>=0)present();
- if(sheet&&!sheet.hidden){applyOriginalSheets();refreshEditor()}
+ if(sheet&&!sheet.hidden)refreshEditor();
 }
 function applyOriginalSheets(){
  applyScreenshotCatalogue();
