@@ -56,7 +56,7 @@
     $("#channelEmojiSheet")?.classList.remove("on");
   }
   function listFor(){
-    if(state.selected==="all")return [...fullUnicode,...state.library,...state.items];
+    if(state.selected==="all")return state.tab==="sticker"?state.items:[...fullUnicode,...state.library,...state.items];
     if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected));
     if(state.selected==="unicode")return fullUnicode;
     if(state.selected==="recent")return state.recent.filter(e=>state.tab==="emoji"?e.kind!=="sticker":e.kind==="sticker");
