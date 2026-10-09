@@ -431,12 +431,17 @@ function updateWorld(frame,state){
  frame.base.add(props);frame.worldGroup=props;frame.worldKey=key;
 }
 function makeProceduralPet(kind){
- const root=new THREE.Group(),shade=kind==="wolf"?0x8996a8:kind==="fox"?0xd28c55:kind==="rabbit"?0xe6dddf:kind==="cat"?0xb2a4a9:0xb8916b;
+ const root=new THREE.Group(),seed=[...String(kind)].reduce((n,c)=>(n*33+c.charCodeAt(0))>>>0,11),colors=[0xb8916b,0x8996a8,0xd28c55,0xe6dddf,0xb2a4a9,0x8b704f,0xf0c56e,0x7897a6,0x967bb5],shade=colors[seed%colors.length];
  const fur=new THREE.MeshStandardMaterial({color:shade,roughness:.9}),eyes=new THREE.MeshStandardMaterial({color:0x282632});
  const ball=(x,y,z,a,b,c,m=fur)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),m);o.position.set(x,y,z);o.scale.set(a,b,c);root.add(o);return o};
  ball(0,.48,0,.28,.32,.4);ball(0,.87,.31,.26,.26,.25);
  for(const x of [-.11,.11]){ball(x,.94,.54,.027,.026,.017,eyes);ball(x,.19,.29,.09,.18,.11);ball(x,.19,-.21,.09,.18,.11)}
  ball(0,.82,.56,.04,.037,.023,eyes);
+ if(/penguin|pingouin|bird|owl|hibou|parrot|eagle|chicken/i.test(kind)){root.scale.set(.82,1.13,.8);for(const x of [-.3,.3])ball(x,.55,0,.13,.3,.13);ball(0,.77,.57,.12,.07,.15,new THREE.MeshStandardMaterial({color:0xe8a64d}));}
+ if(/fish|poisson|dolphin|dauphin|shark|requin|whale|baleine/i.test(kind)){root.rotation.z=Math.PI/2;root.scale.set(1.2,.85,.8);}
+ if(/snake|serpent|worm|ver/i.test(kind)){root.scale.set(.65,.65,1.5);}
+ if(/horse|cheval|giraffe|girafe|deer|cerf/i.test(kind)){root.scale.set(.85,1.5,.85);}
+ if(/elephant|hippo|rhino|bear|ours/i.test(kind)){root.scale.set(1.3,1.15,1.3);}
  for(const x of [-.18,.18])ball(x,kind==="rabbit"?1.19:1.075,.24,.073,kind==="rabbit"?.28:.15,.082);
  return root;
 }
