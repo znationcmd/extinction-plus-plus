@@ -3,7 +3,13 @@ const MAX_GLB=12*1024*1024;
 const SOURCES={
  Soldier:"https://cdn.jsdelivr.net/gh/mrdoob/three.js@r180/examples/models/gltf/Soldier.glb",
  Michelle:"https://cdn.jsdelivr.net/gh/mrdoob/three.js@r180/examples/models/gltf/Michelle.glb",
- Fox:"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Fox/glTF-Binary/Fox.glb"
+ Fox:"https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Fox/glTF-Binary/Fox.glb",
+ Cat:"https://raw.githubusercontent.com/code4fukui/vr-cats/main/bicolor_cat.glb",
+ Horse:"https://raw.githubusercontent.com/mrdoob/three.js/r180/examples/models/gltf/Horse.glb",
+ Parrot:"https://raw.githubusercontent.com/mrdoob/three.js/r180/examples/models/gltf/Parrot.glb",
+ Flamingo:"https://raw.githubusercontent.com/mrdoob/three.js/r180/examples/models/gltf/Flamingo.glb",
+ Stork:"https://raw.githubusercontent.com/mrdoob/three.js/r180/examples/models/gltf/Stork.glb",
+ Duck:"https://raw.githubusercontent.com/mrdoob/three.js/r180/examples/models/gltf/duck.glb"
 };
 const cache=new Map();
 function send(res,code,data){res.writeHead(code,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(data))}
