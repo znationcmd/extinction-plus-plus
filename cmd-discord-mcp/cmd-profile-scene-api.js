@@ -15,7 +15,7 @@ const ACCESSORIES=new Set(["none","glasses","sunglasses","hat","cap","headphones
 const GENDERS=new Set(["male","female","neutral"]);
 const STYLES=new Set(["3d","illustrated","photo"]);
 const AVATAR_MODELS=new Set(["civilian","soldier","michelle","custom"]);
-const PRESETS=new Set(["guardian","nocturne","azur","luna","nova","iris",...Array.from({length:212},(_,i)=>"reference-avatar-"+i)]);
+const PRESETS=new Set(["guardian","nocturne","azur","luna","nova","iris",...Array.from({length:49},(_,i)=>"reference-avatar-"+i)]);
 const PET_MODELS=new Set(["fox","cat","horse","parrot","duck","flamingo","stork","dog","rabbit","wolf","turtle","custom"]);
 const BODY_TYPES=new Set(["slim","average","athletic"]);
 const EYE_COLORS=new Set(["#28222e","#674931","#4587a5","#5b8e67","#aa9080"]);
