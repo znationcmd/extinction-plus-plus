@@ -10,10 +10,10 @@
  const isShowingLibrary=()=>["all","mine","community","server"].includes(bridge()?.state.selected);
  let libraryError="";
  function normalize(e){
-   return {kind:"cmd",id:e.id,name:e.name,scope:e.scope,animated:Boolean(e.animated),
+   return {kind:e.kind==="gif"?"gif":e.kind==="sticker"?"sticker":"cmd",id:e.id,name:e.name,scope:e.scope,animated:Boolean(e.animated),
      image:e.url,canDelete:Boolean(e.canDelete),
      packName:e.scope==="server"?(e.serverName||"Serveur"):e.scope==="community"?"Communauté":"Personnel",
-     value:":cmdemoji:"+e.id+":"};
+     value:":"+(e.kind==="gif"?"cmdgif":e.kind==="sticker"?"cmdsticker":"cmdemoji")+":"+e.id+":"};
  }
  function libraryUrl(gid,offset=0){
    const args=new URLSearchParams({offset:String(offset),all:"1"});
