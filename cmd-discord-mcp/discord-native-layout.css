@@ -682,3 +682,22 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
 #csm-server-menu .csm-server-menu-body a:focus-visible,
 #csm-server-menu .csm-server-menu-body button:focus-visible {background:#ffffff16;outline:2px solid #b4a0f2;outline-offset:-2px}
 #csm-server-menu .csm-server-menu-body a span {margin-left:auto;color:#a6a0ae}
+
+/* 2026-10-09 — Compact native server header with always-accessible refresh. */
+.sphere-app.cmd-native-selected .cmd-server-heading{display:flex!important;gap:9px;align-items:center!important}
+.sphere-app.cmd-native-selected .cmd-server-heading>div{min-width:0;flex:1}
+.sphere-app.cmd-native-selected .cmd-server-refresh{
+  width:37px;min-width:37px;height:37px;flex:none;
+  border:1px solid #ffffff27;border-radius:10px;
+  color:#e9deff;background:#493858;font:700 23px system-ui;
+  line-height:1;display:grid;place-items:center;cursor:pointer;
+}
+.sphere-app.cmd-native-selected .cmd-server-refresh:focus-visible,
+.sphere-app.cmd-native-selected .cmd-server-refresh:hover{background:#644c78;outline:2px solid #b4a0f2}
+.sphere-app.cmd-native-selected .cmd-server-refresh:disabled{opacity:.55;cursor:wait}
+@media(max-width:850px){
+ .sphere-app.cmd-native-selected .cmd-server-head{padding-left:11px!important;padding-right:11px!important}
+ .sphere-app.cmd-native-selected .cmd-server-refresh{width:35px;min-width:35px;height:35px;font-size:21px}
+ .sphere-app.cmd-native-selected .cmd-server-channels{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+ .sphere-app #channelOverlay .channel-messages{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+}
