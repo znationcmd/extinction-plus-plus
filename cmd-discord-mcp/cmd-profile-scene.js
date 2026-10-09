@@ -60,7 +60,7 @@ function present(s=state,img=custom){
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
  const light=document.createElement("div");light.className="cmd-scene-scenery";light.textContent=decorateScene(s.scene);scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";person.innerHTML=drawPerson(s);scenery.append(person);
- if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";animal.textContent=(pets.find(p=>p[0]===s.pet)||pets[1])[2];scenery.append(animal)}
+ if(s.pet!=="none"){const animal=document.createElement("div");animal.className="cmd-scene-pet";animal.innerHTML=drawPet(s.pet);scenery.append(animal)}
  if(s.label){const label=document.createElement("div");label.className="cmd-scene-brand";label.textContent=s.label;scenery.append(label)}
 }
 function mountBanner(){
@@ -158,26 +158,49 @@ async function compressPhoto(file){
  if(data.length>2.75*1024*1024)throw Error("Image encore trop lourde. Choisis une photo plus petite.");
  return data;
 }
+const navIcons={
+ mode:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3 3 0 0 1 6 0c0 2-2 2.5-3 3v2"/><path d="m12 10-9 8c-.9.7-.3 2 1 2h16c1.3 0 1.9-1.3 1-2Z"/></svg>',
+ selfie:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="15" rx="3"/><path d="M8 6 9.5 3h5L16 6"/><circle cx="12" cy="13.5" r="4"/></svg>',
+ pet:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="9" r="2"/><circle cx="10" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="20" cy="9" r="2"/><path d="M12 11c-2.7 0-3.6 3.3-5 4.7-1.5 1.4-2 4.4 1 5.3 3.6 1.1 4.5-1.2 4-1.2 2.4 0 3.2 2.3 5 1.2 3.7-1.2 2.4-3.3.6-5C15.6 14.1 14.7 11 12 11Z"/></svg>',
+ scene:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="3"/><circle cx="16" cy="8" r="2"/><path d="m3 19 6-7 4 4 3-3 5 5"/></svg>',
+ avatar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M2 21c0-5 3-8 8-8s8 3 8 8"/><path d="m19 6 2 2-2 2"/></svg>'
+};
+function closeSheet(){
+ if(!sheet)return;
+ state={...savedState};custom=savedCustom;customDirty=false;present();sheet.hidden=true;
+}
 function openSheet(){
  if(!slot)return;
- if(sheet){sheet.hidden=false;showTab("mode");return}
- sheet=document.createElement("div");sheet.id="cmdSceneSheet";sheet.setAttribute("role","dialog");sheet.setAttribute("aria-modal","true");sheet.setAttribute("aria-label","Personnaliser le fond de mon profil CMD Sphere");
- sheet.innerHTML='<div class="cmd-scene-sheet"><header><strong>🎭 Mon avatar & décor du profil</strong><button type="button" id="cmdSceneClose" aria-label="Fermer">✕</button></header>'+
- '<div class="cmd-scene-header-note">Tout se place dans la bannière de ton profil actuel, comme un décor personnalisé.</div>'+
- '<div class="cmd-scene-preview"><div id="cmdScenePreviewPerson"></div><small id="cmdSceneLabel">Aperçu du personnage</small></div>'+
- '<div class="cmd-scene-tabs">'+tabs.map(([k,v,ic])=>'<button type="button" data-scene-tab="'+k+'">'+ic+'<small>'+v+'</small></button>').join("")+'</div>'+
- '<div id="cmdSceneOptions"></div><p id="cmdSceneNotice" role="status"></p><footer><button type="button" id="cmdSceneReset">Fond d’origine</button><button type="button" id="cmdSceneSave">Enregistrer sur mon profil</button></footer></div>';
+ if(state.scene==="none")state.scene="forest";
+ if(sheet){sheet.hidden=false;refreshEditor();showTab("mode");return}
+ sheet=document.createElement("div");sheet.id="cmdSceneSheet";
+ sheet.setAttribute("role","dialog");sheet.setAttribute("aria-modal","true");
+ sheet.setAttribute("aria-label","Personnaliser le décor du profil CMD Sphere");
+ sheet.innerHTML='<div class="cmd-scene-sheet">'+
+ '<div class="cmd-scene-hero" id="cmdSceneHero" data-scene="forest">'+
+ '<div class="cmd-scene-hero-landscape"></div><div class="cmd-scene-hero-scene-emblem" aria-hidden="true"></div>'+
+ '<header class="cmd-scene-float-header"><button type="button" id="cmdSceneClose" aria-label="Fermer sans enregistrer">✕</button><span>CMD SPHERE · MON UNIVERS</span><button type="button" id="cmdScenePreviewSave" aria-label="Enregistrer le décor">✓</button></header>'+
+ '<div class="cmd-scene-preview" aria-label="Aperçu de mon avatar avec mon animal">'+
+ '<div id="cmdScenePreviewPerson"></div><div id="cmdScenePreviewPet"></div>'+
+ '</div><div class="cmd-scene-scene-tag" id="cmdSceneLabel">Aperçu en direct</div>'+
+ '</div>'+
+ '<nav class="cmd-scene-tabs" aria-label="Choisir les personnalisations">'+tabs.map(([k,v])=>'<button type="button" data-scene-tab="'+k+'" aria-pressed="false">'+navIcons[k]+'<small>'+v+'</small></button>').join("")+'</nav>'+
+ '<section id="cmdSceneOptions" class="cmd-scene-market" aria-live="polite"></section>'+
+ '<div class="cmd-scene-footer"><span id="cmdSceneNotice" role="status" aria-live="polite"></span><div class="cmd-scene-footer-actions"><button type="button" id="cmdSceneReset">Fond d’origine</button><button type="button" id="cmdSceneSave">Enregistrer sur mon profil</button></div></div>'+
+ '</div>';
  document.body.append(sheet);
  preview=$("#cmdScenePreviewPerson");
- $("#cmdSceneClose").onclick=()=>{state={...savedState};custom=savedCustom;customDirty=false;present();sheet.hidden=true};
- $("#cmdSceneReset").onclick=()=>{state.scene="none";present();renderSheet("scene");$("#cmdSceneNotice").textContent="Le fond d’origine sera rétabli après enregistrement."};
- $("#cmdSceneSave").onclick=save;
+ $("#cmdSceneClose").onclick=closeSheet;
+ $("#cmdSceneReset").onclick=()=>{state.scene="none";renderSheet("scene");refreshEditor();$("#cmdSceneNotice").textContent="Le fond d'origine sera retrouvé après enregistrement."};
+ $("#cmdSceneSave").onclick=save;$("#cmdScenePreviewSave").onclick=save;
  $$("[data-scene-tab]",sheet).forEach(b=>b.onclick=()=>showTab(b.dataset.sceneTab));
+ sheet.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();closeSheet()}});
  showTab("mode");
 }
 function showTab(tab){
- $$("[data-scene-tab]",sheet).forEach(b=>b.classList.toggle("selected",b.dataset.sceneTab===tab));
+ $$("[data-scene-tab]",sheet).forEach(b=>{const on=b.dataset.sceneTab===tab;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))});
  renderSheet(tab);refreshEditor();
+ const area=$("#cmdSceneOptions");if(area)area.scrollTop=0;
 }
 async function save(){
  if(busy)return;busy=true;
