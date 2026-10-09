@@ -274,7 +274,7 @@ const screenshotCatalogueGroups=[["vestes",60,"Vestes et tenues"],["chapeaux",10
 function screenshotCatalogue(category){
  const info=screenshotCatalogueGroups.find(x=>x[0]===category);if(!info)return "";
  const count=info[1],rows=Math.ceil(count/5),src=loadedSheets.get("catalogue-"+category)||"";
- return '<section class="cmd-original-gallery"><h3>'+info[2]+' · '+count+' illustrations</h3><div class="cmd-original-gallery-grid">'+Array.from({length:count},(_,i)=>'<div class="cmd-original-gallery-tile" aria-label="'+info[2]+' '+(i+1)+'"><span data-catalogue-art="'+category+'" data-catalogue-index="'+i+'" style="display:block;aspect-ratio:1;background-image:url('+JSON.stringify(src)+');background-size:500% '+(rows*100)+'%;background-position:'+(i%5*25)+'% '+(Math.floor(i/5)*100/(rows-1))+'%;background-repeat:no-repeat"></span></div>').join("")+'</div></section>';
+ return '<section class="cmd-original-gallery"><h3>'+info[2]+' · '+count+' illustrations</h3><div class="cmd-original-gallery-grid">'+Array.from({length:count},(_,i)=>'<button type="button" class="cmd-original-gallery-tile" data-sticker-category="'+category+'" data-sticker-index="'+i+'" aria-label="Choisir '+info[2]+' '+(i+1)+'"><span data-catalogue-art="'+category+'" data-catalogue-index="'+i+'" style="display:block;aspect-ratio:1;background-image:url('+JSON.stringify(src)+');background-size:500% '+(rows*100)+'%;background-position:'+(i%5*25)+'% '+(Math.floor(i/5)*100/(rows-1))+'%;background-repeat:no-repeat"></span></button>').join("")+'</div></section>';
 }
 function applyScreenshotCatalogue(){
  document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
@@ -317,7 +317,8 @@ function renderSheet(tab){
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
 
  if(tab==="avatar")window.requestAnimationFrame(()=>window.cmdProfile3D?.renderAvatarCards?.());
- $$("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
+ $("[data-sticker-category]",area).forEach(el=>el.addEventListener("click",()=>{const category=el.dataset.stickerCategory;const n=Number(el.dataset.stickerIndex);if(!Number.isInteger(n))return;const target={vestes:"top",chapeaux:"accessory",lunettes:"accessory",cheveux:"hair",barbes:"beard",piercings:"piercing"}[category];if(!target)return;const options={vestes:clothes,chapeaux:accessories,lunettes:accessories,cheveux:hairStyles,barbes:beards,piercings:piercings}[category];if(Array.isArray(options)&&options.length){const option=options[n%options.length];if(Array.isArray(option))state[target]=option[0]}el.closest(".cmd-original-gallery")?.querySelectorAll(".cmd-original-gallery-tile").forEach(tile=>tile.classList.toggle("selected",tile===el));refreshEditor()}));
+ $("[data-avatar-part]",area).forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
  $$("[data-groom-key]",area).forEach(e=>e.addEventListener("click",()=>{const key=e.dataset.groomKey;const value=e.dataset.groomStyle;if(!["hair","beard"].includes(key))return;state[key]=value;state.avatarStyle="3d";state.avatarModel="civilian";renderSheet("avatar");refreshEditor()}));
  $$("[data-universe-tab]",area).forEach(e=>e.addEventListener("click",()=>{universeCategory=e.dataset.universeTab;renderSheet(tab)}));
  $$("[data-universe-name]",area).forEach(e=>e.addEventListener("input",()=>{state.petName=e.value.slice(0,40)}));
