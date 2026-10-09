@@ -968,6 +968,7 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS server_description TEXT");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS default_notifications TEXT NOT NULL DEFAULT 'mentions'");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS show_boost_bar BOOLEAN NOT NULL DEFAULT TRUE");
+  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS founder_auto_boost BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS welcome_message BOOLEAN NOT NULL DEFAULT TRUE");
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -1791,13 +1792,21 @@ function premiumItem(item){
     (item.type==="nameplate"&&["cosmic","aurora","midnight"].includes(item.key))||
     (item.type==="decoration"&&["crystal","neon","halo"].includes(item.key));
 }
+async function ensureFounderBoosts(auth){
+  if(!auth||!isCmdOwner(auth))return false;
+  // Virtual CMD Sphere boost; never represents an external Discord Nitro boost.
+  await pool.query("UPDATE cmd_native_guilds SET founder_auto_boost=TRUE WHERE owner_user_id=$1 AND founder_auto_boost=FALSE",[String(auth.user.id)]);
+  return true;
+}
 async function getPremiumState(auth){
   const owner=isCmdOwner(auth),uid=String(auth.user.id);
+  if(owner)await ensureFounderBoosts(auth);
   const sub=await pool.query("SELECT * FROM cmd_premium_subscriptions WHERE user_id=$1 LIMIT 1",[uid]);
   const boosts=await pool.query("SELECT b.id::text,b.guild_id::text,g.name,g.icon,b.created_at FROM cmd_server_boosts b JOIN cmd_native_guilds g ON g.id=b.guild_id WHERE b.user_id=$1 AND b.active=TRUE ORDER BY b.created_at DESC",[uid]);
+  const autoCount=owner?Number((await pool.query("SELECT COUNT(*)::int AS n FROM cmd_native_guilds WHERE owner_user_id=$1 AND founder_auto_boost=TRUE",[uid])).rows[0]?.n||0):0;
   const row=sub.rows[0]||null,until=row?.current_period_end?new Date(row.current_period_end):null;
   const active=owner||Boolean(row&&row.status==="active"&&until&&until.getTime()>Date.now());
-  return {owner,active,status:owner?"lifetime":(row?.status||"inactive"),planId:owner?"owner_lifetime":(row?.plan_id||null),currentPeriodEnd:owner?null:(row?.current_period_end||null),paymentReference:row?.payment_reference||null,boostLimit:owner?null:(active?3:0),boostUsed:boosts.rows.length,boosts:boosts.rows.map(r=>({id:String(r.id),guildId:String(r.guild_id),guildName:r.name,icon:r.icon||null,createdAt:r.created_at}))};
+  return {owner,active,status:owner?"lifetime":(row?.status||"inactive"),planId:owner?"owner_lifetime":(row?.plan_id||null),currentPeriodEnd:owner?null:(row?.current_period_end||null),paymentReference:row?.payment_reference||null,boostLimit:owner?null:(active?3:0),boostUsed:boosts.rows.length,founderAutoBoost:owner,autoBoostedServerCount:autoCount,boosts:boosts.rows.map(r=>({id:String(r.id),guildId:String(r.guild_id),guildName:r.name,icon:r.icon||null,createdAt:r.created_at}))};
 }
 async function claimManualPremium(auth,input){
   if(isCmdOwner(auth))return {ok:true,owner:true,state:await getPremiumState(auth)};
@@ -2115,7 +2124,7 @@ function shopPage(auth,installed,premium={active:false,owner:false,boosts:[],boo
   }).join("")||'<p class="muted">Aucun serveur CMD Sphere disponible.</p>';
 
   const premiumStatus=premium.owner
-    ? '<div class="statusCard owner"><div class="bigStar">★</div><div><b>PROPRIÉTAIRE CMD</b><h2>Premium gratuit à vie</h2><p>Toute la boutique Premium est débloquée. Boosts serveur illimités.</p><span class="cyan">★ ★ ★ ★ ★ ∞</span></div></div>'
+    ? '<div class="statusCard owner"><div class="bigStar">★</div><div><b>PROPRIÉTAIRE CMD</b><h2>Premium gratuit à vie</h2><p>Toute la boutique Premium est débloquée. Tous tes serveurs CMD Sphere sont boostés automatiquement à vie.</p><span class="cyan">★ ★ ★ ★ ★ ∞</span></div></div>'
     : premium.active
       ? '<div class="statusCard active"><div class="bigStar">★</div><div><b>CMD SPHERE PREMIUM</b><h2>Premium actif</h2><p>'+escHtml(premium.planId||"Premium")+(premium.currentPeriodEnd?' · jusqu’au '+new Date(premium.currentPeriodEnd).toLocaleDateString("fr-FR"):'')+'</p><strong class="cyan">'+Math.max(0,3-Number(premium.boostUsed||0))+'/3 boosts disponibles</strong></div></div>'
       : '<div class="plans"><article class="plan"><span class="bigStar">★</span><h2>Premium mensuel</h2><strong>5 € <small>/ mois</small></strong><p>3 boosts serveur ★ bleu cyan + collections Premium.</p><a href="'+PAYPAL_ME_URL+'/5" target="_blank" rel="noopener" class="paypal">Payer 5 € avec PayPal</a><button class="claim" data-plan="monthly">J’ai payé</button></article><article class="plan annual"><span class="save">2 mois offerts</span><span class="bigStar">★</span><h2>Premium annuel</h2><strong>50 € <small>/ an</small></strong><p>3 boosts serveur ★ bleu cyan + Premium pendant 1 an.</p><a href="'+PAYPAL_ME_URL+'/50" target="_blank" rel="noopener" class="paypal">Payer 50 € avec PayPal</a><button class="claim" data-plan="annual">J’ai payé</button></article></div>';
@@ -2720,10 +2729,11 @@ async function setServerFolderCollapsed(auth,id,collapsed){
 }
 
 async function listNativeGuilds(auth){
+  await ensureFounderBoosts(auth);
   const r=await pool.query(`SELECT g.*,m.membership_role,m.profile_display_name,m.profile_avatar_data_url,m.profile_bio,m.profile_status,
     (SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) AS member_count,
-    (SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE) AS boost_count,
-    (SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.user_id=$1 AND sb.active=TRUE) AS my_boost_count,
+    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.active=TRUE)+CASE WHEN g.founder_auto_boost THEN 1 ELSE 0 END) AS boost_count,
+    ((SELECT COUNT(*)::int FROM cmd_server_boosts sb WHERE sb.guild_id=g.id AND sb.user_id=$1 AND sb.active=TRUE)+CASE WHEN g.founder_auto_boost AND g.owner_user_id=$1 THEN 1 ELSE 0 END) AS my_boost_count,
     (SELECT COUNT(*)::int FROM cmd_native_channel_messages msg
       LEFT JOIN cmd_native_channel_reads rd ON rd.user_id=$1 AND rd.channel_id=msg.channel_id
       WHERE msg.guild_id=g.id AND msg.sender_user_id<>$1 AND msg.created_at>COALESCE(rd.last_read_at,'1970-01-01'::timestamptz)) AS unread_count
@@ -2734,8 +2744,8 @@ async function listNativeGuilds(auth){
 async function createNativeGuild(auth,input){
   const name=safeText(input.name,100);if(!name)throw new Error("Nom du serveur requis.");
   const id=crypto.randomUUID(),inviteCode=crypto.randomBytes(8).toString("base64url");
-  const r=await pool.query(`INSERT INTO cmd_native_guilds(id,owner_user_id,name,is_public,invite_code) VALUES($1,$2,$3,$4,$5) RETURNING *`,
-    [id,String(auth.user.id),name,Boolean(input.isPublic),inviteCode]);
+  const r=await pool.query(`INSERT INTO cmd_native_guilds(id,owner_user_id,name,is_public,invite_code,founder_auto_boost) VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+    [id,String(auth.user.id),name,Boolean(input.isPublic),inviteCode,isCmdOwner(auth)]);
   await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4)',[id,String(auth.user.id),'owner',safeText(auth.user.name,80)]);
   await pool.query(`INSERT INTO cmd_native_roles(id,guild_id,name,color,permissions,position,hoist,mentionable)
     VALUES($1,$2,'@everyone','#99AAB5',$3::jsonb,0,FALSE,FALSE)`,
@@ -3229,6 +3239,7 @@ async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
 
 async function nativeGuildDetail(auth,id){
   const member=await requireNativeMember(auth,id);
+  await ensureFounderBoosts(auth);
   const g=await pool.query(`SELECT g.*,(SELECT COUNT(*)::int FROM cmd_native_members mm WHERE mm.guild_id=g.id) member_count FROM cmd_native_guilds g WHERE id=$1 LIMIT 1`,[String(id)]);
   if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const [channels,roles]=await Promise.all([
