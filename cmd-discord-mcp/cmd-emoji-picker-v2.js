@@ -5,7 +5,7 @@
   if (window.__cmdEmojiPickerV2) return;
   window.__cmdEmojiPickerV2 = true;
   const $ = s => document.querySelector(s);
-  const state = {tab:"emoji",packs:[],selected:"unicode",items:[],query:"",loading:false,cache:new Map(),recent:[]};
+  const state = {tab:"emoji",packs:[],selected:"unicode",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null};
   try { const r=JSON.parse(localStorage.getItem("cmd-emoji-recent-v2")||"[]");if(Array.isArray(r))state.recent=r.slice(0,48); } catch {}
   const escapeHtml = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   const digits = v => /^\d{15,22}$/.test(String(v||""));
@@ -48,6 +48,7 @@
     $("#channelEmojiSheet")?.classList.remove("on");
   }
   function listFor(){
+    if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected));
     if(state.selected==="unicode")return glyphs;
     if(state.selected==="recent")return state.recent.filter(e=>state.tab==="emoji"?e.kind!=="sticker":e.kind==="sticker");
     return state.items;
@@ -55,13 +56,13 @@
   function drawItems(){
     const root=$("#cmdEmojiResults");if(!root)return;
     root.innerHTML="";
-    if(state.tab==="gif"){
+    if(state.tab==="gif"&&!["mine","community","server"].includes(state.selected)){
       root.innerHTML='<div class="cmd-emoji-hint">Les GIF peuvent être envoyés en collant leur lien dans le message. La recherche GIF en ligne nécessite un fournisseur connecté.</div>';
       return;
     }
     if(state.loading){root.innerHTML='<p class="cmd-emoji-hint">Chargement des emojis du serveur…</p>';return}
     const query=state.query.toLocaleLowerCase("fr").trim();
-    const all=listFor();
+    const all=state.tab==="gif"?listFor().filter(x=>x.animated):listFor();
     const filtered=query?all.filter(i=>(i.name+" "+(i.packName||"")).toLocaleLowerCase("fr").includes(query)):all;
     if(!filtered.length){root.innerHTML='<p class="cmd-emoji-hint">Aucun emoji accessible pour cette sélection. Choisis un autre serveur ou les emojis standards.</p>';return}
     let displayed=0;
@@ -119,20 +120,20 @@
   function draw(){
     const box=$("#emojiContent");if(!box)return;
     if(!$("#cmdEmojiSearch")){
-      box.innerHTML='<div class="cmd-emoji-top"><input id="cmdEmojiSearch" type="search" placeholder="Trouver l’emoji parfait" autocomplete="off" aria-label="Rechercher un emoji"></div><div id="cmdEmojiHeading"></div><div id="cmdEmojiResults"></div><div id="cmdEmojiServerRail" aria-label="Packs d’emojis"></div>';
+      box.innerHTML='<div class="cmd-emoji-top"><input id="cmdEmojiSearch" type="search" placeholder="Trouver l’emoji parfait" autocomplete="off" aria-label="Rechercher un emoji"><button type="button" id="cmdEmojiCreate" onclick="window.cmdEmojiOpenCreator?.()">＋ Créer</button></div><div id="cmdEmojiHeading"></div><div id="cmdEmojiResults"></div><div id="cmdEmojiServerRail" aria-label="Packs d’emojis"></div>';
       $("#cmdEmojiSearch").addEventListener("input",e=>{state.query=e.target.value;drawItems()});
     }
     const query=$("#cmdEmojiSearch");if(query?.value!==state.query)query.value=state.query;
     const heading=$("#cmdEmojiHeading"),rail=$("#cmdEmojiServerRail");
     const pack=state.packs.find(p=>p.id===state.selected);
-    heading.textContent=state.tab==="gif"?"GIF":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Emojis du serveur");
+    heading.textContent=state.selected==="mine"?"Mes emojis":state.selected==="community"?"Partagés avec tous":state.selected==="server"?"Emojis du serveur":state.tab==="gif"?"GIF":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Emojis du serveur");
     rail.innerHTML="";
-    const entries=[{id:"recent",name:"Récents",glyph:"🕘"},{id:"unicode",name:"Standard",glyph:"😀"},...state.packs];
+    const entries=[{id:"recent",name:"Récents",glyph:"🕘"},{id:"unicode",name:"Standard",glyph:"😀"},{id:"mine",name:"Mes emojis",glyph:"👤"},{id:"community",name:"Partagés",glyph:"🌍"},...(state.libraryGuild?[{id:"server",name:"Ce serveur",glyph:"🏠"}]:[]),...state.packs];
     for(const entry of entries){
       const btn=document.createElement("button");btn.type="button";btn.title=entry.name;btn.className="cmd-emoji-server-pill"+(state.selected===entry.id?" active":"");
       if(entry.icon){const img=document.createElement("img");img.src=entry.icon;img.alt="";img.loading="lazy";btn.append(img)}
       else btn.textContent=entry.glyph||entry.name.slice(0,2);
-      btn.onclick=()=>{state.selected=entry.id;state.query="";state.items=[];if(entry.id==="recent"||entry.id==="unicode"){draw()}else loadPack(entry)};
+      btn.onclick=()=>{state.selected=entry.id;state.query="";state.items=[];if(["recent","unicode","mine","community","server"].includes(entry.id)){draw()}else loadPack(entry)};
       rail.append(btn);
     }
     drawItems();
@@ -147,7 +148,9 @@
     if(activePack&&state.tab!=="gif")loadPack(activePack);
     else draw();
     if(!state.packs.length)fetchPacks();
+    window.cmdEmojiRefreshLibrary?.();
   }
+  window.__cmdEmojiPickerBridge={state,draw,insert};
   document.addEventListener("click",e=>{
     const target=e.target.closest?.("#channelEmoji,[data-emoji-tab]");
     if(!target)return;
