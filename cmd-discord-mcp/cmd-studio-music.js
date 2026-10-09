@@ -2,8 +2,24 @@
    This is NOT TikTok's or any streaming service's commercial catalog. */
 import crypto from "node:crypto";
 const results=new Map(),searchCache=new Map(),fileCache=new Map();
+function sendAudio(res,req,track,bytes){
+ const total=bytes.length,raw=String(req.headers?.range||"");
+ const range=/^bytes=(\d*)-(\d*)$/.exec(raw);
+ const type=track.mime==="application/ogg"?"audio/ogg":track.mime;
+ if(raw&&(!range||(range[1]===""&&range[2]===""))){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return}
+ if(range){
+  let start=Number(range[1]||0),end=range[2]?Number(range[2]):Math.min(total-1,start+1024*1024-1);
+  if(range[1]===""){const suffix=Number(range[2]);start=Math.max(0,total-suffix);end=total-1}
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start>=total||end<start){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return}
+  end=Math.min(end,total-1);
+  res.writeHead(206,{"content-type":type,"content-length":end-start+1,"content-range":"bytes "+start+"-"+end+"/"+total,"accept-ranges":"bytes","cache-control":"private, max-age=600","x-content-type-options":"nosniff"});
+  res.end(bytes.subarray(start,end+1));return;
+ }
+ res.writeHead(200,{"content-type":type,"content-length":total,"accept-ranges":"bytes","cache-control":"private, max-age=600","x-content-type-options":"nosniff"});
+ res.end(bytes);
+}
 const LIMIT=18*1024*1024;
-const ALLOWED_MIME=new Set(["audio/mpeg","audio/ogg","audio/wav","audio/x-wav","audio/webm","audio/flac"]);
+const ALLOWED_MIME=new Set(["audio/mpeg","audio/ogg","application/ogg","audio/wav","audio/x-wav","audio/webm","audio/flac"]);
 const REQUEST_TIMEOUT=14000;
 const htmlText=x=>String(x||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/\s+/g," ").trim().slice(0,140);
 function allowedMediaUrl(u){
@@ -68,8 +84,7 @@ export async function handleCmdStudioMusic(req,res,url,{auth}={}){
   const track=results.get(hit[1]);if(!track||!allowedMediaUrl(track.remoteUrl)){send(res,404,{error:"Musique indisponible. Relance la recherche."});return true}
   const saved=fileCache.get(hit[1]);
   if(saved&&Date.now()-saved.time<900000){
-   res.writeHead(200,{"content-type":track.mime,"content-length":saved.bytes.length,"cache-control":"private, max-age=600","x-content-type-options":"nosniff","accept-ranges":"none"});
-   res.end(saved.bytes);return true;
+   sendAudio(res,req,track,saved.bytes);return true;
   }
   try{
    const remote=await fetch(track.remoteUrl,{headers:{"User-Agent":"CMDSphereStudio/1.0 (CC-licensed music preview)","Accept":"audio/*"},redirect:"error",signal:AbortSignal.timeout(REQUEST_TIMEOUT)});
@@ -79,10 +94,9 @@ export async function handleCmdStudioMusic(req,res,url,{auth}={}){
    for await(const part of remote.body){size+=part.length;if(size>LIMIT)throw Error("Morceau trop volumineux");pieces.push(part)}
    const bytes=Buffer.concat(pieces);
    if(bytes.length<128)throw Error("Audio trop court");
-   if(fileCache.size>12)fileCache.delete(fileCache.keys().next().value);
-   if(bytes.length<8*1024*1024)fileCache.set(hit[1],{bytes,time:Date.now()});
-   res.writeHead(200,{"content-type":track.mime,"content-length":bytes.length,"cache-control":"private, max-age=600","x-content-type-options":"nosniff","accept-ranges":"none"});
-   res.end(bytes);
+   if(fileCache.size>5)fileCache.delete(fileCache.keys().next().value);
+   if(bytes.length<5*1024*1024)fileCache.set(hit[1],{bytes,time:Date.now()});
+   sendAudio(res,req,track,bytes);
   }catch(error){console.warn("[CMD studio music file]",error.message);send(res,502,{error:"Impossible de charger ce morceau actuellement. Essaie un autre titre."})}
   return true;
  }
