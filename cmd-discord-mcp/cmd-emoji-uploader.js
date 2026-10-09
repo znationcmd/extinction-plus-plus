@@ -180,7 +180,7 @@
    used.add(name);return name;
  }
  async function importFilesAsEmojis(){
-   const input=$("#cmdEmojiBulkFiles"),notice=$("#cmdEmojiBulkStatus"),button=$("#cmdEmojiBulkButton");
+   const input=$("#cmdEmojiBulkFiles"),notice=$("#cmdEmojiBulkFilesStatus"),button=$("#cmdEmojiBulkButton");
    const files=Array.from(input?.files||[]);
    if(!files.length){notice.textContent="Sélectionne des fichiers individuels.";return}
    const allowed=files.filter(f=>/^image\/(gif|png|jpeg|webp)$/.test(f.type)&&f.size>0&&f.size<=1024*1024);
@@ -232,7 +232,7 @@
      '<button type="submit" id="cmdEmojiSave">Enregistrer</button><p id="cmdEmojiCreatorNotice" role="status"></p></form>'+
      (bridge()?.state.libraryFounder?'<section class="cmd-emoji-bulk" style="padding:12px;border:1px solid #ffffff26;border-radius:12px;margin:12px 0;display:grid;gap:9px"><strong>Importer les emojis des captures</strong><span>Réservé au fondateur · partager avec tous</span><label>Fichier CMD au format .json<input type="file" id="cmdEmojiBulkFile" accept=".json,application/json"></label><button type="button" id="cmdEmojiBulkImport">Importer tout le pack</button><button type="button" id="cmdEmojiBulkStop" hidden>Arrêter</button><p id="cmdEmojiBulkStatus" role="status" aria-live="polite"></p></section>':'')+
      '<section class="cmd-emoji-manage"><strong>Mes emojis et ceux que je peux gérer</strong><div id="cmdEmojiOwned"></div></section>'+
-     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-manage"><strong>Importation multiple du fondateur</strong><p>Choisis tous les fichiers emojis d’origine (PNG, JPG, WebP ou GIF). Chaque fichier deviendra un emoji indépendant, y compris animé.</p><label>Fichiers emojis<input id="cmdEmojiBulkFiles" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label><button type="button" id="cmdEmojiBulkButton" class="cmd-emoji-import-bulk">Importer tous les emojis sélectionnés</button><p id="cmdEmojiBulkStatus" role="status"></p></section>':'');
+     (bridge()?.state.libraryFounder?'<section class="cmd-emoji-manage"><strong>Importation multiple du fondateur</strong><p>Choisis tous les fichiers emojis d’origine (PNG, JPG, WebP ou GIF). Chaque fichier deviendra un emoji indépendant, y compris animé.</p><label>Fichiers emojis<input id="cmdEmojiBulkFiles" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label><button type="button" id="cmdEmojiBulkButton" class="cmd-emoji-import-bulk">Importer tous les emojis sélectionnés</button><p id="cmdEmojiBulkFilesStatus" role="status"></p></section>':'');
    sheet.append(panel);
    $("#cmdEmojiClose").onclick=()=>{panel.remove();panel=null};
    if($("#cmdEmojiBulkButton"))$("#cmdEmojiBulkButton").onclick=importFilesAsEmojis;
