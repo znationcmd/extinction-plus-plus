@@ -218,7 +218,8 @@ function universePhoto(kind,value){
  const words=kind==="vehicle"?{compact:"small-car",sportscar:"sports-car",convertible:"convertible-car",scooter:"scooter",motorcycle:"motorcycle",bike:"bicycle",van:"van",truck:"pickup-truck",kart:"go-kart",boat:"sailboat",plane:"airplane",rocket:"rocket",sedan:"sedan-car",suv:"suv-car",jeep:"offroad-jeep",limousine:"limousine",bus:"bus",camper:"camper-van",helicopter:"helicopter",jetski:"jetski",yacht:"yacht"}:{cottage:"cottage-house",house:"family-house",villa:"luxury-villa",apartment:"apartment-building",castle:"castle",cabin:"wooden-cabin",beach:"beach-house",snow:"snow-cabin",tree:"treehouse",crystal:"crystal-house",modern:"modern-house",farm:"farmhouse",mansion:"mansion",penthouse:"penthouse",lighthouse:"lighthouse",japanese:"japanese-house",tiny:"tiny-house"};
  return "https://loremflickr.com/320/240/"+encodeURIComponent(words[value]||value)+"?lock="+([...value].reduce((n,c)=>n+c.charCodeAt(0),kind==="vehicle"?200:400));
 }
-const originalSheets=["catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
+const importedAvatarCount=212;
+const originalSheets=["avatar-collection-212","catalogue-vestes","catalogue-chapeaux","catalogue-lunettes","catalogue-cheveux","catalogue-barbes","catalogue-piercings","vehicles","homes","pets","scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
 const loadedSheets=new Map();
 for(let i=0;i<54;i++)scenes.push(["reference-"+i,"Fond original "+(i+1),"🖼️"]);
 function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||"");return match&&Number(match[1])<54?Number(match[1]):-1}
@@ -232,6 +233,7 @@ async function loadOriginalSheets(){
  applyOriginalSheets();
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage="url("+JSON.stringify(src)+")"});
  if(sceneReferenceIndex(state.scene)>=0)present();
+ if(sheet&&!sheet.hidden){applyOriginalSheets();refreshEditor()}
 }
 function applyOriginalSheets(){
  applyScreenshotCatalogue();
@@ -280,13 +282,15 @@ function screenshotCatalogue(category){
 function applyScreenshotCatalogue(){
  document.querySelectorAll("[data-catalogue-art]").forEach(el=>{const src=loadedSheets.get("catalogue-"+el.dataset.catalogueArt);if(src)el.style.backgroundImage='url("'+src+'")'});
 }
+function importedAvatarArt(i){return '<span class="cmd-imported-avatar-art" data-original-sheet="avatar-collection-212" style="display:block;width:100%;height:100%;background-color:transparent;background-repeat:no-repeat;background-size:800% 2700%;background-position:'+(i%8*100/7)+'% '+(Math.floor(i/8)*100/26)+'%"></span>'}
+function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Image originale · 2D</small></button>').join("")}
 function avatarEditor(){
  const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
  const nav='<nav class="cmd-avatar-editor-nav" aria-label="Personnalisation de l’avatar">'+sections.map(([key,label])=>'<button type="button" data-avatar-part="'+key+'" class="'+(avatarPart===key?'selected':'')+'" aria-pressed="'+(avatarPart===key)+'">'+label+'</button>').join('')+'</nav>';
  let inner='';
  if(avatarPart==="person"){
   inner='<h2>Personnalise ton avatar CMD Sphere</h2><p class="cmd-scene-section-intro">Personnages illustrés en 2D · touche un modèle puis change ses traits et sa tenue.</p>'+
-  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo">'+'<span class="cmd-avatar-card-fallback">'+drawAvatarSticker({...state,gender:p.gender||"male",avatarPreset:p.id})+'</span>'+'</span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 2D</small></button>').join("")+'</div>'+
+  '<div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+avatarPresets.map(p=>'<button type="button" data-avatar-preset="'+p.id+'" data-person-model="'+p.model+'" class="cmd-scene-built-in '+(state.avatarPreset===p.id?'selected':'')+'" aria-pressed="'+(state.avatarPreset===p.id)+'"><span class="cmd-scene-model-photo">'+'<span class="cmd-avatar-card-fallback">'+drawAvatarSticker({...state,gender:p.gender||"male",avatarPreset:p.id})+'</span>'+'</span><b>'+p.name+'</b><small>'+(p.gender==="male"?"Masculin":"Féminin")+' · 2D</small></button>').join("")+importedAvatarCards()+'</div>'+
   field("Personnage","gender",genders)+field("Morphologie","bodyType",bodyTypes)+swatches("Teint de peau","skin",skins);
  }else if(avatarPart==="hair"){
   inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors)+screenshotCatalogue("cheveux");
@@ -329,7 +333,8 @@ function renderSheet(tab){
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
- $$("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
+ $("[data-imported-avatar]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarPreset="reference-avatar-"+button.dataset.importedAvatar;state.avatarStyle="2d";renderSheet("avatar");refreshEditor()}));
+ $("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
   const p=avatarPresets.find(p=>p.id===button.dataset.avatarPreset);if(!p)return;
   Object.assign(state,{avatarPreset:p.id,avatarModel:p.model,gender:p.gender,avatarStyle:"3d",top:p.top,bottom:p.bottom,topColor:p.topColor,skin:p.skin,hair:p.hair,hairColor:p.hairColor,beard:p.beard||"none",beardColor:p.beardColor||p.hairColor,accessory:"none"});
   renderSheet("avatar");refreshEditor();
@@ -342,7 +347,7 @@ function drawAvatarSticker(s){
 function renderStickerPreview(){
  const host=$("#cmdScenePreviewPerson");if(!host)return;
  // Clothing and silhouette share the same 2D coordinate system.
- host.innerHTML='<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D avec vêtements ajustés">'+drawAvatarSticker(state)+'</div>';
+ const chosen=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||"");const idx=chosen?Number(chosen[1]):-1;host.innerHTML=idx>=0&&idx<importedAvatarCount?'<div class="cmd-sticker-avatar-live cmd-imported-avatar-preview" role="img" aria-label="Avatar importé">'+importedAvatarArt(idx)+'</div>':'<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D">'+drawAvatarSticker(state)+'</div>';
  const pet=$("#cmdScenePreviewPet");if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
  const hero=$("#cmdSceneHero");if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?loadedSheets.get("scenes"):(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"600% 900%":"cover","important");hero.style.setProperty("background-position",reference>=0?(reference%6*20)+"% "+(Math.floor(reference/6)*12.5)+"%":"center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?sheetArt("vehicles",Math.max(0,vehicles.findIndex(v=>v[0]===state.vehicle))%16):"")+(state.home!=="none"?sheetArt("homes",Math.max(0,homes.findIndex(v=>v[0]===state.home))%16):"");applyOriginalSheets()}}
 }
@@ -353,6 +358,7 @@ function installStickerStyles(){
  css.textContent+="#cmdSceneSheet #cmdScenePreviewPerson,#cmdSceneSheet #cmdScenePreviewPet,#cmdSceneSheet #cmdStickerObjects,#cmdSceneSheet #cmdStickerObjects>*,#cmdSceneSheet .cmd-sticker-avatar-live,#cmdSceneSheet .cmd-original-catalog-art,#cmdSceneSheet [data-original-pet]{background-color:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important}#cmdSceneSheet #cmdStickerObjects .cmd-original-catalog-art,#cmdSceneSheet #cmdScenePreviewPet [data-original-pet]{background-color:transparent!important}#cmdSceneSheet .cmd-scene-preview{overflow:visible!important}#cmdSceneSheet .cmd-sticker-avatar-live svg{background:transparent!important}";
  css.textContent+="#cmdSceneSheet .cmd-pet-symbol{display:flex;width:100%;height:100%;min-height:85px;align-items:center;justify-content:center;font-size:clamp(45px,8vw,95px);background:transparent!important}";
  css.textContent+="#cmdSceneSheet .cmd-sticker-avatar-live{background:none!important;aspect-ratio:220/350;max-height:100%;overflow:visible}#cmdSceneSheet .cmd-bitmoji-silhouette{width:100%;height:100%;display:block;object-fit:contain}#cmdSceneSheet #cmdScenePreviewPet{background:transparent!important;display:flex;align-items:flex-end;justify-content:center}#cmdSceneSheet #cmdScenePreviewPet[hidden]{display:none!important}#cmdSceneSheet #cmdStickerObjects{background:transparent!important}";
+ css.textContent+="#cmdSceneSheet .cmd-imported-avatar-art{background-color:transparent!important;filter:none!important}#cmdSceneSheet .cmd-imported-avatar-preview{width:100%;height:100%;display:block!important}#cmdSceneSheet .cmd-imported-avatar-choice .cmd-scene-model-photo{background:transparent!important}";
  document.head.append(css);
 }
 function refreshEditor(){
