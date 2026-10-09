@@ -544,3 +544,20 @@
  #cmdSceneSheet .cmd-scene-tabs button{min-height:51px}
  #cmdSceneSheet .cmd-scene-tabs button svg{width:22px;height:22px}
 }
+
+/* Explicit, revocable public profile sharing; no extra avatar action overlap. */
+#cmdSceneShare{position:absolute;z-index:4;right:12px;bottom:12px;min-height:42px;max-width:calc(100% - 24px);border:1px solid #ffffff55;border-radius:14px;background:#1b122de8;color:#fff;padding:8px 13px;font:700 13px system-ui;cursor:pointer}
+#cmdSceneShare:focus-visible{outline:2px solid #fff}
+.cmd-share-overlay[hidden],.cmd-share-actions [hidden]{display:none!important}
+.cmd-share-overlay{position:fixed;inset:0;z-index:13000;background:#000c;display:flex;align-items:center;justify-content:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));color:#fff;font:14px system-ui}
+.cmd-share-panel{background:#1a1721;border:1px solid #ffffff3d;border-radius:18px;padding:22px;width:min(440px,100%);max-height:calc(100dvh - 40px);overflow-y:auto;box-shadow:0 20px 65px #0009}
+.cmd-share-panel h2{font:800 22px system-ui;margin:0 0 13px}
+.cmd-share-panel p{font:14px/1.55 system-ui;color:#d9cfe0}
+#cmdShareState{padding:12px;border:1px solid #ffffff24;border-radius:12px;margin:15px 0;color:#eee4f8}
+.cmd-share-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.cmd-share-actions button{background:#30293d;border:1px solid #ffffff1c;color:white;border-radius:11px;min-height:47px;padding:8px;font:700 13px system-ui}
+.cmd-share-actions button:disabled{opacity:.44}
+#cmdShareEnable,#cmdShareCopy,#cmdShareNative{background:#7652a9}
+#cmdShareDisable{background:#513144}
+.cmd-share-panel input{width:100%;margin-top:13px;font:14px system-ui;background:#09080c;color:#fff;border:1px solid #ffffff44;border-radius:10px;padding:10px}
+@media(max-width:520px){#cmdSceneShare{right:8px;bottom:8px;min-height:39px;font-size:11px;padding:7px 10px}.cmd-share-panel{padding:17px}.cmd-share-actions{gap:7px}}
