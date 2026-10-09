@@ -5,7 +5,8 @@
   if (window.__cmdEmojiPickerV2) return;
   window.__cmdEmojiPickerV2 = true;
   const $ = s => document.querySelector(s);
-  const state = {tab:"emoji",packs:[],selected:"all",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null};
+  const state = {tab:"emoji",packs:[],selected:"all",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null,webGifs:[],webGifLoading:false};
+  let gifSearchSequence=0,gifSearchTimer=null;
   try { const r=JSON.parse(localStorage.getItem("cmd-emoji-recent-v2")||"[]");if(Array.isArray(r))state.recent=r.slice(0,48); } catch {}
   const escapeHtml = s => String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
   const digits = v => /^\d{15,22}$/.test(String(v||""));
@@ -50,17 +51,33 @@
   }
   function insert(item){
     const input=$("#channelInput");if(!input)return;
-    if(item.kind==="sticker"){const v=item.value;if(!v)return; const start=input.selectionStart??input.value.length;input.setRangeText(v,start,input.selectionEnd??start,"end")}
-    else {const start=input.selectionStart??input.value.length;input.setRangeText(item.value,start,input.selectionEnd??start,"end")}
+    {const start=input.selectionStart??input.value.length;input.setRangeText(item.value,start,input.selectionEnd??start,"end")}
     input.dispatchEvent(new Event("input",{bubbles:true}));input.focus();remember(item);
     $("#channelEmojiSheet")?.classList.remove("on");
   }
+  function tabMatch(item){
+    if(state.tab==="sticker")return item.kind==="sticker";
+    if(state.tab==="gif")return item.kind==="gif"||item.kind==="webgif"||(item.animated&&(item.kind==="cmd"||item.kind==="emoji"));
+    return item.kind==="unicode"||item.kind==="cmd"||item.kind==="emoji";
+  }
   function listFor(){
-    if(state.selected==="all")return state.tab==="sticker"?state.items:[...fullUnicode,...state.library,...state.items];
-    if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected));
-    if(state.selected==="unicode")return fullUnicode;
-    if(state.selected==="recent")return state.recent.filter(e=>state.tab==="emoji"?e.kind!=="sticker":e.kind==="sticker");
-    return state.items;
+    if(state.selected==="all")return [...(state.tab==="emoji"?fullUnicode:[]),...state.library,...state.items,...(state.tab==="gif"?state.webGifs:[])].filter(tabMatch);
+    if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected)&&tabMatch(e));
+    if(state.selected==="unicode")return state.tab==="emoji"?fullUnicode:[];
+    if(state.selected==="recent")return state.recent.filter(tabMatch);
+    return state.items.filter(tabMatch);
+  }
+  async function searchPublicGifs(query){
+    const sequence=++gifSearchSequence;
+    state.webGifs=[];state.webGifLoading=Boolean(query);drawItems();
+    if(!query){state.webGifLoading=false;return}
+    try{
+      const response=await fetch("/api/cmd-gifs/search?q="+encodeURIComponent(query),{credentials:"same-origin",cache:"no-store"});
+      const data=await response.json();if(!response.ok)throw Error(data.error||"Recherche indisponible");
+      if(sequence!==gifSearchSequence||state.tab!=="gif"||state.query!==query)return;
+      state.webGifs=(data.items||[]).filter(e=>/^https:\/\/upload\.wikimedia\.org\//.test(e.url||"")).map((e,i)=>({kind:"webgif",id:"web-"+i,name:e.name||"GIF public",packName:"Wikimedia Commons",image:e.url,value:e.url,sourceUrl:e.sourceUrl||"",animated:true}));
+    }catch(error){if(sequence===gifSearchSequence)console.warn("[CMD GIF public]",error?.message||error)}
+    finally{if(sequence===gifSearchSequence){state.webGifLoading=false;drawItems()}}
   }
   let drawGeneration=0;
   let photoPreviewObserver=null;
@@ -72,17 +89,14 @@
     photoPreviewObserver=null;
     const oldTop=root.scrollTop;
     root.replaceChildren();
-    if(state.tab==="gif"&&!["mine","community","server","all"].includes(state.selected)){
-      root.innerHTML='<div class="cmd-emoji-hint">Les GIF peuvent être envoyés en collant leur lien dans le message. La recherche GIF en ligne nécessite un fournisseur connecté.</div>';return;
-    }
     if(state.loading){root.innerHTML='<p class="cmd-emoji-hint">Chargement des emojis du serveur…</p>';return}
     const query=state.query.toLocaleLowerCase("fr").trim();
-    const all=state.tab==="gif"?listFor().filter(x=>x.animated):listFor();
+    const all=listFor();
     const filtered=query?all.filter(i=>(i.name+" "+(i.packName||"")).toLocaleLowerCase("fr").includes(query)):all;
     const heading=$("#cmdEmojiHeading");if(heading){heading.title=filtered.length+" emojis disponibles";heading.dataset.count=String(filtered.length)}
-    if(!filtered.length){root.innerHTML='<p class="cmd-emoji-hint">Aucun emoji accessible pour cette sélection. Choisis un autre serveur ou les emojis standards.</p>';return}
+    if(!filtered.length){root.innerHTML='<p class="cmd-emoji-hint">'+(state.tab==="gif"?(state.webGifLoading?"Recherche de GIF animés…":"Aucun GIF ici. Recherche un GIF public ou utilise « ＋ Créer » pour importer tes animations."):state.tab==="sticker"?"Aucun autocollant dans cette catégorie. Utilise « ＋ Créer » pour en ajouter un, fixe ou animé.":"Aucun emoji dans cette catégorie.")+'</p>';return}
     let displayed=0,filling=false;
-    const grid=document.createElement("div");grid.className="cmd-emoji-grid-v2";root.appendChild(grid);
+    const grid=document.createElement("div");grid.className="cmd-emoji-grid-v2"+(state.tab!=="emoji"?" cmd-media-grid":"");root.appendChild(grid);
     if("IntersectionObserver" in window){photoPreviewObserver=new IntersectionObserver(entries=>{for(const item of entries)item.target.classList.toggle("cmd-photo-visible",item.isIntersecting)},{root,rootMargin:"70px"})}
     root.scrollTop=oldTop;
     function more(){
@@ -91,6 +105,7 @@
       for(let i=displayed;i<end;i++){
         const e=filtered[i],btn=document.createElement("button");btn.type="button";btn.className="cmd-emoji-icon-v2";
         btn.title=(e.packName?e.packName+" · ":"")+e.name;btn.setAttribute("aria-label",e.name);
+        if(state.tab!=="emoji")btn.classList.add("cmd-media-tile");
         if(e.kind==="unicode")btn.textContent=e.value;
         else{const img=document.createElement("img");img.src=e.image;img.alt=e.name;img.loading="lazy";img.decoding="async";img.onerror=()=>btn.remove();if(e.kind==="cmd"&&!e.animated){img.classList.add("cmd-photo-motion");photoPreviewObserver?.observe(img)}btn.appendChild(img)}
         btn.addEventListener("click",()=>insert(e));fragment.appendChild(btn);
@@ -162,20 +177,20 @@
   function draw(){
     const box=$("#emojiContent");if(!box)return;
     if(!$("#cmdEmojiSearch")){
-      box.innerHTML='<div class="cmd-emoji-top"><input id="cmdEmojiSearch" type="search" placeholder="Trouver l’emoji parfait" autocomplete="off" aria-label="Rechercher un emoji"><button type="button" id="cmdEmojiCreate" onclick="window.cmdEmojiOpenCreator?.()">＋ Créer</button></div><div id="cmdEmojiHeading"></div><div id="cmdEmojiResults"></div><div id="cmdEmojiServerRail" aria-label="Packs d’emojis"></div>';
-      $("#cmdEmojiSearch").addEventListener("input",e=>{state.query=e.target.value;drawItems()});
+      box.innerHTML='<div class="cmd-emoji-top"><input id="cmdEmojiSearch" type="search" placeholder="Rechercher un emoji" autocomplete="off" aria-label="Rechercher un emoji, GIF ou autocollant"><button type="button" id="cmdEmojiCreate" onclick="window.cmdEmojiOpenCreator?.()">＋ Créer</button></div><div id="cmdEmojiHeading"></div><div id="cmdEmojiResults"></div><div id="cmdEmojiServerRail" aria-label="Bibliothèques et serveurs"></div>';
+      $("#cmdEmojiSearch").addEventListener("input",e=>{state.query=e.target.value;drawItems();clearTimeout(gifSearchTimer);if(state.tab==="gif"&&state.selected==="all"){const query=state.query.trim();gifSearchTimer=setTimeout(()=>searchPublicGifs(query),400)}else{gifSearchSequence++;state.webGifs=[];state.webGifLoading=false}});
     }
     const query=$("#cmdEmojiSearch");if(query?.value!==state.query)query.value=state.query;
     const heading=$("#cmdEmojiHeading"),rail=$("#cmdEmojiServerRail");
     const pack=state.packs.find(p=>p.id===state.selected);
-    heading.textContent=state.selected==="all"?"Tous les emojis disponibles":state.selected==="mine"?"Mes emojis":state.selected==="community"?"Partagés avec tous":state.selected==="server"?"Emojis du serveur":state.tab==="gif"?"GIF":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Emojis du serveur");
+    heading.textContent=state.selected==="all"?(state.tab==="gif"?"GIF animés · Ma bibliothèque et recherche publique":state.tab==="sticker"?"Tous les autocollants":"Tous les emojis disponibles"):state.selected==="mine"?"Mes créations":state.selected==="community"?"Partagés avec tous":state.selected==="server"?"Créations du serveur":state.selected==="unicode"?"Emojis Unicode":state.selected==="recent"?"Récemment utilisés":(pack?.name||"Bibliothèque du serveur");
     rail.innerHTML="";
-    const entries=[{id:"all",name:"Tous",glyph:"🌐"},{id:"recent",name:"Récents",glyph:"🕘"},{id:"unicode",name:"Standard",glyph:"😀"},{id:"mine",name:"Mes emojis",glyph:"👤"},{id:"community",name:"Partagés",glyph:"🌍"},...(state.libraryGuild?[{id:"server",name:"Ce serveur",glyph:"🏠"}]:[]),...state.packs];
+    const entries=[{id:"all",name:"Tous",glyph:"🌐"},{id:"recent",name:"Récents",glyph:"🕘"},...(state.tab==="emoji"?[{id:"unicode",name:"Standard",glyph:"😀"}]:[]),{id:"mine",name:"Mes créations",glyph:"👤"},{id:"community",name:"Partagés",glyph:"🌍"},...(state.libraryGuild?[{id:"server",name:"Ce serveur",glyph:"🏠"}]:[]),...state.packs];
     for(const entry of entries){
       const btn=document.createElement("button");btn.type="button";btn.title=entry.name;btn.className="cmd-emoji-server-pill"+(state.selected===entry.id?" active":"");
       if(entry.icon){const img=document.createElement("img");img.src=entry.icon;img.alt="";img.loading="lazy";btn.append(img)}
       else btn.textContent=entry.glyph||entry.name.slice(0,2);
-      btn.onclick=()=>{allPacksGeneration++;state.selected=entry.id;state.query="";state.items=[];if(entry.id==="all"){draw();loadAllPacks()}else if(["recent","unicode","mine","community","server"].includes(entry.id)){draw()}else loadPack(entry)};
+      btn.onclick=()=>{allPacksGeneration++;gifSearchSequence++;clearTimeout(gifSearchTimer);state.webGifs=[];state.selected=entry.id;state.query="";state.items=[];if(entry.id==="all"){draw();loadAllPacks()}else if(["recent","unicode","mine","community","server"].includes(entry.id)){draw()}else loadPack(entry)};
       rail.append(btn);
     }
     drawItems();
@@ -185,6 +200,8 @@
     if(toggle&&sheet.classList.contains("on")){sheet.classList.remove("on");$("#channelInput")?.focus();return}
     sheet.classList.add("on");$("#channelToolSheet")?.classList.remove("on");
     state.tab=tab==="sticker"?"sticker":tab==="gif"?"gif":"emoji";
+    gifSearchSequence++;clearTimeout(gifSearchTimer);state.webGifs=[];state.webGifLoading=false;
+    if(state.tab!=="emoji"&&state.selected==="unicode")state.selected="all";
     document.querySelectorAll("[data-emoji-tab]").forEach(b=>b.classList.toggle("active",b.dataset.emojiTab===state.tab));
     const activePack=state.packs.find(p=>p.id===state.selected);
     if(state.selected==="all"){draw();if(state.packs.length)loadAllPacks()}
@@ -192,6 +209,7 @@
     else draw();
     if(!state.packs.length)fetchPacks();
     window.cmdEmojiRefreshLibrary?.();
+    const query=$("#cmdEmojiSearch");if(query)query.placeholder=state.tab==="gif"?"Rechercher des GIF animés…":state.tab==="sticker"?"Rechercher un autocollant…":"Rechercher un emoji…";
   }
   window.__cmdEmojiPickerBridge={state,draw,insert};
   document.addEventListener("click",e=>{
