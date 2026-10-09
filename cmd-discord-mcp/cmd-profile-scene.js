@@ -84,7 +84,7 @@ function present(s=state,img=custom){
  slot.classList.add("cmd-scene-active");slot.dataset.scene=scenes.some(a=>a[0]===s.scene)?s.scene:"forest";
  scenery.replaceChildren();
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
- const light=document.createElement("div");light.className="cmd-scene-scenery";if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
+ const light=document.createElement("div");light.className="cmd-scene-scenery";if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";
  if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {const photo=s.gender==="female"?"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=420&fit=crop&q=80":"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=420&fit=crop&q=80";person.innerHTML='<img class="cmd-avatar-fallback-photo" src="'+photo+'" alt="Portrait de remplacement en cas d’indisponibilité du modèle 3D">';}
  scenery.append(person);
@@ -215,14 +215,19 @@ function universePhoto(kind,value){
  const words=kind==="vehicle"?{compact:"small-car",sportscar:"sports-car",convertible:"convertible-car",scooter:"scooter",motorcycle:"motorcycle",bike:"bicycle",van:"van",truck:"pickup-truck",kart:"go-kart",boat:"sailboat",plane:"airplane",rocket:"rocket",sedan:"sedan-car",suv:"suv-car",jeep:"offroad-jeep",limousine:"limousine",bus:"bus",camper:"camper-van",helicopter:"helicopter",jetski:"jetski",yacht:"yacht"}:{cottage:"cottage-house",house:"family-house",villa:"luxury-villa",apartment:"apartment-building",castle:"castle",cabin:"wooden-cabin",beach:"beach-house",snow:"snow-cabin",tree:"treehouse",crystal:"crystal-house",modern:"modern-house",farm:"farmhouse",mansion:"mansion",penthouse:"penthouse",lighthouse:"lighthouse",japanese:"japanese-house",tiny:"tiny-house"};
  return "https://loremflickr.com/320/240/"+encodeURIComponent(words[value]||value)+"?lock="+([...value].reduce((n,c)=>n+c.charCodeAt(0),kind==="vehicle"?200:400));
 }
-const originalSheets=["avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
+const originalSheets=["scenes","avatar","hair","beard","top","bottom","coat","hat","glasses","piercing-ear","piercing-nose","piercing-brow","piercing-lip"];
 const loadedSheets=new Map();
+for(let i=0;i<54;i++)scenes.push(["reference-"+i,"Fond original "+(i+1),"🖼️"]);
+function sceneReferenceIndex(value){const match=/^reference-(\d+)$/.exec(value||"");return match&&Number(match[1])<54?Number(match[1]):-1}
+function sceneReferenceStyle(value){const n=sceneReferenceIndex(value);if(n<0)return "";return "background-image:url("+JSON.stringify(loadedSheets.get("scenes")||"") +");background-size:600% 900%;background-position:"+(n%6*20)+"% "+(Math.floor(n/6)*12.5)+"%;background-repeat:no-repeat"}
+
 function sheetArt(sheet,index){const x=index%4,y=Math.floor(index/4)%4;return '<span class="cmd-original-catalog-art" data-original-sheet="'+sheet+'" style="display:block;width:100%;height:100%;min-height:84px;background-size:400% 400%;background-position:'+(x*100/3)+'% '+(y*100/3)+'%;background-repeat:no-repeat;border-radius:10px"></span>'}
 async function loadOriginalSheets(){
  await Promise.all(originalSheets.map(async name=>{
   try{const r=await fetch("/catalogue/"+name+".b64.txt",{cache:"force-cache"});if(!r.ok)return;const raw=(await r.text()).trim();if(!raw.startsWith("UklG"))return;loadedSheets.set(name,"data:image/webp;base64,"+raw)}catch(e){}
  }));
  applyOriginalSheets();
+ if(sceneReferenceIndex(state.scene)>=0)present();
 }
 function applyOriginalSheets(){
  document.querySelectorAll("[data-original-sheet]").forEach(el=>{const src=loadedSheets.get(el.dataset.originalSheet);if(src)el.style.backgroundImage='url("'+src+'")'});
@@ -230,7 +235,7 @@ function applyOriginalSheets(){
 loadOriginalSheets();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?'<span class="cmd-scene-choice-symbol" role="img" aria-label="'+escape(name)+'" style="display:grid;place-items:center;width:100%;height:100%;font-size:clamp(38px,8vw,72px);background:transparent">'+(icon||"✦")+'</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'" style="background-image:url('+escape(scenePhotoUrls[value]||'')+');background-size:cover;background-position:center"><span style="display:none">'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?'<span class="cmd-scene-choice-symbol" role="img" aria-label="'+escape(name)+'" style="display:grid;place-items:center;width:100%;height:100%;font-size:clamp(38px,8vw,72px);background:transparent">'+(icon||"✦")+'</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'" style="'+(sceneReferenceIndex(value)>=0?sceneReferenceStyle(value):'background-image:url('+escape(scenePhotoUrls[value]||'')+');background-size:cover;background-position:center')+'"><span style="display:none">'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
