@@ -589,3 +589,14 @@
  #cmdSceneSheet .cmd-groom-card{border-radius:13px}
  #cmdSceneSheet .cmd-groom-thumb{min-height:85px}
 }
+
+/* CMD Sphere 2D scene editor: exactly one crisp background layer. */
+#cmdSceneSheet #cmdSceneHero{background-blend-mode:normal!important;filter:none!important;backdrop-filter:none!important}
+#cmdSceneSheet #cmdSceneHero::before,#cmdSceneSheet #cmdSceneHero::after{display:none!important;content:none!important}
+#cmdSceneSheet #cmdSceneHero>.cmd-scene-hero-landscape,
+#cmdSceneSheet #cmdSceneHero>.cmd-scene-hero-lights{display:none!important;background:none!important}
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview{background:transparent!important;filter:none!important;backdrop-filter:none!important}
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview::before,
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview::after{display:none!important}
+#cmdSceneSheet .cmd-scene-landscape{filter:none!important;backdrop-filter:none!important;image-rendering:auto!important}
+#cmdSceneSheet .cmd-scene-card-art{filter:none!important;backdrop-filter:none!important}
