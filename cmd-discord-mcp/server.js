@@ -3911,10 +3911,7 @@ const httpServer=createServer(async(req,res)=>{
     const url=new URL(req.url,baseUrl);
     if(await cmdEmailRoute(req,res,url,{pool,readBody:readFormBodyJson,resetPassword:async(id,pass)=>{const pw=passwordParts(pass);await pool.query("UPDATE cmd_accounts SET password_salt=$1,password_hash=$2,updated_at=NOW() WHERE id=$3",[pw.salt,pw.hash,id]);}}))return;
     const emojiAuth=dashboardAuth(req);
-    const emojiFounder=Boolean(emojiAuth&&(
-      (String(emojiAuth.user?.discordId||"")&&verifiedCmdFounderDiscordIds().has(String(emojiAuth.user.discordId)))||
-      (String(process.env.CMD_OWNER_USER_ID||"").trim()&&String(emojiAuth.user?.id)===String(process.env.CMD_OWNER_USER_ID).trim())
-    ));
+    const emojiFounder=Boolean(emojiAuth&&isCmdOwner(emojiAuth));
     if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:emojiAuth,founder:emojiFounder}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
