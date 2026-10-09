@@ -162,20 +162,20 @@ function makeCivilian(state){
   const skin=mat(state.skin||"#e8ad7e",.92);
   const hair=mat(state.hairColor||"#33241e",.87);
   const top=mat(state.topColor||"#7549b9",.9);
-  const trim=mat("#dfd8e5"),eye=mat("#27232e",.58),lips=mat("#9c5e60");
+  const trim=mat("#dfd8e5"),eye=mat(state.eyeColor||"#28222e",.58),lips=mat("#9c5e60");
   const pant=mat(state.bottom==="dark"||state.bottom==="formal"?"#262b3a":state.bottom==="cargo"?"#64705a":state.bottom==="shorts"?"#a3a9c2":"#47638c");
   const footwear=mat(state.shoes==="boots"?"#44342c":state.shoes==="formal"?"#22242d":state.shoes==="sandals"?"#c29e74":"#e7eaf0");
   const add=(g,m,x,y,z,parent=root)=>{const mesh=new THREE.Mesh(g,m);mesh.position.set(x,y,z);parent.add(mesh);return mesh};
   const sphere=(x,y,z,sx,sy,sz,m,parent=root)=>{const mesh=add(new THREE.SphereGeometry(1,24,16),m,x,y,z,parent);mesh.scale.set(sx,sy,sz);return mesh};
-  const torsoWidth=female?.32:.38;
+  const torsoWidth=(female?.32:.38)*(state.bodyType==="slim"?.87:state.bodyType==="athletic"?1.13:1);
   const head=sphere(0,2.69,0,.262,.34,.245,skin);
   sphere(0,2.37,0,.112,.16,.116,skin);
   for(const x of [-.104,.104]){
    sphere(x,2.725,.222,.024,.018,.011,eye);
    const brow=add(new THREE.BoxGeometry(.092,.018,.022),hair,x,2.795,.231);brow.rotation.z=x>0?-.08:.08;
   }
-  sphere(0,2.628,.244,.045,.071,.055,skin);
-  sphere(0,2.518,.228,.073,.017,.018,lips);
+  sphere(0,2.628,.244,state.nose==="small"?.032:state.nose==="defined"?.057:.045,state.nose==="small"?.048:.071,.055,skin);
+  sphere(0,state.mouth==="neutral"?2.529:2.518,.228,state.mouth==="soft"?.052:.073,state.mouth==="neutral"?.011:.017,.018,lips);
   for(const x of [-.255,.255])sphere(x,2.688,0,.056,.09,.055,skin);
   const hairStyle=state.hair||"short";
   if(hairStyle!=="shaved"){
@@ -354,7 +354,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.bodyType,state.skin,state.eyeColor,state.nose,state.mouth,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
  updateWorld(frame,state);
