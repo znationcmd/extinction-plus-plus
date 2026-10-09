@@ -50,10 +50,12 @@
     try {localStorage.setItem("cmd-emoji-recent-v2",JSON.stringify(state.recent))} catch {}
   }
   function insert(item){
-    const input=$("#channelInput");if(!input)return;
+    const input=$("#channelInput");if(!input||input.disabled)return;
+    const sendImmediately=["gif","sticker"].includes(state.tab)&&!input.value.trim();
     {const start=input.selectionStart??input.value.length;input.setRangeText(item.value,start,input.selectionEnd??start,"end")}
     input.dispatchEvent(new Event("input",{bubbles:true}));input.focus();remember(item);
     $("#channelEmojiSheet")?.classList.remove("on");
+    if(sendImmediately){const form=input.closest("form");if(form?.requestSubmit)form.requestSubmit()}
   }
   function tabMatch(item){
     if(state.tab==="sticker")return item.kind==="sticker";
