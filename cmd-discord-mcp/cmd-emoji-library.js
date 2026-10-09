@@ -1,11 +1,11 @@
 /* CMD Sphere emoji library: private, server and community; PNG/GIF/WebP/JPG. */
 import crypto from "node:crypto";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_BYTES=10*1024*1024; // 10 Mo par emoji, GIF ou autocollant
+const MAX_BYTES=25*1024*1024; // 25 Mo par emoji, GIF ou autocollant
 function fail(message,status=400){const e=new Error(message);e.status=status;return e}
 function reply(res,status,body){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(body))}
 async function readUpload(req){
- const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>15*1024*1024)throw fail("Image trop volumineuse (10 Mo maximum par fichier).",413);chunks.push(chunk)}
+ const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>38*1024*1024)throw fail("Image trop volumineuse (25 Mo maximum par fichier).",413);chunks.push(chunk)}
  try{return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}")}catch{throw fail("Données incorrectes.")}
 }
 function sniff(b){
@@ -73,7 +73,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis/bulk"){
    if(!founder)throw fail("Importation groupée réservée au fondateur.",403);
    const chunks=[];let total=0;
-   for await(const chunk of req){total+=chunk.length;if(total>20*1024*1024)throw fail("Lot trop volumineux.",413);chunks.push(chunk)}
+   for await(const chunk of req){total+=chunk.length;if(total>40*1024*1024)throw fail("Lot trop volumineux (40 Mo).",413);chunks.push(chunk)}
    let payload;try{payload=JSON.parse(Buffer.concat(chunks).toString("utf8"))}catch{throw fail("Pack JSON incorrect.")}
    const entries=payload.items;
    if(!Array.isArray(entries)||!entries.length||entries.length>60)throw fail("Envoie de 1 à 60 emojis par lot.");
@@ -113,7 +113,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
    const name=String(data.name||"").trim();if(!/^[\p{L}\p{N}_-]{2,32}$/u.test(name))throw fail("Nom : 2 à 32 caractères, lettres, chiffres, tiret ou _.");
    const parsed=/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(data.dataUrl||""));
    if(!parsed)throw fail("Sélectionne un fichier PNG, JPG, GIF ou WebP.");
-   const bytes=Buffer.from(parsed[2],"base64");if(!bytes.length||bytes.length>MAX_BYTES)throw fail("10 Mo maximum par emoji, GIF ou autocollant.");
+   const bytes=Buffer.from(parsed[2],"base64");if(!bytes.length||bytes.length>MAX_BYTES)throw fail("25 Mo maximum par emoji, GIF ou autocollant.");
    const type=sniff(bytes);if(type.mime!=="image/"+parsed[1])throw fail("Le contenu et le format ne correspondent pas.");
    if(kind==="gif"&&!type.animated)throw fail("Choisis une vraie animation GIF ou WebP pour la catégorie GIF.");
    const [w,h]=bounds(bytes,type.mime);if(w>4096||h>4096)throw fail("Dimensions maximales : 4096 × 4096 pixels.");
