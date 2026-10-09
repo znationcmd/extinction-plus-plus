@@ -698,3 +698,30 @@
  #cmdSceneSheet #cmdAvatarLiveOverlay{top:10%!important;height:90%!important;width:min(58%,225px)!important;}
  #cmdSceneSheet .cmd-scene-card-art .cmd-pet-art{max-height:145px!important;}
 }
+
+/* Scene illustrations keep their own proportions; opaque backgrounds only apply to scenes. */
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-card-art{
+ aspect-ratio:120/106!important;height:auto!important;min-height:100px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:#141923!important;overflow:hidden!important;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape{
+ display:block!important;width:100%!important;height:100%!important;
+ background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;
+ border-radius:9px!important;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="pet"] .cmd-scene-card-art,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="vehicle"] .cmd-scene-card-art,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="home"] .cmd-scene-card-art{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:transparent!important;overflow:visible!important;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="pet"] img,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="vehicle"] img,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="home"] img{
+ width:100%!important;height:100%!important;object-fit:contain!important;
+ object-position:center!important;border-radius:0!important;background:transparent!important;
+}
+#cmdSceneSheet #cmdSceneHero[data-scene]{
+ background-repeat:no-repeat!important;background-position:center center!important;
+}
