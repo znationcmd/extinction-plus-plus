@@ -3,55 +3,96 @@
  const $=s=>document.querySelector(s);
  const bridge=()=>window.__cmdEmojiPickerBridge;
  const UUID=/^[0-9a-f-]{36}$/i;
- let pending=null,lastFetch=0,lastGuild="",panel=null,nextOffset=0,hasMore=false,pageLoading=false;
+ let pending=null,lastFetch=0,lastGuild="",panel=null,nextOffset=0,hasMore=false,pageLoading=false,generation=0;
  const activeGuild=()=>String($("#workspace")?.dataset.nativeGuildId||"");
  const label=s=>String(s||"").trim();
+ const scrollRoot=()=>$("#cmdEmojiResults");
+ const isShowingLibrary=()=>["mine","community","server"].includes(bridge()?.state.selected);
+ let libraryError="";
  function normalize(e){
    return {kind:"cmd",id:e.id,name:e.name,scope:e.scope,animated:Boolean(e.animated),
-     image:e.url,canDelete:Boolean(e.canDelete),packName:e.scope==="server"?"Ce serveur":e.scope==="community"?"Communauté":"Personnel",
+     image:e.url,canDelete:Boolean(e.canDelete),
+     packName:e.scope==="server"?(e.serverName||"Serveur"):e.scope==="community"?"Communauté":"Personnel",
      value:":cmdemoji:"+e.id+":"};
+ }
+ function libraryUrl(gid,offset=0){
+   const args=new URLSearchParams({offset:String(offset),all:"1"});
+   if(gid)args.set("guildId",gid);
+   return "/api/cmd-emojis?"+args.toString();
+ }
+ function appendPage(data,p){
+   const current=new Set(p.state.library.map(e=>e.id));
+   const fresh=(data.emojis||[]).filter(e=>UUID.test(String(e.id||""))&&!current.has(e.id)).map(normalize);
+   if(fresh.length)p.state.library.push(...fresh);
+   const count=Array.isArray(data.emojis)?data.emojis.length:0;
+   const newOffset=Number(data.nextOffset);
+   if(Number.isFinite(newOffset)&&newOffset>nextOffset)nextOffset=newOffset;
+   else nextOffset+=count;
+   hasMore=Boolean(data.hasMore)&&count>0;
+   return fresh.length;
+ }
+ function redrawLibrary(){
+   const p=bridge();if(!p||!isShowingLibrary())return;
+   const root=scrollRoot(),oldTop=root?.scrollTop||0;
+   p.draw();
+   const next=scrollRoot();if(next)next.scrollTop=oldTop;
+ }
+ async function fetchNextLibrary(){
+   const p=bridge(),gid=activeGuild(),token=generation;
+   if(!p||pending||pageLoading||!hasMore||lastGuild!==gid)return false;
+   pageLoading=true;
+   try{
+     const res=await fetch(libraryUrl(gid,nextOffset),{credentials:"same-origin",cache:"no-store"});
+     const data=await res.json().catch(()=>({}));
+     if(!res.ok)throw Error(data.error||"Suite de la bibliothèque indisponible");
+     if(generation!==token||lastGuild!==gid)return false;
+     const added=appendPage(data,p);
+     libraryError="";
+     if(added)redrawLibrary();
+     return true;
+   }catch(error){
+     if(generation===token){libraryError=error.message||"Téléchargement temporairement indisponible";console.warn("[CMD emoji]",libraryError)}
+     return false;
+   }finally{pageLoading=false}
+ }
+ async function fetchAllPages(token,gid){
+   // Continue automatically beyond 500 / 1000 / 10000; only the visible thumbnails are rendered.
+   // One request at a time avoids saturating mobiles and Railway.
+   while(generation===token&&lastGuild===gid&&hasMore){
+     const ok=await fetchNextLibrary();
+     if(!ok)break;
+     await new Promise(resolve=>setTimeout(resolve,0));
+   }
+   window.dispatchEvent(new CustomEvent("cmdEmojiLibraryLoaded",{detail:{total:bridge()?.state.library.length||0,complete:!hasMore}}));
  }
  async function getLibrary(force=false){
    const p=bridge();if(!p)return;
-   const gid=activeGuild();if(!force&&pending)return pending;
+   const gid=activeGuild();
+   if(pending&&!force&&lastGuild===gid)return pending;
    if(!force&&lastGuild===gid&&Date.now()-lastFetch<15000)return;
+   const token=++generation;
+   lastGuild=gid;nextOffset=0;hasMore=false;pageLoading=false;
    pending=(async()=>{
      try{
-       const q=await fetch("/api/cmd-emojis"+(gid?"?guildId="+encodeURIComponent(gid):""),{credentials:"same-origin",cache:"no-store"});
-       if(!q.ok)throw Error("Bibliothèque non disponible");
-       const data=await q.json();
-       p.state.library=(data.emojis||[]).filter(e=>UUID.test(String(e.id||""))).map(normalize);
-       nextOffset=Number(data.nextOffset||0);hasMore=Boolean(data.hasMore);
-       p.state.libraryRole=data.role||null;p.state.libraryGuild=gid;
-       lastGuild=gid;lastFetch=Date.now();
-     }catch(e){
-       p.state.library=[];p.state.libraryRole=null;p.state.libraryGuild=gid;
-       nextOffset=0;hasMore=false;
-       $("#cmdEmojiCreatorNotice")&&( $("#cmdEmojiCreatorNotice").textContent=e.message );
-     }finally{p.draw();pending=null}
+       const res=await fetch(libraryUrl(gid,0),{credentials:"same-origin",cache:"no-store"});
+       const data=await res.json().catch(()=>({}));
+       if(!res.ok)throw Error(data.error||"Bibliothèque non disponible");
+       if(generation!==token)return;
+       p.state.library=[];
+       appendPage(data,p);
+       p.state.libraryRole=data.role||null;p.state.libraryGuild=gid;p.state.libraryFounder=Boolean(data.founder);
+       lastFetch=Date.now();libraryError="";
+     }catch(error){
+       if(generation!==token)return;
+       p.state.library=[];p.state.libraryRole=null;p.state.libraryGuild=gid;hasMore=false;
+       libraryError=error.message||"Bibliothèque non disponible";
+       if($("#cmdEmojiCreatorNotice"))$("#cmdEmojiCreatorNotice").textContent=libraryError;
+     }finally{
+       if(generation===token){p.draw();pending=null}
+     }
    })();
-   return pending;
- }
- async function fetchNextLibrary(){
-   const p=bridge(),gid=activeGuild();
-   if(!p||pending||pageLoading||!hasMore||lastGuild!==gid)return;
-   pageLoading=true;
-   const oldTop=$("#cmdEmojiResults")?.scrollTop||0;
-   try{
-     const route="/api/cmd-emojis?offset="+encodeURIComponent(nextOffset)+(gid?"&guildId="+encodeURIComponent(gid):"");
-     const r=await fetch(route,{credentials:"same-origin",cache:"no-store"});
-     if(!r.ok)throw Error("Suite du catalogue indisponible");
-     const data=await r.json();
-     const fresh=(data.emojis||[]).filter(e=>UUID.test(String(e.id||""))).map(normalize);
-     const known=new Set(p.state.library.map(e=>e.id));
-     p.state.library.push(...fresh.filter(e=>!known.has(e.id)));
-     hasMore=Boolean(data.hasMore);nextOffset=Number(data.nextOffset||nextOffset+fresh.length);
-     p.draw();
-     const root=$("#cmdEmojiResults");if(root)root.scrollTop=oldTop;
-   }catch(error){
-     hasMore=false;
-     const notice=$("#cmdEmojiCreatorNotice");if(notice)notice.textContent=error.message;
-   }finally{pageLoading=false}
+   await pending;
+   if(generation===token&&hasMore)void fetchAllPages(token,gid);
  }
  window.cmdEmojiFetchNext=fetchNextLibrary;
  window.cmdEmojiRefreshLibrary=getLibrary;
