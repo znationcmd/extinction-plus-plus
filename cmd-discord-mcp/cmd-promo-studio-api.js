@@ -18,6 +18,7 @@ function fileValid(data,mime){
 }
 export async function initCmdPromos(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_promos(id UUID PRIMARY KEY, guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE, owner_user_id TEXT NOT NULL, title VARCHAR(100) NOT NULL, format VARCHAR(30) NOT NULL, kind VARCHAR(20) NOT NULL DEFAULT 'video', media BYTEA NOT NULL, bytes INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+ await pool.query("ALTER TABLE cmd_sphere_promos ADD COLUMN IF NOT EXISTS music_credit JSONB NOT NULL DEFAULT '{}'::jsonb");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_promos_guild_idx ON cmd_sphere_promos(guild_id,created_at DESC)");
 }
 export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
@@ -26,7 +27,7 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
  const match=/^\/(?:api\/cmd-promos\/file|pub)\/([0-9a-f-]{36})$/i.exec(path);
  if(match){
   if(!UUID.test(match[1])){send(res,400,{error:"Publication incorrecte"});return true}
-  const q=await pool.query("SELECT p.id,p.title,p.format,p.media,p.bytes,p.created_at,g.name,g.invite_code FROM cmd_sphere_promos p JOIN cmd_native_guilds g ON g.id=p.guild_id WHERE p.id=$1 LIMIT 1",[match[1]]);
+  const q=await pool.query("SELECT p.id,p.title,p.format,p.media,p.bytes,p.music_credit,p.created_at,g.name,g.invite_code FROM cmd_sphere_promos p JOIN cmd_native_guilds g ON g.id=p.guild_id WHERE p.id=$1 LIMIT 1",[match[1]]);
   if(!q.rows.length){send(res,404,{error:"Publication introuvable"});return true}
   const p=q.rows[0];
   if(path.startsWith("/api/")){
@@ -34,7 +35,9 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
   }
   const link=String(baseUrl||"").replace(/\/$/,"")+"/pub/"+p.id,media=String(baseUrl||"").replace(/\/$/,"")+"/api/cmd-promos/file/"+p.id;
   const video=p.format.startsWith("video/"),image=p.format.startsWith("image/");
-  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta property="og:title" content="'+esc(p.title)+'"><meta property="og:description" content="Publicité CMD Sphere · '+esc(p.name)+'"><title>'+esc(p.title)+' · CMD Sphere</title><style>body{background:#10111b;color:white;font:16px system-ui;margin:0;padding:22px}.wrap{max-width:680px;margin:auto}video,img{width:100%;max-height:78vh;object-fit:contain;border-radius:18px;background:black}a{color:#e1b9ff}h1{overflow-wrap:anywhere}</style></head><body><main class="wrap"><h1>'+esc(p.title)+'</h1><p>Publicité pour '+esc(p.name)+'</p>'+(video?'<video src="'+esc(media)+'" controls autoplay loop playsinline></video>':image?'<img src="'+esc(media)+'" alt="Publicité CMD Sphere">':'')+'<p><a href="'+esc(link)+'">Lien de la publication</a> · <a href="'+esc(String(baseUrl||"").replace(/\/$/,"")+'/cmd-sphere')+'">Ouvrir CMD Sphere</a></p></main></body></html>';
+  const credit=p.music_credit||{},creditUrl=x=>/^https:\/\/(?:commons\.wikimedia\.org|creativecommons\.org|wiki\.creativecommons\.org)\//i.test(String(x||""))?String(x):"";
+  const musicCredits=credit.title?'<p>🎵 Musique : <b>'+esc(credit.title)+'</b> · '+esc(credit.artist||"Artiste non renseigné")+' · '+esc(credit.license||"Licence libre")+''+(creditUrl(credit.sourceUrl)?' · <a href="'+esc(credit.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Source et attribution</a>':"")+(creditUrl(credit.licenseUrl)?' · <a href="'+esc(credit.licenseUrl)+'" target="_blank" rel="noopener noreferrer">Licence</a>':"")+'</p>':"";
+  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta property="og:title" content="'+esc(p.title)+'"><meta property="og:description" content="Publicité CMD Sphere · '+esc(p.name)+'"><title>'+esc(p.title)+' · CMD Sphere</title><style>body{background:#10111b;color:white;font:16px system-ui;margin:0;padding:22px}.wrap{max-width:680px;margin:auto}video,img{width:100%;max-height:78vh;object-fit:contain;border-radius:18px;background:black}a{color:#e1b9ff}h1{overflow-wrap:anywhere}</style></head><body><main class="wrap"><h1>'+esc(p.title)+'</h1><p>Publicité pour '+esc(p.name)+'</p>'+(video?'<video src="'+esc(media)+'" controls autoplay loop playsinline></video>':image?'<img src="'+esc(media)+'" alt="Publicité CMD Sphere">':'') +musicCredits+'<p><a href="'+esc(link)+'">Lien de la publication</a> · <a href="'+esc(String(baseUrl||"").replace(/\/$/,"")+'/cmd-sphere')+'">Ouvrir CMD Sphere</a></p></main></body></html>';
   res.writeHead(200,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","x-frame-options":"DENY"});res.end(html);return true;
  }
  if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere."});return true}
@@ -59,8 +62,16 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
   if(overflow){req.resume();send(res,413,{error:"La publicité exportée dépasse 60 Mo. Réduis la durée ou la résolution."});return true}
   const bytes=Buffer.concat(chunks);
   if(!fileValid(bytes,mime)){send(res,400,{error:"Fichier multimédia invalide."});return true}
+  let credit={};
+  const creditText=String(req.headers["x-cmd-music-credit"]||"").slice(0,1600);
+  if(creditText)try{
+    const c=JSON.parse(decodeURIComponent(creditText));
+    const sourceUrl=/^https:\/\/commons\.wikimedia\.org\//i.test(String(c.sourceUrl||""))?String(c.sourceUrl).slice(0,500):"";
+    const licenseUrl=/^https:\/\/(?:creativecommons\.org|wiki\.creativecommons\.org)\//i.test(String(c.licenseUrl||""))?String(c.licenseUrl).slice(0,500):"";
+    credit={title:txt(c.title,100),artist:txt(c.artist,140),license:txt(c.license,50),sourceUrl,licenseUrl};
+  }catch{}
   const id=crypto.randomUUID();
-  await pool.query("INSERT INTO cmd_sphere_promos(id,guild_id,owner_user_id,title,format,kind,media,bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,gid,String(auth.user.id),title,mime,kind,bytes,bytes.length]);
+  await pool.query("INSERT INTO cmd_sphere_promos(id,guild_id,owner_user_id,title,format,kind,media,bytes,music_credit) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",[id,gid,String(auth.user.id),title,mime,kind,bytes,bytes.length,JSON.stringify(credit)]);
   send(res,201,{id,url:"/pub/"+id,mediaUrl:"/api/cmd-promos/file/"+id});return true;
  }
  if(req.method==="DELETE"&&/^\/api\/cmd-promos\/[0-9a-f-]{36}$/i.test(path)){
