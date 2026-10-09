@@ -130,7 +130,7 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
      const statement="INSERT INTO cmd_sphere_emojis(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,scope) VALUES "+values.join(",");
      await pool.query(statement,params);
    }
-   reply(res,200,{inserted:values.length,skipped,total:items.length});return true;
+   reply(res,200,{created:values.length,inserted:values.length,skipped,total:items.length});return true;
   }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis"){
    const data=await readUpload(req),scope=String(data.scope||"personal"),gid=scope==="server"?String(data.guildId||""):null;
