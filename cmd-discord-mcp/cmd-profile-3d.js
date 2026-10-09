@@ -117,34 +117,34 @@ function applyAppearance(group,state){
 function applyAccessory(frame,state){
  if(frame.accessoryMesh){frame.base.remove(frame.accessoryMesh);frame.accessoryMesh=null}
  const choice=state.accessory;
- if(!frame.person||!["glasses","sunglasses","cap","hat","crown","earrings","necklace"].includes(choice))return;
+ if(!frame.person||!["glasses","sunglasses","roundglasses","aviator","mask","cap","hat","beanie","bucket","cowboy","crown","earrings","studs","hoops","necklace"].includes(choice))return;
  const bounds=new THREE.Box3().setFromObject(frame.person),size=new THREE.Vector3();bounds.getSize(size);
  const civilian=!!frame.person.userData.cmdCivilian;
  const headY=civilian?2.68:bounds.max.y-size.y*.115;
  const group=new THREE.Group();
  const dark=new THREE.MeshStandardMaterial({color:choice==="glasses"?0xb8d7ef:0x252633,metalness:.15,roughness:.3,transparent:true,opacity:.86});
  const frameMat=new THREE.MeshStandardMaterial({color:0x282332,metalness:.35,roughness:.4});
- if(choice==="earrings"||choice==="necklace"){
+ if(["earrings","studs","hoops","necklace"].includes(choice)){
    const jewel=new THREE.MeshStandardMaterial({color:0xe1bee8,metalness:.62,roughness:.26});
-   if(choice==="earrings"){
-    for(const x of [-.275,.275]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(.045,.013,8,16),jewel);hoop.position.set(x,headY-.14,civilian?.115:bounds.max.z+.02);group.add(hoop)}
+   if(["earrings","studs","hoops"].includes(choice)){
+    for(const x of [-.275,.275]){const hoop=new THREE.Mesh(choice==="studs"?new THREE.SphereGeometry(.024,16,12):new THREE.TorusGeometry(choice==="hoops"?.075:.045,.013,8,16),jewel);hoop.position.set(x,headY-.14,civilian?.115:bounds.max.z+.02);group.add(hoop)}
    }else{
     const chain=new THREE.Mesh(new THREE.TorusGeometry(.185,.012,8,28),jewel);chain.rotation.x=Math.PI/2.3;chain.position.set(0,headY-.57,civilian?.198:bounds.max.z-.1);group.add(chain);
    }
-  }else if(choice==="glasses"||choice==="sunglasses"){
+  }else if(["glasses","sunglasses","roundglasses","aviator","mask"].includes(choice)){
   for(const x of [-.143,.143]){
    const lens=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),dark);
-   lens.scale.set(.115,.081,.014);lens.position.set(x,0,.012);group.add(lens);
+   lens.scale.set(choice==="roundglasses"?.092:choice==="aviator"?.133:choice==="mask"?.151:.115,choice==="roundglasses"?.095:choice==="mask"?.110:.081,.014);lens.position.set(x,0,.012);group.add(lens);
    const rim=new THREE.Mesh(new THREE.TorusGeometry(.111,.010,8,28),frameMat);
-   rim.scale.y=.73;rim.position.set(x,0,.026);group.add(rim);
+   rim.scale.y=choice==="roundglasses"?1.0:choice==="mask"?.90:.73;rim.position.set(x,0,.026);group.add(rim);
   }
   const bridge=new THREE.Mesh(new THREE.CylinderGeometry(.011,.011,.08,12),frameMat);
   bridge.rotation.z=Math.PI/2;bridge.position.z=.033;group.add(bridge);
   group.position.set(0,headY+.040,civilian?.287:bounds.max.z+.045);
  }else{
-  const hat=new THREE.Mesh(new THREE.CylinderGeometry(choice==="crown"?.17:.22,.21,choice==="crown"?.19:.13,20),new THREE.MeshStandardMaterial({color:choice==="crown"?0xe3bb63:0x49405f,roughness:.8}));
+  const hat=new THREE.Mesh(new THREE.CylinderGeometry(choice==="crown"?.17:.22,.21,choice==="beanie"?.28:choice==="cowboy"?.24:.13,20),new THREE.MeshStandardMaterial({color:choice==="crown"?0xe3bb63:0x49405f,roughness:.8}));
   group.add(hat);
-  if(choice!=="crown"){const brim=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.018,24),hat.material);brim.position.y=-.07;group.add(brim)}
+  if(!["crown","beanie"].includes(choice)){const brim=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.018,24),hat.material);brim.position.y=-.07;group.add(brim)}
   group.position.set(0,headY+.18,0);
  }
  frame.base.add(group);frame.accessoryMesh=group;
