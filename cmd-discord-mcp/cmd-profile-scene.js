@@ -6,7 +6,9 @@ const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const scenes=[["none","Bannière d'origine","🎨"],["beach","Plage","🏖️"],["seaside","Bord de mer","🌊"],["forest","Forêt","🌲"],["neonforest","Forêt néon","✨"],["waterfall","Cascade","💧"],["city","Ville","🏙️"],["night","Nuit","🌙"],["space","Espace","🌌"],["mountains","Montagnes","🏔️"],["chalet","Chalet","🏡"],["crystal","Cristaux violets","💎"]];
 const clothes=[["hoodie","Sweat à capuche"],["tshirt","T-shirt"],["jacket","Veste"],["shirt","Chemise"],["polo","Polo"],["sweater","Pull"],["coat","Manteau"],["dress","Robe"],["sport","Sport"],["suit","Costume"],["armor","Armure"]];
-const pants=[["jeans","Jean"],["dark","Pantalon noir"],["shorts","Short"],["skirt","Jupe"],["cargo","Cargo"],["formal","Habillé"]];
+const pants=[["jeans","Jean"],["dark","Pantalon noir"],["shorts","Short"],["skirt","Jupe"],["cargo","Cargo"],["baggy","Jean large"],["wide","Pantalon ample"],["joggers","Jogging"],["formal","Habillé"]];
+const bags=[["none","Sans sac",""],["tote","Cabas","👜"],["handbag","Sac à main","👜"],["crossbody","Bandoulière","🎒"],["backpack","Sac à dos","🎒"],["mini","Mini sac","👝"],["clutch","Pochette","👛"]];
+const piercings=[["none","Sans piercing",""],["nose-stud","Narine · puce","💎"],["nose-ring","Narine · anneau","◌"],["septum","Septum","◉"],["brow-left","Sourcil gauche","✦"],["brow-right","Sourcil droit","✦"],["lip-left","Lèvre gauche","◌"],["lip-right","Lèvre droite","◌"],["labret","Labret","•"],["double-lip","Double lèvre","◉"],["ear-studs","Oreilles · puces","💎"],["ear-hoops","Oreilles · anneaux","◯"],["ear-chain","Oreilles · chaîne","⛓"]];
 const footwear=[["sneakers","Baskets"],["boots","Bottes"],["sandals","Sandales"],["formal","Chaussures de ville"]];
 const vehicles=[["none","À pied","🚶"],["compact","Citadine","🚙"],["sportscar","Sportive","🏎️"],["convertible","Cabriolet","🚗"],["scooter","Scooter","🛵"],["motorcycle","Moto","🏍️"],["bike","Vélo","🚲"],["van","Van","🚐"],["truck","Pick-up","🛻"],["kart","Kart","🏎️"],["boat","Bateau","⛵"],["plane","Avion","✈️"],["rocket","Fusée","🚀"]];
 const homes=[["none","Aucun domicile","✕"],["cottage","Petite maison","🏡"],["house","Maison familiale","🏠"],["villa","Villa","🏘️"],["apartment","Appartement","🏢"],["castle","Château","🏰"],["cabin","Chalet","🛖"],["beach","Maison de plage","🏖️"],["snow","Maison enneigée","❄️"],["tree","Cabane perchée","🌳"],["crystal","Maison de cristal","💎"]];
@@ -19,7 +21,7 @@ const pets=[["none","Aucun",""],["cat","Chat 3D",""],["fox","Renard 3D",""],["ho
 const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
 const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
 function petArt(value){if(value==='wolf')return '<span class="cmd-clothing-icon" aria-label="Loup">🐺</span>';return petImages[value]?'<img src="'+petImages[value]+'" loading="lazy" alt="" class="cmd-scene-pet-photo-card">':'<span class="cmd-scene-none">∅</span>'}
-const defaults={scene:"none",avatarPreset:"guardian",gender:"male",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
+const defaults={scene:"none",avatarPreset:"guardian",gender:"male",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",vehicle:"none",home:"none",hideHome:true,petName:"",label:""};
 let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,characterPhoto=null,savedCharacterPhoto=null,animalPhoto=null,savedAnimalPhoto=null,characterDirty=false,animalDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
@@ -180,7 +182,7 @@ const portraitPhotos={
 };
 
 const poses=[["stand","Debout","🧍"],["walk","Marche","🚶"],["run","Course","🏃"],["dance","Danse","💃"],["wave","Salut","👋"],["peace","Peace","✌️"],["crossed","Bras croisés","💪"]];
-const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["earrings","Boucles d’oreilles","💠"],["necklace","Collier","📿"],["crown","Couronne","👑"]];
+const accessories=[["none","Sans",""],["glasses","Lunettes","👓"],["sunglasses","Soleil","🕶️"],["hat","Chapeau","🎩"],["cap","Casquette","🧢"],["headphones","Casque","🎧"],["roundglasses","Lunettes rondes","👓"],["aviator","Lunettes aviateur","🕶️"],["mask","Masque fantaisie","🎭"],["beanie","Bonnet","🧢"],["bucket","Bob","👒"],["cowboy","Chapeau western","🤠"],["hoops","Créoles","◯"],["studs","Puces d’oreilles","💎"],["earrings","Boucles d’oreilles","💠"],["necklace","Collier","📿"],["crown","Couronne","👑"]];
 const genders=[["male","Homme",""],["female","Femme",""],["neutral","Personnalisé",""]];
 const bodyTypes=[["slim","Silhouette fine"],["average","Silhouette classique"],["athletic","Silhouette sportive"]];
 const noseOptions=[["small","Petit"],["standard","Classique"],["defined","Marqué"]];
@@ -217,14 +219,16 @@ function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><str
 let lookCategory="all";
 function lookGrid(){
  const groups=[
- ["all","Tout"],["top","Hauts"],["bottom","Pantalons"],["shoes","Chaussures"],["accessory","Accessoires"]
+ ["all","Tout"],["top","Hauts"],["bottom","Pantalons"],["shoes","Chaussures"],["coat","Manteaux"],["bag","Sacs"],["accessory","Accessoires"]
  ];
  const navigation='<nav class="cmd-dressing-categories" aria-label="Catégories du dressing">'+groups.map(([key,label])=>'<button type="button" data-look-category="'+key+'" class="'+(lookCategory===key?"selected":"")+'" aria-pressed="'+(lookCategory===key)+'">'+label+'</button>').join("")+'</nav>';
  const sections=[
- ["top","Hauts","T-shirts, chemises, vestes",clothes],
+ ["top","Hauts","T-shirts, chemises et pulls",clothes.filter(x=>!["jacket","coat"].includes(x[0]))],
  ["bottom","Pantalons","Jeans, cargos, shorts",pants],
  ["shoes","Chaussures","Baskets, bottes et autres",footwear],
- ["accessory","Accessoires","Lunettes, casquettes et plus",accessories]
+ ["coat","Manteaux","Vestes, manteaux et blousons",clothes.filter(x=>["jacket","coat","hoodie","sweater"].includes(x[0]))],
+ ["bag","Sacs","Sacs à main, bandoulières et cabas",bags],
+ ["accessory","Accessoires","Lunettes, bijoux et chapeaux",accessories]
  ];
  return '<div class="cmd-clothing-sections">'+navigation+
  sections.filter(([key])=>lookCategory==="all"||lookCategory===key).map(([key,title,subtitle,values])=>picker(title+" · "+subtitle,key,values,"clothing")).join("")+'</div>';
@@ -236,7 +240,7 @@ function groomCatalog(title,key,choices){
  ).join('')+'</div></section>';
 }
 function avatarEditor(){
- const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["accessory","Accessoires"]];
+ const sections=[["person","Personnages"],["hair","Cheveux"],["beard","Barbe"],["face","Visage"],["piercing","Piercings"],["accessory","Accessoires"]];
  const nav='<nav class="cmd-avatar-editor-nav" aria-label="Personnalisation de l’avatar">'+sections.map(([key,label])=>'<button type="button" data-avatar-part="'+key+'" class="'+(avatarPart===key?'selected':'')+'" aria-pressed="'+(avatarPart===key)+'">'+label+'</button>').join('')+'</nav>';
  let inner='';
  if(avatarPart==="person"){
@@ -247,6 +251,8 @@ function avatarEditor(){
   inner='<h2>Coiffures</h2>'+groomCatalog("Choisis tes cheveux","hair",hairOptions)+swatches("Couleur des cheveux","hairColor",haircolors);
  }else if(avatarPart==="beard"){
   inner='<h2>Barbes et moustaches</h2>'+groomCatalog("Choisis ta barbe","beard",beardOptions)+swatches("Couleur de la barbe","beardColor",haircolors);
+  }else if(avatarPart==="piercing"){
+  inner='<h2>Piercings</h2><p class="cmd-scene-section-intro">Choisis un bijou 3D : nez, sourcils, lèvres ou oreilles.</p>'+picker("Piercings","piercing",piercings,"action");
  }else if(avatarPart==="face"){
   inner='<h2>Visage & expressions</h2>'+field("Forme du visage","faceShape",faceShapes)+field("Forme des yeux","eyeShape",eyeShapes)+field("Sourcils","browStyle",browStyles)+swatches("Couleur des yeux","eyeColor",eyeColors)+field("Nez","nose",noseOptions)+field("Expression","mouth",mouthOptions);
  }else{
