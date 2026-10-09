@@ -1,12 +1,12 @@
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
 const SCENES=new Set(["beach","seaside","forest","neonforest","waterfall","city","night","space","mountains","chalet","crystal","custom","none"]);
 const HAIR=new Set(["short","long","curly","bob","shaved","ponytail"]);
-const TOPS=new Set(["hoodie","tshirt","jacket","shirt","dress","sport","suit","armor"]);
+const TOPS=new Set(["hoodie","tshirt","jacket","shirt","polo","sweater","coat","dress","sport","suit","armor"]);
 const BOTTOMS=new Set(["jeans","dark","shorts","skirt","cargo","formal"]);
 const SHOES=new Set(["sneakers","boots","sandals","formal"]);
 const PETS=new Set(["none","dog","cat","rabbit","fox","bird","horse","wolf","turtle","duck","flamingo","stork"]);
 const POSES=new Set(["stand","wave","peace","crossed","walk","run","dance"]);
-const ACCESSORIES=new Set(["none","glasses","sunglasses","hat","cap","headphones","crown"]);
+const ACCESSORIES=new Set(["none","glasses","sunglasses","hat","cap","headphones","earrings","necklace","crown"]);
 const GENDERS=new Set(["male","female","neutral"]);
 const STYLES=new Set(["3d","illustrated","photo"]);
 const AVATAR_MODELS=new Set(["civilian","soldier","michelle","custom"]);
