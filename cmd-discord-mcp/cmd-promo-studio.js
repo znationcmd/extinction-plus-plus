@@ -42,6 +42,8 @@ function open(){
   field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
  }
  $("#cmdStudioMusic").onchange=()=>{if(state.music==="library"&&!selectedTrack){$("#cmdStudioMusic").value="electro";state.music="electro";note("Choisis d’abord une musique dans la bibliothèque.")}refreshSelectedMusic()};
+ $("#cmdStudioVolume").addEventListener("input",()=>{if(previewAudio)previewAudio.volume=state.volume/100;if(audition)audition.volume=state.volume/100});
+ refreshSelectedMusic();
  $("#cmdStudioSaveDraft").onclick=saveDraft;$("#cmdStudioLoadDraft").onclick=loadDraft;
  $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
  document.addEventListener("keydown",onEscape);
@@ -175,6 +177,89 @@ function togglePreview(){
  }
  else if(state.music!=="none"&&state.music!=="library"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
  playFrame();
+}
+function clock(seconds){
+ const t=Math.max(0,Math.floor(Number(seconds)||0));return Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
+}
+function stopAudition(){
+ if(audition){audition.pause();audition.src="";audition=null}
+ auditionId="";if(root)$(".cmd-music-play",root).forEach(b=>b.textContent="▶");
+}
+function openMusicSheet(){
+ if(!root)return;
+ const panel=$("#cmdStudioMusicSheet");panel.hidden=false;
+ $("#cmdStudioMusicQuery").value=$("#cmdStudioMusicQuery").value||"instrumental";
+ if(!musicResults.length)searchMusic($("#cmdStudioMusicQuery").value);
+}
+async function searchMusic(value){
+ if(!root)return;
+ const query=String(value||"").trim();
+ if(query.length<2){$("#cmdStudioMusicResults").textContent="Écris au moins deux lettres.";return}
+ const ticket=++musicSearchId;stopAudition();
+ const container=$("#cmdStudioMusicResults");container.textContent="Recherche des morceaux…";
+ try{
+  const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query),{credentials:"same-origin",cache:"no-store"});
+  const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
+  if(ticket!==musicSearchId)return;
+  musicResults=Array.isArray(result.items)?result.items:[];
+  renderMusicSearch();
+ }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
+}
+function renderMusicSearch(){
+ const container=$("#cmdStudioMusicResults");container.replaceChildren();
+ if(!musicResults.length){container.textContent="Aucun morceau avec une licence utilisable pour cette recherche. Essaie « piano », « classique », « instrumental » ou un autre style.";return}
+ for(const track of musicResults){
+  const row=document.createElement("article");row.className="cmd-music-row";
+  const play=document.createElement("button");play.type="button";play.className="cmd-music-play";play.textContent="▶";play.setAttribute("aria-label","Écouter "+track.title);play.onclick=()=>toggleAudition(track,play);
+  const info=document.createElement("div");info.className="cmd-music-meta";
+  const name=document.createElement("strong");name.textContent=track.title;
+  const artist=document.createElement("small");artist.textContent=track.artist+" · "+track.license;
+  const link=document.createElement("a");link.href=track.sourceUrl;link.rel="noopener noreferrer";link.target="_blank";link.textContent="Licence et crédits ↗";
+  info.append(name,artist,link);
+  const add=document.createElement("button");add.type="button";add.className="cmd-music-add";add.textContent="＋ Ajouter";add.onclick=()=>useTrack(track);
+  if(selectedTrack?.id===track.id){add.textContent="✓ Choisi";row.classList.add("chosen")}
+  row.append(play,info,add);container.append(row);
+ }
+}
+function toggleAudition(track,button){
+ if(audition&&auditionId===track.id){stopAudition();return}
+ stop();stopAudition();auditionId=track.id;audition=new Audio(track.url);audition.preload="auto";audition.volume=state.volume/100;
+ button.textContent="⏸";
+ audition.onloadedmetadata=()=>{musicLength=Number.isFinite(audition.duration)?audition.duration:0;if(selectedTrack?.id===track.id)syncTrim();try{audition.currentTime=Math.min(state.musicStart||0,Math.max(0,musicLength-.2))}catch{}};
+ audition.onerror=()=>{stopAudition();note("L'aperçu du titre n'est pas disponible. Essaie un autre morceau.")};
+ audition.onended=()=>stopAudition();
+ audition.play().catch(e=>{stopAudition();note("L'écoute a échoué : "+e.message)});
+}
+function useTrack(track){
+ selectedTrack={id:track.id,title:track.title,artist:track.artist,license:track.license,licenseUrl:track.licenseUrl,sourceUrl:track.sourceUrl,url:track.url,mime:track.mime};
+ state.music="library";state.musicStart=0;$("#cmdStudioMusic").value="library";musicLength=0;
+ stopAudition();renderMusicSearch();refreshSelectedMusic();
+ note("🎵 Musique choisie : "+selectedTrack.title+". Appuie sur « Prévisualiser » pour écouter le montage.");
+}
+function syncTrim(){
+ const slider=$("#cmdStudioMusicStart");if(!slider)return;
+ slider.max=musicLength?Math.max(0,Math.floor(musicLength-1)):240;
+ state.musicStart=Math.min(state.musicStart||0,Number(slider.max));
+ slider.value=state.musicStart;
+ $("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);
+}
+function refreshSelectedMusic(){
+ const box=$("#cmdStudioSelectedSong");if(!box)return;box.replaceChildren();
+ if(state.music==="library"&&selectedTrack){
+  const title=document.createElement("strong");title.textContent="♫ "+selectedTrack.title;
+  const author=document.createElement("small");author.textContent=selectedTrack.artist+" · "+selectedTrack.license;
+  const source=document.createElement("a");source.href=selectedTrack.sourceUrl;source.target="_blank";source.rel="noopener noreferrer";source.textContent="Voir la source et les droits ↗";
+  const listen=document.createElement("button");listen.type="button";listen.className="cmd-music-selected-play";listen.textContent="▶ Écouter le morceau";listen.onclick=()=>toggleAudition(selectedTrack,listen);
+  box.append(title,author,source,listen);
+  $("#cmdStudioMusicName").textContent="Vrai morceau enregistré · "+selectedTrack.license;
+  if(!musicLength){
+   const metaAudio=new Audio(selectedTrack.url);metaAudio.preload="metadata";
+   metaAudio.onloadedmetadata=()=>{if(selectedTrack?.url&&new URL(selectedTrack.url,location.origin).href===metaAudio.src){musicLength=metaAudio.duration;syncTrim()}metaAudio.src=""};
+  }else syncTrim();
+ }else{
+  box.textContent=state.music==="file"&&musicFile?"♫ "+musicFile.name:"Tu peux chercher un vrai morceau, utiliser ton propre fichier audio ou choisir un son généré.";
+  $("#cmdStudioMusicName").textContent=musicFile&&state.music==="file"?musicFile.name:"Bibliothèque musicale libre et import personnel.";
+ }
 }
 function blobDownload(blob,filename){
  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
