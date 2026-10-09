@@ -7,7 +7,7 @@
  const activeGuild=()=>String($("#workspace")?.dataset.nativeGuildId||"");
  const label=s=>String(s||"").trim();
  const scrollRoot=()=>$("#cmdEmojiResults");
- const isShowingLibrary=()=>["mine","community","server"].includes(bridge()?.state.selected);
+ const isShowingLibrary=()=>["all","mine","community","server"].includes(bridge()?.state.selected);
  let libraryError="";
  function normalize(e){
    return {kind:"cmd",id:e.id,name:e.name,scope:e.scope,animated:Boolean(e.animated),
