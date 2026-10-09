@@ -111,9 +111,22 @@ const hairOptions=[["short","Courts"],["long","Longs"],["curly","Bouclés"],["bo
 const tabs=[["mode","Mode","♧"],["selfie","Selfie","◉"],["pet","Animal de compagnie","♧"],["scene","Scène","▧"],["avatar","Avatar","◉"]];
 function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
 const clothingIcons={"hoodie":"🧥","tshirt":"👕","jacket":"🧥","shirt":"👔","dress":"👗","sport":"🎽","suit":"🤵","armor":"🛡️","jeans":"👖","dark":"👖","shorts":"🩳","skirt":"👗","cargo":"👖","formal":"👞","sneakers":"👟","boots":"🥾","sandals":"🩴","glasses":"🕶️","cap":"🧢","hat":"👒","none":"✕"};
+function garmentArt(value){
+ const upper=new Set(["hoodie","tshirt","jacket","shirt","dress","sport","suit","armor"]);
+ const lower=new Set(["jeans","dark","shorts","skirt","cargo"]);
+ const colors={hoodie:"#b895e4",tshirt:"#d8efff",jacket:"#bba185",shirt:"#eae5db",dress:"#d28bbd",sport:"#83b9d7",suit:"#5b6381",armor:"#868c9c",jeans:"#668bb5",dark:"#444c60",shorts:"#92b1d5",skirt:"#b98abb",cargo:"#8e997b",formal:"#3e4555",sneakers:"#f0e7dd",boots:"#8c6b5d",sandals:"#c9a581",glasses:"#9baed2",sunglasses:"#34384b",hat:"#c9b3a1",cap:"#8d83c7",headphones:"#a9a1b8",crown:"#e6c875",none:"#a7a1b5"};
+ const fill=colors[value]||"#b5a6ca";
+ let path;
+ if(upper.has(value))path=value==="dress"?"M35 23 49 15 71 15 85 23 97 48 83 56 77 43 92 100 28 100 43 43 29 56 15 48Z":"M35 23 49 15 71 15 85 23 104 47 88 59 79 45 79 103 41 103 41 45 32 59 16 47Z";
+ else if(lower.has(value))path=value==="skirt"?"M41 16 79 16 95 101 25 101Z":value==="shorts"?"M34 16 86 16 91 68 65 68 60 53 55 68 29 68Z":"M34 16 86 16 89 104 65 104 60 51 55 104 31 104Z";
+ else if(["sneakers","boots","sandals","formal"].includes(value))path="M22 60 40 52 56 74 78 77 97 88 98 99 18 99 17 84Z";
+ else if(value==="none")return '<span class="cmd-garment-empty">Sans accessoire</span>';
+ else path=value==="cap"||value==="hat"?"M27 64 Q28 26 60 26 Q92 26 93 64 L110 72 110 79 12 79 12 72Z":value==="crown"?"M21 90 16 34 38 53 60 19 82 53 104 34 99 90Z":value==="headphones"?"M25 73 25 48 Q25 15 60 15 Q95 15 95 48 L95 73 83 73 83 46 Q83 28 60 28 Q37 28 37 46 L37 73Z":"M13 51 Q33 36 54 51 L66 51 Q87 36 107 51 L99 73 Q80 82 65 64 L55 64 Q40 82 21 73Z";
+ return '<svg class="cmd-garment-art" viewBox="0 0 120 120" role="img" aria-label="Aperçu illustré du vêtement"><defs><linearGradient id="cmd-garment-grad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".32"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient></defs><path d="'+path+'" fill="'+fill+'" stroke="#ffffff" stroke-opacity=".38" stroke-width="1.8" stroke-linejoin="round"/><path d="'+path+'" fill="url(#cmd-garment-grad)"/><path d="M49 16 Q60 32 71 16" fill="none" stroke="#16121e" stroke-opacity=".35" stroke-width="2"/></svg>';
+}
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="clothing"?'<span class="cmd-clothing-icon" aria-hidden="true">'+(clothingIcons[value]||"👕")+'</span>':visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="clothing"?garmentArt(value):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':visual==="scene"?'<div class="cmd-scene-landscape cmd-scenery-'+value+'"><span>'+ (icon||'✦') +'</span></div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
