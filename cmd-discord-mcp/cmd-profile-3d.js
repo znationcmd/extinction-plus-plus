@@ -95,6 +95,26 @@ function applyOutfit(group,color,look){
   obj.material=Array.isArray(obj.material)?replacements:replacements[0];
  });
 }
+
+function applyAppearance(group,state){
+ const skin=new THREE.Color(state.skin||"#e8ad7e"),hair=new THREE.Color(state.hairColor||"#201b27");
+ group.traverse(node=>{
+  if(!node.isMesh||!node.material)return;
+  const objName=String(node.name||"").toLowerCase();
+  const map=mat=>{
+   if(!mat?.isMeshStandardMaterial)return mat;
+   const label=(objName+" "+String(mat.name||"")).toLowerCase();
+   const isHair=/hair|eyebrow|brow|beard|scalp/.test(label);
+   const isSkin=/skin|face|head|neck|hand|flesh/.test(label)&&!/helmet|hood|armor|cloth/.test(label);
+   if(!isHair&&!isSkin)return mat;
+   const clone=mat.userData?.cmdAppearanceMaterial?mat:mat.clone();
+   if(!clone.userData.cmdAppearanceMaterial){clone.userData.cmdAppearanceMaterial=true;clone.userData.cmdBaseTint=clone.color.getHex()}
+   clone.color.setHex(clone.userData.cmdBaseTint).lerp(isHair?hair:skin,isHair?.43:.24);
+   return clone;
+  };
+  node.material=Array.isArray(node.material)?node.material.map(map):map(node.material);
+ });
+}
 function setPose(frame,state){
  if(!frame.personMixer||!frame.sourceAnimations.length)return;
  const desired=state.pose==="run"?/run/i:state.pose==="walk"?/walk/i:state.pose==="dance"?/dance|samba/i:/idle|breath|stand|relax/i;
@@ -118,6 +138,7 @@ async function setPerson(frame,state){
   normalize(cloned,3.15,-.1,0);
   cloned.rotation.y=.0;
   applyOutfit(cloned,state.topColor,state.top);
+  applyAppearance(cloned,state);
   frame.base.add(cloned);frame.person=cloned;frame.modelKey=id;
   frame.mixers=[];if(frame.petMixer)frame.mixers.push(frame.petMixer);
   frame.lookKey="";frame.poseKey="";frame.sourceAnimations=data.animations||[];
@@ -153,45 +174,45 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=String(state.topColor||"")+"-"+String(state.top||"");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.skin,state.hairColor,state.hair,state.accessory].join("-");if(frame.lookKey!==lookKey){applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
 const avatarThumbCache=new Map();
 let avatarThumbBusy=false;
+
 async function renderAvatarCards(){
  if(avatarThumbBusy)return;
- const nodes=document.querySelectorAll("#cmdSceneOptions [data-person-model]");
- if(!nodes.length)return;
+ const buttons=[...document.querySelectorAll("#cmdSceneOptions [data-avatar-preset]")];
+ if(!buttons.length)return;
  avatarThumbBusy=true;
+ let renderer=null;
  try{
-  for(const button of nodes){
-   const key=button.dataset.personModel;
-   let data=avatarThumbCache.get(key);
-   if(!data){
-    const url=modelUrls[key];if(!url)continue;
-    const gltf=await loadGLB(url);
-    const scene=new THREE.Scene();const root=cloneSkinned(gltf.scene);
-    normalize(root,3.05,0,0);scene.add(root);
-    scene.add(new THREE.HemisphereLight(0xdbeeff,0x473049,3.3));
-    const light=new THREE.DirectionalLight(0xffeddc,3);light.position.set(-2,5,6);scene.add(light);
-    const camera=new THREE.PerspectiveCamera(32,145/195,.1,40);
-    camera.position.set(0,1.6,7.6);camera.lookAt(0,1.44,0);
-    let renderer;
-    try{
-     renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:"low-power"});
-     renderer.setPixelRatio(1);renderer.setSize(145,195,false);
-     renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
-     renderer.render(scene,camera);
-     data=renderer.domElement.toDataURL("image/png");
-     avatarThumbCache.set(key,data);
-    }finally{renderer?.dispose();renderer?.forceContextLoss()}
+  renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:"low-power"});
+  renderer.setPixelRatio(1);renderer.setSize(176,218,false);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  for(const button of buttons){
+   const preset=window.cmdSphereAvatarPresets?.find(p=>p.id===button.dataset.avatarPreset);
+   if(!preset)continue;
+   let picture=avatarThumbCache.get(preset.id);
+   if(!picture){
+    const model=await loadGLB(modelUrls[preset.model]);
+    const scene=new THREE.Scene(),root=cloneSkinned(model.scene);
+    normalize(root,3.05,0,0);
+    applyOutfit(root,preset.topColor,preset.top);applyAppearance(root,preset);
+    scene.add(root);scene.add(new THREE.HemisphereLight(0xe7e2fc,0x483251,3.0));
+    const main=new THREE.DirectionalLight(0xffeddc,3.2);main.position.set(-2.7,5,6);scene.add(main);
+    const rim=new THREE.DirectionalLight(0x9c70ff,2.0);rim.position.set(2,4,-3);scene.add(rim);
+    const camera=new THREE.PerspectiveCamera(31,176/218,.1,40);
+    camera.position.set(0,1.8,6.4);camera.lookAt(0,2.0,0);
+    renderer.render(scene,camera);picture=renderer.domElement.toDataURL("image/png");
+    avatarThumbCache.set(preset.id,picture);
    }
-   const slot=document.querySelector('#cmdSceneOptions [data-person-model="'+key+'"] .cmd-scene-model-photo');
-   if(slot&&data){const img=new Image();img.alt="Aperçu du modèle 3D "+key;img.src=data;slot.replaceChildren(img)}
+   const holder=document.querySelector('#cmdSceneOptions [data-avatar-preset="'+preset.id+'"] .cmd-scene-model-photo');
+   if(holder&&picture){const img=new Image();img.alt="Portrait 3D "+preset.name;img.src=picture;holder.replaceChildren(img)}
   }
- }catch(error){console.warn("[CMD avatar 3D portraits]",error?.message||error)}
- finally{avatarThumbBusy=false}
+ }catch(error){console.warn("[CMD Sphere portraits intégrés]",error)}
+ finally{renderer?.dispose();renderer?.forceContextLoss();avatarThumbBusy=false}
 }
 const lookThumbCache=new Map();
 function renderLookCards(){
