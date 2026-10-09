@@ -1,0 +1,38 @@
+
+/* CMD Sphere — menu emoji mobile fluide et léger, proche des exemples Discord. */
+#channelEmojiSheet.emoji-sheet{
+  position:fixed;top:auto;left:0;right:0;bottom:0;z-index:91;
+  box-sizing:border-box;display:none;width:100%;max-width:100%;
+  height:min(76dvh,780px);min-height:300px;
+  border-radius:24px 24px 0 0;padding:14px 12px calc(10px + env(safe-area-inset-bottom));
+  background:#321239;border:1px solid #ffffff18;box-shadow:0 -15px 70px #0009;
+  flex-direction:column;overflow:hidden;color:#f7eaff;
+}
+#channelEmojiSheet.emoji-sheet.on{display:flex}
+#channelEmojiSheet .emoji-tabs{display:flex;flex:0 0 auto;gap:4px;padding:5px;background:#ffffff10;border-radius:13px;margin-bottom:12px}
+#channelEmojiSheet .emoji-tabs button{flex:1;min-width:0;border:0;padding:12px 5px;background:transparent;border-radius:10px;color:#b9aabd;font-weight:700;font-size:14px;white-space:nowrap}
+#channelEmojiSheet .emoji-tabs button.active{background:#ffffff18;color:#fff}
+#channelEmojiSheet #emojiContent{display:flex;flex:1;flex-direction:column;min-height:0;gap:10px}
+#channelEmojiSheet .cmd-emoji-top{flex:0 0 auto}
+#channelEmojiSheet #cmdEmojiSearch{display:block;width:100%;height:46px;padding:0 14px;border:1px solid #ffffff20;border-radius:12px;background:#200b27;color:#fff;font:inherit;outline:none}
+#channelEmojiSheet #cmdEmojiSearch:focus{border-color:#b790e7;box-shadow:0 0 0 2px #b790e737}
+#channelEmojiSheet #cmdEmojiHeading{font-weight:800;color:#ded2e4;font-size:14px;max-height:2em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 0 auto}
+#channelEmojiSheet #cmdEmojiResults{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+#channelEmojiSheet .cmd-emoji-grid-v2{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:center}
+#channelEmojiSheet .cmd-emoji-icon-v2{display:grid;place-items:center;width:100%;aspect-ratio:1;border:0;border-radius:9px;background:transparent;color:inherit;font-size:clamp(20px,6vw,34px);line-height:1;cursor:pointer;padding:3px;overflow:hidden}
+#channelEmojiSheet .cmd-emoji-icon-v2:hover,#channelEmojiSheet .cmd-emoji-icon-v2:focus-visible{outline:2px solid #b790e7;background:#ffffff19}
+#channelEmojiSheet .cmd-emoji-icon-v2 img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain}
+#channelEmojiSheet .cmd-emoji-more{display:block;margin:14px auto;padding:10px 18px;border:1px solid #ffffff2b;background:#ffffff17;color:white;border-radius:9px;font:inherit}
+#channelEmojiSheet .cmd-emoji-more[hidden]{display:none}
+#channelEmojiSheet .cmd-emoji-hint{margin:12px 6px;color:#c9b4cd;font-size:14px;line-height:1.45}
+#channelEmojiSheet #cmdEmojiServerRail{display:flex;flex:0 0 auto;gap:8px;align-items:center;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:8px 0 2px;border-top:1px solid #ffffff20}
+#channelEmojiSheet .cmd-emoji-server-pill{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;background:#211429;border:2px solid transparent;color:#fff;font-size:24px;overflow:hidden;cursor:pointer}
+#channelEmojiSheet .cmd-emoji-server-pill img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#channelEmojiSheet .cmd-emoji-server-pill.active{border-color:#dcb5ff;background:#553164}
+#channelEmojiSheet .cmd-emoji-server-pill:focus-visible{outline:2px solid white}
+.cmd-inline-emoji-v2{vertical-align:middle;display:inline-block;width:26px;height:26px;max-width:26px;object-fit:contain;margin:0 2px}
+@media(min-width:851px){
+ #channelEmojiSheet.emoji-sheet{left:auto;right:15px;bottom:85px;width:min(430px,calc(100vw - 40px));height:580px;border-radius:19px;padding-bottom:14px}
+ #channelEmojiSheet .cmd-emoji-icon-v2{font-size:28px}
+}
+@media(max-width:400px){#channelEmojiSheet .cmd-emoji-grid-v2{gap:3px}}
