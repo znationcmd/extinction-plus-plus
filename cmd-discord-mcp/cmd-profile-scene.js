@@ -284,7 +284,7 @@ async function save(){
  }catch(e){$("#cmdSceneNotice").textContent=e.message||"Erreur de sauvegarde"}
  finally{busy=false;btn.disabled=false}
 }
-async function initialize(){
+async async function initialize(){
  mountBanner();
  if(!slot){
   let attempts=0;
