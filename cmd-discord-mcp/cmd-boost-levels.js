@@ -17,8 +17,9 @@ export async function cmdBoostCount(pool,id){
  if(!rows[0])throw Error("Serveur CMD Sphere introuvable.");
  const boosts=Number(rows[0].boosts||0),founder=Boolean(rows[0].founder_auto_boost);
  const rr=await pool.query("SELECT perk FROM cmd_server_boost_perks WHERE guild_id=$1 AND active=TRUE",[id]);
- const active=new Set(rr.rows.map(x=>String(x.perk))),extras={tag:founder||active.has("tag"),roleStyles:founder||active.has("roleStyles")};
- const allocated=founder?0:active.size*3;
+ const active=new Set(rr.rows.map(x=>String(x.perk))),extras={tag:founder,roleStyles:founder};
+ let allocated=0;
+ if(!founder){for(const perk of ["tag","roleStyles"]){if(active.has(perk)&&boosts-allocated>=3){extras[perk]=true;allocated+=3}}}
  return {boosts,founder,extras,allocated,levelBoosts:founder?Math.max(7,boosts):Math.max(0,boosts-allocated),ownerId:String(rows[0].owner_user_id)};
 }
 export async function requireCmdBoosts(pool,guildId,min){
