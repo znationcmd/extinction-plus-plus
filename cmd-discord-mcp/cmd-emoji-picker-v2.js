@@ -149,10 +149,10 @@
   }
   async function loadPack(pack){
     if(!pack)return;
-    const requested=state.selected,kind=state.tab==="sticker"?"sticker":"emoji";
+    const requested=state.selected,requestedTab=state.tab,kind=requestedTab==="sticker"?"sticker":"emoji";
     state.loading=true;draw();
     const items=await fetchPackItems(pack,kind);
-    if(state.selected!==requested||state.tab!==kind&&!(state.tab==="emoji"&&kind==="emoji"))return;
+    if(state.selected!==requested||state.tab!==requestedTab){state.loading=false;return;}
     state.items=items;state.loading=false;draw();
   }
   function draw(){
@@ -184,7 +184,7 @@
     document.querySelectorAll("[data-emoji-tab]").forEach(b=>b.classList.toggle("active",b.dataset.emojiTab===state.tab));
     const activePack=state.packs.find(p=>p.id===state.selected);
     if(state.selected==="all"){draw();if(state.packs.length)loadAllPacks()}
-    else if(activePack&&state.tab!=="gif")loadPack(activePack);
+    else if(activePack)loadPack(activePack);
     else draw();
     if(!state.packs.length)fetchPacks();
     window.cmdEmojiRefreshLibrary?.();
