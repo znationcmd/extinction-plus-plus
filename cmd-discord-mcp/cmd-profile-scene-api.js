@@ -12,16 +12,20 @@ const STYLES=new Set(["3d","illustrated","photo"]);
 const AVATAR_MODELS=new Set(["civilian","soldier","michelle","custom"]);
 const PRESETS=new Set(["guardian","nocturne","azur","luna","nova","iris"]);
 const PET_MODELS=new Set(["fox","cat","horse","parrot","duck","flamingo","stork","dog","rabbit","wolf","turtle","custom"]);
+const BODY_TYPES=new Set(["slim","average","athletic"]);
+const EYE_COLORS=new Set(["#28222e","#674931","#4587a5","#5b8e67","#aa9080"]);
+const NOSES=new Set(["small","standard","defined"]);
+const MOUTHS=new Set(["smile","neutral","soft"]);
 const VEHICLES=new Set(["none","compact","sportscar","convertible","scooter","motorcycle","bike","van","truck","kart","boat","plane","rocket"]);
 const HOMES=new Set(["none","cottage","house","villa","apartment","castle","cabin","beach","snow","tree","crystal"]);
 const COLORS=new Set(["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"]);
 const HAIR_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const OUTFIT_COLORS=new Set(["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"]);
-const defaultConfig=()=>({scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",label:""});
+const defaultConfig=()=>({scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
 const clean=(v,a,def)=>a.has(String(v||""))?String(v):def;
 function config(input){
  const a=input&&typeof input==="object"?input:{},d=defaultConfig(),result={...d};
- for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES})){result[key]=clean(a[key],set,d[key])}
+ for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
  result.label=String(a.label||"").trim().slice(0,42);
  result.petName=String(a.petName||"").trim().slice(0,40);
  result.hideHome=a.hideHome!==false;
