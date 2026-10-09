@@ -600,3 +600,11 @@
 #cmdSceneSheet #cmdSceneHero .cmd-scene-preview::after{display:none!important}
 #cmdSceneSheet .cmd-scene-landscape{filter:none!important;backdrop-filter:none!important;image-rendering:auto!important}
 #cmdSceneSheet .cmd-scene-card-art{filter:none!important;backdrop-filter:none!important}
+
+/* Screenshot reference catalogues — 360 imported illustrations */
+#cmdSceneSheet .cmd-original-gallery{margin:18px 0;padding:12px;border-radius:16px;background:#1d1727}
+#cmdSceneSheet .cmd-original-gallery h3{font-size:15px;margin:0 0 12px;color:#fff}
+#cmdSceneSheet .cmd-original-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#cmdSceneSheet .cmd-original-gallery-tile{overflow:hidden;min-width:0;border-radius:12px;background:#282433;border:1px solid #ffffff24}
+#cmdSceneSheet .cmd-original-gallery-tile span{width:100%;height:auto;image-rendering:auto}
+@media(max-width:390px){#cmdSceneSheet .cmd-original-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
