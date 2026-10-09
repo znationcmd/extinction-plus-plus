@@ -149,6 +149,47 @@ function applyAccessory(frame,state){
  }
  frame.base.add(group);frame.accessoryMesh=group;
 }
+
+function applyWearableExtras(frame,state){
+ if(frame.wearableExtras){frame.base.remove(frame.wearableExtras);frame.wearableExtras.traverse(o=>{if(o.isMesh){o.geometry?.dispose();const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>m?.dispose())}});frame.wearableExtras=null}
+ if(!frame.person?.userData?.cmdCivilian)return;
+ const group=new THREE.Group(),metal=new THREE.MeshStandardMaterial({color:0xeac25d,metalness:.88,roughness:.19});
+ const glass=new THREE.MeshStandardMaterial({color:0xf7eafa,metalness:.12,roughness:.25});
+ const leather=new THREE.MeshStandardMaterial({color:0x6d4c47,roughness:.84});
+ const add=(geometry,material,x,y,z,parent=group)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);parent.add(mesh);return mesh};
+ const orb=(x,y,z,r,material=metal)=>add(new THREE.SphereGeometry(r,16,12),material,x,y,z);
+ const ring=(x,y,z,r=.039,axis="z")=>{const m=add(new THREE.TorusGeometry(r,.010,8,24),metal,x,y,z);if(axis==="y")m.rotation.x=Math.PI/2;return m};
+ const selection=String(state.piercing||"none");
+ if(selection==="nose-stud")orb(.079,2.566,.286,.016);
+ if(selection==="nose-ring")ring(-.066,2.535,.284,.034);
+ if(selection==="septum")ring(0,2.536,.288,.046);
+ if(selection==="brow-left"||selection==="brow-right"){const x=selection.endsWith("left")?-.174:.174;orb(x,2.821,.230,.016);orb(x+.039,2.824,.233,.014)}
+ if(selection==="lip-left"||selection==="lip-right")ring(selection.endsWith("left")?-.085:.085,2.475,.233,.025);
+ if(selection==="labret")orb(0,2.437,.235,.022);
+ if(selection==="double-lip"){ring(-.073,2.472,.228,.024);ring(.073,2.472,.228,.024)}
+ if(selection==="ear-studs"||selection==="ear-hoops"||selection==="ear-chain")for(const x of [-.305,.305]){
+   if(selection==="ear-studs")orb(x,2.616,.092,.024);
+   else{ring(x,2.603,.084,selection==="ear-chain"?.048:.060);if(selection==="ear-chain")orb(x,2.527,.084,.024,glass)}
+ }
+ const bag=String(state.bag||"none");
+ if(bag!=="none"){
+  const backpack=bag==="backpack",mini=["mini","clutch"].includes(bag);
+  const width=mini?.19:backpack?.36:.28,height=mini?.18:backpack?.49:.30;
+  const x=backpack?0:.65,y=backpack?1.96:1.49,z=backpack?-.36:.13;
+  const body=add(new THREE.BoxGeometry(width,height,mini?.09:.18),leather,x,y,z);
+  body.scale.z=backpack?1.2:1;
+  const handle=add(new THREE.TorusGeometry(width*.39,.022,8,24,Math.PI),metal,x,y+height*.5-.01,z);
+  handle.rotation.z=Math.PI;
+  if(bag==="crossbody"){
+   const strap=add(new THREE.CylinderGeometry(.021,.021,1.53,12),leather,.33,2.035,.237);
+   strap.rotation.z=-.48;
+  }else if(backpack)for(const offset of [-.145,.145]){
+   const strap=add(new THREE.CylinderGeometry(.022,.022,.81,12),leather,offset,2.08,-.195);strap.rotation.z=offset>0?-.2:.2;
+  }
+  const buckle=add(new THREE.BoxGeometry(.060,.048,.019),metal,x,y,z+(backpack?-.115:.096));
+ }
+ if(group.children.length){frame.base.add(group);frame.wearableExtras=group}
+}
 function setPose(frame,state){
  frame.currentPose=state.pose||"stand";
  if(!frame.personMixer||!frame.sourceAnimations.length)return;
@@ -411,7 +452,7 @@ function setPerson(frame,state){
   frame.lookKey="";frame.poseKey="";frame.sourceAnimations=animations;
   frame.activeAnimation="";frame.personMixer=animations.length?new THREE.AnimationMixer(cloned):null;
   if(frame.personMixer){frame.mixers.push(frame.personMixer);setPose(frame,state)}
-  applyAccessory(frame,state);frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
+  applyAccessory(frame,state);applyWearableExtras(frame,state);frame.wrapper.classList.add("cmd-real-3d-ready");setNotice(frame,"");
  };
  if(id==="civilian"){install(makeCivilian(state));return}
  setNotice(frame,"Chargement du personnage 3D…");
@@ -443,7 +484,7 @@ function update(frame,state){
  if(state.avatarStyle!=="3d"){frame.wrapper.classList.remove("cmd-real-3d-ready");frame.wrapper.dataset.disabled="true";return}
  frame.wrapper.dataset.disabled="false";
  void setPerson(frame,state);
- if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.bodyType,state.skin,state.eyeColor,state.nose,state.mouth,state.hairColor,state.hair,state.beard,state.beardColor,state.faceShape,state.browStyle,state.eyeShape,state.accessory].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);releaseCivilian(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);frame.lookKey=lookKey}
+ if(frame.person){const lookKey=[state.topColor,state.top,state.bottom,state.shoes,state.gender,state.bodyType,state.skin,state.eyeColor,state.nose,state.mouth,state.hairColor,state.hair,state.beard,state.beardColor,state.faceShape,state.browStyle,state.eyeShape,state.accessory,state.piercing,state.bag].join("-");if(frame.lookKey!==lookKey){if(frame.person.userData.cmdCivilian){frame.base.remove(frame.person);releaseCivilian(frame.person);frame.person=makeCivilian(state);frame.base.add(frame.person)}else{applyOutfit(frame.person,state.topColor,state.top);applyAppearance(frame.person,state)}applyAccessory(frame,state);applyWearableExtras(frame,state);frame.lookKey=lookKey}
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
  updateWorld(frame,state);
