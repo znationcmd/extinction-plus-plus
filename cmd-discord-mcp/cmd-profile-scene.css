@@ -284,3 +284,38 @@
 #cmdSceneSheet .cmd-scene-section-intro{margin:-7px 0 16px;color:#b9b9c3;font:450 13px/1.45 system-ui}
 #cmdSceneSheet #cmdSceneOptions .cmd-scene-file{font:750 13px/1.4 system-ui}
 #cmdSceneSheet #cmdSceneOptions .cmd-scene-file input{max-width:100%;font:400 12px system-ui}
+
+/* True textured WebGL 3D integration (avatar in existing profile + mobile editor). */
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor{
+ position:absolute;inset:0;z-index:3;width:100%;height:100%;overflow:hidden;touch-action:pan-y;cursor:grab;display:block;
+}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor:active{cursor:grabbing}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor[hidden],
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor[data-disabled="true"]{display:none}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor canvas{display:block;width:100%;height:100%;background:transparent}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor.cmd-real-3d-ready ~ .cmd-scene-preview #cmdScenePreviewPerson{visibility:hidden!important}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor.cmd-real-3d-ready[data-pet3d="on"] ~ .cmd-scene-preview #cmdScenePreviewPet{visibility:hidden!important}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-editor:not([data-pet3d="on"]) ~ .cmd-scene-preview #cmdScenePreviewPet{z-index:4}
+#cmdSceneSheet .cmd-scene-hero #cmdScenePreviewPet{pointer-events:none}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-loading{
+ position:absolute;bottom:78px;left:50%;transform:translateX(-50%);
+ border-radius:16px;border:1px solid #ffffff35;background:#050914b7;padding:8px 14px;color:#faf8ff;font:700 12px/1.4 system-ui;min-width:180px;max-width:90%;text-align:center;z-index:4;
+}
+#cmdSceneSheet .cmd-scene-hero .cmd-real-3d-loading[hidden]{display:none}
+#cmdSceneWrap #bannerTap{position:relative}
+#cmdSceneWrap #bannerTap .cmd-real-3d-banner{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none}
+#cmdSceneWrap #bannerTap .cmd-real-3d-banner[hidden],
+#cmdSceneWrap:not(.cmd-scene-active) #bannerTap .cmd-real-3d-banner,
+#cmdSceneWrap #bannerTap .cmd-real-3d-banner[data-disabled="true"]{display:none!important}
+#cmdSceneWrap #bannerTap .cmd-real-3d-banner canvas{display:block;width:100%;height:100%;object-fit:cover}
+#cmdSceneWrap #bannerTap .cmd-real-3d-banner.cmd-real-3d-ready ~ #cmdSceneBackdrop .cmd-scene-person{display:none}
+#cmdSceneSheet .cmd-scene-model-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+#cmdSceneSheet .cmd-scene-model-actions button{flex:1;min-width:120px;border:1px solid #ffffff45;background:linear-gradient(150deg,#353448,#1d1b27);padding:13px 9px;border-radius:13px;color:#fff;font:750 13px/1.3 system-ui;min-height:48px}
+#cmdSceneSheet .cmd-scene-model-actions button:focus-visible,
+#cmdSceneSheet .cmd-scene-model-actions button:hover{border-color:#d9b5fb}
+#cmdSceneSheet .cmd-scene-market label.cmd-scene-file{margin:10px 0 17px}
+#cmdSceneSheet .cmd-scene-market .cmd-scene-section-intro{margin:0 0 12px}
+@media(max-width:470px){
+ #cmdSceneSheet .cmd-scene-hero .cmd-real-3d-loading{bottom:64px}
+ #cmdSceneSheet .cmd-scene-model-actions button{font-size:12px}
+}
