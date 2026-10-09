@@ -49,9 +49,25 @@ function drawPerson(s){
  s.hair==="bob"?'<path d="M77 53 Q79 20 111 22 Q148 20 151 61 L154 102 L132 104 L134 65 L89 65 L86 103 L68 99Z" fill="'+hair+'"/>':
  '<path d="M73 63 Q73 22 113 24 Q153 20 150 66 Q119 55 100 62 Q86 65 77 75Z" fill="'+hair+'"/>';
  const accessory=s.accessory==="glasses"||s.accessory==="sunglasses"?'<g fill="'+(s.accessory==="sunglasses"?"#181b24bb":"#ffffff12")+'" stroke="#2d2732" stroke-width="4"><rect x="81" y="78" width="24" height="19" rx="7"/><rect x="116" y="78" width="24" height="19" rx="7"/><path d="M105 85 H116"/></g>':s.accessory==="hat"||s.accessory==="cap"?'<path d="M76 48 Q112 7 150 46 L150 61 L72 61Z" fill="#eeeeef"/><path d="M72 62 H172" stroke="#f5f5f5" stroke-width="9" stroke-linecap="round"/>':s.accessory==="crown"?'<path d="M77 44 L79 7 L98 24 L112 3 L129 24 L146 7 L145 44Z" fill="#f6c855" stroke="#bd8942" stroke-width="4"/>':s.accessory==="headphones"?'<path d="M68 79 Q65 20 110 22 Q154 20 153 79" stroke="#29273b" stroke-width="10" fill="none"/><rect x="65" y="77" width="16" height="34" rx="6" fill="#3d3d4d"/><rect x="140" y="77" width="16" height="34" rx="6" fill="#3d3d4d"/>':"";
+ const facialColor=hex(s.beardColor,s.hairColor||defaults.hairColor);
+ const styleBeard=s.beard||"none";
+ const beardSVG=styleBeard==="none"?"":styleBeard==="mustache"?
+  '<path d="M90 107 Q101 99 110 106 Q119 99 130 107 Q128 116 113 112 Q100 116 90 107Z" fill="'+facialColor+'"/>':
+  styleBeard==="goatee"?
+  '<path d="M93 105 Q109 100 127 105 L121 111 L99 111Z M102 122 Q110 116 118 122 L119 140 Q111 154 103 140Z" fill="'+facialColor+'"/>':
+  '<path d="M72 96 Q83 112 88 122 Q98 148 110 151 Q125 149 138 124 L147 93 Q137 105 135 118 Q116 135 110 135 Q91 134 85 119Z" fill="'+facialColor+'" opacity="'+(styleBeard==="stubble"?.36:1)+'"/>'+
+  (styleBeard==="long"?'<path d="M87 132 Q92 158 111 169 Q131 157 136 130Z" fill="'+facialColor+'"/>':'')+
+  '<path d="M90 106 Q103 100 110 107 Q121 100 131 106 Q124 113 112 110 Q103 113 90 106Z" fill="'+facialColor+'"/>';
+ const specialHair=
+ (["buzz","shaved"].includes(s.hair)?'<ellipse cx="110" cy="65" rx="39" ry="'+(s.hair==="shaved"?12:20)+'" fill="'+hair+'"/>':
+ s.hair==="afro"?'<g fill="'+hair+'">'+Array.from({length:14},(_,i)=>{const a=i*Math.PI/7;return '<circle cx="'+(110+Math.cos(a)*39).toFixed(1)+'" cy="'+(64+Math.sin(a)*32).toFixed(1)+'" r="19"/>'}).join("")+'</g>':
+ s.hair==="fade"||s.hair==="undercut"?'<path d="M76 66 Q73 27 111 22 Q152 24 145 67 Q128 55 111 54 Q91 54 76 66Z" fill="'+hair+'"/><path d="M72 61 L74 91 M148 61 L146 91" stroke="'+hair+'" stroke-width="8"/>':
+ s.hair==="quiff"||s.hair==="swept"||s.hair==="crop"?'<path d="M75 68 Q59 34 98 31 Q116 13 145 35 Q156 42 146 73 Q127 55 110 63 Q88 58 75 68Z" fill="'+hair+'"/>':
+ s.hair==="braids"||s.hair==="locs"?'<path d="M77 61 Q73 24 113 22 Q153 28 145 63Z" fill="'+hair+'"/>'+Array.from({length:8},(_,i)=>'<path d="M'+(78+i*9)+' 54 Q'+(69+i*9)+' 92 '+(72+i*9)+' 145" fill="none" stroke="'+hair+'" stroke-width="8" stroke-linecap="round"/>').join(""):
+ "")||hairPieces;
  const shoes='<path d="M76 301 Q67 319 52 321 Q43 334 75 334 L104 333 Q105 323 96 304Z" fill="'+footwearColor+'"/><path d="M124 304 Q113 328 123 333 L157 334 Q184 332 168 321 L143 300Z" fill="'+footwearColor+'"/>';
  return '<svg class="cmd-scene-person-svg" viewBox="0 0 220 350" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Personnage illustré personnalisable"><defs><filter id="cmdSceneShadow"><feDropShadow dx="1" dy="4" stdDeviation="4" flood-opacity=".3"/></filter></defs><g filter="url(#cmdSceneShadow)">'+
- lower+arms+outfit+collar+jacket+'<rect x="98" y="113" width="24" height="24" rx="10" fill="'+skin+'"/><ellipse cx="110" cy="77" rx="40" ry="53" fill="'+skin+'"/>'+hairPieces+
+ lower+arms+outfit+collar+jacket+'<rect x="98" y="113" width="24" height="24" rx="10" fill="'+skin+'"/><ellipse cx="110" cy="77" rx="40" ry="53" fill="'+skin+'"/>'+specialHair+beardSVG+
  '<path d="M91 88 Q95 84 99 88 M122 88 Q127 84 131 88" fill="none" stroke="#2a2328" stroke-width="3.5" stroke-linecap="round"/><path d="M108 89 L104 107 Q109 112 115 108" fill="none" stroke="#a36c60" stroke-width="2.8" stroke-linecap="round"/><path d="M99 116 Q110 126 122 115" stroke="#883f46" stroke-width="3" fill="none" stroke-linecap="round"/>'+
  accessory+shoes+'</g></svg>';
 }
