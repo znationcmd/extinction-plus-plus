@@ -358,10 +358,24 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         });
       });
       if(admin)qs('#workspace').querySelectorAll('[data-native-channel]').forEach(row=>{const gear=document.createElement('button');gear.type='button';gear.className='cmd-channel-settings';gear.dataset.csmChannelSettings=row.dataset.nativeChannel;gear.setAttribute('aria-label','Modifier le salon '+row.dataset.nativeName);gear.textContent='⚙';row.insertAdjacentElement('afterend',gear)});
-      const query=new URLSearchParams(location.search),channelId=query.get('openChannel');
-      if(channelId&&String(query.get('openNative'))===String(g.id)&&!window.__openedNativeChannelFromQuery){
-        const target=chs.find(x=>String(x.id)===String(channelId)&&['text','announcement','forum'].includes(String(x.type||'')));
-        if(target){window.__openedNativeChannelFromQuery=true;await openNativeChannel(g.id,target.id,target.name)}
+      // Open the most relevant text salon immediately when a member selects a server.
+      const query=new URLSearchParams(location.search),channelId=String(query.get('openChannel')||'');
+      let remembered='';try{remembered=String(sessionStorage.getItem('cmd-last-channel-'+g.id)||'')}catch{}
+      const visible=chs.filter(x=>['text','announcement','forum'].includes(String(x.type||'')));
+      const accessible=visible.filter(x=>!x.permission_denied&&!x.is_hidden);
+      const candidates=accessible.length?accessible:visible;
+      const exact=channelId&&String(query.get('openNative'))===String(g.id)?candidates.find(x=>String(x.id)===channelId):null;
+      const last=remembered?candidates.find(x=>String(x.id)===remembered):null;
+      const general=candidates.find(x=>/^(général|general|bienvenue|welcome|discussion|chat|accueil)$/i.test(String(x.name||'').trim()));
+      const target=exact||last||general||candidates[0];
+      if(target){
+        try{await openNativeChannel(g.id,target.id,target.name);try{sessionStorage.setItem('cmd-last-channel-'+g.id,String(target.id))}catch{}
+          qs('#workspace')?.querySelectorAll('.cmd-channel-row[data-native-channel]').forEach(row=>row.classList.toggle('active',String(row.dataset.nativeChannel)===String(target.id)));
+        }catch(openError){toast('Serveur ouvert. Impossible de charger le salon : '+openError.message,false)}
+      }else{
+        const note=document.createElement('p');note.className='cmd-channel-search-empty';
+        note.textContent=admin?'Aucun salon texte : crée un salon général dans la gestion du serveur.':'Aucun salon texte accessible sur ce serveur.';
+        qs('#cmdServerChannels')?.append(note);
       }
     }catch(e){toast(e.message,false)}
   }
