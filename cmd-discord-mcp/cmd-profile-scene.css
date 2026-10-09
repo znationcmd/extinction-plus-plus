@@ -211,3 +211,57 @@
 }
 @media(max-height:720px){#cmdSceneSheet .cmd-scene-hero{height:42dvh;min-height:250px}#cmdSceneSheet .cmd-scene-tabs{min-height:60px}#cmdSceneSheet .cmd-scene-tabs button{min-height:60px}#cmdSceneSheet .cmd-scene-footer-actions button{min-height:39px}}
 @media(prefers-reduced-motion:reduce){#cmdSceneSheet *{animation:none!important;transition:none!important}}
+
+/* CMD original nocturnal neon forest: no third-party brand silhouette/logo. */
+#cmdSceneSheet .cmd-scene-hero[data-scene="neonforest"] .cmd-scene-hero-landscape{
+ background-color:#071530;
+ background-image:
+ linear-gradient(180deg,rgba(0,8,36,.27),rgba(24,8,65,.12) 40%,rgba(20,2,44,.72)),
+ radial-gradient(ellipse 65% 51% at 62% 66%,rgba(170,57,248,.42),transparent 70%),
+ radial-gradient(ellipse 55% 47% at 15% 70%,rgba(12,119,254,.35),transparent 78%),
+ url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=88");
+ background-size:cover;background-position:center;
+}
+#cmdSceneSheet .cmd-scene-hero[data-scene="neonforest"] .cmd-scene-hero-lights{
+ display:block;position:absolute;inset:0;pointer-events:none;z-index:1;
+ background:
+ radial-gradient(ellipse 22% 38% at 90% 55%,rgba(209,28,255,.52),transparent 79%),
+ radial-gradient(ellipse 37% 23% at 8% 85%,rgba(153,34,255,.52),transparent 86%),
+ radial-gradient(circle at 72% 63%,rgba(250,97,255,.53) 0 1px,transparent 3px),
+ radial-gradient(circle at 11% 44%,rgba(243,97,253,.9) 0 2px,transparent 4px),
+ radial-gradient(circle at 20% 78%,rgba(190,115,255,.7) 0 2px,transparent 5px),
+ radial-gradient(circle at 89% 33%,rgba(154,169,255,.9) 0 2px,transparent 4px),
+ linear-gradient(180deg,transparent 65%,rgba(144,35,206,.29));
+ background-size:auto,auto,135px 140px,170px 190px,260px 230px,210px 230px,auto;
+ mix-blend-mode:screen;
+}
+#cmdSceneSheet .cmd-scenery-neonforest{
+ background-image:
+ linear-gradient(180deg,rgba(18,0,39,.1),rgba(103,15,171,.42)),
+ url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=420&q=75");
+ background-color:#100b31;
+}
+#cmdSceneWrap[data-scene="neonforest"] #cmdSceneBackdrop{
+ background-color:#080e28;
+ background-image:
+ radial-gradient(ellipse at 78% 67%,rgba(214,39,230,.49),transparent 50%),
+ radial-gradient(ellipse at 25% 70%,rgba(93,44,234,.46),transparent 58%),
+ linear-gradient(180deg,rgba(3,12,48,.39),rgba(8,5,26,.58)),
+ url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1150&q=88");
+ background-size:cover;background-position:center;
+}
+#cmdSceneWrap[data-scene="neonforest"] #cmdSceneBackdrop:after{
+ content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+ background:
+ radial-gradient(circle at 84% 75%,#b969ff 0 1px,transparent 4px),
+ radial-gradient(circle at 22% 50%,#cc80ff 0 1px,transparent 4px),
+ radial-gradient(circle at 50% 91%,#7360ff 0 2px,transparent 5px);
+ background-size:155px 175px,210px 200px,190px 190px;
+ opacity:.85;
+}
+@media(prefers-reduced-motion:no-preference) {
+ #cmdSceneSheet .cmd-scene-hero[data-scene="neonforest"] .cmd-scene-hero-lights {
+ animation:cmdNeonForestGlow 5s ease-in-out infinite alternate;
+ }
+}
+@keyframes cmdNeonForestGlow{from{opacity:.65}to{opacity:1}}
