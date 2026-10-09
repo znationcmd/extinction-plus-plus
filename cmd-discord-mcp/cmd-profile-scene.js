@@ -13,7 +13,7 @@ const haircolors=["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#
 const outfits=["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"];
 const pets=[["none","Aucun","🚫"],["dog","Chien","🐶"],["cat","Chat","🐱"],["rabbit","Lapin","🐰"],["fox","Renard","🦊"],["bird","Oiseau","🦜"],["horse","Cheval","🐴"],["wolf","Loup","🐺"],["turtle","Tortue","🐢"]];
 const defaults={scene:"none",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",pet:"none",pose:"stand",accessory:"none",label:""};
-let state={...defaults},custom=null,customDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
+let state={...defaults},savedState={...defaults},custom=null,savedCustom=null,customDirty=false,slot=null,scenery=null,sheet=null,figure=null,preview=null,busy=false;
 const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const options=(a,selected)=>a.map(([value,label])=>'<option value="'+escape(value)+'"'+(value===selected?' selected':'')+'>'+escape(label)+'</option>').join("");
 function hex(value,fallback){return /^#[0-9a-f]{6}$/i.test(String(value))?value:fallback}
@@ -120,7 +120,7 @@ function openSheet(){
  '<div id="cmdSceneOptions"></div><p id="cmdSceneNotice" role="status"></p><footer><button type="button" id="cmdSceneReset">Fond d’origine</button><button type="button" id="cmdSceneSave">Enregistrer sur mon profil</button></footer></div>';
  document.body.append(sheet);
  preview=$("#cmdScenePreviewPerson");
- $("#cmdSceneClose").onclick=()=>{sheet.hidden=true};
+ $("#cmdSceneClose").onclick=()=>{state={...savedState};custom=savedCustom;customDirty=false;present();sheet.hidden=true};
  $("#cmdSceneReset").onclick=()=>{state.scene="none";present();renderSheet("scene");$("#cmdSceneNotice").textContent="Le fond d’origine sera rétabli après enregistrement."};
  $("#cmdSceneSave").onclick=save;
  $$("[data-scene-tab]",sheet).forEach(b=>b.onclick=()=>showTab(b.dataset.sceneTab));
@@ -139,7 +139,7 @@ async function save(){
   const r=await fetch("/api/profile/scene",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   const output=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(output.error||"Sauvegarde refusée");
-  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;
+  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;savedState={...state};savedCustom=custom;
   setTimeout(()=>{if(sheet)sheet.hidden=true},550);
  }catch(e){$("#cmdSceneNotice").textContent=e.message||"Erreur de sauvegarde"}
  finally{busy=false;btn.disabled=false}
@@ -151,6 +151,7 @@ async function initialize(){
   const data=await r.json();
   if(data.scene&&typeof data.scene==="object")state={...defaults,...data.scene};
   custom=typeof data.customBackground==="string"?data.customBackground:null;
+  savedState={...state};savedCustom=custom;
   present();
  }catch(e){console.warn("[CMD profil décor]",e)}
 }
