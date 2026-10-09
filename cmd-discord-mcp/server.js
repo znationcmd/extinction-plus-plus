@@ -161,10 +161,10 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261008fullcircle4"></head>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009simple6"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261008"></script></body>');
 
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008fullcircle4"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261008q"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261008fullcircle4"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261009simple6"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -358,21 +358,19 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         });
       });
       if(admin)qs('#workspace').querySelectorAll('[data-native-channel]').forEach(row=>{const gear=document.createElement('button');gear.type='button';gear.className='cmd-channel-settings';gear.dataset.csmChannelSettings=row.dataset.nativeChannel;gear.setAttribute('aria-label','Modifier le salon '+row.dataset.nativeName);gear.textContent='⚙';row.insertAdjacentElement('afterend',gear)});
-      // Open the most relevant text salon immediately when a member selects a server.
+      // Ouvrir les salons uniquement après un clic : changer de serveur affiche toujours la liste.
+      // Exception volontaire : un lien profond avec un salon explicite peut toujours l'ouvrir.
       const query=new URLSearchParams(location.search),channelId=String(query.get('openChannel')||'');
-      let remembered='';try{remembered=String(sessionStorage.getItem('cmd-last-channel-'+g.id)||'')}catch{}
-      const visible=chs.filter(x=>['text','announcement','forum'].includes(String(x.type||'')));
-      const accessible=visible.filter(x=>!x.permission_denied&&!x.is_hidden);
-      const candidates=accessible.length?accessible:visible;
-      const exact=channelId&&String(query.get('openNative'))===String(g.id)?candidates.find(x=>String(x.id)===channelId):null;
-      const last=remembered?candidates.find(x=>String(x.id)===remembered):null;
-      const general=candidates.find(x=>/^(général|general|bienvenue|welcome|discussion|chat|accueil)$/i.test(String(x.name||'').trim()));
-      const target=exact||last||general||candidates[0];
-      if(target){
-        try{await openNativeChannel(g.id,target.id,target.name);try{sessionStorage.setItem('cmd-last-channel-'+g.id,String(target.id))}catch{}
-          qs('#workspace')?.querySelectorAll('.cmd-channel-row[data-native-channel]').forEach(row=>row.classList.toggle('active',String(row.dataset.nativeChannel)===String(target.id)));
-        }catch(openError){toast('Serveur ouvert. Impossible de charger le salon : '+openError.message,false)}
-      }else{
+      const exact=channelId&&String(query.get('openNative'))===String(g.id)
+        ?chs.find(x=>String(x.id)===channelId&&!x.permission_denied&&!x.is_hidden&&['text','announcement','forum'].includes(String(x.type||'')))
+        :null;
+      if(exact){
+        try{
+          await openNativeChannel(g.id,exact.id,exact.name);
+          qs('#workspace')?.querySelectorAll('.cmd-channel-row[data-native-channel]').forEach(row=>
+            row.classList.toggle('active',String(row.dataset.nativeChannel)===String(exact.id)));
+        }catch(openError){toast('Impossible d’ouvrir le lien du salon : '+openError.message,false)}
+      }else if(!chs.some(x=>['text','announcement','forum'].includes(String(x.type||''))&&!x.permission_denied&&!x.is_hidden)){
         const note=document.createElement('p');note.className='cmd-channel-search-empty';
         note.textContent=admin?'Aucun salon texte : crée un salon général dans la gestion du serveur.':'Aucun salon texte accessible sur ce serveur.';
         qs('#cmdServerChannels')?.append(note);
