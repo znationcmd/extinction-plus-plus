@@ -1,0 +1,63 @@
+/* CMD Sphere Studio Pub — video-first, smartphone-first editor. */
+#cmdPromoLaunch{position:fixed;right:16px;bottom:100px;z-index:68;border:1px solid #dfb3ff88;border-radius:22px;background:linear-gradient(120deg,#783ad1,#b4349c);color:#fff;box-shadow:0 8px 25px #1305197a;padding:10px 15px;font:800 13px system-ui;min-height:42px;cursor:pointer}
+body.cmd-studio-active{overflow:hidden!important}
+body.cmd-studio-active #cmdPromoLaunch{display:none}
+#cmdPromoStudio[hidden]{display:none!important}
+#cmdPromoStudio{position:fixed;inset:0;z-index:10050;background:#12101b;color:#f5efff;font:15px system-ui;overflow:hidden;display:flex;flex-direction:column}
+#cmdPromoStudio *{box-sizing:border-box}
+#cmdPromoStudio .cmd-studio-header{min-height:57px;padding:11px max(16px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:center;background:#1c1429;border-bottom:1px solid #ffffff1d;gap:12px}
+#cmdPromoStudio .cmd-studio-header>b{font-size:16px}
+#cmdPromoStudio button{cursor:pointer;font:inherit}
+#cmdStudioClose{border:0;border-radius:12px;background:#ffffff1c;color:#fff;width:42px;height:40px;font-weight:800}
+#cmdPromoStudio .cmd-studio-main{display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,465px);gap:18px;flex:1;min-height:0;padding:15px;overflow:auto}
+#cmdPromoStudio .cmd-studio-preview{position:sticky;top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:0;max-height:calc(100dvh - 90px);overflow:hidden;background:#1a1524;border-radius:16px;padding:12px}
+#cmdStudioCanvas{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100dvh - 208px);border:1px solid #ffffff28;border-radius:14px;object-fit:contain;background:#181322;box-shadow:0 20px 40px #0005}
+#cmdPromoStudio .cmd-studio-preview>small{font-size:11px;color:#c7b6d2;text-align:center}
+#cmdPromoStudio .cmd-studio-playbar{width:100%;display:flex;justify-content:center;align-items:center;gap:15px;font-size:13px}
+#cmdStudioPlay{border:0;background:#6a40a7;color:white;border-radius:11px;padding:10px 15px;font-weight:750}
+#cmdPromoStudio .cmd-studio-controls{overflow:auto;overscroll-behavior:contain;padding:2px 4px 120px 0;max-width:100%;display:flex;flex-direction:column;gap:13px;min-height:0}
+#cmdPromoStudio h2{font-size:19px;margin:7px 0 0}
+#cmdPromoStudio h3{font-size:15px;margin:0 0 10px}
+#cmdPromoStudio .cmd-studio-choices{display:flex;flex-wrap:wrap;gap:7px}
+#cmdPromoStudio .cmd-studio-choices>button{border:1px solid #ffffff35;background:#242033;color:#eee3f7;border-radius:11px;min-height:41px;padding:9px 12px;font-weight:750}
+#cmdPromoStudio .cmd-studio-choices>button.selected{background:linear-gradient(120deg,#9356d5,#a74f92);border-color:#dab8ff;color:white}
+#cmdPromoStudio .cmd-studio-card{background:#211a30;border:1px solid #ffffff19;border-radius:16px;padding:14px;display:grid;gap:9px}
+#cmdPromoStudio label{display:grid;gap:5px;color:#e5d8ef;font-weight:650;font-size:13px}
+#cmdPromoStudio input:not([type=file]):not([type=range]),#cmdPromoStudio select{background:#120e1b;border:1px solid #ffffff36;border-radius:10px;min-height:43px;padding:9px 11px;color:#fff;width:100%;max-width:100%;font:inherit}
+#cmdPromoStudio input[type=range]{width:100%;accent-color:#ae77e9}
+#cmdPromoStudio input[type=file]{max-width:100%;font-size:12px;color:#ddd}
+#cmdPromoStudio .cmd-studio-upload{display:grid;gap:9px;border:1px dashed #b478df;border-radius:12px;background:#42285a;padding:12px;color:#fff}
+#cmdPromoStudio small{color:#baaacb;line-height:1.5}
+#cmdPromoStudio .cmd-studio-files{display:grid;gap:5px}
+#cmdPromoStudio .cmd-studio-file{display:flex;align-items:center;gap:6px;background:#ffffff0d;border-radius:8px;padding:6px}
+#cmdPromoStudio .cmd-studio-file span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+#cmdPromoStudio .cmd-studio-file button{border:0;color:#fff;background:#ffffff1b;border-radius:7px;min-width:31px;min-height:32px}
+#cmdPromoStudio .cmd-studio-file button:disabled{opacity:.3}
+#cmdPromoStudio .cmd-studio-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding-bottom:env(safe-area-inset-bottom)}
+#cmdPromoStudio .cmd-studio-actions>button{min-height:46px;padding:9px 10px;border-radius:11px;background:#343047;color:#fff;border:1px solid #ffffff2c;font-weight:750}
+#cmdPromoStudio .cmd-studio-actions>button.primary{background:#8954c8}
+#cmdPromoStudio .cmd-studio-actions>button:disabled{opacity:.4;cursor:wait}
+#cmdStudioPublish{grid-column:1/-1}
+#cmdStudioNotice,#cmdStudioPublication{grid-column:1/-1;margin:0;line-height:1.45;overflow-wrap:anywhere}
+#cmdStudioNotice{min-height:24px;color:#e7caec}
+#cmdStudioPublication{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#cmdStudioPublication a{font-weight:800;color:#d1a7ff}
+#cmdStudioPublication button{background:#574374;color:#fff;border:0;border-radius:8px;padding:10px}
+#cmdPromoStudio button:focus-visible,#cmdPromoStudio input:focus-visible,#cmdPromoStudio select:focus-visible{outline:2px solid #e6b0ff;outline-offset:2px}
+@media(max-width:820px){
+ #cmdPromoStudio .cmd-studio-header{padding:10px 15px}
+ #cmdPromoStudio .cmd-studio-main{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:8px 10px max(24px,env(safe-area-inset-bottom))}
+ #cmdPromoStudio .cmd-studio-preview{position:relative;flex:0 0 auto;max-height:62dvh;min-height:250px;padding:8px 10px;overflow:visible}
+ #cmdStudioCanvas{max-height:calc(57dvh - 68px);max-width:100%}
+ #cmdPromoStudio .cmd-studio-preview>small{display:none}
+ #cmdPromoStudio .cmd-studio-playbar{margin:0}
+ #cmdPromoStudio .cmd-studio-controls{overflow:visible;flex:none;padding:2px 0 35px;gap:12px}
+ #cmdPromoStudio .cmd-studio-choices>button{font-size:12px;min-height:43px;padding:8px 10px}
+ #cmdPromoLaunch{bottom:calc(94px + env(safe-area-inset-bottom));right:10px;font-size:12px;padding:8px 10px}
+}
+@media(max-width:350px){
+ #cmdPromoStudio .cmd-studio-choices>button{font-size:11px}
+ #cmdPromoStudio .cmd-studio-actions{grid-template-columns:1fr}
+ #cmdStudioPublish{grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){#cmdPromoStudio *,#cmdPromoLaunch{scroll-behavior:auto!important;transition:none!important}}
