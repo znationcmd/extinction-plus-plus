@@ -160,13 +160,13 @@ async function makeCivilian(state){
  add(new THREE.CapsuleGeometry(.055,.055,5,12),skin,0,2.64,.25).rotation.x=Math.PI/2;
  const torso=add(new THREE.CylinderGeometry(female?.33:.38,.31,.83,24),top,0,1.99,0);
  const collar=add(new THREE.TorusGeometry(.13,.018,8,20),mat("#ececf0"),0,2.42,.04);collar.rotation.x=Math.PI/2;
- const sleeve=state.top==="tshirt"||state.top==="sport"?.18:state.top==="dress"?.44:.47;
+ const sleeve=(state.top==="tshirt"||state.top==="sport") ? .18 : (state.top==="dress" ? .44 : .47);
  for(const x of [-1,1]){
   const arm=add(new THREE.CylinderGeometry(.115,.09,sleeve,14),top,x*.43,2.23,0);arm.rotation.z=x*.25;
   const fore=add(new THREE.CylinderGeometry(.09,.075,.68-sleeve*.5,12),skin,x*(.48+sleeve*.12),1.79,0);fore.rotation.z=x*.08;
   add(new THREE.SphereGeometry(.105,12,12),skin,x*.52,1.48,0);
   const shorts=state.bottom==="shorts"||state.bottom==="skirt";
-  add(new THREE.CylinderGeometry(.17,.135,shorts?.38:.94,16),denim,x*.17,shorts?1.26:.99,0);
+  add(new THREE.CylinderGeometry(.17,.135,shorts ? .38 : .94,16),denim,x*.17,shorts ? 1.26 : .99,0);
   if(shorts)add(new THREE.CylinderGeometry(.125,.095,.55,14),skin,x*.17,.81,0);
   add(new THREE.BoxGeometry(.29,.19,.48),shoe,x*.17,.14,.105);
  }
