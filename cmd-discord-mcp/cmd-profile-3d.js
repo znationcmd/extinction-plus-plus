@@ -22,7 +22,7 @@ function createCanvas(mount,kind){
  mount.prepend(wrapper);
  let renderer;
  try{
-  renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:"low-power",preserveDrawingBuffer:false});
+  renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:"low-power",preserveDrawingBuffer:true});
   renderer.setPixelRatio(Math.min(1.6,window.devicePixelRatio||1));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -157,6 +157,42 @@ function update(frame,state){
  if(frame.poseKey!==state.pose){setPose(frame,state);frame.poseKey=state.pose}}
  void setPet(frame,state);
 }
+const avatarThumbCache=new Map();
+let avatarThumbBusy=false;
+async function renderAvatarCards(){
+ if(avatarThumbBusy)return;
+ const nodes=document.querySelectorAll("#cmdSceneOptions [data-person-model]");
+ if(!nodes.length)return;
+ avatarThumbBusy=true;
+ try{
+  for(const button of nodes){
+   const key=button.dataset.personModel;
+   let data=avatarThumbCache.get(key);
+   if(!data){
+    const url=modelUrls[key];if(!url)continue;
+    const gltf=await loadGLB(url);
+    const scene=new THREE.Scene();const root=cloneSkinned(gltf.scene);
+    normalize(root,3.05,0,0);scene.add(root);
+    scene.add(new THREE.HemisphereLight(0xdbeeff,0x473049,3.3));
+    const light=new THREE.DirectionalLight(0xffeddc,3);light.position.set(-2,5,6);scene.add(light);
+    const camera=new THREE.PerspectiveCamera(32,145/195,.1,40);
+    camera.position.set(0,1.6,7.6);camera.lookAt(0,1.44,0);
+    let renderer;
+    try{
+     renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:"low-power"});
+     renderer.setPixelRatio(1);renderer.setSize(145,195,false);
+     renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+     renderer.render(scene,camera);
+     data=renderer.domElement.toDataURL("image/png");
+     avatarThumbCache.set(key,data);
+    }finally{renderer?.dispose();renderer?.forceContextLoss()}
+   }
+   const slot=document.querySelector('#cmdSceneOptions [data-person-model="'+key+'"] .cmd-scene-model-photo');
+   if(slot&&data){const img=new Image();img.alt="Aperçu du modèle 3D "+key;img.src=data;slot.replaceChildren(img)}
+  }
+ }catch(error){console.warn("[CMD avatar 3D portraits]",error?.message||error)}
+ finally{avatarThumbBusy=false}
+}
 const lookThumbCache=new Map();
 function renderLookCards(){
  const area=document.querySelector("#cmdSceneOptions"),frame=editor;
@@ -207,5 +243,5 @@ function refresh(){
 }
 document.addEventListener("cmd-avatar-3d:update",refresh);
 document.addEventListener("visibilitychange",()=>visible=!document.hidden);
-window.cmdProfile3D={refresh,renderLookCards,invalidateCustom:kind=>{const url=modelUrls[kind==="pet"?"customPet":"customAvatar"];models.delete(url);if(editor){if(kind==="pet")editor.petKey="";else editor.modelKey=""}if(banner){if(kind==="pet")banner.petKey="";else banner.modelKey=""}refresh()}};
+window.cmdProfile3D={refresh,renderLookCards,renderAvatarCards,invalidateCustom:kind=>{const url=modelUrls[kind==="pet"?"customPet":"customAvatar"];models.delete(url);if(editor){if(kind==="pet")editor.petKey="";else editor.modelKey=""}if(banner){if(kind==="pet")banner.petKey="";else banner.modelKey=""}refresh()}};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refresh);else refresh();
