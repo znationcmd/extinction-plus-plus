@@ -4730,7 +4730,7 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./notification-client.js",import.meta.url),"utf8"));return;
     }
 
-    if(req.method==="GET"&&/^\/catalogue\/(avatar|hair|beard|top|bottom|coat|hat|glasses|piercing-ear|piercing-nose|piercing-brow|piercing-lip|scenes|pets|vehicles|homes|catalogue-vestes|catalogue-chapeaux|catalogue-lunettes|catalogue-cheveux|catalogue-barbes|catalogue-piercings|avatar-collection-212)\.b64\.txt$/.test(url.pathname)){try{res.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./public"+url.pathname,import.meta.url),"utf8"))}catch(e){sendJson(res,404,{error:"Image introuvable"})}return;}
+    if(req.method==="GET"&&/^\/catalogue\/(avatar|hair|beard|top|bottom|coat|hat|glasses|piercing-ear|piercing-nose|piercing-brow|piercing-lip|scenes|pets|vehicles|homes|catalogue-vestes|catalogue-chapeaux|catalogue-lunettes|catalogue-cheveux|catalogue-barbes|catalogue-piercings|avatar-collection-212|avatar-68-final)\.b64\.txt$/.test(url.pathname)){try{res.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./public"+url.pathname,import.meta.url),"utf8"))}catch(e){sendJson(res,404,{error:"Image introuvable"})}return;}
     if(req.method==="GET"&&url.pathname==="/health"){
       sendJson(res,200,{ok:true,name:"CMD Sphere MCP",oauth:true,bots:Object.values(bots).map(x=>x.label)});return;
     }
