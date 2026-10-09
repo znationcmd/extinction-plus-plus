@@ -101,6 +101,37 @@ export async function handleCmdEmojiLibrary(req,res,url,{pool,auth,founder=false
    const result=await pool.query(query,values);
    reply(res,201,{ok:true,created:result.rowCount,skipped:rows.length-result.rowCount,total:rows.length});return true;
   }
+  if(req.method==="POST"&&url.pathname==="/api/cmd-emojis/bulk"){
+   if(!founder)throw fail("Importation complète réservée au fondateur.",403);
+   const body=await readUpload(req),items=body?.items;
+   if(!Array.isArray(items)||items.length<1||items.length>100)throw fail("Envoie des lots de 1 à 100 emojis.");
+   const names=items.map(x=>String(x?.name||"").trim());
+   if(names.some(n=>!/^[\p{L}\p{N}_-]{2,32}$/u.test(n)))throw fail("Nom d'emoji incorrect.");
+   const existing=await pool.query("SELECT name FROM cmd_sphere_emojis WHERE scope='community' AND creator_user_id=$1 AND name=ANY($2::text[])",[uid,names]);
+   const seen=new Set(existing.rows.map(r=>r.name));
+   const values=[],params=[];let skipped=0;
+   for(const item of items){
+     const name=String(item.name).trim();
+     if(seen.has(name)){skipped++;continue}
+     const parsed=/^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(item.dataUrl||""));
+     if(!parsed)throw fail("Fichier incorrect pour "+name);
+     const bytes=Buffer.from(parsed[2],"base64");
+     if(!bytes.length||bytes.length>MAX_BYTES)throw fail("Taille incorrecte pour "+name);
+     const type=sniff(bytes);
+     if(type.mime!=="image/"+parsed[1])throw fail("Format incorrect pour "+name);
+     const [w,h]=bounds(bytes,type.mime);
+     if(w>1024||h>1024)throw fail("Dimensions incorrectes pour "+name);
+     const offset=params.length,cols=Array.from({length:8},(_,i)=>"$"+(offset+i+1));
+     values.push("("+cols.join(",")+")");
+     params.push(crypto.randomUUID(),uid,name,type.mime,type.animated,bytes,bytes.length,"community");
+     seen.add(name);
+   }
+   if(values.length){
+     const statement="INSERT INTO cmd_sphere_emojis(id,creator_user_id,name,mime_type,animated,bytes,size_bytes,scope) VALUES "+values.join(",");
+     await pool.query(statement,params);
+   }
+   reply(res,200,{inserted:values.length,skipped,total:items.length});return true;
+  }
   if(req.method==="POST"&&url.pathname==="/api/cmd-emojis"){
    const data=await readUpload(req),scope=String(data.scope||"personal"),gid=scope==="server"?String(data.guildId||""):null;
    if(!["personal","server","community"].includes(scope))throw fail("Visibilité incorrecte");
