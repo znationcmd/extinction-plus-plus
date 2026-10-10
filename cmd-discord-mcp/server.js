@@ -539,10 +539,10 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       if(managed?.installed&&(managed.availableBots||[]).length)
         addSwitch('Messages liés en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdArchiveHistoryToggle');
     }else if(live){
-      addSwitch('Historique Discord sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
+      addSwitch('Historique externe sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
       addSwitch('Messages CMD Sphere',()=>openNativeChannel(guildId,id,name,true),'cmdChannelSourceToggle');
     }else if(linked){
-      addSwitch('Historique Discord sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
+      addSwitch('Historique externe sauvegardé',()=>openNativeChannel(guildId,id,name,false,'archive'),'cmdArchiveHistoryToggle');
       if(managed?.installed&&(managed.availableBots||[]).length)
         addSwitch('Messages liés en direct',()=>openNativeChannel(guildId,id,name,false,'discord'),'cmdChannelSourceToggle');
     }
@@ -878,7 +878,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         const a=b.dataset.action;
         if(a==='channels'||a==='roles'){closeServerSettings();toast(a==='channels'?'Les salons sont affichés dans la page du serveur.':'Les rôles sont affichés dans la page du serveur.')}
         else if(a==='integrations'){closeServerSettings();openBotsManager()}
-        else if(a==='tag'){if(mode==='native')location.href='/profile?server='+encodeURIComponent(S.nativeGuild.id);else toast('Synchronise ce Discord dans CMD Sphere pour créer son tag propriétaire.',false)}
+        else if(a==='tag'){if(mode==='native')location.href='/profile?server='+encodeURIComponent(S.nativeGuild.id);else toast('Synchronise ce serveur dans CMD Sphere pour créer son tag propriétaire.',false)}
         else if(a==='emoji'||a==='stickers'){const list=a==='emoji'?(extras.emojis||[]):(extras.stickers||[]);toast(list.length?list.length+' élément(s) récupéré(s).':'Aucun élément accessible.')}
         else if(a==='invites'&&mode==='native'){navigator.clipboard?.writeText(data.inviteUrl||'');toast('Invitation CMD Sphere copiée')}
         else if(a==='automod'){toast(mode==='discord'?(extras.autoModeration||[]).length+' règle(s) AutoMod détectée(s).':'AutoMod CMD Sphere')}
