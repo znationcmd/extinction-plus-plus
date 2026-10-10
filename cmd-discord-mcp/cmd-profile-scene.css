@@ -845,3 +845,68 @@
 
 
 #cmdSceneBackdrop .cmd-scene-home{position:absolute;left:2%;top:4%;width:28%;height:45%;z-index:1}#cmdSceneBackdrop .cmd-scene-home img{width:100%;height:100%;object-fit:contain}#cmdSceneSheet .cmd-scene-tabs{grid-template-columns:repeat(3,1fr)}#cmdSceneSheet #cmdStickerObjects{flex-direction:row;max-width:31%}#cmdSceneSheet #cmdStickerObjects>img{flex:1;min-width:0}#cmdSceneSheet #cmdSceneHero{background-size:contain!important}#cmdSceneBackdrop .cmd-scene-scenery{background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important}
+
+
+/* OCT 10 — Avatar & décor: HD full-image foreground plus matching side extension.
+   Unlike "cover", the scene itself is never cropped or stretched.  The soft edge-fill
+   hides portrait-letterboxing in landscape cards and in the live iPhone preview.
+   This is intentionally scoped to scene layers: avatars, pets, vehicles, homes and
+   the independently uploaded profile banner are untouched. */
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit{
+  isolation:isolate!important;overflow:hidden!important;
+  background-image:none!important;background-color:#21172b!important;
+}
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit::before{
+  content:"";position:absolute;inset:-8%;z-index:0;pointer-events:none;
+  background:var(--cmd-scene-bg) center/cover no-repeat;
+  filter:blur(19px) saturate(1.14) brightness(.86);
+  transform:scale(1.08);
+}
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-hero-landscape.cmd-scene-full-fit{
+  position:absolute!important;inset:0!important;z-index:1!important;
+  background-image:var(--cmd-scene-bg)!important;
+  background-size:contain!important;background-position:center!important;
+  background-repeat:no-repeat!important;filter:none!important;
+  transform:none!important;
+}
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit{
+  display:block!important;inset:0!important;opacity:1!important;
+  background:none!important;transform:none!important;
+  isolation:isolate;overflow:hidden!important;
+}
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::before,
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::after{
+  content:"";display:block;position:absolute;pointer-events:none;
+}
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::before{
+  inset:-8%;z-index:0;background:var(--cmd-scene-bg) center/cover no-repeat;
+  filter:blur(18px) brightness(.88) saturate(1.12);transform:scale(1.07);
+}
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::after{
+  inset:0;z-index:1;background:var(--cmd-scene-bg) center/contain no-repeat;
+  filter:none;transform:none;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-card-art{
+  background:#241b31!important;position:relative!important;isolation:isolate;
+  overflow:hidden!important;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit{
+  position:relative!important;display:block!important;
+  width:100%!important;height:100%!important;min-height:100px;
+  overflow:hidden!important;background:none!important;
+  isolation:isolate;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::before,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::after{
+  content:"";display:block;position:absolute;pointer-events:none;
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::before{
+  inset:-10%;z-index:0;
+  background:var(--cmd-scene-bg) center/cover no-repeat;
+  filter:blur(12px) brightness(.84);transform:scale(1.08);
+}
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::after{
+  inset:0;z-index:1;
+  background:var(--cmd-scene-bg) center/contain no-repeat;
+  filter:none;transform:none;
+}
