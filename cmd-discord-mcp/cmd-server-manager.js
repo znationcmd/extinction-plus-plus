@@ -461,7 +461,19 @@ function showRole(role){
  box.querySelector('form').addEventListener('submit',async e=>{
   e.preventDefault();const f=e.currentTarget,d=new FormData(f),permissions={};
   f.querySelectorAll('[data-csm-permission]').forEach(v=>{permissions[v.dataset.csmPermission]=v.checked});
-  try{await mutate(role?'update_role':'create_role',{...Object.fromEntries(d.entries()),...(role?{roleId:role.id}:{}),permissions,hoist:d.has('hoist'),mentionable:d.has('mentionable')})}catch(e){notify(e.message,false)}
+  try{
+   const outcome=await mutate(role?'update_role':'create_role',{...Object.fromEntries(d.entries()),...(role?{roleId:role.id}:{}),permissions,hoist:d.has('hoist'),mentionable:d.has('mentionable')});
+   // Open the new role's member picker immediately. Never grant it automatically.
+   if(!role&&outcome?.roleId&&isNative()&&ctx?.owner){
+    const created=(ctx.data.roles||[]).find(item=>String(item.id)===String(outcome.roleId));
+    if(created){
+     editing={type:'role',id:created.id};showRole(created);
+     const panel=$('#csm-role-member-assignments');
+     if(panel)panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+     notify('Rôle créé. Tu peux maintenant te l’attribuer ou choisir ses membres.');
+    }
+   }
+  }catch(e){notify(e.message,false)}
  });
  box.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  box.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -580,7 +592,7 @@ async function menu(){
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
   (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
-  (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété')+row('delete-guild','🗑️','Supprimer mon serveur'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
+  (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('roles','🛡️','Rôles et permissions')+row('members','👥','Attribuer mes rôles et gérer les membres')+row('ownership','👑','Gérer la propriété')+row('delete-guild','🗑️','Supprimer mon serveur'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
  document.body.append(root);document.body.classList.add("csm-server-menu-open");
