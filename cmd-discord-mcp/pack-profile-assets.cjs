@@ -1,0 +1,3 @@
+const fs=require('node:fs'),zlib=require('node:zlib'),path=require('node:path');
+const entries={};for(const dir of ['public/avatars/v3','public/universe/v1'])for(const f of fs.readdirSync(dir)){entries[dir+'/'+f]=fs.readFileSync(dir+'/'+f).toString('base64')}
+const data=zlib.brotliCompressSync(Buffer.from(JSON.stringify(entries)),{params:{[zlib.constants.BROTLI_PARAM_QUALITY]:5}});fs.mkdirSync('profile-assets',{recursive:true});for(let i=0;i<data.length;i+=512000)fs.writeFileSync('profile-assets/catalogue.br.part-'+String(i/512000).padStart(3,'0'),data.subarray(i,i+512000));console.log({files:Object.keys(entries).length,bytes:data.length,chunks:Math.ceil(data.length/512000)});

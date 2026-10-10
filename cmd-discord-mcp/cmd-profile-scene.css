@@ -834,3 +834,14 @@
  #cmdSceneSheet .cmd-scene-float-header{padding-top:max(12px, env(safe-area-inset-top))!important}
  #cmdSceneSheet #cmdSceneClose{min-width:47px!important;min-height:47px!important}
 }
+/* Individual transparent catalogue artwork: preserve all limbs, wheels and accessories. */
+#cmdSceneBackdrop .cmd-scene-vehicle{position:absolute;left:5%;bottom:8%;width:30%;height:35%;z-index:2;pointer-events:none}
+#cmdSceneBackdrop .cmd-scene-vehicle img,#cmdSceneSheet #cmdStickerObjects img{display:block;width:100%;height:100%;object-fit:contain;background:transparent;min-width:0}
+#cmdSceneHero[data-individual-pet="true"] #cmdScenePreviewPet{visibility:visible!important}
+#cmdSceneSheet #cmdStickerObjects{z-index:6;left:3%;right:auto;width:31%;height:32%}
+#cmdSceneSheet #cmdScenePreviewPet{position:absolute!important;right:4%!important;bottom:4%!important;left:auto!important;width:23%!important;height:33%!important;z-index:7!important}
+#cmdSceneSheet #cmdScenePreviewPet img{width:100%;height:100%;object-fit:contain}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-person.cmd-scene-selected-avatar{top:auto!important;bottom:3%!important;height:94%!important;max-height:94%!important}
+
+
+#cmdSceneBackdrop .cmd-scene-home{position:absolute;left:2%;top:4%;width:28%;height:45%;z-index:1}#cmdSceneBackdrop .cmd-scene-home img{width:100%;height:100%;object-fit:contain}#cmdSceneSheet .cmd-scene-tabs{grid-template-columns:repeat(3,1fr)}#cmdSceneSheet #cmdStickerObjects{flex-direction:row;max-width:31%}#cmdSceneSheet #cmdStickerObjects>img{flex:1;min-width:0}#cmdSceneSheet #cmdSceneHero{background-size:contain!important}#cmdSceneBackdrop .cmd-scene-scenery{background-size:contain!important;background-repeat:no-repeat!important;background-position:center!important}

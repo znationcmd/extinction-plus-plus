@@ -168,10 +168,11 @@ function clearDashboardCookies(){
   ];
 }
 function html(res,body,status=200,headers={}){
-    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261010uifix8"><link rel="stylesheet" href="/cmd-profile-premium.css?v=20261010studio4"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261010effects23final"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script defer src="/cmd-profile-live-preview.js?v=20261010live1"></script><script src="/cmd-profile-scene.js?v=20261010uifix8" defer></script><script src="/cmd-profile-premium.js?v=20261010effects23final" defer></script><script defer src="/cmd-gif-encoder.js?v=20261010studio2"></script><script defer src="/cmd-promo-studio.js?v=20261010effects23final"></script><script type="module" src="/cmd-profile-3d.js?v=20261010avatarcard1"></script></body>');
+    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261010clean2"><link rel="stylesheet" href="/cmd-profile-premium.css?v=20261010studio4"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261010effects23final"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script defer src="/cmd-profile-live-preview.js?v=20261010live1"></script><script src="/cmd-profile-scene.js?v=20261010clean2" defer></script><script src="/cmd-profile-premium.js?v=20261010effects23final" defer></script><script defer src="/cmd-gif-encoder.js?v=20261010studio2"></script><script defer src="/cmd-promo-studio.js?v=20261010effects23final"></script><script type="module" src="/cmd-profile-3d.js?v=20261010avatarcard1"></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script><script defer src="/cmd-message-polish.js?v=20261010uifix8"></script></body>');
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-touch-organizer.js?v=20261010uifix8"></script></body>');
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-page-position.js?v=20261010keep1"></script></body>');
+
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
@@ -4863,6 +4864,17 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./notification-client.js",import.meta.url),"utf8"));return;
     }
 
+    // Versioned individual avatar assets: strict filenames prevent traversal.
+    if(req.method==="GET"&&/^\/universe\/v1\/(pet|vehicle|home|scene)-[0-9]{3}\.(png|webp)$/.test(url.pathname)){
+      try{const image=readFileSync(new URL("./public"+url.pathname,import.meta.url));res.writeHead(200,{"content-type":url.pathname.endsWith(".webp")?"image/webp":"image/png","cache-control":"public, max-age=31536000, immutable","x-content-type-options":"nosniff"});res.end(image)}catch(e){sendJson(res,404,{error:"Image introuvable"})}return;
+    }
+    if(req.method==="GET"&&/^\/avatars\/v3\/avatar-(0[1-9]|[1-5][0-9]|6[0-8])\.png$/.test(url.pathname)){
+      try{
+        const image=readFileSync(new URL("./public"+url.pathname,import.meta.url));
+        res.writeHead(200,{"content-type":url.pathname.endsWith(".webp")?"image/webp":"image/png","cache-control":"public, max-age=31536000, immutable","x-content-type-options":"nosniff"});res.end(image);
+      }catch(e){sendJson(res,404,{error:"Avatar introuvable"})}
+      return;
+    }
     if(req.method==="GET"&&/^\/catalogue\/(avatar|hair|beard|top|bottom|coat|hat|glasses|piercing-ear|piercing-nose|piercing-brow|piercing-lip|scenes|pets|vehicles|homes|catalogue-vestes|catalogue-chapeaux|catalogue-lunettes|catalogue-cheveux|catalogue-barbes|catalogue-piercings|avatar-collection-212|avatar-68-final)\.b64\.txt$/.test(url.pathname)){try{res.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./public"+url.pathname,import.meta.url),"utf8"))}catch(e){sendJson(res,404,{error:"Image introuvable"})}return;}
     if(req.method==="GET"&&url.pathname==="/health"){
       sendJson(res,200,{ok:true,name:"CMD Sphere MCP",oauth:true,bots:Object.values(bots).map(x=>x.label)});return;

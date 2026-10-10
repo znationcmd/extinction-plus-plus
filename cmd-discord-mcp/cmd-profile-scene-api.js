@@ -1,5 +1,8 @@
+import "./unpack-profile-assets.cjs";
+import {readFileSync} from "node:fs";
+const individualUniverse=JSON.parse(readFileSync(new URL("./public/universe/v1/manifest.json",import.meta.url),"utf8"));
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
-const SCENES=new Set(["beach","seaside","forest","neonforest","waterfall","city","night","space","mountains","chalet","crystal","desert","garden","sunset","rain","snowfall","aurora","underwater","palace","custom","none",...Array.from({length:54},(_,i)=>"reference-"+i)]);
+const SCENES=new Set(["none",...individualUniverse.scenes.map(x=>x.id)]);
 const HAIR=new Set(["short","long","curly","bob","shaved","ponytail","buzz","fade","crop","undercut","quiff","swept","wavy","afro","braids","locs"]);
 const BEARDS=new Set(["none","stubble","short","trimmed","full","long","goatee","mustache"]);
 const FACE_SHAPES=new Set(["oval","round","square","heart"]);
@@ -9,7 +12,8 @@ const BEARD_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#
 const TOPS=new Set(["hoodie","tshirt","jacket","shirt","polo","sweater","coat","dress","sport","suit","armor"]);
 const BOTTOMS=new Set(["jeans","dark","shorts","skirt","cargo","formal","baggy","wide","joggers"]);
 const SHOES=new Set(["sneakers","boots","sandals","formal"]);
-const PETS=new Set(["none","dog","cat","rabbit","fox","bird","horse","wolf","turtle","duck","flamingo","stork","hamster","panda","lion","tiger","bear","deer","penguin","owl","dolphin","shark","butterfly","dragon","dog-spotted","dog-golden","dog-husky","dog-puppy","cat-tabby","cat-blue","cat-ginger","cat-black","cat-siamese","dog-bulldog","dog-terrier","dog-shepherd","dog-pug"]);
+const PETS=new Set(["none",...individualUniverse.pets.map(x=>x.id)]);
+for(const item of individualUniverse.pets)PETS.add(item.id);
 const POSES=new Set(["stand","wave","peace","crossed","walk","run","dance"]);
 const ACCESSORIES=new Set(["none","glasses","sunglasses","hat","cap","headphones","earrings","necklace","crown","roundglasses","aviator","mask","beanie","bucket","cowboy","hoops","studs"]);
 const GENDERS=new Set(["male","female","neutral"]);
@@ -23,16 +27,18 @@ const NOSES=new Set(["small","standard","defined"]);
 const MOUTHS=new Set(["smile","neutral","soft"]);
 const BAGS=new Set(["none","tote","handbag","crossbody","backpack","mini","clutch"]);
 const PIERCINGS=new Set(["none","nose-stud","nose-ring","septum","brow-left","brow-right","lip-left","lip-right","labret","double-lip","ear-studs","ear-hoops","ear-chain"]);
-const VEHICLES=new Set(["none","compact","sportscar","convertible","scooter","motorcycle","bike","van","truck","kart","boat","plane","rocket","sedan","suv","jeep","limousine","bus","camper","helicopter","jetski","yacht"]);
-const HOMES=new Set(["none","cottage","house","villa","apartment","castle","cabin","beach","snow","tree","crystal","modern","farm","mansion","penthouse","lighthouse","japanese","tiny"]);
+const VEHICLES=new Set(["none",...individualUniverse.vehicles.map(x=>x.id)]);
+for(const item of individualUniverse.vehicles)VEHICLES.add(item.id);
+const HOMES=new Set(["none",...individualUniverse.homes.map(x=>x.id)]);
 const COLORS=new Set(["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728"]);
 const HAIR_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const OUTFIT_COLORS=new Set(["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"]);
-const defaultConfig=()=>({scene:"none",avatarPreset:"guardian",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"3d",petStyle:"3d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
+const defaultConfig=()=>({scene:"none",avatarPreset:"reference-avatar-0",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"2d",petStyle:"2d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
 const clean=(v,a,def)=>a.has(String(v||""))?String(v):def;
 function config(input){
  const a=input&&typeof input==="object"?input:{},d=defaultConfig(),result={...d};
  for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,beard:BEARDS,beardColor:BEARD_COLORS,faceShape:FACE_SHAPES,browStyle:BROW_STYLES,eyeShape:EYE_SHAPES,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,bag:BAGS,piercing:PIERCINGS,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
+ if(!/^reference-avatar-/.test(result.avatarPreset))result.avatarPreset="reference-avatar-0";result.avatarStyle="2d";result.petStyle="2d";
  result.label=String(a.label||"").trim().slice(0,42);
  result.petName=String(a.petName||"").trim().slice(0,40);
  result.hideHome=a.hideHome!==false;

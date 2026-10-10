@@ -41,7 +41,7 @@ function makeEditor(){
   addEventListener(){},querySelectorAll(){return []}
  };
  const window={requestAnimationFrame(){}};
- vm.runInNewContext(source,{window,document,console},{filename:"cmd-profile-scene.js"});
+ vm.runInNewContext(source,{window,document,console,fetch:async()=>({ok:false})},{filename:"cmd-profile-scene.js"});
  assert.ok(window.__testProfileEditor,"Editor source no longer exposes renderSheet");
  const click=(attribute,value)=>{
   const prop=attribute.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
@@ -52,21 +52,8 @@ function makeEditor(){
  return {area,window,click,render:window.__testProfileEditor.renderSheet};
 }
 
-test("CMD Sphere avatar navigation, haircuts and beards remain clickable",()=>{
- const {area,window,click,render}=makeEditor();
- render("avatar");
- for(const part of ["person","hair","beard","face","accessory"])click("avatar-part",part);
- click("avatar-part","hair");
- assert.equal(area.querySelectorAll("[data-groom-key]").length,16);
- click("groom-style","undercut");
- assert.equal(window.cmdSphereSceneState().hair,"undercut");
- click("avatar-part","beard");
- assert.equal(area.querySelectorAll("[data-groom-key]").length,8);
- click("groom-style","full");
- assert.equal(window.cmdSphereSceneState().beard,"full");
- click("avatar-part","face");
- assert.equal(window.cmdSphereSceneState().hair,"undercut");
- assert.equal(window.cmdSphereSceneState().beard,"full");
+test("CMD Sphere only offers the 68 approved complete avatars",()=>{
+ const {area,render}=makeEditor();render("avatar");assert.equal(area.querySelectorAll("[data-imported-avatar]").length,68);assert.equal(area.querySelectorAll("[data-avatar-part]").length,0);
 });
 
 test("CMD Sphere dressing, scene and pet/vehicle switches remain clickable",()=>{
@@ -75,15 +62,15 @@ test("CMD Sphere dressing, scene and pet/vehicle switches remain clickable",()=>
  assert.ok(area.querySelectorAll("[data-scene-choice]").length>15);
  click("scene-choice","top");
  render("scene");
- assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="neonforest"));
+ assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="catalog-scene-1"));
  render("pet");
  click("universe-tab","vehicle");
- assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="kart"));
- const car=area.querySelectorAll("[data-scene-choice]").find(el=>el.dataset.value==="kart");
+ assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="catalog-vehicle-27"));
+ const car=area.querySelectorAll("[data-scene-choice]").find(el=>el.dataset.value==="catalog-vehicle-27");
  car.click();
- assert.equal(window.cmdSphereSceneState().vehicle,"kart");
+ assert.equal(window.cmdSphereSceneState().vehicle,"catalog-vehicle-27");
  click("universe-tab","home");
- assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="villa"));
+ assert.ok(area.querySelectorAll("[data-scene-choice]").some(el=>el.dataset.value==="catalog-home-1"));
 });
 
 
@@ -103,9 +90,9 @@ test("CMD Sphere renders and selects each of the 68 distinct avatars, including 
 });
 
 
-test("CMD Sphere scene API saves the first and last imported avatar in 2D without resetting it to 3D",async()=>{
+test("CMD Sphere scene API saves every imported avatar in 2D without resetting it to 3D",async()=>{
  const {handleCmdProfileScene}=await import("../cmd-profile-scene-api.js");
- for(const index of [0,67]){
+ for(let index=0;index<68;index++){
   let storedScene=null;
   const pool={async query(sql,args){
    if(sql.includes("UPDATE cmd_global_profiles SET cmd_avatar_scene="))storedScene=JSON.parse(args[1]);
@@ -158,7 +145,7 @@ test("CMD Sphere catalogue offers every pet, vehicle, home and scene as an indep
  assert.ok(homes.length>=18,"Home catalogue incomplete");
  for(const home of homes)choose("home",home);
  render("scene");
- for(const index of [0,17,53])choose("scene","reference-"+index);
+ for(const index of [1,18,150])choose("scene","catalog-scene-"+index);
 });
 
 test("CMD Sphere trims pet and house sprites into PNGs, preserving scene proportions",()=>{
@@ -168,4 +155,23 @@ test("CMD Sphere trims pet and house sprites into PNGs, preserving scene proport
  assert.match(source,/sceneTiles\[n\]/);
  assert.match(source,/background-size:contain/);
  assert.doesNotMatch(source,/const trim=removeCornerBadges/,"Scene artwork should not be cropped just to remove crowns");
+});
+
+test("Individual animal and vehicle catalogue saves every ID and serves separate RGBA PNG assets",async()=>{
+ const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,"../public/universe/v1/manifest.json"),"utf8"));
+ const {handleCmdProfileScene}=await import("../cmd-profile-scene-api.js");
+ for(const [group,key] of [["pets","pet"],["vehicles","vehicle"],["homes","home"],["scenes","scene"]]){
+  const entries=manifest[group];assert.equal(new Set(entries.map(x=>x.id)).size,entries.length);
+  for(const item of entries){
+   const png=fs.readFileSync(path.join(__dirname,"../public",item.src));
+   if(item.src.endsWith(".png")){assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");assert.equal(png[25],6,"PNG must retain RGBA transparency");
+   assert.ok(png.readUInt32BE(16)>20&&png.readUInt32BE(20)>20,"Empty or truncated catalogue item: "+item.id);}else{assert.equal(png.subarray(8,12).toString(),"WEBP")}
+   let stored;
+   const pool={async query(sql,args){if(sql.includes("UPDATE cmd_global_profiles SET cmd_avatar_scene="))stored=JSON.parse(args[1]);return {rows:[]}}};
+   const req={method:"POST",async *[Symbol.asyncIterator](){yield Buffer.from(JSON.stringify({scene:{scene:"forest",[key]:item.id,petStyle:"2d",vehicle:key==="vehicle"?item.id:"catalog-vehicle-27",avatarPreset:"reference-avatar-67",avatarStyle:"2d"}}))}};
+   const res={writeHead(code){assert.equal(code,200);return this},end(body){assert.equal(JSON.parse(body).scene[key],item.id)}};
+   await handleCmdProfileScene(req,res,new URL("https://cmd-sphere.up.railway.app/api/profile/scene"),{pool,auth:{user:{id:"test-user"}}});
+   assert.equal(stored[key],item.id);assert.equal(stored.avatarPreset,"reference-avatar-67");
+  }
+ }
 });
