@@ -22,6 +22,7 @@ function state(){try{return typeof S!=='undefined'?S:null}catch{return null}}
 function id(){return String(ctx?.data?.guild?.id||'')}
 function isNative(){return ctx?.mode==='native'}
 function canEdit(){return !!ctx?.admin}
+function canEditRoles(){return isNative()?!!ctx?.owner:canEdit()}
 function discordUrl(){return /^\d{15,22}$/.test(String(ctx?.source||''))?'https://discord.com/channels/'+safe(ctx.source):''}
 function gicon(){const v=String(newIcon||ctx?.data?.guild?.icon||'');return /^https?:\/\//.test(v)||/^data:image\//.test(v)?'<img src="'+escapeHtml(v)+'" alt="">':'🏠'}
 function intro(s,sub){return '<h2 class="csm-title">'+escapeHtml(s)+'</h2><p class="csm-lead">'+escapeHtml(sub||'')+'</p>'}
@@ -87,7 +88,7 @@ function roleEditor(role){
 }
 function roles(){
  const all=ctx.data.roles||[];
- return intro('Rôles','Gérer les rôles, couleurs et permissions.')+(canEdit()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEdit()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
+ return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations Discord sont générées depuis Discord.'))+toDiscord();
@@ -334,7 +335,7 @@ function showRole(role){
 }
 async function action(which){
  if(which==='overview'||which==='channels'||which==='roles'){currentTab=which;editing=null;render();return}
- if(which==='new-role'){editing={type:'role',id:null};showRole(null);return}
+ if(which==='new-role'){if(!canEditRoles())return;if(isNative()){try{await window.cmdOpenRoleWizard({guildId:id(),onDone:async()=>{notify('Rôle créé et enregistré dans CMD Sphere.');await update()}})}catch(e){notify(e.message,false)}return}editing={type:'role',id:null};showRole(null);return}
  if(which==='cancel-channel'){$('#csm-channel-editor').innerHTML='';editing=null;return}
  if(which==='cancel-role'){$('#csm-role-editor').innerHTML='';editing=null;return}
  if(which==='delete-channel'){
