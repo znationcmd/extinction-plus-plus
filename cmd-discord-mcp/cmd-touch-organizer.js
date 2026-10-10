@@ -195,7 +195,7 @@
   notice("Maintiens un serveur pour le déplacer ou créer un dossier");
  }
  // Floating CMD AI, Studio Pub and Invite Friends; drag with a finger and keep normal taps.
- const floatSelectors=[["#cmdAiLauncher","ai"],["#cmdPromoLaunch","studio"],[".cmd-invite-floating","invite"]];
+ const floatSelectors=[["#cmdAiLauncher","ai"],["#cmdPromoLaunch","studio"],[".cmd-invite-launch","invite"]];
  const floatKey="cmd_sphere_floating_controls_v3";
  function readPrefs(){try{return JSON.parse(localStorage.getItem(floatKey)||"{}")}catch{return {}}}
  function setFloatPos(node,pos){
@@ -215,6 +215,7 @@
   node.addEventListener("pointerdown",e=>{
    if(e.button!==0&&!["touch","pen"].includes(e.pointerType))return;
    const rect=node.getBoundingClientRect();
+   try{node.setPointerCapture(e.pointerId)}catch{}
    start={id:e.pointerId,x:e.clientX,y:e.clientY,left:rect.left,top:rect.top,ready:false,moved:false};
    const g=start;
    g.timer=setTimeout(()=>{if(g!==start)return;g.ready=true;node.classList.add("cmd-float-moving")},320);
@@ -230,6 +231,7 @@
   const finish=e=>{
    const g=start;if(!g||e.pointerId!==g.id)return;
    clearTimeout(g.timer);start=null;node.classList.remove("cmd-float-moving");
+   try{node.releasePointerCapture(e.pointerId)}catch{}
    if(g.ready&&g.moved){
     e.preventDefault();e.stopPropagation();
     const p={x:parseFloat(node.style.left),y:parseFloat(node.style.top)};
