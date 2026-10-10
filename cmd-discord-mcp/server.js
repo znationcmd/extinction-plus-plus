@@ -203,6 +203,19 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function esc(v){return String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
   function toast(m,ok=true){const e=qs('#status');e.textContent=m;e.style.borderColor=ok?'#34d39966':'#fb718566';e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3500)}
   async function api(url,opt){const r=await fetch(url,{cache:'no-store',...opt,headers:{'content-type':'application/json',...(opt&&opt.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur');return d}
+  function rememberDashboardPosition(kind,guildId,channelId){
+    if(!guildId)return;
+    try{
+      const url=new URL(location.href);
+      if(url.pathname!=="/dashboard")return;
+      const key=kind==="native"?"openNative":"openGuild",other=kind==="native"?"openGuild":"openNative";
+      const same=url.searchParams.get(key)===String(guildId);
+      url.searchParams.delete(other);url.searchParams.set(key,String(guildId));
+      if(channelId)url.searchParams.set("openChannel",String(channelId));
+      else if(!same)url.searchParams.delete("openChannel");
+      history.replaceState(history.state||{},"",url.pathname+url.search+url.hash);
+    }catch{}
+  }
   function iconUrl(g){if(!g||!g.icon)return '';const v=String(g.icon).trim();if(/^https?:\/\//i.test(v)||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v)||/^\/(?!\/)[\w./?=&%-]+$/.test(v))return v;const id=String(g.source_discord_id||g.id||'');if(/^\d{15,22}$/.test(id)&&/^[a-z0-9_]{12,100}$/i.test(v))return 'https://cdn.discordapp.com/icons/'+id+'/'+v+'.webp?size=256';return ''}
   function iconHtml(g){const u=iconUrl(g),initial=esc((g.name||'?').slice(0,2).toUpperCase());return u?'<img src="'+esc(u)+'" alt="" onerror="this.parentElement.classList.add(\'cmd-icon-failed\')"><span class="rail-initial cmd-icon-fallback" aria-hidden="true">'+initial+'</span>':'<span class="rail-initial">'+initial+'</span>'}
   async function loadGuilds(){
@@ -257,7 +270,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     }
     if(!e.children.length)e.innerHTML='<div class="empty">Tes Discord apparaîtront ici.</div>';
     const params=new URLSearchParams(location.search),openGuild=params.get('openGuild'),openNative=params.get('openNative');
-    if(openNative&&!window.__openedNativeFromQuery){const entry=entries.find(x=>x.kind==='native'&&String(x.g.id)===String(openNative));if(entry){window.__openedNativeFromQuery=true;const btn=[...rail.querySelectorAll('.rail-server')].find(b=>b.title===entry.g.name);selectNative(entry.g,btn)}}
+    if(openNative&&!window.__openedNativeFromQuery){const entry=entries.find(x=>x.kind==='native'&&String(x.g.id)===String(openNative));if(entry){window.__openedNativeFromQuery=true;const btn=[...rail.querySelectorAll('.rail-server')].find(b=>b.dataset.nativeId===String(entry.g.id));void selectNative(entry.g,btn)}}
     else if(openGuild&&!window.__openedGuildFromQuery){const entry=entries.find(x=>x.kind==='discord'&&String(x.g.id)===String(openGuild));if(entry){window.__openedGuildFromQuery=true;const btn=[...rail.querySelectorAll('.rail-server')].find(b=>b.title===entry.g.name);selectGuild(entry.g,null,btn)}}
     refreshUnread().catch(()=>{});
   }
@@ -300,7 +313,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       qs('#folderForm').onsubmit=async ev=>{ev.preventDefault();const f=new FormData(ev.currentTarget),serverKeys=f.getAll('serverKey');try{await api('/api/folders/save',{method:'POST',body:JSON.stringify({id:existing?.id||'',name:f.get('name'),color:f.get('color'),serverKeys})});await loadGuilds();openFolderManager();toast('Dossier enregistré')}catch(e){toast(e.message,false)}};
     }catch(e){box.innerHTML='<h2>Dossiers</h2><p>'+esc(e.message)+'</p>'}
   }
-  async function selectGuild(g,el,railEl){closeDiscordChannel();qs('.sphere-app')?.classList.remove('cmd-native-selected');document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));el&&el.classList.add('active');railEl&&railEl.classList.add('active');S.guild=g;S.nativeGuild=null;S.bot=g.availableBots[0]?.id||null;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+esc(x.name)+'</span>').join('');qs('#refresh').disabled=!g.installed;if(!g.installed){qs('#workspace').className='empty';qs('#workspace').innerHTML='<h2>'+esc(g.name)+'</h2><p>Ce Discord est visible car tu le gères, mais aucun bot CMD n’y est installé. Il reste grisé dans la barre à gauche.</p><button class="btn primary" onclick="openAdd(\'import\')">Importer / connecter</button>';return}await loadStructure()}
+  async function selectGuild(g,el,railEl){closeDiscordChannel();qs('.sphere-app')?.classList.remove('cmd-native-selected');document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));el&&el.classList.add('active');railEl&&railEl.classList.add('active');S.guild=g;S.nativeGuild=null;rememberDashboardPosition('discord',g.id);S.bot=g.availableBots[0]?.id||null;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+esc(x.name)+'</span>').join('');qs('#refresh').disabled=!g.installed;if(!g.installed){qs('#workspace').className='empty';qs('#workspace').innerHTML='<h2>'+esc(g.name)+'</h2><p>Ce Discord est visible car tu le gères, mais aucun bot CMD n’y est installé. Il reste grisé dans la barre à gauche.</p><button class="btn primary" onclick="openAdd(\'import\')">Importer / connecter</button>';return}await loadStructure()}
   function nativeChannelListItem(gid,x){
     const openable=['text','announcement','forum'].includes(String(x.type||'')),unread=Number(x.unread_count||0);
     const badge=unread?'<span class="cmd-channel-badge">'+Math.min(99,unread)+'</span>':'';
@@ -317,7 +330,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     closeDiscordChannel();
     document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));railEl&&railEl.classList.add('active');
     qs('.sphere-app')?.classList.add('cmd-native-selected');
-    S.guild=null;S.bot=null;S.structure=null;S.nativeGuild=g;qs('#refresh').disabled=false;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML='<span class="bot">CMD Sphere · autonome</span>';
+    S.guild=null;S.bot=null;S.structure=null;S.nativeGuild=g;rememberDashboardPosition('native',g.id);qs('#refresh').disabled=false;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML='<span class="bot">CMD Sphere · autonome</span>';
     try{
       const d=await api('/api/native/guild/'+encodeURIComponent(g.id)),cats=(d.channels||[]).filter(x=>x.type==='category'),chs=(d.channels||[]).filter(x=>x.type!=='category'),admin=['owner','admin'].includes(String(d.member?.membership_role||''));
       S.nativeChannels=new Map((d.channels||[]).map(ch=>[String(ch.id),ch]));
@@ -390,7 +403,13 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       }
     }catch(e){toast(e.message,false)}
   }
-  async function loadStructure(){try{const d=await api('/api/dashboard/structure?guildId='+encodeURIComponent(S.guild.id)+(S.bot?'&bot='+encodeURIComponent(S.bot):''));S.structure=d;render()}catch(e){toast(e.message,false)}}
+  async function loadStructure(){try{const d=await api('/api/dashboard/structure?guildId='+encodeURIComponent(S.guild.id)+(S.bot?'&bot='+encodeURIComponent(S.bot):''));S.structure=d;render();
+    const params=new URLSearchParams(location.search),id=params.get('openChannel');
+    if(id&&String(params.get('openGuild'))===String(S.guild.id)&&!CHAT.open){
+      const ch=(d.channels||[]).find(x=>String(x.id)===String(id)&&['text','announcement','thread'].includes(String(x.type||'')));
+      if(ch)await openDiscordChannel(ch.id,ch.name);
+    }
+  }catch(e){toast(e.message,false)}}
   function channelListItem(x){
     const openable=['text','announcement','thread'].includes(String(x.type||''));
     return openable?'<button type="button" class="channel-link" data-discord-channel="'+esc(String(x.id))+'" data-discord-name="'+esc(String(x.name||'salon'))+'"><span>#</span><span class="channel-name">'+esc(x.name)+'</span><small>'+esc(x.type)+'</small><b>›</b></button>':'<div class="channel-static"><span>'+((x.type==='voice')?'🔊':'#')+'</span> '+esc(x.name)+' <small>'+esc(x.type)+'</small></div>';
@@ -482,7 +501,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     const archive=Boolean(!localOnly&&linked&&!live&&!combined);
     CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;CHAT.open=true;CHAT.mode=combined?'combined':archive?'archive':live?'discord':'native';
     CHAT.guildId=live?sourceId:String(guildId);CHAT.bot=live?managed.availableBots[0].id:null;
-    CHAT.channelId=live?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');
+    CHAT.channelId=live?String(ch.source_channel_id):String(id);CHAT.name=String(name||'salon');rememberDashboardPosition('native',guildId,id);
     CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
     qs('#channelMessages').textContent='Chargement des messages…';
     qs('#channelTitle').textContent='# '+CHAT.name;
@@ -534,7 +553,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   async function openDiscordChannel(id,name){
     if(!S.guild||!S.bot){toast('Aucun bot CMD disponible pour ce Discord.',false);return}
-    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;qs('#channelMessages').textContent='Chargement des messages…';CHAT.open=true;CHAT.mode='discord';CHAT.guildId=String(S.guild.id);CHAT.bot=S.bot;CHAT.channelId=String(id);CHAT.name=String(name||'salon');CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
+    CHAT.version=(CHAT.version||0)+1;CHAT.loading=false;qs('#channelMessages').textContent='Chargement des messages…';CHAT.open=true;CHAT.mode='discord';CHAT.guildId=String(S.guild.id);CHAT.bot=S.bot;CHAT.channelId=String(id);CHAT.name=String(name||'salon');rememberDashboardPosition('discord',S.guild.id,id);CHAT.messages=[];CHAT.nextBefore=null;CHAT.hasMore=false;CHAT.replyTo=null;CHAT.pendingAttachments=[];CHAT.pendingPoll=null;
     qs('#channelTitle').textContent='# '+CHAT.name;qs('#channelSubtitle').textContent='Chargement des vrais messages Discord…';qs('#channelOverlay').classList.add('on');qs('#channelInput').disabled=false;qs('#channelSend').disabled=false;updateReplyBar();
     await loadDiscordMessages(true,false);clearInterval(CHAT.poll);CHAT.poll=setInterval(()=>refreshDiscordMessages().catch(()=>{}),5000);
   }
@@ -764,8 +783,12 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   async function refreshEverything(){
     const b=qs('#refresh');if(b){b.disabled=true;b.textContent='↻ Actualisation…'}
     try{
+      const previous={mode:S.nativeGuild?'native':'discord',guildId:String(S.nativeGuild?.id||S.guild?.id||''),channelId:CHAT.open?String(CHAT.channelId||''):''};
       await loadGuilds();
-      if(S.guild&&S.guild.id)await loadStructure();else if(S.nativeGuild?.id)await selectNative(S.nativeGuild);
+      if(previous.guildId){
+        if(previous.mode==='native'&&String(S.nativeGuild?.id)===previous.guildId)await selectNative(S.nativeGuild);
+        else if(previous.mode==='discord'&&String(S.guild?.id)===previous.guildId)await loadStructure();
+      }
       if(qs('#webhookModal')?.classList.contains('on'))await openWebhookManager();
       toast('CMD Sphere actualisé');return true;
     }catch(e){toast(e.message,false);return false}
