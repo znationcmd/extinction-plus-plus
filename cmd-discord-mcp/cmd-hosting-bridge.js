@@ -120,7 +120,7 @@ export async function handleCmdHostingBridge(req,res,url,{pool,auth,baseUrl}){
   if(req.method==="GET"){
    const a=await pool.query("SELECT rental_id FROM cmd_sphere_hosting_guild_links WHERE guild_id=$1 AND owner_user_id=$2",[guildId,access.ownerId]);
    const linked=await pool.query("SELECT 1 FROM cmd_sphere_hosting_links WHERE user_id=$1 AND expires_at>NOW()",[access.ownerId]);
-   if(!linked.rows.length){json(res,200,{linked:false,assigned:false,server:null});return true}
+   if(!linked.rows.length){json(res,200,{linked:false,assigned:false,server:null,owner:access.owner});return true}
    let token;try{token=await hostingOwnerToken(pool,access.ownerId)}catch{json(res,503,{error:"Renouvelle la connexion CMD Hosting"});return true}
    try{const d=await remote("/api/integrations/cmd-sphere/servers",token);const server=(d.servers||[]).find(s=>s.id===String(a.rows[0]?.rental_id||""))||null;
    json(res,200,{linked:true,assigned:!!server,server,canManage:access.allowed,owner:access.owner});return true}
