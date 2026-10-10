@@ -201,3 +201,14 @@ test("saved supplemental background ID survives a temporarily missing manifest",
  assert.equal(record.cmd_avatar_scene.top,"jacket");
  assert.equal(record.cmd_avatar_scene.avatarPreset,"reference-avatar-67");
 });
+
+test("restored backgrounds render small gallery images but preserve original HD preview",()=>{
+ const src=fs.readFileSync(path.join(__dirname,"../cmd-profile-scene.js"),"utf8");
+ const generator=fs.readFileSync(path.join(__dirname,"../cmd-unpack-restored-scenes.cjs"),"utf8");
+ const server=fs.readFileSync(path.join(__dirname,"../server.js"),"utf8");
+ assert.ok(src.includes('.replace("/cmd-restored-fonds/","/cmd-restored-fonds/thumb_")'),"Missing thumbnail URLs");
+ assert.ok(src.includes('original=pathname.replace("/cmd-restored-fonds/thumb_","/cmd-restored-fonds/")'),"Missing old image fallback");
+ assert.ok(generator.includes('resize(640,360'),"Missing reduced wallpaper generation");
+ assert.ok(generator.includes('"thumb_"+path.basename(item.src)'),"Thumbnail filename must match browser URLs");
+ assert.ok(server.includes('/cmd-restored-fonds/'),"Existing route for restored images must remain");
+});
