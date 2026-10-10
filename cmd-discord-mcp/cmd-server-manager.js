@@ -29,8 +29,8 @@ function intro(s,sub){return '<h2 class="csm-title">'+escapeHtml(s)+'</h2><p cla
 function btn(label,action,klass){return '<button type="button" data-csm-action="'+escapeHtml(action)+'" class="csm-btn '+(klass||'')+'">'+escapeHtml(label)+'</button>'}
 function field(label,name,value,attrs){return '<label class="csm-field">'+escapeHtml(label)+'<input name="'+escapeHtml(name)+'" value="'+escapeHtml(value??'')+'" '+(attrs||'')+'></label>'}
 function info(s){return '<div class="csm-info">'+escapeHtml(s)+'</div>'}
-function toDiscord(){return discordUrl()?'<a class="csm-btn" target="_blank" rel="noopener noreferrer" href="'+discordUrl()+'">Ouvrir sur Discord ↗</a>':''}
-function note(){return ctx.source&&isNative()?'Serveur importé depuis Discord. Une confirmation explicite est demandée avant toute opération qui pourrait modifier le serveur Discord. La copie CMD Sphere reste indépendante pour ses messages locaux.':'Enregistrez pour appliquer les modifications autorisées.'}
+function toDiscord(){return discordUrl()?'<a class="csm-btn" target="_blank" rel="noopener noreferrer" href="'+discordUrl()+'">Ouvrir la plateforme connectée ↗</a>':''}
+function note(){return ctx.source&&isNative()?'Serveur importé dans CMD Sphere. Une confirmation explicite est demandée avant toute opération qui pourrait modifier le serveur externe. La copie CMD Sphere reste indépendante pour ses messages locaux.':'Enregistrez pour appliquer les modifications autorisées.'}
 async function getContext(){
  const s=state();if(!s?.nativeGuild&&!s?.guild)throw Error('Sélectionne d’abord un serveur.');
  if(s.nativeGuild){
@@ -46,7 +46,7 @@ function nav(){
 }
 function overview(){
  const g=ctx.data.guild;
- if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur Discord.')+info('Les modifications du nom et de l’icône Discord se font depuis Discord. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
+ if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Les modifications du nom et de l’icône Discord se font depuis la plateforme liée. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
  return intro('Vue d’ensemble','Nom, image et paramètres du serveur CMD Sphere.')+
  '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/jpeg,image/png,image/webp" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
  field('Nom du serveur','name',g.name,'required maxlength="100" '+(ctx.owner?'':'disabled'))+
@@ -65,7 +65,7 @@ function chanItem(c){
 function channels(){
  const all=ctx.data.channels||[],cats=all.filter(x=>x.type==='category'),rooms=all.filter(x=>x.type!=='category');
  const create=canEdit()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
- return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis Discord','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
+ return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis la plateforme liée','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
 }
 /* Discord-style permission categories; CMD Hosting remains a separate owner-controlled server permission. */
 const permissionGroups=[
@@ -91,13 +91,13 @@ function roles(){
  return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
- if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations Discord sont générées depuis Discord.'))+toDiscord();
+ if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations du service connecté sont générées depuis la plateforme liée.'))+toDiscord();
  if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+(isNative()?'<a class="csm-btn primary" href="/apps/directory">＋ Inviter un bot CMD Sphere</a><a class="csm-btn" href="/developers">CMD Sphere Développeur</a>':'')+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks Discord','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div>'+(isNative()?'<section id="csm-installed-cmd-apps" aria-live="polite">'+info('Chargement des bots CMD Sphere installés…')+'</section>':'')+'<section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
  if(currentTab==='appearance')return intro('Personnalisation','Icône, description et identité du serveur.')+btn('Modifier la vue d’ensemble','overview','primary')+(isNative()?'<a class="csm-btn" href="/profile?server='+safe(id())+'">Profil du serveur ↗</a>':'')+toDiscord();
- if(currentTab==='members')return intro('Membres','Vue et gestion des membres.')+info('Membres du serveur : '+String(ctx.data.guild.member_count||ctx.data.guild.memberCount||0)+'. La gestion avancée des membres et de leurs rôles Discord doit être faite depuis Discord.')+toDiscord();
- if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité Discord restent dans Discord.')+toDiscord();
- if(currentTab==='automod')return intro('AutoMod','Modération automatisée du serveur.')+info('L’édition des règles AutoMod Discord n’est pas accessible depuis ce panneau.')+toDiscord();
- return intro('Journal d’audit','Suivi de la configuration et des événements.')+info('L’historique d’audit Discord ne peut pas être modifié dans CMD Sphere.')+toDiscord();
+ if(currentTab==='members')return intro('Membres','Vue et gestion des membres.')+info('Membres du serveur : '+String(ctx.data.guild.member_count||ctx.data.guild.memberCount||0)+'. La gestion avancée des membres et de leurs rôles CMD Sphere doit être faite depuis la plateforme liée.')+toDiscord();
+ if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité externes restent dans la plateforme liée.')+toDiscord();
+ if(currentTab==='automod')return intro('AutoMod','Modération automatisée du serveur.')+info('L’édition des règles AutoMod externe n’est pas accessible depuis ce panneau.')+toDiscord();
+ return intro('Journal d’audit','Suivi de la configuration et des événements.')+info('Le journal d’audit externe ne peut pas être modifié dans CMD Sphere.')+toDiscord();
 }
 
 async function loadHostingRoles(){
@@ -108,7 +108,7 @@ async function loadHostingRoles(){
   if(!area.isConnected||guildId!==id())return;
   area.replaceChildren();
   const heading=document.createElement('h3');heading.textContent='🎮 Gestion CMD Hosting';area.append(heading);
-  const note=document.createElement('p');note.textContent='Comme dans les rôles Discord : ouvre un rôle, règle ses permissions et attribue-le aux membres. La permission CMD Hosting est réservée au propriétaire du serveur.';area.append(note);
+  const note=document.createElement('p');note.textContent='Comme dans les rôles CMD Sphere : ouvre un rôle, règle ses permissions et attribue-le aux membres. La permission CMD Hosting est réservée au propriétaire du serveur.';area.append(note);
   const newIds=new Set((hostingRoleData.roles||[]).map(r=>String(r.id)));
   if((ctx.data.roles||[]).some(r=>newIds.has(String(r.id)))===false&&newIds.size){
    // The default Hosting role is created on first visit, so refresh the server's role list once.
@@ -170,7 +170,7 @@ async function loadInstalledCMDApps(){
   const apps=Array.isArray(data.apps)?data.apps:[];
   const labels={view_channels:'Voir les salons',read_messages:'Lire les messages',send_messages:'Envoyer des messages'};
   container.innerHTML='<h3>Bots et applications CMD Sphere</h3>'+
-   '<p class="csm-lead">Ces bots sont autorisés sur CMD Sphere sans modifier Discord. Un bot doit utiliser l’API CMD Sphere pour répondre.</p>'+
+   '<p class="csm-lead">Ces bots sont autorisés sur CMD Sphere sans modifier la plateforme liée. Un bot doit utiliser l’API CMD Sphere pour répondre.</p>'+
    (apps.length?'<div class="csm-lines">'+apps.map(app=>{
     const scopes=Array.isArray(app.permissions)?app.permissions:[];
     return '<div class="csm-line"><span>🤖</span><div><strong>'+escapeHtml(app.name||'Application CMD')+'</strong>'+
@@ -182,7 +182,7 @@ async function loadInstalledCMDApps(){
   container.querySelectorAll('[data-csm-uninstall-app]').forEach(button=>button.addEventListener('click',async()=>{
     const appId=button.dataset.csmUninstallApp,app=apps.find(x=>String(x.id)===String(appId));
     if(!canEdit()||!app)return;
-    if(!confirm('Retirer « '+app.name+' » de ce serveur CMD Sphere ? Les permissions de cette application seront révoquées immédiatement, sans modifier Discord.'))return;
+    if(!confirm('Retirer « '+app.name+' » de ce serveur CMD Sphere ? Les permissions de cette application seront révoquées immédiatement, sans modifier la plateforme liée.'))return;
     button.disabled=true;
     try{
       await request('/api/cmd-apps/remove',{guildId:id(),clientId:appId});
@@ -199,7 +199,7 @@ async function loadNativeWebhooks(){
  try{
   const data=await request('/api/native/webhooks?guildId='+safe(id()));if(ctx!==context||!box.isConnected)return;
   const rooms=(context.data.channels||[]).filter(c=>['text','announcement','forum'].includes(String(c.type)));
-  box.innerHTML='<h3>Webhooks CMD Sphere indépendants</h3>'+info('Envoie des messages directement ici, sans compte Discord. Format JSON : content et embeds. Les outils externes doivent accepter une URL de webhook personnalisée.')+'<div class="csm-lines">'+(data.webhooks||[]).map(w=>'<div class="csm-line"><span>🪝</span><div><strong>'+escapeHtml(w.name)+'</strong><small># '+escapeHtml(w.channelName)+'</small></div><button type="button" class="csm-btn danger" data-delete-native-webhook="'+escapeHtml(w.id)+'">Supprimer</button></div>').join('')+'</div>'+(canEdit()&&rooms.length?'<form id="csm-native-webhook-form" class="csm-form csm-sub"><h3>Créer ici</h3>'+field('Nom','name','CMD Webhook','required maxlength="80"')+'<label class="csm-field">Salon CMD Sphere<select name="channelId">'+rooms.map(c=>'<option value="'+escapeHtml(c.id)+'"># '+escapeHtml(c.name)+'</option>').join('')+'</select></label><button class="csm-btn primary">Créer le webhook CMD Sphere</button></form><div id="csm-native-webhook-result"></div>':info('Il faut un salon texte et les droits de gestion pour créer un webhook.'));
+  box.innerHTML='<h3>Webhooks CMD Sphere indépendants</h3>'+info('Envoie des messages directement ici, sans compte la plateforme liée. Format JSON : content et embeds. Les outils externes doivent accepter une URL de webhook personnalisée.')+'<div class="csm-lines">'+(data.webhooks||[]).map(w=>'<div class="csm-line"><span>🪝</span><div><strong>'+escapeHtml(w.name)+'</strong><small># '+escapeHtml(w.channelName)+'</small></div><button type="button" class="csm-btn danger" data-delete-native-webhook="'+escapeHtml(w.id)+'">Supprimer</button></div>').join('')+'</div>'+(canEdit()&&rooms.length?'<form id="csm-native-webhook-form" class="csm-form csm-sub"><h3>Créer ici</h3>'+field('Nom','name','CMD Webhook','required maxlength="80"')+'<label class="csm-field">Salon CMD Sphere<select name="channelId">'+rooms.map(c=>'<option value="'+escapeHtml(c.id)+'"># '+escapeHtml(c.name)+'</option>').join('')+'</select></label><button class="csm-btn primary">Créer le webhook CMD Sphere</button></form><div id="csm-native-webhook-result"></div>':info('Il faut un salon texte et les droits de gestion pour créer un webhook.'));
   box.querySelectorAll('[data-delete-native-webhook]').forEach(button=>button.onclick=async()=>{if(!confirm('Supprimer ce webhook CMD Sphere et désactiver son URL ?'))return;button.disabled=true;try{await request('/api/native/webhooks/delete',{guildId:String(context.data.guild.id),id:button.dataset.deleteNativeWebhook});if(ctx===context)await loadNativeWebhooks()}catch(err){notify(err.message,false);button.disabled=false}});
   box.querySelector('form')?.addEventListener('submit',async e=>{
    e.preventDefault();const f=e.currentTarget,values=new FormData(f),button=f.querySelector('button');button.disabled=true;
@@ -217,7 +217,7 @@ async function loadNativeWebhooks(){
 async function loadWebhooks(){
  const box=$('#csm-webhooks'),context=ctx;
  if(!box)return;
- if(!ctx.source){box.innerHTML=info('Ce serveur CMD Sphere n’est pas lié à Discord. Les webhooks Discord apparaissent dans leur serveur importé.');return}
+ if(!ctx.source){box.innerHTML=info('Ce serveur CMD Sphere n’est pas lié à la plateforme liée. Les webhooks importés apparaissent dans leur serveur importé.');return}
  try{
   const [webhookResult,botResult]=await Promise.allSettled([request('/api/dashboard/webhooks?guildId='+safe(context.source)),request('/api/dashboard/bots?guildId='+safe(context.source))]);
   const saved=isNative()?await request('/api/native/integrations?guildId='+safe(id())).catch(()=>({snapshot:{}})):{snapshot:{}};
@@ -231,14 +231,14 @@ async function loadWebhooks(){
    const channel=local?.name||w.channelName||w.channelId||'Salon non fourni';
    return '<div class="csm-line"><span>🪝</span><div><strong>'+escapeHtml(w.name)+'</strong><small># '+escapeHtml(channel)+(local?' · salon associé dans CMD Sphere':' · salon Discord à synchroniser')+'</small><small>'+escapeHtml(w.creator?.username?'Créé par '+w.creator.username:'Créateur non fourni')+(w.mine?' · ton webhook':'')+'</small></div><a class="csm-btn" target="_blank" rel="noopener noreferrer" href="https://discord.com/channels/'+safe(context.source)+'/'+safe(w.channelId||'')+'">Voir le salon ↗</a></div>';
   }).join('');
-  const botHtml=detected.map(b=>'<div class="csm-line">'+(/^https:\/\//.test(String(b.avatar||''))?'<img class="csm-bot-icon" src="'+escapeHtml(b.avatar)+'" alt="">':'<span>🤖</span>')+'<div><strong>'+escapeHtml(b.username||b.name||b.id)+'</strong><small>Détecté sur Discord · connexion CMD Sphere non vérifiée</small><small>ID '+escapeHtml(b.id)+'</small></div></div>').join('');
-  box.innerHTML='<h3>Bots du serveur Discord</h3><div class="csm-lines">'+(botHtml||info(botResult.status==='rejected'?'Bots inaccessibles : '+botResult.reason.message:'Aucun bot accessible.'))+'</div>'+info('Les réglages existants restent sur Discord ou chez le fournisseur du bot. Un bot tiers doit proposer une API compatible pour fonctionner dans CMD Sphere.')+'<h3>Webhooks Discord existants</h3>'+info('Les webhooks restent associés à leur serveur et à leur salon Discord d’origine. Ils sont affichés ici sans les recréer ni les déplacer.')+'<div class="csm-lines">'+(rows||info('Aucun webhook accessible sur ce serveur.'))+'</div>'+(data.errors?.length?info('Certaines sources sont inaccessibles : '+data.errors.map(e=>e.botName+': '+e.error).join(' · ')):'')+
-   (canEdit()&&rooms.length&&bot?'<form id="csm-create-webhook" class="csm-form csm-sub"><h3>Créer un webhook sur Discord</h3>'+field('Nom','name','CMD Webhook','required maxlength="80"')+'<label class="csm-field">Salon<select name="channelId" required>'+rooms.map(c=>'<option value="'+escapeHtml(c.source_channel_id||c.id)+'"># '+escapeHtml(c.name)+'</option>').join('')+'</select></label><button class="csm-btn primary" type="submit">Créer le webhook</button></form>':info('La création nécessite des droits de gestion, un salon synchronisé et un bot disposant de la permission Gérer les webhooks.'));
+  const botHtml=detected.map(b=>'<div class="csm-line">'+(/^https:\/\//.test(String(b.avatar||''))?'<img class="csm-bot-icon" src="'+escapeHtml(b.avatar)+'" alt="">':'<span>🤖</span>')+'<div><strong>'+escapeHtml(b.username||b.name||b.id)+'</strong><small>Détecté sur la plateforme liée · connexion CMD Sphere non vérifiée</small><small>ID '+escapeHtml(b.id)+'</small></div></div>').join('');
+  box.innerHTML='<h3>Bots du serveur externe</h3><div class="csm-lines">'+(botHtml||info(botResult.status==='rejected'?'Bots inaccessibles : '+botResult.reason.message:'Aucun bot accessible.'))+'</div>'+info('Les réglages existants restent sur la plateforme liée ou chez le fournisseur du bot. Un bot tiers doit proposer une API compatible pour fonctionner dans CMD Sphere.')+'<h3>Webhooks Discord existants</h3>'+info('Les webhooks restent associés à leur serveur et à leur salon Discord d’origine. Ils sont affichés ici sans les recréer ni les déplacer.')+'<div class="csm-lines">'+(rows||info('Aucun webhook accessible sur ce serveur.'))+'</div>'+(data.errors?.length?info('Certaines sources sont inaccessibles : '+data.errors.map(e=>e.botName+': '+e.error).join(' · ')):'')+
+   (canEdit()&&rooms.length&&bot?'<form id="csm-create-webhook" class="csm-form csm-sub"><h3>Créer un webhook sur la plateforme liée</h3>'+field('Nom','name','CMD Webhook','required maxlength="80"')+'<label class="csm-field">Salon<select name="channelId" required>'+rooms.map(c=>'<option value="'+escapeHtml(c.source_channel_id||c.id)+'"># '+escapeHtml(c.name)+'</option>').join('')+'</select></label><button class="csm-btn primary" type="submit">Créer le webhook</button></form>':info('La création nécessite des droits de gestion, un salon synchronisé et un bot disposant de la permission Gérer les webhooks.'));
   box.querySelector('#csm-create-webhook')?.addEventListener('submit',async e=>{
    e.preventDefault();const form=e.currentTarget,values=new FormData(form),button=form.querySelector('button');
-   if(!confirm('Créer le webhook « '+values.get('name')+' » sur le serveur Discord « '+context.data.guild.name+' » dans le salon choisi ?'))return;
+   if(!confirm('Créer le webhook « '+values.get('name')+' » sur le serveur externe « '+context.data.guild.name+' » dans le salon choisi ?'))return;
    button.disabled=true;
-   try{await request('/api/dashboard/action',{guildId:context.source,bot,action:'create_webhook',name:values.get('name'),channelId:values.get('channelId')});notify('Webhook créé sur Discord.');if(ctx===context)await loadWebhooks()}
+   try{await request('/api/dashboard/action',{guildId:context.source,bot,action:'create_webhook',name:values.get('name'),channelId:values.get('channelId')});notify('Webhook créé sur la plateforme liée.');if(ctx===context)await loadWebhooks()}
    catch(err){notify('Création du webhook : '+err.message,false)}finally{button.disabled=false}
   });
  }catch(err){if(box.isConnected&&ctx===context)box.innerHTML=info('Webhooks inaccessibles : '+err.message)}
@@ -259,8 +259,8 @@ async function update(){
  try{const st=state();if(st?.nativeGuild&&typeof selectNative==='function')await selectNative(st.nativeGuild)}catch{}
 }
 function requireConfirmation(message){
- if(ctx?.source&&isNative())return confirm('Serveur Discord importé : '+message+'\n\nCette action peut aussi modifier le serveur Discord si un bot autorisé est connecté. Continuer ?');
- if(ctx?.source&&!isNative())return confirm('Modifier le serveur Discord via le bot autorisé ?\n\n'+message);
+ if(ctx?.source&&isNative())return confirm('Serveur externe importé : '+message+'\n\nCette action peut aussi modifier le serveur externe si un bot autorisé est connecté. Continuer ?');
+ if(ctx?.source&&!isNative())return confirm('Modifier le serveur externe via le bot autorisé ?\n\n'+message);
  return true;
 }
 async function mutate(action,payload){
