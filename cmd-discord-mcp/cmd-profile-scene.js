@@ -46,14 +46,14 @@ function originalPetArt(value){
  if(value==="none")return "";
  const item=pets.find(x=>x[0]===value),index=originalPetIndex[value];
  const art=universeAssets.get(value)?.src||legacyPetImages[value]||(index===undefined?null:petTiles[index]);
- if(art)return '<img class="cmd-universe-item-image cmd-pet-art" src="'+art+'" alt="'+escape(item?.[1]||value)+'" decoding="async">';
+ if(art)return '<img class="cmd-universe-item-image cmd-pet-art" src="'+art+'" alt="'+escape(item?.[1]||value)+'" loading="lazy" decoding="async">';
  return '<span class="cmd-pet-symbol" role="img" aria-label="'+escape(item?.[1]||value)+'">'+(petSymbol[value]||item?.[2]||"🐾")+'</span>';
 }
 function petArt(value){return originalPetArt(value)}
 function universeArtwork(key,value,icon){
  if(key==="vehicle"||key==="home"){
   const asset=universeAssets.get(value),src=asset?.src;
-  if(src)return '<img class="cmd-universe-item-image cmd-vehicle-art" src="'+src+'" alt="'+escape(asset?.label||vehicles.find(x=>x[0]===value)?.[1]||"Véhicule")+'" decoding="async">';
+  if(src)return '<img class="cmd-universe-item-image cmd-vehicle-art" src="'+src+'" alt="'+escape(asset?.label||vehicles.find(x=>x[0]===value)?.[1]||"Véhicule")+'" loading="lazy" decoding="async">';
  }
 
  if(key==="home"){
@@ -313,10 +313,10 @@ document.addEventListener("error",event=>{
  let original="";
  try{
   const pathname=new URL(img.src,location.href).pathname;
-  if(/^\/avatars\/v4\/avatar-[0-9]{2}\.webp$/.test(pathname))
-   original=pathname.replace("/avatars/v4/","/avatars/v3/").replace(/\.webp$/,".png");
-  else if(/^\/universe\/v2\/(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(pathname))
-   original=pathname.replace("/universe/v2/","/universe/v1/").replace(/\.webp$/,pathname.includes("/scene-")?".webp":".png");
+  if(/^\/avatars\/v4\/(?:thumbs\/)?avatar-[0-9]{2}\.webp$/.test(pathname))
+   original=pathname.replace("/avatars/v4/thumbs/","/avatars/v3/").replace("/avatars/v4/","/avatars/v3/").replace(/\.webp$/,".png");
+  else if(/^\/universe\/v2\/(?:thumbs\/)?(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(pathname))
+   original=pathname.replace("/universe/v2/thumbs/","/universe/v1/").replace("/universe/v2/","/universe/v1/").replace(/\.webp$/,pathname.includes("/scene-")?".webp":".png");
  }catch{}
  if(original){img.dataset.cmdOriginalFallback="1";img.src=original;}
 },true);
@@ -417,7 +417,7 @@ loadOriginalSheets();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
    const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-hd-scene-thumb">'+(sceneReferenceIndex(value)>=0?'<img class="cmd-scene-thumb-image" loading="lazy" decoding="async" src="'+escape(sceneTiles[sceneReferenceIndex(value)])+'" alt="'+escape(name)+'">':'<span class="cmd-scene-choice-symbol">'+(icon||'✦')+'</span>')+'</div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
-   return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
+   return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup.replaceAll('/universe/v2/','/universe/v2/thumbs/')+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
 function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-swatches">'+values.map(c=>'<button type="button" aria-label="'+c+'" data-scene-color="'+key+'" data-value="'+c+'" class="'+(state[key]===c?"selected":"")+'" style="background:'+c+'"></button>').join("")+'</div></div>'}
@@ -455,7 +455,7 @@ function applyScreenshotCatalogue(){
 }
 function importedAvatarArt(i,eager=false){
  const src=importedAvatarTiles[i];
- return src?'<img class="cmd-imported-avatar-art" src="'+src+'" alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
+ return src?'<img class="cmd-imported-avatar-art" src="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+'" alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
 }
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Silhouette complète · 2D</small></button>').join("")}
 function avatarEditor(){return '<h2>Choisis ton avatar</h2><p class="cmd-scene-section-intro">68 silhouettes complètes avec leur tenue et leurs accessoires.</p><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards()+'</div>'}
