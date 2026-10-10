@@ -5,6 +5,10 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.quer
 const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["story","📱 Story"],["gif","✨ GIF"],["poster","🪧 Affiche"]];
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
+const EFFECT_OPTIONS=[["none","Original"],["zoom","Zoom"],["pan","Cinématique"],["pulse","Pulsation"],["slide","Glissement"],["shake","Secousse"],["dream","Rêve"],["flash","Flash"],["vhs","VHS"],["neon","Néon"],["mirror","Miroir"],["glitch","Glitch"]];
+const FILTER_OPTIONS=[["natural","Original"],["vivid","Vibrant"],["warm","Doré"],["retro","Vintage"],["mono","Noir et blanc"],["cool","Bleuté"],["pink","Rose"],["cinema","Cinéma"],["noir","Noir intense"],["soft","Doux"],["sunset","Coucher de soleil"]];
+const FILTER_CSS={natural:"none",vivid:"saturate(1.6) contrast(1.12)",warm:"sepia(.24) saturate(1.3)",retro:"sepia(.6) contrast(1.2)",mono:"grayscale(1) contrast(1.18)",cool:"saturate(1.22) hue-rotate(12deg) brightness(1.05)",pink:"sepia(.12) saturate(1.65) hue-rotate(305deg)",cinema:"contrast(1.26) saturate(.75) brightness(.86)",noir:"grayscale(1) contrast(1.75) brightness(.88)",soft:"contrast(.84) saturate(.86) brightness(1.14)",sunset:"sepia(.33) saturate(1.6) hue-rotate(-9deg)"};
+
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
 let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
@@ -66,6 +70,7 @@ function open(context={}){
  cropSelect.innerHTML='<option value="cover">Remplir l’écran</option><option value="contain">Afficher toute l’image</option>';
  cropSelect.value=state.crop||"cover";cropSetting.append(cropSelect);cropCard.append(cropSetting);
  cropSelect.onchange=()=>{state.crop=cropSelect.value;recorded=null;render(previewCursor)};
+ installEffectsGallery(controls);
  const camera=document.createElement("input");camera.type="file";camera.id="cmdStudioCameraCapture";
  camera.setAttribute("accept","video/*,image/*");camera.setAttribute("capture","environment");camera.hidden=true;root.append(camera);
  camera.onchange=e=>{addFiles(e.target.files);camera.value="";showTool("media")};
@@ -120,6 +125,9 @@ function showTool(tool){
  const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");controls.dataset.activeTool=tool;
  $$("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
  const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
+ const effects=$("#cmdStudioEffectsGallery",root),filters=$("#cmdStudioFiltersGallery",root);
+ if(effects)effects.hidden=tool==="filter";if(filters)filters.hidden=tool!=="filter";
+ if(tool==="effect"||tool==="filter")refreshEffectGallery(tool);
  $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Enregistrement local"})[tool]||"Outils";
  $$("[data-cmd-tool]",root).forEach(btn=>btn.classList.toggle("selected",btn.dataset.cmdTool===tool));
  updateDragHandles();
@@ -242,9 +250,12 @@ function drawMedia(item,t,local,slot){
  if(state.effect==="pan"){zoom=1.12;x=(p-.5)*w*.12}
  if(state.effect==="pulse")zoom=1.03+.05*Math.sin(t*5);
  if(state.effect==="slide")x=(.5-p)*w*.16;
+ if(state.effect==="shake"){zoom=1.09;x=Math.sin(t*31)*w*.012;y=Math.cos(t*26)*h*.007}
+ if(state.effect==="dream")zoom=1.07;
+ if(state.effect==="vhs"||state.effect==="neon")zoom=1.02;
+ if(state.effect==="glitch")x=(Math.floor(t*13)%4===0?1:-1)*w*.017;
  ctx.save();ctx.translate(w/2+x,h/2+y);ctx.scale(zoom,zoom);
- const filters={natural:"none",vivid:"saturate(1.6) contrast(1.12)",warm:"sepia(.24) saturate(1.3)",retro:"sepia(.6) contrast(1.2)",mono:"grayscale(1) contrast(1.18)"};
- ctx.filter=filters[state.filter]||"none";
+ ctx.filter=state.effect==="dream"?"blur(5px) saturate(1.6) brightness(1.12)":state.effect==="vhs"?"sepia(.32) saturate(.8) contrast(1.18)":state.effect==="neon"?"contrast(1.35) saturate(2.2)":state.effect==="glitch"?"saturate(2) contrast(1.25)":FILTER_CSS[state.filter]||"none";
  const scale=state.crop==="contain"?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);ctx.drawImage(el,-iw*scale/2,-ih*scale/2,iw*scale,ih*scale);
  ctx.restore();
 }
