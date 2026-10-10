@@ -579,7 +579,104 @@ function menu(){
  root.querySelector('[data-csm-quick="invite"]')?.focus({preventScroll:true});
 }
 
+
+/* Mobile server onboarding, using existing CMD Sphere APIs. Does not create Discord servers. */
+let createTemplate='custom',createAudience='friends',createName='',createImage='';
+const onboardingTemplates=[
+ ['✨','Créer le mien','custom'],['🎮','Gaming','gaming'],['📖','Club scolaire','school'],
+ ['📝',"Groupe d’étude",'study'],['💗','Amis','friends'],['🎨','Artistes et créateurs','art'],['🌍','Communauté locale','community']
+];
+const onboardingStyle=[
+ '#addModal.cmd-onboarding{z-index:100050!important;inset:0!important;padding:0!important;background:#17171b!important;align-items:stretch!important;justify-content:center!important}',
+ '#addModal.cmd-onboarding>.add-card{box-sizing:border-box;width:min(720px,100%)!important;height:100dvh!important;max-height:100dvh!important;border:0!important;border-radius:0!important;background:#17171b!important;padding:calc(12px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))!important;overflow-y:auto!important}',
+ '#addModal.cmd-onboarding>.add-card>div:first-child{display:none!important}',
+ '#addModal.cmd-onboarding #addBody{min-height:calc(100dvh - 120px);display:flex;flex-direction:column;align-items:stretch}',
+ '#addModal.cmd-onboarding .cmd-onboard-nav{display:flex;justify-content:space-between;align-items:center;padding:8px 0 25px}',
+ '#addModal.cmd-onboarding .cmd-onboard-back{font-size:27px;min-width:44px;min-height:44px;background:transparent;border:0;color:white}',
+ '#addModal.cmd-onboarding .cmd-onboard-title{text-align:center;font-size:clamp(25px,6vw,35px);line-height:1.22;margin:12px 0 16px;color:white;overflow-wrap:anywhere}',
+ '#addModal.cmd-onboarding .cmd-onboard-desc{text-align:center;font-size:16px;line-height:1.5;color:#d0ced6;margin:0 0 26px}',
+ '#addModal.cmd-onboarding .cmd-onboard-list{background:#26262b;border-radius:17px;overflow:hidden;margin:12px 0 25px}',
+ '#addModal.cmd-onboarding .cmd-onboard-option{display:flex;gap:15px;align-items:center;text-align:left;width:100%;min-height:70px;padding:15px 18px;background:transparent;border:0;border-bottom:1px solid #ffffff16;color:white;font:600 17px/1.35 system-ui}',
+ '#addModal.cmd-onboarding .cmd-onboard-option:last-child{border:0}',
+ '#addModal.cmd-onboarding .cmd-onboard-option:active{background:#44404e}',
+ '#addModal.cmd-onboarding .cmd-onboard-icon{font-size:26px;width:32px;flex:none;text-align:center}',
+ '#addModal.cmd-onboarding .cmd-onboard-foot{margin-top:auto;padding-top:18px}',
+ '#addModal.cmd-onboarding .cmd-onboard-primary{min-height:55px;width:100%;border-radius:12px;border:0;background:#5865f2;color:white;font:800 17px system-ui}',
+ '#addModal.cmd-onboarding .cmd-onboard-field{display:grid;gap:8px;margin:24px 0;font:750 15px system-ui;color:#b7b5c1}',
+ '#addModal.cmd-onboarding .cmd-onboard-field input{box-sizing:border-box;width:100%;font:500 17px system-ui;min-height:58px;background:#202026;border:2px solid #6973ff;border-radius:12px;color:white;padding:12px 15px}',
+ '#addModal.cmd-onboarding .cmd-onboard-avatar{display:grid;place-items:center;align-content:center;gap:3px;width:124px;height:124px;margin:28px auto 24px;border:3px dashed #9996ab;border-radius:50%;overflow:hidden;background:#292933;cursor:pointer;font:750 12px system-ui;color:white}',
+ '#addModal.cmd-onboarding .cmd-onboard-avatar img{width:100%;height:100%;object-fit:cover}',
+ '#addModal.cmd-onboarding .cmd-onboard-public{display:flex;align-items:center;gap:12px;font:500 13px system-ui;color:#d6d3df}',
+ '#addModal.cmd-onboarding .cmd-onboard-public input{width:20px;height:20px}',
+ '#addModal.cmd-onboarding .cmd-onboard-primary:disabled{opacity:.55}',
+ '@media(max-width:430px){#addModal.cmd-onboarding>.add-card{padding-left:15px!important;padding-right:15px!important}#addModal.cmd-onboarding .cmd-onboard-option{font-size:16px}}'
+].join('\n');
+function renderOnboarding(view){
+ const modal=$('#addModal'),host=$('#addBody');if(!modal||!host)return;
+ modal.classList.add('cmd-onboarding');
+ if(!$('#cmd-onboarding-style')){const style=document.createElement('style');style.id='cmd-onboarding-style';style.textContent=onboardingStyle;document.head.append(style)}
+ const heading=(back,step)=>'<div class="cmd-onboard-nav"><button type="button" id="cmdOnboardBack" class="cmd-onboard-back" aria-label="'+(back?'Retour':'Fermer')+'">'+(back?'←':'✕')+'</button><span>'+step+'</span></div>';
+ if(view==='menu'||view==='create'){
+  host.innerHTML=heading(false,'CMD SPHERE')+'<h2 class="cmd-onboard-title">Crée ton serveur</h2><p class="cmd-onboard-desc">Un espace indépendant pour retrouver tes amis et discuter.</p>'+
+   '<div class="cmd-onboard-list">'+onboardingTemplates.map(item=>'<button type="button" class="cmd-onboard-option" data-onboard-template="'+item[2]+'"><span class="cmd-onboard-icon">'+item[0]+'</span>'+escapeHtml(item[1])+'<span style="margin-left:auto">›</span></button>').join('')+'</div>'+
+   '<div class="cmd-onboard-foot"><p class="cmd-onboard-desc">Tu as déjà un lien d’invitation ?</p><button id="cmdOnboardJoin" type="button" class="cmd-onboard-primary">Rejoindre un serveur</button></div>';
+  host.querySelectorAll('[data-onboard-template]').forEach(btn=>btn.onclick=()=>{createTemplate=btn.dataset.onboardTemplate;renderOnboarding('purpose')});
+  host.querySelector('#cmdOnboardJoin').onclick=()=>{modal.classList.remove('cmd-onboarding');window.__cmdPreviousRenderAdd?.('join')};
+  host.querySelector('#cmdOnboardBack').onclick=()=>window.closeAdd?.();
+  return;
+ }
+ if(view==='purpose'){
+  host.innerHTML=heading(true,'ÉTAPE 2 SUR 3')+'<h2 class="cmd-onboard-title">Dis-nous en plus sur ton serveur</h2><p class="cmd-onboard-desc">Cette information sert uniquement à personnaliser la création.</p>'+
+   '<div class="cmd-onboard-list"><button type="button" class="cmd-onboard-option" data-onboard-audience="community"><span class="cmd-onboard-icon">🌍</span>Pour un club ou une communauté</button>'+
+   '<button type="button" class="cmd-onboard-option" data-onboard-audience="friends"><span class="cmd-onboard-icon">💗</span>Pour mes amis et moi</button></div>'+
+   '<div class="cmd-onboard-foot"><button type="button" id="cmdOnboardSkip" class="cmd-onboard-primary">Ignorer cette question</button></div>';
+  host.querySelectorAll('[data-onboard-audience]').forEach(btn=>btn.onclick=()=>{createAudience=btn.dataset.onboardAudience;renderOnboarding('details')});
+  host.querySelector('#cmdOnboardSkip').onclick=()=>renderOnboarding('details');
+  host.querySelector('#cmdOnboardBack').onclick=()=>renderOnboarding('menu');
+  return;
+ }
+ host.innerHTML=heading(true,'ÉTAPE 3 SUR 3')+'<h2 class="cmd-onboard-title">Crée ton serveur</h2><p class="cmd-onboard-desc">Choisis son nom et son image. Tu pourras les modifier après.</p>'+
+  '<form id="cmdOnboardForm"><label for="cmdOnboardIcon" class="cmd-onboard-avatar" id="cmdOnboardAvatar">📷<small>AJOUTER UNE IMAGE</small></label>'+
+  '<input type="file" accept="image/png,image/jpeg,image/webp" id="cmdOnboardIcon" hidden>'+
+  '<label class="cmd-onboard-field">Nom du serveur<input name="name" id="cmdOnboardName" required maxlength="100" autocomplete="off" value="'+escapeHtml(createName||'Mon serveur CMD Sphere')+'"></label>'+
+  '<label class="cmd-onboard-public"><input type="checkbox" name="isPublic" '+(createAudience==='community'?'checked':'')+'>Visible dans Découvrir (modifiable)</label>'+
+  '<div class="cmd-onboard-foot"><p class="cmd-onboard-desc" style="font-size:13px">Chaque serveur aura ses propres invitations et salons.</p>'+
+  '<button type="submit" id="cmdOnboardSubmit" class="cmd-onboard-primary">Créer mon serveur</button><p id="cmdOnboardStatus" role="status"></p></div></form>';
+ if(createImage)host.querySelector('#cmdOnboardAvatar').innerHTML='<img src="'+createImage+'" alt="Icône du serveur">';
+ host.querySelector('#cmdOnboardName').oninput=e=>{createName=e.target.value};
+ host.querySelector('#cmdOnboardBack').onclick=()=>renderOnboarding('purpose');
+ host.querySelector('#cmdOnboardIcon').onchange=e=>{
+  const file=e.target.files?.[0],status=host.querySelector('#cmdOnboardStatus');if(!file)return;
+  if(!/^image\/(?:png|jpeg|webp)$/.test(file.type)||file.size>1600000){status.textContent='Image PNG/JPEG/WebP de 1,6 Mo maximum.';return}
+  const reader=new FileReader();
+  reader.onload=()=>{createImage=String(reader.result||'');host.querySelector('#cmdOnboardAvatar').innerHTML='<img src="'+createImage+'" alt="Icône du serveur">';status.textContent=''};
+  reader.onerror=()=>{status.textContent="Impossible de charger cette image"};reader.readAsDataURL(file);
+ };
+ host.querySelector('#cmdOnboardForm').onsubmit=async e=>{
+  e.preventDefault();const form=e.currentTarget,values=new FormData(form),name=String(values.get('name')||'').trim(),publicFlag=values.get('isPublic')==='on';
+  if(!name)return;
+  const button=form.querySelector('#cmdOnboardSubmit'),status=form.querySelector('#cmdOnboardStatus');
+  button.disabled=true;status.textContent='Création du serveur…';
+  try{
+   const created=await request('/api/native/guilds',{name,isPublic:publicFlag,template:createTemplate,purpose:createAudience});
+   const guildId=String(created.guild?.id||'');if(!guildId)throw Error('Identifiant du serveur manquant');
+   if(createImage){try{
+    await request('/api/native/server-identity',{guildId,name,description:'',iconDataUrl:createImage,isPublic:publicFlag,defaultNotifications:'mentions',welcomeMessage:false})
+   }catch(error){status.textContent='Serveur créé, mais image non enregistrée : '+error.message}}
+   window.closeAdd?.();location.assign('/dashboard?openNative='+encodeURIComponent(guildId));
+  }catch(error){status.textContent='Création impossible : '+error.message;button.disabled=false}
+ };
+}
+function installOnboardingWizard(){
+ if(typeof window.renderAdd!=='function'||window.renderAdd.__cmdOnboarding)return;
+ const previous=window.renderAdd;window.__cmdPreviousRenderAdd=previous;
+ const enhanced=function(view){if(['menu','create','purpose','details'].includes(view))return renderOnboarding(view);
+  $('#addModal')?.classList.remove('cmd-onboarding');return previous(view)};
+ enhanced.__cmdOnboarding=true;window.renderAdd=enhanced;
+}
+
 function install(){
+  installOnboardingWizard();
  const button=$('#serverSettingsBtn');if(button)button.onclick=()=>open();
  const title=$('#gtitle');if(title&&!title.dataset.csmBound){title.dataset.csmBound='1';title.style.cursor='pointer';title.setAttribute('title','Ouvrir le menu du serveur');title.setAttribute('role','button');title.setAttribute('tabindex','0');title.addEventListener('click',menu);title.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();menu()}})}
  const closeButton=$('#serverSettingsClose');if(closeButton)closeButton.onclick=close;
