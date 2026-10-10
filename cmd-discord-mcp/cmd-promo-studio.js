@@ -10,7 +10,7 @@ let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
 const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const note=t=>{const n=$("#cmdStudioNotice");if(n)n.textContent=String(t||"")};
+const note=t=>{const message=String(t||"");const n=$("#cmdStudioNotice");if(n)n.textContent=message;const toast=$("#cmdStudioToast");if(toast){toast.textContent=message;toast.hidden=!message}};
 function buttonHTML(arr,key){return arr.map(([v,label])=>'<button type="button" data-studio-'+key+'="'+safe(v)+'" class="'+(state[key]===v?"selected":"")+'">'+label+'</button>').join("")}
 function open(context={}){
  const user=String(context.profileId||document.querySelector("#profileForm")?.dataset.userId||"member").slice(0,120);
@@ -40,6 +40,7 @@ function open(context={}){
  const videoCanvas=$("#cmdStudioCanvas",root);videoCanvas.before(surface);surface.append(videoCanvas);
  const textHandle=document.createElement("div");textHandle.id="cmdStudioTextHandle";textHandle.className="cmd-studio-draggable";textHandle.hidden=true;textHandle.setAttribute("aria-label","Déplacer le texte");surface.append(textHandle);
  const stickerHandle=document.createElement("div");stickerHandle.id="cmdStudioStickerHandle";stickerHandle.className="cmd-studio-draggable";stickerHandle.hidden=true;stickerHandle.setAttribute("aria-label","Déplacer le sticker");surface.append(stickerHandle);
+ const toast=document.createElement("p");toast.id="cmdStudioToast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");toast.hidden=true;preview.append(toast);
  const toolbar=document.createElement("nav");toolbar.id="cmdStudioToolRail";toolbar.setAttribute("aria-label","Outils vidéo");
  toolbar.innerHTML='<button type="button" data-cmd-tool="media"><span>▧</span><small>Médias</small></button>'+
   '<button type="button" data-cmd-tool="text"><span>Aa</span><small>Texte</small></button>'+
@@ -65,7 +66,7 @@ function open(context={}){
   handle.addEventListener("pointermove",e=>{
    if(handle.dataset.dragging!=="true")return;
    const rect=surface.getBoundingClientRect();if(!rect.width||!rect.height)return;
-   state[x]=Math.max(.08,Math.min(.92,(e.clientX-rect.left)/rect.width));
+   state[x]=Math.max(.08,Math.min(.92,(e.clientX-rect.left)/rect.width));recorded=null;
    state[y]=Math.max(.08,Math.min(.92,(e.clientY-rect.top)/rect.height));
    render(previewCursor);
   });
@@ -88,7 +89,7 @@ function open(context={}){
  const ids={Headline:"headline",Subtitle:"subtitle",Emoji:"emoji",Title:"title",Effect:"effect",Transition:"transition",Filter:"filter",Duration:"duration",Music:"music",Volume:"volume",Server:"guildId"};
  for(const [id,key] of Object.entries(ids)){
   const field=$("#cmdStudio"+id);if(!field)continue;
-  field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
+  field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;recorded=null;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
  }
  $("#cmdStudioMusic").onchange=()=>{if(state.music==="library"&&!selectedTrack){$("#cmdStudioMusic").value="electro";state.music="electro";note("Choisis d’abord une musique dans la bibliothèque.")}refreshSelectedMusic()};
  $("#cmdStudioVolume").addEventListener("input",()=>{if(previewAudio)previewAudio.volume=state.volume/100;if(audition)audition.volume=state.volume/100});
@@ -102,7 +103,7 @@ function showTool(tool){
  if(!root)return;
  activeTool=tool;
  const panel=({sticker:"text",filter:"effect",clips:"media"})[tool]||tool;
- const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");
+ const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");controls.dataset.activeTool=tool;
  $("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
  const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
  $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Suivant · Enregistrer ou publier"})[tool]||"Outils";
@@ -113,7 +114,7 @@ function showTool(tool){
 }
 function closeTool(){
  activeTool="";if(!root)return;const controls=$(".cmd-studio-controls",root);
- controls.classList.remove("cmd-tool-open");
+ controls.classList.remove("cmd-tool-open");delete controls.dataset.activeTool;
  $("[data-tool-panel]",controls).forEach(card=>card.hidden=false);
  $("[data-cmd-tool]",root).forEach(btn=>btn.classList.remove("selected"));
  updateDragHandles();
@@ -144,7 +145,7 @@ function choose(btn){
  const attr=[...btn.attributes].find(x=>x.name.startsWith("data-studio-"));if(!attr)return;
  const key=attr.name.slice(12),value=attr.value;
  if(!(key in state))return;
- state[key]=value;$$("[data-studio-"+key+"]",root).forEach(b=>b.classList.toggle("selected",b===btn));
+ state[key]=value;recorded=null;const pb=$("#cmdStudioPublish");if(pb)pb.disabled=true;$("[data-studio-"+key+"]",root).forEach(b=>b.classList.toggle("selected",b===btn));
  if(key==="mode"){if(value==="story")state.format="9:16";else if(value==="poster")state.format="1:1";else if(value==="video")state.format="9:16";else if(value==="gif")state.duration=6;
   $("#cmdStudioDuration").value=state.duration;$("#cmdStudioDurLabel").textContent=state.duration+" s";$$("[data-studio-format]",root).forEach(b=>b.classList.toggle("selected",b.dataset.studioFormat===state.format))}
  if(key==="format"||key==="mode")resize();
@@ -159,6 +160,7 @@ function resize(){
  if(!canvas)return;const [w,h]=FORMATS[state.format]||FORMATS["9:16"];canvas.width=w;canvas.height=h;canvas.style.aspectRatio=w+"/"+h;render(0);
 }
 function addFiles(files){
+ recorded=null;
  let count=0;
  for(const f of Array.from(files||[])){
   if(!(/^(image\/(png|jpeg|webp|gif|heic|heif)|video\/(mp4|webm|quicktime))$/i.test(f.type)))continue;
@@ -184,7 +186,7 @@ function drawFiles(){
   chip.append(title,up,down,del);box.append(chip);
  });
 }
-function swap(a,b){[clips[a],clips[b]]=[clips[b],clips[a]];drawFiles();render(0)}
+function swap(a,b){recorded=null;[clips[a],clips[b]]=[clips[b],clips[a]];drawFiles();render(0)}
 function roundedRect(context,x,y,w,h,r){
  context.beginPath();context.roundRect(x,y,w,h,r);context.fill();
 }
