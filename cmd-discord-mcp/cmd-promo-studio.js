@@ -69,7 +69,7 @@ function open(context={}){
  const camera=document.createElement("input");camera.type="file";camera.id="cmdStudioCameraCapture";
  camera.setAttribute("accept","video/*,image/*");camera.setAttribute("capture","environment");camera.hidden=true;root.append(camera);
  camera.onchange=e=>{addFiles(e.target.files);camera.value="";showTool("media")};
- const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioLocalSave" aria-label="Enregistrer la création sur mon appareil">↓ Enregistrer sur mon appareil</button>';root.append(bottom);
+ const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioLocalSave" aria-label="Enregistrer la création sur mon appareil">Enregistrer</button>';root.append(bottom);
  $("#cmdStudioHideTool",root).onclick=closeTool;
  $$("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
  $("#cmdStudioLocalSave",root).onclick=saveLocally;
@@ -141,6 +141,20 @@ function updateDragHandles(){
   el.style.left=100*(state[x]||.5)+"%";el.style.top=100*(state[y]||.5)+"%";
  }
 }
+async function saveOnDevice(blob,filename){
+ if(typeof navigator.share==="function"&&typeof File!=="undefined"){
+  try{
+   const file=new File([blob],filename,{type:blob.type||"application/octet-stream"});
+   if(typeof navigator.canShare!=="function"||navigator.canShare({files:[file]})){
+    await navigator.share({files:[file],title:"CMD Sphere"});
+    note("Choisis Enregistrer dans Fichiers ou Enregistrer la vidéo dans le menu de ton appareil.");
+    return;
+   }
+  }catch(e){if(e?.name==="AbortError"){note("Enregistrement annulé.");return}}
+ }
+ blobDownload(blob,filename);
+ note("Téléchargement lancé sur cet appareil. La création n’a pas été publiée.");
+}
 async function saveLocally(){
  const button=$("#cmdStudioLocalSave",root);if(!button||button.disabled)return;
  button.disabled=true;
@@ -148,8 +162,14 @@ async function saveLocally(){
  try{
   // Download to the user’s device only: never call CMD Sphere's publishing API.
   const type=state.mode==="poster"?"png":state.mode==="gif"?"gif":"video";
-  const success=type==="png"?await savePng({download:true}):type==="gif"?await exportGif({download:true}):await exportVideo({download:true});
-  if(!success)note("Enregistrement impossible avec ce format. Essaie PNG ou un navigateur compatible.");
+  if(!clips.length&&!String(state.headline||"").trim()&&!String(state.emoji||"").trim()){
+   showTool("media");note("Ajoute une photo, une vidéo ou du texte avant d’enregistrer.");return;
+  }
+  recorded=null;
+  const success=type==="png"?await savePng({download:false}):type==="gif"?await exportGif({download:false}):await exportVideo({download:false});
+  if(!success||!recorded?.size){note("Enregistrement impossible avec ce format. Essaie PNG ou un navigateur compatible.");return}
+  const ext=recorded.type==="image/png"?"png":recorded.type==="image/gif"?"gif":recorded.type==="video/mp4"?"mp4":"webm";
+  await saveOnDevice(recorded,"CMD-Sphere-"+new Date().toISOString().replace(/[:.]/g,"-")+"."+ext);
  }catch(e){note("Impossible d’enregistrer : "+(e.message||e))}
  finally{button.disabled=false;button.textContent=original}
 }
