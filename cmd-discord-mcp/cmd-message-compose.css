@@ -1,0 +1,38 @@
+/* CMD Sphere — private messages, touch-first composition */
+.cmd-newdm-backdrop{position:fixed;inset:0;z-index:160;display:none;justify-content:center;align-items:flex-end;background:#070608bb;color:#f9f8fc;font-family:system-ui,-apple-system,sans-serif}
+.cmd-newdm-backdrop.on{display:flex}
+.cmd-newdm-sheet{width:min(660px,100%);height:min(86dvh,860px);background:#242329;border-radius:25px 25px 0 0;box-shadow:0 -22px 65px #000a;overflow:hidden;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.cmd-newdm-head{position:relative;display:flex;align-items:center;justify-content:center;padding:13px 16px;min-height:67px;flex:none}
+.cmd-newdm-head h2{font-size:19px;margin:0;font-weight:750}
+.cmd-newdm-head button{position:absolute;left:12px;top:12px;width:41px;height:41px;border:0;color:#fff;background:transparent;font-size:25px}
+.cmd-newdm-search{display:flex;align-items:center;gap:7px;border:2px solid #6468ff;border-radius:12px;min-height:51px;margin:10px 16px 17px;padding:0 14px;background:#17161c}
+.cmd-newdm-search label{font-size:16px;color:#c2bfca}
+.cmd-newdm-search input{min-width:0;flex:1;outline:0;border:0;background:transparent;color:white;font:15px system-ui;padding:10px 2px}
+.cmd-newdm-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 16px 22px}
+.cmd-newdm-shortcuts{background:#302e36;border-radius:14px;overflow:hidden;margin-bottom:19px}
+.cmd-newdm-shortcuts button{display:flex;align-items:center;gap:14px;min-height:63px;padding:15px;width:100%;border:0;background:transparent;color:#fff;text-align:left;font:600 17px system-ui}
+.cmd-newdm-shortcuts button:not(:last-child){border-bottom:1px solid #ffffff13}
+.cmd-newdm-shortcuts button span{font-size:23px;min-width:28px}
+.cmd-newdm-shortcuts button b{margin-left:auto;font-size:24px;color:#bcb8c7;font-weight:450}
+.cmd-newdm-label{font-size:15px;font-weight:600;color:#acaab4;margin:8px 2px 10px}
+.cmd-newdm-person{display:flex;align-items:center;gap:12px;width:100%;min-height:75px;padding:10px 8px;border:0;border-bottom:1px solid #ffffff10;background:transparent;color:white;text-align:left;font:550 15px system-ui;cursor:pointer}
+.cmd-newdm-person img,.cmd-newdm-person .cmd-newdm-avatar{width:44px;height:44px;flex:none;object-fit:cover;border-radius:50%;background:#44354d;display:grid;place-items:center;font-size:22px}
+.cmd-newdm-person .cmd-newdm-person-label{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.cmd-newdm-person strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmd-newdm-person small{font-size:12px;color:#aba8b5}
+.cmd-newdm-check{width:26px;height:26px;border:2px solid #827c8c;border-radius:50%;display:grid;place-items:center;font-size:16px}
+.cmd-newdm-person.chosen .cmd-newdm-check{background:#5865f2;border-color:#5865f2}
+.cmd-newdm-footer{display:none;flex:none;gap:10px;align-items:center;padding:13px 16px;border-top:1px solid #ffffff1b}
+.cmd-newdm-footer.on{display:flex}
+.cmd-newdm-footer input{min-width:0;flex:1;background:#141318;color:#fff;border:1px solid #80738b;border-radius:10px;min-height:43px;padding:10px}
+.cmd-newdm-footer button{flex:none;background:#5865f2;color:white;border:0;border-radius:10px;padding:10px 13px;min-height:43px;font:700 14px system-ui}
+.cmd-newdm-footer button:disabled{opacity:.5}
+.cmd-newdm-status{min-height:20px;margin:2px 16px 12px;color:#d0bedc;font:12px system-ui}
+@media(max-width:720px){
+ .side .head .bar{gap:8px!important;min-width:0}
+ .side .dmTools{display:flex!important;align-items:center!important;gap:8px!important;padding:9px 3px 12px!important}
+ .side .dmTools button{min-height:42px!important;min-width:43px!important;border-radius:12px!important}
+ .side .dmTools #friendsBtn{flex:1!important;min-width:0!important;white-space:normal!important;line-height:1.2!important;font-size:13px!important}
+ .side .dmTools #newDmBtn{background:#5865f2!important;color:white!important;font-size:24px!important}
+ .cmd-newdm-sheet{height:min(89dvh,880px)}
+}
