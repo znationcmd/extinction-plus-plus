@@ -3629,10 +3629,12 @@ async function applyNativeLocalAction(auth,input){
     if(row.rows[0].type==="category")await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND source_parent_id=$2',[gid,parentKey]);
     await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id]);
   }else if(action==="create_role"){
-    const name=safeText(input.name,100);if(!name)throw new Error("Nom requis.");const id=crypto.randomUUID();input._createdRoleId=id;
+    const name=safeText(input.name,100);if(!name||name==="@everyone")throw new Error("Nom de rôle invalide ou réservé.");const id=crypto.randomUUID();input._createdRoleId=id;
     await pool.query('INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[id,gid,id,name,safeText(input.color,20)||null,JSON.stringify(input.permissions||{}),Number(input.position||0),Boolean(input.hoist),Boolean(input.mentionable)]);
   }else if(action==="update_role"){
     const id=String(input.roleId||"");const row=await pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,id]);if(!row.rows[0])throw new Error("Rôle introuvable.");
+    const proposedName=safeText(input.name||row.rows[0].name,100);
+    if((proposedName==="@everyone")!==(row.rows[0].name==="@everyone"))throw new Error("Le rôle @everyone ne peut pas être renommé ni recréé.");
     await pool.query('UPDATE cmd_native_roles SET name=$3,color=$4,permissions=$5::jsonb,position=$6,hoist=$7,mentionable=$8 WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),safeText(input.color||row.rows[0].color,20)||null,JSON.stringify(input.permissions||row.rows[0].permissions||{}),Number(input.position??row.rows[0].position??0),input.hoist==null?Boolean(row.rows[0].hoist):Boolean(input.hoist),input.mentionable==null?Boolean(row.rows[0].mentionable):Boolean(input.mentionable)]);
   }else if(action==="delete_role"){
     const id=String(input.roleId||"");await pool.query("DELETE FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) AND name<>\'@everyone\'",[gid,id]);
