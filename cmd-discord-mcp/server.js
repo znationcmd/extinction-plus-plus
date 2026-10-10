@@ -3954,6 +3954,11 @@ const httpServer=createServer(async(req,res)=>{
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
+    if(req.method==="GET"&&(url.pathname==="/cmd-message-compose.js"||url.pathname==="/cmd-message-compose.css")){
+      const js=url.pathname.endsWith(".js");
+      res.writeHead(200,{"content-type":js?"application/javascript; charset=utf-8":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(js?"./cmd-message-compose.js":"./cmd-message-compose.css","utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-invite-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public, max-age=300"});res.end(readFileSync("./cmd-invite-ui.js","utf8"));return}
     if(req.method==="GET"&&url.pathname.startsWith("/cmd-art/")){const bits=url.pathname.split("/");const img=bits.length===4&&bits[3].endsWith(".svg")?renderCmdPremiumSvg(bits[2],bits[3].slice(0,-4)):null;if(!img){res.writeHead(404).end("Artwork not found");return}res.writeHead(200,{"content-type":"image/svg+xml; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(img);return}
     if(req.method==="GET"&&url.pathname==="/cmd-profile-draft.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-profile-draft.js",import.meta.url),"utf8"));return}
@@ -4257,7 +4262,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
         const [threads,prefs,native,discord,folders,layout,friends,profile,groups]=await Promise.all([listDmThreads(auth),getDmPreferences(auth),listNativeGuilds(auth),linkedDiscordGuilds(auth),getServerFolders(auth),getServerLayout(auth),listFriends(auth),getGlobalProfile(auth),listGroupDms(auth)]);
-        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010uifix8" defer></script></body>'));
+        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010uifix8" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/friends"){
