@@ -227,20 +227,20 @@ function render(time=0){
   }
   if(state.transition==="slide"&&local<.35){ctx.fillStyle=theme[1];ctx.globalAlpha=.4*(1-local/.35);ctx.fillRect(0,0,w,h);ctx.globalAlpha=1}
  }
- const overlay=ctx.createLinearGradient(0,h*.35,0,h);overlay.addColorStop(0,"rgba(0,0,0,0)");overlay.addColorStop(1,"rgba(0,0,0,.86)");ctx.fillStyle=overlay;ctx.fillRect(0,0,w,h);
- ctx.fillStyle="rgba(255,255,255,.18)";roundedRect(ctx,w*.065,h*.055,w*.36,Math.min(66,h*.065),18);
- ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="bold "+Math.round(w*.038)+"px system-ui";ctx.fillText("CMD SPHERE",w*.09,h*.096);
+ if(state.headline||state.subtitle||state.emoji){const overlay=ctx.createLinearGradient(0,h*.35,0,h);overlay.addColorStop(0,"rgba(0,0,0,0)");overlay.addColorStop(1,"rgba(0,0,0,.6)");ctx.fillStyle=overlay;ctx.fillRect(0,0,w,h)}
+ if(!studioScope){ctx.fillStyle="rgba(255,255,255,.18)";roundedRect(ctx,w*.065,h*.055,w*.36,Math.min(66,h*.065),18);
+ ctx.fillStyle="#ffffff";ctx.textAlign="left";ctx.font="bold "+Math.round(w*.038)+"px system-ui";ctx.fillText("CMD SPHERE",w*.09,h*.096)}
  const anim=state.effect==="pulse"?.99+.01*Math.sin(t*7):1;
  const size=Math.round(w*.077*anim);ctx.font="900 "+size+"px system-ui";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=16;ctx.shadowOffsetY=5;
- let head=wrapWords(state.headline,w*.84,size,3);if(!head.length)head=["Ton serveur, ton univers"];
- const lineHeight=size*1.18,mid=h*.67-(head.length-1)*lineHeight/2;
- head.forEach((line,i)=>ctx.fillText(line,w/2,mid+i*lineHeight));
+ let head=wrapWords(state.headline,w*.84,size,3);if(!head.length&&!studioScope)head=["Ton serveur, ton univers"];
+ const lineHeight=size*1.18,mid=h*(state.textY||.67)-(head.length-1)*lineHeight/2;
+ head.forEach((line,i)=>ctx.fillText(line,w*(state.textX||.5),mid+i*lineHeight));
  ctx.shadowBlur=0;ctx.shadowOffsetY=0;ctx.font="500 "+Math.round(w*.041)+"px system-ui";ctx.fillStyle="#f6eafd";
  const sub=wrapWords(state.subtitle,w*.85,w*.041,2);sub.forEach((line,i)=>ctx.fillText(line,w/2,h*.82+i*w*.056));
- if(state.emoji){ctx.font=Math.round(w*.13)+"px system-ui";ctx.fillText(state.emoji.slice(0,8),w*.5,h*.43)}
- ctx.font="bold "+Math.round(w*.037)+"px system-ui";ctx.fillStyle="#ebc8ff";ctx.fillText("Rejoins la communauté ✦",w/2,h*.95);
+ if(state.emoji){ctx.font=Math.round(w*.13)+"px system-ui";ctx.fillText(state.emoji.slice(0,8),w*(state.stickerX||.5),h*(state.stickerY||.43))}
+ if(!studioScope){ctx.font="bold "+Math.round(w*.037)+"px system-ui";ctx.fillStyle="#ebc8ff";ctx.fillText("Rejoins la communauté ✦",w/2,h*.95)}
  if(state.music==="library"&&selectedTrack&&state.mode!=="gif"){ctx.font=Math.max(10,Math.round(w*.019))+"px system-ui";ctx.fillStyle="#f3e7ff";ctx.fillText(("♪ "+selectedTrack.title+" · "+selectedTrack.artist+" · "+selectedTrack.license).slice(0,92),w/2,h*.985)}
- const clk=$("#cmdStudioClock");if(clk)clk.textContent=clock(t)+" / "+clock(state.duration);
+ updateDragHandles();const clk=$("#cmdStudioClock");if(clk)clk.textContent=clock(t)+" / "+clock(state.duration);
  const seek=$("#cmdStudioSeek");if(seek){seek.max=state.duration;seek.value=Math.min(state.duration,t)}
 }
 function stop(){
@@ -459,13 +459,13 @@ async function saveDraft(){
  note("Sauvegarde du brouillon…");
  try{
   const conn=await db();const draft={state:{...state},media:clips.map(x=>x.file),music:musicFile,selectedTrack,saved:new Date().toISOString()};
-  await new Promise((resolve,reject)=>{const tx=conn.transaction("drafts","readwrite");tx.objectStore("drafts").put(draft,"last");tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
+  await new Promise((resolve,reject)=>{const tx=conn.transaction("drafts","readwrite");tx.objectStore("drafts").put(draft,"profile:"+studioScope);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});
   conn.close();note("Brouillon enregistré sur cet appareil, photos et musique comprises.");
  }catch(e){note("Sauvegarde impossible : "+(e.message||e))}
 }
 async function loadDraft(){
  try{
-  const conn=await db(),draft=await new Promise((resolve,reject)=>{const req=conn.transaction("drafts").objectStore("drafts").get("last");req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});conn.close();
+  const conn=await db(),draft=await new Promise((resolve,reject)=>{const req=conn.transaction("drafts").objectStore("drafts").get("profile:"+studioScope);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});conn.close();
   if(!draft){note("Aucun brouillon enregistré sur cet appareil.");return}
   stop();clips.forEach(x=>URL.revokeObjectURL(x.url));clips=[];Object.assign(state,draft.state||{});musicFile=draft.music||null;
   $$("[data-studio-mode],[data-studio-theme],[data-studio-format]",root).forEach(btn=>{const prop=Object.keys(btn.dataset).find(x=>x.startsWith("studio"));if(prop){const key=prop.slice(6).toLowerCase();btn.classList.toggle("selected",btn.dataset[prop]===state[key])}});
@@ -477,13 +477,7 @@ async function loadDraft(){
   addFiles(draft.media||[]);resize();note("Brouillon retrouvé.");
  }catch(e){note("Impossible de reprendre le brouillon : "+(e.message||e))}
 }
-function mount(){
- if($("#cmdPromoLaunch"))return;
- const b=document.createElement("button");b.id="cmdPromoLaunch";b.type="button";b.textContent="🎬 Studio Pub";b.title="Créer une publicité photo ou vidéo avec animations et musique";b.onclick=open;
- document.body.append(b);
- const actions=$(".channel-head .channel-actions");
- if(actions&&!$("#cmdPromoChannel")){const x=document.createElement("button");x.type="button";x.id="cmdPromoChannel";x.className="cmd-chat-compact";x.title="Studio Pub";x.textContent="🎬";x.onclick=open;actions.append(x)}
-}
+function mount(){const old=$("#cmdPromoLaunch");if(old)old.remove()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
-function start(){mount();mountTimer=setInterval(()=>{if(!$("#cmdPromoLaunch"))mount()},4000);window.cmdOpenPromoStudio=open}
+function start(){mount();window.cmdOpenPromoStudio=open}
 })();
