@@ -297,24 +297,58 @@ async function action(which){
  if(which==='bots'){close();if(typeof openBotsManager==='function')openBotsManager();return}
 }
 function menu(){
- document.getElementById('csm-server-menu')?.remove();
- const guildId=String(state()?.nativeGuild?.id||ctx?.data?.guild?.id||'');
- const code=encodeURIComponent(guildId);
- const root=document.createElement('div');root.id='csm-server-menu';
- root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Menu du serveur"><div class="csm-server-menu-handle"></div><h3>Menu du serveur</h3>'+
-  [['invites','👥 Inviter des membres'],['overview','⚙️ Paramètres du serveur'],['channels','＃ Gérer les salons et catégories'],['roles','🛡️ Gérer les rôles']].map(([k,l])=>'<button type="button" data-csm-menu-tab="'+k+'">'+l+' <span>›</span></button>').join('')+
-  '<div class="csm-server-menu-section">Boosts et boutique</div>'+
-  (guildId?'<a href="/server-boosts/'+code+'">💎 Boosts et avantages <span>›</span></a>':'')+
-  '<a href="/stars">⭐ Étoiles et boosts <span>›</span></a>'+
-  '<a href="/shop">🛍️ Boutique <span>›</span></a>'+
-  (guildId?'<a href="/profile?server='+code+'">👤 Profil du serveur <span>›</span></a>':'')+
-  '<button type="button" data-csm-menu-tab="close">✕ Fermer</button></section>';
+ document.getElementById("csm-server-menu")?.remove();
+ const guild=state()?.nativeGuild||state()?.guild||ctx?.data?.guild||{};
+ const gid=String(guild.id||ctx?.data?.guild?.id||"");
+ const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere"),icon=String(guild.icon||"");
+ const role=String(ctx?.data?.member?.membership_role||"");
+ const count=Number(guild.member_count||guild.memberCount||ctx?.data?.guild?.member_count||0);
+ const root=document.createElement("div");root.id="csm-server-menu";
+ const img=(/^(https?:\/\/|data:image\/)/.test(icon))?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon">🏠</span>';
+ const buttons=[
+  ["boost","◈","Boost"],
+  ["invite","♧","Inviter"],
+  ["notifications","♧","Notifications"],
+  ["overview","⚙","Paramètres"]
+ ].map(([key,ico,label])=>'<button type="button" data-csm-quick="'+key+'"><b>'+ico+'</b><small>'+label+'</small></button>').join("");
+ root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Actions du serveur">'+
+  '<div class="csm-server-menu-handle"></div>'+
+  '<div class="csm-server-menu-server">'+img+'<h3>'+escapeHtml(name)+'</h3>'+
+  '<p>'+((guild.source_discord_id||ctx?.source)?'Serveur Discord importé':'Serveur de communauté')+(count?' · '+count+' membres':'')+'</p></div>'+
+  '<div class="csm-server-menu-quick">'+buttons+'</div>'+
+  '<div class="csm-server-menu-list">'+
+  '<button type="button" data-csm-quick="search">⌕ Chercher des salons <span>›</span></button>'+
+  '<button type="button" data-csm-quick="channels">＋ Créer un salon <span>›</span></button>'+
+  '<button type="button" data-csm-quick="categories">▤ Créer une catégorie <span>›</span></button>'+
+  (gid?'<a href="/profile?server='+code+'">♙ Modifier le profil par serveur <span>›</span></a>':'')+
+  '<button type="button" data-csm-quick="channels">☷ Montrer tous les salons <span>›</span></button>'+
+  '</div>'+
+  '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
+  '<p id="csmMenuStatus" role="status" aria-live="polite"></p>'+
+  '</section>';
  document.body.appendChild(root);
  const shut=()=>root.remove();
- root.querySelector('.csm-server-menu-shade').addEventListener('click',shut);
- root.querySelectorAll('[data-csm-menu-tab]').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.csmMenuTab;shut();if(t!=='close')open(t)}));
- root.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();shut()}});
- root.querySelector('[data-csm-menu-tab]')?.focus();
+ root.querySelector(".csm-server-menu-shade").onclick=shut;
+ root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
+  const key=button.dataset.csmQuick;
+  if(key==="close"){shut();return}
+  if(key==="boost"){if(gid)location.href="/server-boosts/"+code;else location.href="/stars";return}
+  if(key==="invite"){shut();const launch=document.querySelector(".cmd-invite-launch");if(launch){launch.click();return}await open("invites");return}
+  if(key==="notifications"){
+   const status=root.querySelector("#csmMenuStatus");
+   if(!("Notification" in window)){status.textContent="Les notifications ne sont pas disponibles sur ce navigateur.";return}
+   try{const permission=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
+    status.textContent=permission==="granted"?"Notifications autorisées sur cet appareil. Régle aussi les alertes dans les paramètres de CMD Sphere.":"Autorisation de notification non accordée.";
+   }catch{status.textContent="Impossible de demander l’autorisation."}
+   return;
+  }
+  if(key==="search"){shut();const input=document.querySelector("#cmdChannelSearch");if(input){input.focus();input.scrollIntoView({block:"nearest"})}else await open("channels");return}
+  shut();
+  if(key==="categories"||key==="channels")await open("channels");
+  else await open(key);
+ });
+ root.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();shut()}};
+ root.querySelector('[data-csm-quick="invite"]')?.focus();
 }
 function install(){
  const button=$('#serverSettingsBtn');if(button)button.onclick=()=>open();
