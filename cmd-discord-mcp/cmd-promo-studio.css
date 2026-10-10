@@ -108,7 +108,7 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
 #cmdPromoStudio #cmdStudioPlay{min-height:43px;white-space:normal;text-align:center}
 @media(max-width:820px){#cmdPromoStudio .cmd-studio-preview{min-height:275px}#cmdPromoStudio #cmdStudioSeek{width:94%}}
 
-/* CMD Sphere Studio IA — focused phone-first editor inspired by familiar vertical video workflows.
+/* CMD Sphere Studio — focused phone-first editor inspired by familiar vertical video workflows.
    User-uploaded media remains editable; only the selected tool drawer is expanded. */
 #cmdPromoStudio{
  background:#080809!important;color:#fff!important;
