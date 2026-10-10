@@ -34,6 +34,12 @@ function createShell(){
  const basic=section("cmd-pm-panel-principal",'<div class="cmd-pm-info-grid"><div class="cmd-pm-balance cmd-pm-card"><div><b>💎 Mes diamants</b><small>Solde CMD Sphere</small></div><strong id="cmdPmBalance">—</strong></div></div>');
  basic.dataset.panel="principal";main.append(basic);
  const extraBio=about?about.closest(".section"):null;if(extraBio){main.append(extraBio);extraBio.dataset.panel="principal";}
+ const studio=section("cmd-pm-panel-principal cmd-pm-studio-panel",'<div class="cmd-pm-card cmd-pm-studio-card"><div class="cmd-pm-card-head"><h3>🎬 Studio IA</h3><span class="cmd-pm-studio-type">Vidéo · Story · GIF</span></div><p class="cmd-pm-muted">Crée tes vidéos depuis ce profil avec musique, texte, stickers et effets.</p><button type="button" id="cmdPmOpenStudio" class="cmd-pm-studio-launch">＋ Créer une vidéo</button><p id="cmdPmStudioStatus" class="cmd-pm-muted" role="status" hidden></p></div>');
+ studio.dataset.panel="principal";main.append(studio);
+ $("#cmdPmOpenStudio").onclick=()=>{
+  if(typeof window.cmdOpenPromoStudio==="function")window.cmdOpenPromoStudio({source:"profile",profileId:document.querySelector("#profileForm")?.dataset.userId||"",serverId:new URLSearchParams(location.search).get("server")||""});
+  else {const info=$("#cmdPmStudioStatus");info.hidden=false;info.textContent="Studio indisponible. Actualise CMD Sphere pour charger la dernière version."}
+ };
  const links=section("cmd-pm-panel-principal",'<div class="cmd-pm-card"><div class="cmd-pm-card-head"><h3>🔗 Connexions</h3><button type="button" id="cmdPmEditLinks" aria-label="Ajouter ou modifier les liens du profil">✎ Modifier</button></div><p class="cmd-pm-muted">Liens ajoutés par toi (sans vérification automatique).</p><div id="cmdPmSocialRows"></div><div id="cmdPmLinksEditor" hidden></div></div>');
  links.dataset.panel="principal";main.append(links);
  const friends=section("cmd-pm-panel-principal",'<div class="cmd-pm-card"><div class="cmd-pm-card-head"><h3>👥 Amis</h3><a href="/messages" class="cmd-pm-see-more">Voir les amis ›</a></div><div id="cmdPmFriends">Chargement…</div></div>');
