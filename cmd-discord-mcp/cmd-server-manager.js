@@ -49,7 +49,7 @@ function overview(){
  const g=ctx.data.guild;
  if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Le nom et l’icône de ce serveur externe sont gérés sur la plateforme liée. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
  return intro('Vue d’ensemble','Nom, image et paramètres du serveur CMD Sphere.')+
- '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/jpeg,image/png,image/webp" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
+ '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
  field('Nom du serveur','name',g.name,'required maxlength="100" '+(ctx.owner?'':'disabled'))+
  '<label class="csm-field">Description<textarea name="description" maxlength="1000" '+(ctx.owner?'':'disabled')+'>'+escapeHtml(g.server_description||'')+'</textarea></label>'+
  '<label class="csm-field">Notifications par défaut<select name="defaultNotifications" '+(ctx.owner?'':'disabled')+'><option value="mentions" '+(g.default_notifications==='all'?'':'selected')+'>Mentions uniquement</option><option value="all" '+(g.default_notifications==='all'?'selected':'')+'>Tous les messages</option></select></label>'+
@@ -405,10 +405,15 @@ async function mutate(action,payload){
 }
 async function readIcon(e){
  const file=e.target.files?.[0];if(!file)return;
- if(file.size>2000000){notify('Pour éviter les erreurs de stockage, utilise une icône de moins de 2 Mo.',false);return}
- if(!/^image\/(png|jpeg|webp)$/.test(file.type)){notify('Format PNG, JPEG ou WebP requis.',false);return}
- newIcon=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(rd.result);rd.onerror=reject;rd.readAsDataURL(file)});
- const preview=$('.csm-icon-preview');if(preview)preview.innerHTML=gicon();
+ const preview=$('.csm-icon-preview');
+ try{
+  if(typeof window.cmdSpherePrepareServerImage!=='function')throw Error('Traitement des photos indisponible. Actualise CMD Sphere.');
+  notify('Préparation de la photo…');
+  const prepared=await window.cmdSpherePrepareServerImage(file);
+  newIcon=prepared;
+  if(preview)preview.innerHTML=gicon();
+  notify('Image prête. Appuie sur « Enregistrer les modifications » pour la conserver.');
+ }catch(error){notify(error.message,false)}
 }
 async function saveIdentity(e){
  e.preventDefault();if(!isNative()||!ctx.owner)return;
@@ -751,7 +756,7 @@ function renderOnboarding(view){
  }
  host.innerHTML=heading(true,'ÉTAPE 3 SUR 3')+'<h2 class="cmd-onboard-title">Crée ton serveur</h2><p class="cmd-onboard-desc">Choisis son nom et son image. Tu pourras les modifier après.</p>'+
   '<form id="cmdOnboardForm"><label for="cmdOnboardIcon" class="cmd-onboard-avatar" id="cmdOnboardAvatar">📷<small>AJOUTER UNE IMAGE</small></label>'+
-  '<input type="file" accept="image/png,image/jpeg,image/webp" id="cmdOnboardIcon" hidden>'+
+  '<input type="file" accept="image/*,.heic,.heif" id="cmdOnboardIcon" hidden>'+
   '<label class="cmd-onboard-field">Nom du serveur<input name="name" id="cmdOnboardName" required maxlength="100" autocomplete="off" value="'+escapeHtml(createName||'Mon serveur CMD Sphere')+'"></label>'+
   '<label class="cmd-onboard-public"><input type="checkbox" name="isPublic" '+(createAudience==='community'?'checked':'')+'>Visible dans Découvrir (modifiable)</label>'+
   '<div class="cmd-onboard-foot"><p class="cmd-onboard-desc" style="font-size:13px">Chaque serveur aura ses propres invitations et salons.</p>'+
@@ -759,12 +764,17 @@ function renderOnboarding(view){
  if(createImage)host.querySelector('#cmdOnboardAvatar').innerHTML='<img src="'+createImage+'" alt="Icône du serveur">';
  host.querySelector('#cmdOnboardName').oninput=e=>{createName=e.target.value};
  host.querySelector('#cmdOnboardBack').onclick=()=>renderOnboarding('purpose');
- host.querySelector('#cmdOnboardIcon').onchange=e=>{
+ host.querySelector('#cmdOnboardIcon').onchange=async e=>{
   const file=e.target.files?.[0],status=host.querySelector('#cmdOnboardStatus');if(!file)return;
-  if(!/^image\/(?:png|jpeg|webp)$/.test(file.type)||file.size>1600000){status.textContent='Image PNG/JPEG/WebP de 1,6 Mo maximum.';return}
-  const reader=new FileReader();
-  reader.onload=()=>{createImage=String(reader.result||'');host.querySelector('#cmdOnboardAvatar').innerHTML='<img src="'+createImage+'" alt="Icône du serveur">';status.textContent=''};
-  reader.onerror=()=>{status.textContent="Impossible de charger cette image"};reader.readAsDataURL(file);
+  status.textContent='Préparation de la photo…';
+  try{
+   if(typeof window.cmdSpherePrepareServerImage!=='function')throw Error('Traitement des photos indisponible. Actualise la page.');
+   const prepared=await window.cmdSpherePrepareServerImage(file);
+   createImage=prepared;
+   host.querySelector('#cmdOnboardAvatar').replaceChildren();
+   const preview=document.createElement('img');preview.src=prepared;preview.alt='Icône du serveur';host.querySelector('#cmdOnboardAvatar').append(preview);
+   status.textContent='Image prête à enregistrer.';
+  }catch(error){status.textContent=error.message}
  };
  host.querySelector('#cmdOnboardForm').onsubmit=async e=>{
   e.preventDefault();const form=e.currentTarget,values=new FormData(form),name=String(values.get('name')||'').trim(),publicFlag=values.get('isPublic')==='on';
