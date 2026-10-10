@@ -31,3 +31,19 @@ for(const s of manifest){
 }
 fs.writeFileSync(path.join(target,"manifest.json"),JSON.stringify(manifest));
 console.info("[CMD Sphere] Added "+count+" supplemental landscape scenes; saved IDs and originals unchanged.");
+
+const sharp=require("sharp");
+sharp.cache(false);
+sharp.concurrency(1);
+(async()=>{
+ const directory=path.join(target,"thumbs");
+ fs.mkdirSync(directory,{recursive:true});
+ for(const item of manifest){
+  const input=path.join(target,path.basename(item.src));
+  const metadata=await sharp(input).metadata();
+  if(metadata.width!==1920||metadata.height!==1080)throw Error("Unexpected full wallpaper dimensions: "+item.id);
+  await sharp(input).resize(640,360,{fit:"inside",withoutEnlargement:true})
+   .webp({quality:76,effort:2}).toFile(path.join(directory,path.basename(item.src)));
+ }
+ console.info("[CMD Sphere] Generated "+manifest.length+" lightweight 640x360 wallpaper thumbnails; originals retained.");
+})().catch(error=>{console.error("[CMD Sphere thumbnails]",error);process.exitCode=1});
