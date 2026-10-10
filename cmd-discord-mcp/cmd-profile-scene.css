@@ -970,3 +970,9 @@
 #cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-preview,
 #cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-float-header,
 #cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit #cmdSceneLabel{position:relative;z-index:3}
+
+/* CMD Sphere 2026-10-10 — mobile editor must stay above the global language toolbar.
+   Controls in Avatar & décor remain clickable; global controls return on close/save. */
+body.cmd-scene-editor-open #cmd-sphere-tools{display:none!important}
+body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]){z-index:100001!important}
+body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-events:auto!important;position:relative;z-index:12!important}
