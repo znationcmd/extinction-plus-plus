@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/*.test.cjs"
+    "test": "node --test tests/*.test.cjs",
+    "postinstall": "node unpack-profile-assets.cjs"
   },
   "engines": {
     "node": ">=20"
