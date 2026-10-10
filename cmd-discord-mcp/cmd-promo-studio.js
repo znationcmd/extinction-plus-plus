@@ -5,14 +5,14 @@ const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.quer
 const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["story","📱 Story"],["gif","✨ GIF"],["poster","🪧 Affiche"]];
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
-const EFFECT_OPTIONS=[["none","Original"],["zoom","Zoom"],["pan","Cinématique"],["pulse","Pulsation"],["slide","Glissement"],["shake","Secousse"],["dream","Rêve"],["flash","Flash"],["vhs","VHS"],["neon","Néon"],["mirror","Miroir"],["glitch","Glitch"]];
+const EFFECT_OPTIONS=[["none","Original"],["zoom","Zoom"],["pan","Cinématique"],["pulse","Pulsation"],["slide","Glissement"],["shake","Secousse"],["dream","Rêve"],["flash","Flash"],["vhs","VHS"],["neon","Néon"],["mirror","Miroir"],["glitch","Glitch"],["sparkle","Étincelles"],["rain","Pluie"],["snow","Neige"],["grain","Grain cinéma"],["chromatic","Couleurs décalées"],["lightleak","Lueur"],["stars","Étoiles"]];
 const FILTER_OPTIONS=[["natural","Original"],["vivid","Vibrant"],["warm","Doré"],["retro","Vintage"],["mono","Noir et blanc"],["cool","Bleuté"],["pink","Rose"],["cinema","Cinéma"],["noir","Noir intense"],["soft","Doux"],["sunset","Coucher de soleil"]];
 const FILTER_CSS={natural:"none",vivid:"saturate(1.6) contrast(1.12)",warm:"sepia(.24) saturate(1.3)",retro:"sepia(.6) contrast(1.2)",mono:"grayscale(1) contrast(1.18)",cool:"saturate(1.22) hue-rotate(12deg) brightness(1.05)",pink:"sepia(.12) saturate(1.65) hue-rotate(305deg)",cinema:"contrast(1.26) saturate(.75) brightness(.86)",noir:"grayscale(1) contrast(1.75) brightness(.88)",soft:"contrast(.84) saturate(.86) brightness(1.14)",sunset:"sepia(.33) saturate(1.6) hue-rotate(-9deg)"};
 
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
 let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
-const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
+const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 let noticeTimer=0;
 const note=t=>{
@@ -29,7 +29,7 @@ function open(context={}){
  const nextScope=user+":"+guild;
  if(studioScope&&studioScope!==nextScope){
   stop();clips.forEach(item=>URL.revokeObjectURL(item.url));clips=[];musicFile=null;selectedTrack=null;recorded=null;
-  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
+  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
   if(root){root.remove();root=null;canvas=null;ctx=null}
  }
  studioScope=nextScope;studioProfileGuild=guild;
@@ -41,8 +41,8 @@ function open(context={}){
  '<div class="cmd-studio-card"><h3>1. Images et vidéos</h3><label class="cmd-studio-upload">＋ Ajouter photos ou vidéos<input id="cmdStudioMedia" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" multiple></label><div id="cmdStudioFiles" class="cmd-studio-files"></div><small>Choisis plusieurs images pour un diaporama. Les fichiers sources peuvent dépasser 10 Mo (150 Mo par fichier).</small></div>'+
  '<div class="cmd-studio-card"><h3>2. Format et modèle</h3><div class="cmd-studio-choices">'+buttonHTML([["9:16","📱 Vertical"],["1:1","⬛ Carré"],["16:9","🖥️ Horizontal"]],"format")+'</div><div id="cmdStudioThemes" class="cmd-studio-choices cmd-studio-themes">'+buttonHTML(Object.entries(THEMES).map(([k,v])=>[k,v[0]]),"theme")+'</div></div>'+
  '<div class="cmd-studio-card"><h3>3. Texte et autocollants</h3><label>Texte principal<input id="cmdStudioHeadline" maxlength="100" placeholder="Rejoins notre serveur"></label><label>Sous-titre<input id="cmdStudioSubtitle" maxlength="140" placeholder="Événement, RP, communauté…"></label><label>Autocollant <input id="cmdStudioEmoji" maxlength="12" placeholder="🚀 🔥 💎"></label></div>'+
- '<div class="cmd-studio-card"><h3>4. Animations et filtres</h3><label>Effet<select id="cmdStudioEffect"><option value="zoom">Zoom dynamique</option><option value="pan">Mouvement caméra</option><option value="pulse">Pulsation</option><option value="slide">Glissement</option><option value="none">Aucun</option></select></label><label>Transition<select id="cmdStudioTransition"><option value="fade">Fondu</option><option value="slide">Glissé</option><option value="cut">Coupe directe</option></select></label><label>Filtre<select id="cmdStudioFilter"><option value="natural">Naturel</option><option value="vivid">Vif</option><option value="warm">Chaud</option><option value="retro">Rétro</option><option value="mono">Noir et blanc</option></select></label><label>Durée : <output id="cmdStudioDurLabel">12 s</output><input id="cmdStudioDuration" type="range" min="5" max="30" step="1" value="12"></label></div>'+
- '<div class="cmd-studio-card cmd-studio-music"><h3>5. 🎵 Ajouter un son</h3><button type="button" id="cmdStudioOpenMusic" class="cmd-studio-add-sound">🎵 Parcourir les vraies musiques　⌕</button><div id="cmdStudioSelectedSong" class="cmd-studio-selected-song" aria-live="polite">Aucun morceau choisi dans la bibliothèque.</div><label>Choix de la musique<select id="cmdStudioMusic"><option value="library">🎧 Musique de la bibliothèque</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer mon son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Choisis un vrai morceau et écoute son aperçu.</small><label>✂️ Début de l’extrait : <output id="cmdStudioMusicStartLabel">0:00</output><input id="cmdStudioMusicStart" type="range" min="0" max="240" step="1" value="0"></label><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Les morceaux libres indiquent leur artiste et licence. Les chansons commerciales de TikTok ne sont pas accessibles sans contrat de licence.</small></div>'+
+ '<div class="cmd-studio-card"><h3>4. Animations et filtres</h3><label>Effet<select id="cmdStudioEffect"><option value="zoom">Zoom dynamique</option><option value="pan">Mouvement caméra</option><option value="pulse">Pulsation</option><option value="slide">Glissement</option><option value="none">Aucun</option></select></label><label>Transition<select id="cmdStudioTransition"><option value="fade">Fondu</option><option value="slide">Glissé</option><option value="cut">Coupe directe</option></select></label><label>Filtre<select id="cmdStudioFilter"><option value="natural">Naturel</option><option value="vivid">Vif</option><option value="warm">Chaud</option><option value="retro">Rétro</option><option value="mono">Noir et blanc</option></select></label><label>Durée : <output id="cmdStudioDurLabel">12 s</output><input id="cmdStudioDuration" type="range" min="5" max="60" step="1" value="30"></label></div>'+
+ '<div class="cmd-studio-card cmd-studio-music"><h3>5. 🎵 Ajouter un son</h3><button type="button" id="cmdStudioOpenMusic" class="cmd-studio-add-sound">🎵 Parcourir les vraies musiques　⌕</button><div id="cmdStudioSelectedSong" class="cmd-studio-selected-song" aria-live="polite">Aucun morceau choisi dans la bibliothèque.</div><label>Choix de la musique<select id="cmdStudioMusic"><option value="library">🎧 Musique de la bibliothèque</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer mon son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Choisis un vrai morceau et écoute son aperçu.</small><div class="cmd-studio-extract-length" role="group" aria-label="Durée de la vidéo avec musique"><span>Longueur de l’extrait</span><button type="button" data-cmd-extract-seconds="30">30 secondes</button><button type="button" data-cmd-extract-seconds="60">1 minute</button></div><label>✂️ Début de l’extrait : <output id="cmdStudioMusicStartLabel">0:00</output><input id="cmdStudioMusicStart" type="range" min="0" max="240" step="1" value="0"></label><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Les morceaux libres indiquent leur artiste et licence. Les chansons commerciales de TikTok ne sont pas accessibles sans contrat de licence.</small></div>'+
  '<div class="cmd-studio-card"><h3>6. Publicité de serveur</h3><label>Titre de publication<input id="cmdStudioTitle" maxlength="100"></label><label>Mon serveur<select id="cmdStudioServer"><option value="">Choisir mon serveur…</option></select></label><small>Pour publier dans CMD Sphere, tu dois être propriétaire ou administrateur de ton serveur.</small></div>'+
  '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div><section id="cmdStudioMusicSheet" class="cmd-studio-music-sheet" hidden role="dialog" aria-modal="true" aria-label="Choisir une musique"><div class="cmd-studio-music-panel"><header><b>🎵 Ajouter un son</b><button type="button" id="cmdStudioCloseMusic" aria-label="Fermer">✕</button></header><label class="cmd-studio-search">⌕ <input type="search" id="cmdStudioMusicQuery" placeholder="Rechercher une musique, un style…" autocomplete="off"></label><div class="cmd-studio-music-genres" id="cmdStudioMusicGenres"><button type="button" data-search-music="instrumental">Instrumental</button><button type="button" data-search-music="rock music">Rock</button><button type="button" data-search-music="pop music">Pop</button><button type="button" data-search-music="electronic music">Électro</button><button type="button" data-search-music="piano">Piano</button><button type="button" data-search-music="jazz">Jazz</button><button type="button" data-search-music="classical music">Classique</button><button type="button" data-search-music="hip hop music">Hip-hop</button></div><div id="cmdStudioMusicResults" class="cmd-studio-music-results"><p>Recherche des titres accessibles…</p></div><div class="cmd-studio-music-foot"><small>Catalogue : Wikimedia Commons · morceaux à licence libre identifiée. Écoute un titre avant de l’ajouter. Les obligations de crédit restent applicables.</small><button type="button" id="cmdStudioMusicDone">Terminer</button></div></div></section>';
  // One clean video preview, right-side tools, and two main actions.
@@ -106,6 +106,7 @@ function open(context={}){
  $("#cmdStudioCloseMusic").onclick=$("#cmdStudioMusicDone").onclick=()=>{stopAudition();$("#cmdStudioMusicSheet").hidden=true};
  $("#cmdStudioMusicQuery").addEventListener("input",e=>{clearTimeout(musicSearchTimer);const term=e.target.value.trim();musicSearchTimer=setTimeout(()=>searchMusic(term),400)});
  $$("[data-search-music]",root).forEach(b=>b.onclick=()=>{const term=b.dataset.searchMusic;$("#cmdStudioMusicQuery").value=term;searchMusic(term)});
+ $$("[data-cmd-extract-seconds]",root).forEach(button=>button.onclick=()=>{const length=Number(button.dataset.cmdExtractSeconds);state.duration=length;recorded=null;$("#cmdStudioDuration").value=length;$("#cmdStudioDurLabel").textContent=length+" s";$$("[data-cmd-extract-seconds]",root).forEach(b=>b.classList.toggle("selected",b===button));syncTrim();render(0);note("Extrait réglé sur "+length+" secondes.")});
  $("#cmdStudioMusicStart").oninput=e=>{state.musicStart=Number(e.target.value)||0;$("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);if(audition&&selectedTrack?.id===auditionId){try{audition.currentTime=state.musicStart}catch{}}if(previewAudio){try{previewAudio.currentTime=state.musicStart}catch{}}};
  $("#cmdStudioMedia").onchange=e=>{addFiles(e.target.files);e.target.value=""};
  $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&f.type.startsWith("audio/")){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;selectedTrack=null;state.musicStart=0;refreshSelectedMusic();note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
@@ -113,7 +114,7 @@ function open(context={}){
  const ids={Headline:"headline",Subtitle:"subtitle",Emoji:"emoji",Title:"title",Effect:"effect",Transition:"transition",Filter:"filter",Duration:"duration",Music:"music",Volume:"volume",Server:"guildId"};
  for(const [id,key] of Object.entries(ids)){
   const field=$("#cmdStudio"+id);if(!field)continue;
-  field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;recorded=null;$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
+  field.value=state[key];field.addEventListener("input",()=>{state[key]=["duration","volume"].includes(key)?Number(field.value):field.value;recorded=null;if(key==="duration")syncTrim();$("#cmdStudioDurLabel").textContent=state.duration+" s";$("#cmdStudioVolumeLabel").textContent=state.volume+" %";render(0)});
  }
  $("#cmdStudioMusic").onchange=()=>{if(state.music==="library"&&!selectedTrack){$("#cmdStudioMusic").value="none";state.music="none";note("Choisis d’abord une musique dans la bibliothèque.")}refreshSelectedMusic()};
  $("#cmdStudioVolume").addEventListener("input",()=>{if(previewAudio)previewAudio.volume=state.volume/100;if(audition)audition.volume=state.volume/100});
@@ -154,7 +155,7 @@ function installEffectsGallery(controls){
 }
 function refreshEffectGallery(tool){
  if(!root)return;
- const nodes=$('[data-fx-type]',root),source=clips[0]?.element;
+ const nodes=$$('[data-fx-type]',root),source=clips[0]?.element;
  const canDraw=Boolean(source&&(source.tagName!=="IMG"||source.complete)&&
      (source.tagName==="IMG"?source.naturalWidth>0:source.videoWidth>0));
  for(const node of nodes){
@@ -183,6 +184,7 @@ function refreshEffectGallery(tool){
   if(key==="effect"&&value==="flash"){c.fillStyle="#ffffff55";c.fillRect(0,0,w,h)}
   if(key==="effect"&&value==="mirror"){c.save();c.translate(w,0);c.scale(-1,1);c.globalAlpha=.5;c.drawImage(mini,0,0);c.restore()}
   if(key==="effect"&&value==="glitch"){c.fillStyle="#f34bac66";c.fillRect(0,39,w,7)}
+   if(key==="effect")drawVisualEffect(c,w,h,.7,value);
  }
 }
 function showTool(tool){
@@ -327,6 +329,38 @@ function drawMedia(item,t,local,slot){
  const scale=state.crop==="contain"?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);ctx.drawImage(el,-iw*scale/2,-ih*scale/2,iw*scale,ih*scale);
  ctx.restore();
 }
+// All effects are painted into actual video frames, not just the thumbnails.
+function drawVisualEffect(context,width,height,time,kind){
+ if(!["sparkle","rain","snow","grain","chromatic","lightleak","stars"].includes(kind))return;
+ context.save();
+ const rand=i=>{const v=Math.sin(i*127.1+kind.length*33.3)*43758.5453;return v-Math.floor(v)};
+ if(kind==="lightleak"){
+  const g=context.createRadialGradient(width*(.72+.13*Math.sin(time*.7)),height*.18,0,width*.8,height*.28,Math.max(width,height)*.92);
+  g.addColorStop(0,"rgba(255,225,164,.68)");g.addColorStop(.42,"rgba(252,79,128,.26)");g.addColorStop(1,"rgba(244,32,150,0)");
+  context.fillStyle=g;context.fillRect(0,0,width,height);
+ }else if(kind==="chromatic"){
+  context.globalCompositeOperation="screen";context.globalAlpha=.15;
+  context.fillStyle="#fc1661";context.fillRect(-width*.012,0,width/2,height);
+  context.fillStyle="#15e8ff";context.fillRect(width*.512,0,width/2,height);
+ }else{
+  const count=kind==="grain"?Math.min(160,Math.round(width*height/3600)):kind==="rain"?90:kind==="snow"?45:kind==="stars"?46:32;
+  for(let i=0;i<count;i++){
+   const size=kind==="grain"?Math.max(1,width/250):kind==="snow"?width*(.003+.005*rand(i+14)):width*.004;
+   const x=rand(i)*width;
+   let y=rand(i+84)*height;
+   if(kind==="rain"||kind==="snow")y=(y+time*height*(kind==="rain"?.62:.115)*(1+rand(i+30)))%height;
+   context.globalAlpha=kind==="grain"?.08+.19*rand(i+10):kind==="stars"?.12+.65*(.5+.5*Math.sin(time*3+i)):.2+.45*rand(i+20);
+   context.fillStyle=kind==="sparkle"||kind==="stars"?(rand(i+77)>.5?"#fffbe3":"#d6bfff"):"#fff";
+   if(kind==="rain"){context.fillRect(x,y,width*.0025,height*.038)}
+   else if(kind==="grain"){context.fillRect(x,y,size,size)}
+   else{
+    context.beginPath();context.arc(x,y,size*(kind==="sparkle"?1.4:1),0,Math.PI*2);context.fill();
+    if((kind==="sparkle"||kind==="stars")&&i%8===0){context.fillRect(x-size*2,y-size*.23,size*4,size*.46);context.fillRect(x-size*.23,y-size*2,size*.46,size*4)}
+   }
+  }
+ }
+ context.restore();
+}
 function render(time=0){
  if(!ctx||!canvas)return;
  const w=canvas.width,h=canvas.height,t=Math.max(0,time),theme=THEMES[state.theme]||THEMES.epic;
@@ -340,6 +374,7 @@ function render(time=0){
   if(state.effect==="vhs"){ctx.fillStyle="#ffffff14";for(let y=0;y<h;y+=16)ctx.fillRect(0,y,w,1)}
   if(state.effect==="glitch"&&Math.floor(t*13)%4===0){ctx.fillStyle="#dd33f366";ctx.fillRect(0,h*.38,w,h*.026)}
   if(state.effect==="mirror"){ctx.save();ctx.translate(w,0);ctx.scale(-1,1);ctx.globalAlpha=.32;ctx.drawImage(canvas,0,0,w/2,h,0,0,w/2,h);ctx.restore()}
+  drawVisualEffect(ctx,w,h,t,state.effect);
 
   if(state.transition==="fade"){
    if(local<.35){ctx.fillStyle=theme[1];ctx.globalAlpha=(.35-local)/.35;ctx.fillRect(0,0,w,h);ctx.globalAlpha=1}
@@ -450,7 +485,7 @@ function useTrack(track){
 }
 function syncTrim(){
  const slider=$("#cmdStudioMusicStart");if(!slider)return;
- slider.max=musicLength?Math.max(0,Math.floor(musicLength-1)):240;
+ slider.max=musicLength?Math.max(0,Math.floor(musicLength-state.duration)):240;
  state.musicStart=Math.min(state.musicStart||0,Number(slider.max));
  slider.value=state.musicStart;
  $("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);
