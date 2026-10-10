@@ -1757,7 +1757,7 @@ function profilePage(auth,profile,experience={guilds:[],selected:null,detail:nul
   '<section class="section"><div class="card"><h3>À propos de moi</h3><div class="bio">'+(bio||'<span class="muted">Aucune bio.</span>')+'</div></div></section>'+
   (serverMode?'<section class="section"><div class="card"><h3>Rôles du serveur</h3><div class="roles">'+((d?.roles||[]).slice(0,18).map(r=>'<span class="roleChip">'+(r.role_icon?escHtml(r.role_icon)+' ':'')+escHtml(r.name)+'</span>').join("")||'<span class="muted">Aucun rôle.</span>')+'</div></div></section>':'')+
   '</main><div class="modal" id="modal"><form class="sheet" id="profileForm" data-user-id="'+escHtml(profile.userId)+'"><div class="grab"></div><h2>'+(serverMode?'Profil par serveur':'Profil principal')+'</h2><input type="hidden" name="guildId" value="'+selectedId+'"><input type="hidden" name="avatarDecoration" value="'+decoration+'"><input type="hidden" name="profileEffect" value="'+effect+'"><input type="hidden" name="profileFrame" value="'+frame+'"><input type="hidden" name="nameplateStyle" value="'+nameplate+'"><input type="hidden" name="featuredTagGuildId" value="'+escHtml(profile.featuredTagGuildId||"")+'"><label>'+(serverMode?'Pseudo de serveur':'Nom affiché')+'<input name="displayName" maxlength="80" value="'+displayName+'"></label><label>Pronoms<input name="pronouns" maxlength="60" value="'+pronouns+'" placeholder="Ex. il/lui, elle, iel"></label><label>Bio<textarea name="bio" maxlength="500">'+bio+'</textarea></label><label>Statut<input name="status" maxlength="80" value="'+status+'"></label><label>Style du nom<select name="nameStyle"><option value="prism" '+(nameStyle==="prism"?"selected":"")+'>Journal + Prisme animé</option><option value="journal" '+(nameStyle==="journal"?"selected":"")+'>Journal</option><option value="glow" '+(nameStyle==="glow"?"selected":"")+'>Lueur</option><option value="plain" '+(nameStyle==="plain"?"selected":"")+'>Classique</option></select></label>'+
-  (serverMode?'<label>Rôle affiché<select name="roleId"><option value="">Aucun</option>'+roleOptions+'</select></label>':'')+
+  (serverMode?'<label>Rôle attribué par le propriétaire<input readonly disabled value="'+(roleName||'Aucun rôle attribué')+'"></label>':'')+
   '<h3>Badges gratuits</h3><div class="badgeGrid">'+badgeChoices+'</div>'+
   (!serverMode?'<h3>Tag de serveur</h3><button type="button" class="pickButton" data-open="tagPicker"><span class="previewIcon">'+(tagIcon||"🏷️")+'</span><span><strong>'+(tag?tag:"Aucun")+'</strong><small>Choisir parmi tes serveurs</small></span><span class="chev">›</span></button>':'')+
   '<h3>Décoration d’avatar</h3><button type="button" class="pickButton" data-open="decoPicker"><span class="previewIcon">'+(deco||"⊘")+'</span><span><strong>'+escHtml(decoration==="none"?"Aucune":decoration)+'</strong><small>Gratuites et Premium</small></span><span class="chev">›</span></button>'+
@@ -3254,12 +3254,29 @@ async function updateNativeOverview(auth,input){
 }
 async function nativeMemberList(auth,guildId){
   await requireNativeMember(auth,guildId);
-  const rows=await pool.query(`SELECT m.user_id,m.membership_role,m.joined_at,
+  const rows=await pool.query(`SELECT m.user_id,m.membership_role,m.profile_role_id,m.joined_at,
     COALESCE(NULLIF(m.profile_display_name,''),NULLIF(p.display_name,''),'Membre') AS display_name,
     COALESCE(NULLIF(m.profile_avatar_data_url,''),NULLIF(p.avatar_data_url,'')) AS avatar
     FROM cmd_native_members m LEFT JOIN cmd_global_profiles p ON p.user_id=m.user_id
     WHERE m.guild_id=$1 ORDER BY CASE m.membership_role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,m.joined_at LIMIT 1000`,[String(guildId)]);
   return {members:rows.rows};
+}
+// Role assignment belongs only to the actual CMD Sphere guild owner.
+async function ownerAssignNativeRole(auth,input){
+ const guildId=String(input.guildId||""),userId=String(input.userId||""),requested=String(input.roleId||"").trim();
+ const isOwner=await pool.query("SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2",[guildId,String(auth.user.id)]);
+ if(!isOwner.rows.length)throw new Error("Seul le propriétaire peut donner ou retirer les rôles.");
+ if(!/^[a-z0-9-]{1,100}$/i.test(userId))throw new Error("Membre incorrect");
+ const member=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[guildId,userId]);
+ if(!member.rows.length)throw new Error("Ce membre n'appartient pas au serveur.");
+ let roleId=null;
+ if(requested){
+   const role=await pool.query("SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[guildId,requested]);
+   if(!role.rows.length)throw new Error("Ce rôle n'existe pas dans le serveur.");
+   roleId=String(role.rows[0].id);
+ }
+ const updated=await pool.query("UPDATE cmd_native_members SET profile_role_id=$3 WHERE guild_id=$1 AND user_id=$2 RETURNING user_id,profile_role_id",[guildId,userId,roleId]);
+ return {saved:true,user:updated.rows[0]};
 }
 // Repair a single imported server from the user's already stored mirror.
  // Does not call Discord, overwrite local messages, or change Discord.
@@ -3408,6 +3425,7 @@ async function applyNativeLocalAction(auth,input){
 }
 async function applyNativeStructureAction(auth,input){
   const gid=String(input.nativeGuildId||"");await requireNativeAdmin(auth,gid);
+  if(["create_role","update_role","delete_role"].includes(String(input.action||"")))await requireNativeOwner(auth,gid);
   const g=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[gid]);if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const sourceId=String(g.rows[0].source_discord_id||"");
   if(/^\d{15,22}$/.test(sourceId)){
@@ -3432,11 +3450,8 @@ async function updateNativeProfile(auth,input){
   const nameStyle=["plain","journal","prism","glow"].includes(String(input.nameStyle??previous.profile_name_style))?String(input.nameStyle??previous.profile_name_style):"prism";
   const badges=normalizeBadges(input.badges??previous.profile_badges),avatarDecoration=normalizeDecoration(input.avatarDecoration??previous.avatar_decoration),profileEffect=normalizeEffect(input.profileEffect??previous.profile_effect),profileFrame=normalizeFrame(input.profileFrame??previous.profile_frame),nameplateStyle=normalizeNameplate(input.nameplateStyle??previous.nameplate_style);
   if(CMD_ART_FRAMES[profileFrame]||CMD_ART_AVATARS[avatarDecoration]){const premium=await getPremiumState(auth),unlocks=premium.active?null:await getDiamondUnlocks(auth);if(!premium.active&&((CMD_ART_FRAMES[profileFrame]&&!unlocks.has("frame:"+profileFrame))||(CMD_ART_AVATARS[avatarDecoration]&&!unlocks.has("decoration:"+avatarDecoration))))throw new Error("Cette décoration nécessite Premium ou un achat avec des diamants.");}
-  let roleId=safeText(input.roleId??previous.profile_role_id,100)||null;
-  if(roleId){
-    const rr=await pool.query('SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[guildId,roleId]);
-    roleId=rr.rows[0]?.id?String(rr.rows[0].id):null;
-  }
+  // Never accept profile-submitted roles. Only the guild owner may assign roles.
+  const roleId=previous.profile_role_id||null;
   const r=await pool.query(`UPDATE cmd_native_members SET profile_display_name=$3,profile_avatar_data_url=COALESCE($4,profile_avatar_data_url),profile_banner_data_url=COALESCE($5,profile_banner_data_url),profile_bio=$6,profile_status=$7,profile_accent_color=$8,profile_theme=$9,profile_pronouns=$10,profile_name_style=$11,profile_role_id=$12,profile_badges=$13::jsonb,avatar_decoration=$14,profile_effect=$15,profile_frame=$16,nameplate_style=$17
     WHERE guild_id=$1 AND user_id=$2 RETURNING membership_role,profile_display_name,profile_avatar_data_url,profile_banner_data_url,profile_bio,profile_status,profile_accent_color,profile_theme,profile_pronouns,profile_name_style,profile_role_id,profile_badges,avatar_decoration,profile_effect,profile_frame,nameplate_style`,
     [guildId,String(auth.user.id),displayName,avatar,banner,bio,status,accent,theme,pronouns,nameStyle,roleId,JSON.stringify(badges),avatarDecoration,profileEffect,profileFrame,nameplateStyle]);
@@ -4524,6 +4539,11 @@ const httpServer=createServer(async(req,res)=>{
         const out=await importOwnedDiscordGuilds(auth);
         sendJson(res,200,{imported:out.imported,skipped:out.failed,ownedCount:out.ownedCount});
       }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/roles/assign"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await ownerAssignNativeRole(auth,body))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/native/members"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
