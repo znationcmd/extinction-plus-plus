@@ -911,3 +911,57 @@
   background:var(--cmd-scene-bg) center/contain no-repeat;
   filter:none;transform:none;
 }
+
+
+/* CMD SPHERE ASSET RENDER — HD FOREGROUND 2026-10-10 */
+/* Keep original avatar, pet, vehicle and house pixels unblurred and alpha intact.
+   Only scenes (behind them) may receive soft edge-fill. */
+#cmdSceneSheet .cmd-imported-avatar-art,
+#cmdSceneSheet .cmd-live-avatar-image,
+#cmdSceneSheet .cmd-universe-item-image,
+#cmdSceneSheet .cmd-illustrated-pet img,
+#cmdSceneSheet .cmd-sticker-avatar-live img,
+#cmdSceneSheet #cmdAvatarLiveOverlay img,
+#cmdSceneSheet #cmdScenePreviewPet img,
+#cmdSceneSheet #cmdStickerObjects img,
+#cmdSceneBackdrop .cmd-scene-person img,
+#cmdSceneBackdrop .cmd-scene-pet img,
+#cmdSceneBackdrop .cmd-scene-vehicle img,
+#cmdSceneBackdrop .cmd-scene-home img,
+#cmdSceneSheet .cmd-scene-model-photo img {
+  image-rendering:auto!important;
+  object-fit:contain!important;
+  object-position:center bottom!important;
+  background:transparent!important;
+  border:none!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+  filter:none!important;
+  -webkit-filter:none!important;
+  max-width:100%!important;
+  max-height:100%!important;
+}
+/* Never enlarge card sprites via zoom / perspective transforms.
+   Preserve transparent cutouts and do not accidentally fill an asset's background. */
+#cmdSceneSheet .cmd-scene-model-photo,
+#cmdSceneSheet .cmd-scene-card-art,
+#cmdSceneSheet .cmd-avatar-premium-grid .cmd-scene-built-in,
+#cmdSceneSheet .cmd-scene-card-art .cmd-pet-art {
+  image-rendering:auto!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#cmdSceneSheet #cmdAvatarLiveOverlay .cmd-live-avatar-image,
+#cmdSceneSheet #cmdScenePreviewPerson .cmd-live-avatar-image {
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-position:center bottom!important;
+}
+#cmdSceneSheet #cmdStickerObjects img,
+#cmdSceneBackdrop .cmd-scene-vehicle img,
+#cmdSceneBackdrop .cmd-scene-home img {
+  width:100%!important;
+  height:100%!important;
+  object-position:center center!important;
+}
