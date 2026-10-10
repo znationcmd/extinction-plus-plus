@@ -264,3 +264,25 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
  font:800 14px/1.4 system-ui!important;text-align:center;cursor:pointer;
 }
 #cmdPromoStudio #cmdStudioEmptyHint[hidden]{display:none!important;}
+
+/* Device-only save button — replaces public Story and Next actions. */
+#cmdPromoStudio #cmdStudioBottomBar{display:flex!important;justify-content:center!important}
+#cmdPromoStudio #cmdStudioBottomBar #cmdStudioLocalSave{
+ display:block!important;flex:1 1 100%!important;max-width:720px!important;
+ min-height:52px!important;background:linear-gradient(110deg,#9b4bd3,#be54d8)!important;
+ border:1px solid #d8aaff88!important;color:#fff!important;
+ border-radius:15px!important;font-size:16px!important;font-weight:850!important;
+ box-shadow:0 7px 19px #490c7770!important
+}
+#cmdPromoStudio #cmdStudioLocalSave:disabled{opacity:.6!important;cursor:wait}
+#cmdPromoStudio #cmdStudioEffectsGallery,
+#cmdPromoStudio #cmdStudioFiltersGallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%}
+#cmdPromoStudio .cmd-effect-option{border:1px solid #ffffff35!important;border-radius:12px!important;
+ display:flex;flex-direction:column;gap:5px;overflow:hidden;align-items:stretch;text-align:center;
+ background:#15121c!important;color:#fff!important;padding:5px!important;min-height:102px}
+#cmdPromoStudio .cmd-effect-option.selected{outline:2px solid #d783ec!important;background:#4d2d59!important}
+#cmdPromoStudio .cmd-effect-option canvas{width:100%;aspect-ratio:9/11;max-height:111px;object-fit:cover;border-radius:8px;background:#2b2840}
+#cmdPromoStudio .cmd-effect-option span{font-size:11px;font-weight:700;padding:2px 0 5px}
+#cmdPromoStudio .cmd-studio-effect-heading{font-size:13px!important;margin:8px 0 4px!important}
+#cmdPromoStudio #cmdStudioEffectsGallery[hidden],#cmdPromoStudio #cmdStudioFiltersGallery[hidden]{display:none!important}
+#cmdPromoStudio .cmd-studio-controls .cmd-studio-card[hidden]{display:none!important}
