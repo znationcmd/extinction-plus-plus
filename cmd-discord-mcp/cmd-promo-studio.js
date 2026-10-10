@@ -14,7 +14,14 @@ let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
 const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const note=t=>{const message=String(t||"");const n=$("#cmdStudioNotice");if(n)n.textContent=message;const toast=$("#cmdStudioToast");if(toast){toast.textContent=message;toast.hidden=!message}};
+let noticeTimer=0;
+const note=t=>{
+ const message=String(t||"");const n=$("#cmdStudioNotice");if(n)n.textContent=message;
+ const toast=$("#cmdStudioToast");if(toast){
+  toast.textContent=message;toast.hidden=!message;clearTimeout(noticeTimer);
+  if(message)noticeTimer=setTimeout(()=>{if(toast.textContent===message)toast.hidden=true},4300);
+ }
+};
 function buttonHTML(arr,key){return arr.map(([v,label])=>'<button type="button" data-studio-'+key+'="'+safe(v)+'" class="'+(state[key]===v?"selected":"")+'">'+label+'</button>').join("")}
 function open(context={}){
  const user=String(context.profileId||document.querySelector("#profileForm")?.dataset.userId||"member").slice(0,120);
@@ -115,7 +122,7 @@ function open(context={}){
  $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
  if(studioScope){const publication=$("[data-tool-panel=\"publish\"]",root);if(publication)publication.hidden=true;const pub=$("#cmdStudioPublish",root);if(pub)pub.hidden=true;}
  document.addEventListener("keydown",onEscape);
- loadServers();resize();render(0);closeTool();
+ resize();render(0);closeTool();
 }
 function installEffectsGallery(controls){
  const card=$("#cmdStudioEffect",controls)?.closest(".cmd-studio-card")||$(".cmd-studio-card",controls)[3];if(!card)return;
@@ -402,7 +409,8 @@ async function searchMusic(value){
   const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query),{credentials:"same-origin",cache:"no-store"});
   const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
   if(ticket!==musicSearchId)return;
-  musicResults=Array.isArray(result.items)?result.items:[];
+  const audio=document.createElement("audio");
+  musicResults=(Array.isArray(result.items)?result.items:[]).filter(track=>!track.mime||audio.canPlayType(track.mime)!=="");
   renderMusicSearch();
  }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
 }
@@ -427,7 +435,7 @@ function toggleAudition(track,button){
  stop();stopAudition();auditionId=track.id;audition=new Audio(track.url);audition.preload="auto";audition.volume=state.volume/100;
  button.textContent="⏸";
  audition.onloadedmetadata=()=>{musicLength=Number.isFinite(audition.duration)?audition.duration:0;if(selectedTrack?.id===track.id)syncTrim();try{audition.currentTime=Math.min(state.musicStart||0,Math.max(0,musicLength-.2))}catch{}};
- audition.onerror=()=>{stopAudition();note("L'aperçu du titre n'est pas disponible. Essaie un autre morceau.")};
+ audition.onerror=()=>{stopAudition();note("Musique non lisible sur cet appareil. Choisis un autre morceau ou importe ton MP3.")};
  audition.onended=()=>stopAudition();
  audition.play().catch(e=>{stopAudition();note("L'écoute a échoué : "+e.message)});
 }
