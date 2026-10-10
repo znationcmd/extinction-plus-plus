@@ -3393,6 +3393,47 @@ async function updateNativeOverview(auth,input){
   if(!row.rows.length)throw new Error("Serveur introuvable.");
   return {ok:true,guild:row.rows[0],scope:"cmd_sphere_only"};
 }
+// Server owner controls apply to CMD Sphere only. External Discord guilds and bots are never deleted here.
+async function nativeGuildLifecycle(auth,input){
+ const gid=String(input.guildId||"").trim(),kind=String(input.kind||"").trim(),uid=String(auth?.user?.id||"");
+ if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(gid)||!["leave","delete","transfer"].includes(kind)||!uid)throw new Error("Opération de serveur invalide.");
+ const client=await pool.connect();
+ try{
+  await client.query("BEGIN");
+  const result=await client.query("SELECT id,name,owner_user_id FROM cmd_native_guilds WHERE id=$1 FOR UPDATE",[gid]);
+  const guild=result.rows[0];if(!guild)throw new Error("Serveur introuvable.");
+  const membership=await client.query("SELECT membership_role FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 FOR UPDATE",[gid,uid]);
+  if(!membership.rows.length)throw new Error("Tu n’es pas membre de ce serveur.");
+  const owner=String(guild.owner_user_id)===uid;
+  if(kind==="leave"){
+   if(owner)throw new Error("Le propriétaire doit transférer son serveur ou le supprimer avant de pouvoir le quitter.");
+   await client.query("DELETE FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
+   // Remove the leaving member's personal unread state, without removing shared messages.
+   await client.query("DELETE FROM cmd_native_channel_reads WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
+  }else if(kind==="transfer"){
+   if(!owner)throw new Error("Seul le propriétaire peut transférer son serveur.");
+   const next=String(input.targetUserId||"").trim();
+   if(!next||next===uid)throw new Error("Choisis un autre membre de ce serveur.");
+   const target=await client.query("SELECT membership_role FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 FOR UPDATE",[gid,next]);
+   if(!target.rows.length)throw new Error("Le nouveau propriétaire doit être membre de ce serveur.");
+   if(String(input.confirmName||"")!==String(guild.name))throw new Error("Saisis exactement le nom du serveur pour confirmer.");
+   await client.query("UPDATE cmd_native_members SET membership_role='member' WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
+   await client.query("UPDATE cmd_native_members SET membership_role='owner' WHERE guild_id=$1 AND user_id=$2",[gid,next]);
+   await client.query("UPDATE cmd_native_guilds SET owner_user_id=$2,updated_at=NOW() WHERE id=$1",[gid,next]);
+  }else{
+   if(!owner)throw new Error("Seul le propriétaire peut supprimer son serveur.");
+   if(String(input.confirmName||"")!==String(guild.name))throw new Error("Saisis exactement le nom du serveur pour confirmer sa suppression.");
+   // Delete only this CMD Sphere guild. PostgreSQL CASCADE removes its local channels/roles/messages.
+   // A failed foreign key constraint rolls back the entire transaction.
+   await client.query("DELETE FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2 RETURNING id",[gid,uid]);
+   await client.query("DELETE FROM cmd_server_folder_items WHERE server_key=$1",["native:"+gid]);
+  }
+  await client.query("COMMIT");
+  return {ok:true,kind,guildId:gid};
+ }catch(error){try{await client.query("ROLLBACK")}catch{}throw error}
+ finally{client.release()}
+}
+
 async function nativeMemberList(auth,guildId){
   await requireNativeMember(auth,guildId);
   const rows=await pool.query(`SELECT m.user_id,m.membership_role,m.profile_role_id,m.joined_at,
@@ -4732,6 +4773,11 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/native/roles/assign"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,200,await ownerAssignNativeRole(auth,body))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/guild-lifecycle"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await nativeGuildLifecycle(auth,body))}
       catch(e){sendJson(res,403,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/native/members"){
