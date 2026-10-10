@@ -60,6 +60,85 @@ if(family==="celestial")return star(x,y,size*.45);
 if(family==="rune")return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rot)+')" filter="url(#shine)"><path d="M0 '+f(-size*.5)+' L'+f(size*.42)+' 0 L0 '+f(size*.5)+' L'+f(-size*.42)+' 0Z" fill="url(#gem)" stroke="#fff9" stroke-width="1.5"/><circle r="'+f(size*.17)+'" fill="#fff7"/></g>';
 return crystal(x,y,size*.5,size*.86,color,rot);
 }
+
+/* Original CMD Sphere effect illustrations: vectors designed for Retina previews,
+   accessible without copyrighted thumbnails and independent of emoji fonts. */
+const CMD_EFFECT_ART={
+ zombie:{hue:"#92d6a8"},ghostship:{hue:"#88c1f2"},purplelightning:{hue:"#b785ff"},
+ moonmist:{hue:"#d2c9ff"},shadow:{hue:"#7987bd"},apocalypse:{hue:"#f27a7a"},
+ stars:{hue:"#f0d58e"},pulse:{hue:"#ec8df5"},aurora:{hue:"#82f2c9"},sparkle:{hue:"#8ddfff"}
+};
+function effectArt(key,meta){
+ const r=rand(seedFor(key)),h=meta.hue;
+ let base='<rect width="640" height="360" fill="#0a0b19"/>'+
+ '<rect width="640" height="360" fill="url(#sceneGlow)" opacity=".62"/>'+
+ '<path d="M0 305 Q165 255 320 296 T640 278 L640 360 H0Z" fill="#101325" opacity=".74"/>';
+ for(let i=0;i<64;i++){
+  const x=f(r()*640),y=f(14+r()*315),z=f(.55+r()*1.8);
+  base+='<circle cx="'+x+'" cy="'+y+'" r="'+z+'" fill="'+(i%3===0?h:'#d9d4f1')+'" opacity="'+f(.16+r()*.58)+'"/>';
+ }
+ const moon='<circle cx="494" cy="83" r="48" fill="url(#moon)" filter="url(#softAura)"/><circle cx="494" cy="83" r="45" fill="#f7f5fa" opacity=".85"/><circle cx="484" cy="68" r="8" fill="#adabd6" opacity=".24"/><circle cx="512" cy="99" r="11" fill="#b5b4d7" opacity=".22"/>';
+ const mist='<path d="M-25 275 Q100 227 205 271 T438 265 T665 265" stroke="#d7dfff" stroke-width="38" opacity=".13" fill="none" filter="url(#aura)"/><path d="M-10 309 Q165 281 325 309 T655 298" stroke="#f3ecff" stroke-width="18" opacity=".15" fill="none" filter="url(#aura)"/>';
+ const flash=(x,y,s)=>'<path transform="translate('+x+' '+y+') scale('+s+')" d="M-15 -36 L19 -36 L1 -6 L24 -6 L-24 43 L-7 6 L-30 6Z" fill="url(#gem)" stroke="#fff6" stroke-width="2"/>';
+ const sparkle=(x,y,s)=>'<path d="M'+x+' '+(y-s)+' L'+(x+s*.18)+' '+(y-s*.17)+' L'+(x+s)+' '+y+' L'+(x+s*.18)+' '+(y+s*.17)+' L'+x+' '+(y+s)+' L'+(x-s*.18)+' '+(y+s*.17)+' L'+(x-s)+' '+y+' L'+(x-s*.18)+' '+(y-s*.17)+'Z" fill="#fff" stroke="'+h+'" stroke-width="2"/>';
+ let main='';
+ if(key==='zombie'){
+  main=mist+'<path d="M235 323 Q230 250 254 215 Q263 192 286 188 L287 169 Q274 152 277 122 Q281 90 319 84 Q354 85 367 113 Q375 139 353 162 L352 191 Q379 205 392 245 L406 330Z" fill="#172f32" stroke="#98d9b6" stroke-width="3"/>'+
+   '<path d="M283 124 L308 112 L320 131 L341 112 L365 124" fill="none" stroke="#9dcab8" stroke-width="3"/>'+
+   '<ellipse cx="303" cy="142" rx="11" ry="7" fill="#e7ff95"/><ellipse cx="346" cy="142" rx="11" ry="7" fill="#e7ff95"/>'+
+   '<path d="M315 168 L328 170 L334 166 M310 179 L337 180" stroke="#83bba0" stroke-width="2"/>'+
+   '<path d="M226 318 Q183 251 177 242 L164 221 M401 311 Q452 262 460 239 L472 221" stroke="#7ba999" stroke-width="17" fill="none" stroke-linecap="round"/>';
+ }else if(key==='ghostship'){
+  main=moon+mist+'<path d="M100 280 Q320 298 534 272 L489 328 Q320 356 154 319Z" fill="#101523" stroke="#add8ff" stroke-width="3"/>'+
+   '<path d="M319 95 L319 285 M206 148 L206 282 M435 174 L435 286" stroke="#abc5ed" stroke-width="5"/>'+
+   '<path d="M313 100 L313 244 L227 243 Q256 152 313 100Z" fill="#90b8de" opacity=".66"/>'+
+   '<path d="M324 110 L409 241 L324 240Z" fill="#d2e6ff" opacity=".47"/>'+
+   '<path d="M203 153 L203 246 L147 248 Q163 189 203 153Z" fill="#b9d6ff" opacity=".4"/>'+
+   '<path d="M431 182 L483 248 L431 248Z" fill="#95c6ea" opacity=".4"/>'+
+   '<path d="M184 286 H470" stroke="#7cb7d4" stroke-width="5" opacity=".4"/>';
+ }else if(key==='purplelightning'){
+  main='<path d="M340 -20 L245 124 L326 122 L221 318 L402 98 L317 104 L384 -20Z" fill="#be85ff" stroke="#fff" stroke-width="4" filter="url(#softAura)"/>'+
+   '<path d="M336 -12 L263 128 L330 132 L256 261 L376 86 L312 93Z" fill="#faf1ff"/>'+
+   '<path d="M246 126 L170 177 L134 250 M371 111 L460 165 L504 120 M260 245 L192 297" fill="none" stroke="#c291ff" stroke-width="5" opacity=".8"/>'+
+   '<circle cx="328" cy="165" r="109" fill="none" stroke="#a670ff" stroke-width="2" opacity=".22"/>';
+ }else if(key==='moonmist'){
+  main=moon+mist+'<path d="M0 260 Q110 172 225 261 T460 260 T640 255 L640 360 H0Z" fill="#1a1c35"/>'+
+   '<path d="M-10 285 Q155 250 305 280 T650 278" stroke="#b9c5fb" stroke-opacity=".36" stroke-width="12" fill="none" filter="url(#softAura)"/>';
+ }else if(key==='shadow'){
+  for(let i=0;i<11;i++){const xx=f(i*71-40),yy=f(175+r()*65),bend=f((r()-.5)*60);
+   main+='<path d="M'+xx+' 360 Q'+f(xx-30)+' '+yy+' '+f(Number(xx)+Number(bend))+' 107" stroke="#555e9b" stroke-width="'+f(8+r()*26)+'" stroke-opacity=".5" fill="none" filter="url(#aura)"/>';
+  }
+  main+='<circle cx="321" cy="163" r="67" fill="#101021" stroke="#6e74bd" stroke-width="2"/>'+
+   '<path d="M282 174 Q303 154 322 179 Q345 151 366 174" stroke="#deccff" stroke-width="7" opacity=".8" fill="none"/>';
+ }else if(key==='apocalypse'){
+  main='<circle cx="318" cy="163" r="97" fill="#ed684d" opacity=".25" filter="url(#aura)"/>'+
+   '<circle cx="318" cy="159" r="72" fill="url(#sun)" stroke="#ffc19a" stroke-width="4"/>'+
+   '<path d="M0 286 L55 286 L55 231 L83 231 L83 268 L144 268 L144 187 L181 187 L181 255 L241 255 L241 221 L278 221 L278 267 L333 267 L333 197 L378 197 L378 245 L417 245 L417 218 L466 218 L466 271 L520 271 L520 227 L580 227 L580 286 L640 286 L640 360 H0Z" fill="#10101c" stroke="#f86d5b" stroke-opacity=".5" stroke-width="2"/>'+
+   '<path d="M85 280 L107 232 L130 280 M260 279 L294 217 L325 280 M445 276 L480 206 L514 276" stroke="#ffad6b" stroke-width="2" opacity=".6"/>';
+ }else if(key==='stars'){
+  main=moon+'<path d="M55 74 Q220 165 547 231" stroke="#f8ebae" stroke-opacity=".24" stroke-width="80" fill="none" filter="url(#aura)"/>';
+  for(let i=0;i<18;i++)main+=sparkle(f(r()*620),f(r()*320),5+r()*14);
+ }else if(key==='pulse'){
+  main='<circle cx="320" cy="175" r="38" fill="url(#gem)" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>';
+  for(const rad of [64,105,148]){
+   main+='<circle cx="320" cy="175" r="'+rad+'" stroke="'+h+'" stroke-opacity="'+(rad===64?'.92':rad===105?'.63':'.33')+'" stroke-width="'+(rad===64?'6':'3')+'" fill="none"/>';
+  }
+  main+='<path d="M22 174 H174 L211 120 L256 238 L291 175 H355 L387 125 L418 216 L446 175 H620" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>';
+ }else if(key==='aurora'){
+  for(let i=0;i<7;i++){const x=i*34,opacity=f(.23+i*.05);
+   main+='<path d="M'+(x-100)+' -32 Q'+(130+x)+' 70 '+(160+x)+' 200 T'+(500+x)+' 330" stroke="'+(i%2?'#8cf8df':'#bda5ff')+'" stroke-width="'+(21+i*7)+'" stroke-opacity="'+opacity+'" fill="none" filter="url(#aura)"/>';
+  }
+  main+=mist;
+ }else if(key==='sparkle'){
+  for(let i=0;i<10;i++){const x=f(92+r()*455),y=f(38+r()*250),size=9+r()*18;main+=sparkle(Number(x),Number(y),size);}
+  main+='<path d="M320 35 L407 139 L320 296 L231 139Z" fill="url(#gem)" stroke="#dcfbff" stroke-width="5"/>'+
+   '<path d="M231 139 H407 L320 296Z" fill="#7acaff" opacity=".42"/>'+
+   '<path d="M320 35 L272 139 H366Z" fill="#fff" opacity=".46"/>'+
+   '<path d="M231 139 L320 35 L272 139 M407 139 L320 35 L366 139" stroke="#fff" stroke-opacity=".8" stroke-width="3" fill="none"/>';
+ }
+ return base+main+'<rect x="2" y="2" width="636" height="356" rx="26" fill="none" stroke="'+h+'" stroke-opacity=".22" stroke-width="4"/>';
+}
+
 function frameArt(key,meta){
   const rng=rand(seedFor(key)),family=meta.family,hue=meta.hue,shapes=[];
   // Three clean metal-and-crystal rails remain visible even on Retina mobile cards.
@@ -97,15 +176,15 @@ function avatarArt(key,meta){
 }
 export function renderCmdPremiumSvg(type,key){
  if(!/^[a-z0-9]{2,28}$/.test(key))return null;
- const own=type==="frame"?CMD_ART_FRAMES[key]:type==="avatar"?CMD_ART_AVATARS[key]:null;
+ const own=type==="frame"?CMD_ART_FRAMES[key]:type==="avatar"?CMD_ART_AVATARS[key]:type==="effect"?CMD_EFFECT_ART[key]:null;
  const fallback=(aliases[type]||{})[key];const meta=own||(fallback?{hue:fallback[0],family:fallback[1]}:null);
  if(!meta)return null;
- const isFrame=type==="frame",view=isFrame?"0 0 640 440":"0 0 400 400",content=isFrame?frameArt(key,meta):avatarArt(key,meta);
+ const isFrame=type==="frame",isEffect=type==="effect",view=isFrame?"0 0 640 440":isEffect?"0 0 640 360":"0 0 400 400",content=isFrame?frameArt(key,meta):isEffect?effectArt(key,meta):avatarArt(key,meta);
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+view+'" fill="none" aria-hidden="true"><defs>'+
  '<linearGradient id="gem" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
  '<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient>'+
  '<filter id="shine" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="1" stdDeviation=".35" flood-color="#110623" flood-opacity=".28"/></filter>'+
- '<filter id="glow" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="2"/></filter>'+
+ '<filter id="glow" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="2"/></filter>'+'<filter id="aura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="11"/></filter>'+'<filter id="softAura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="1.5"/></filter>'+'<radialGradient id="sceneGlow"><stop stop-color="'+meta.hue+'" stop-opacity=".8"/><stop offset="1" stop-color="#12132b" stop-opacity="0"/></radialGradient>'+'<radialGradient id="moon"><stop stop-color="#fff"/><stop offset="1" stop-color="#cbd5fb"/></radialGradient>'+'<radialGradient id="sun"><stop stop-color="#ffe2a1"/><stop offset=".6" stop-color="#ec7642"/><stop offset="1" stop-color="#7f2536"/></radialGradient>'+
  '</defs>'+content+'</svg>';
 }
 export const CMD_PREMIUM_ART_CSS=`
@@ -123,6 +202,13 @@ export const CMD_PREMIUM_ART_CSS=`
 .cmd-gem-art.cmd-avatar-art{height:190px}
 .cmd-avatar-art .cmd-gem-mock{inset:21% 30%;aspect-ratio:1;border-radius:50%;background:#271d39}
 .cmd-avatar-art>img{inset:5%;width:90%;height:90%;object-fit:contain}
+.cmd-effect-preview{display:block;overflow:hidden;background:#080817!important}
+.cmd-effect-preview img{width:100%;height:100%;object-fit:cover;image-rendering:auto;filter:none}
+.cmd-effect-live-image{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:.78;pointer-events:none;filter:none}
+.cmd-effect-live-image[hidden]{display:none!important}
+#effectPicker .pickerPreview:has(.cmd-effect-live-image:not([hidden])) .mockCard{z-index:2;position:relative;background:#150f2ad9;border-color:#c4b3ee66;box-shadow:0 0 28px #0008}
+.cmd-effect-preview[data-active="true"] img{filter:brightness(1.09)}
+@media(prefers-reduced-motion:no-preference){.effectTile:hover .cmd-effect-preview img,.effectTile.selected .cmd-effect-preview img{animation:cmdEffectSceneBreathe 5s ease-in-out infinite alternate}@keyframes cmdEffectSceneBreathe{from{filter:brightness(.9) saturate(.85)}to{filter:brightness(1.23) saturate(1.12)}}}
 .diamondCard .cmd-gem-art{height:285px}
 .diamondCard .cmd-gem-art>img{filter:drop-shadow(0 0 12px #ac9cff99)}
 .diamondCard .cmd-gem-mock{inset:22% 20% 15%}
