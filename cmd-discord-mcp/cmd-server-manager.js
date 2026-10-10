@@ -297,59 +297,76 @@ async function action(which){
  if(which==='bots'){close();if(typeof openBotsManager==='function')openBotsManager();return}
 }
 function menu(){
- document.getElementById("csm-server-menu")?.remove();
+ document.querySelector("#csm-server-menu")?.remove();
  const guild=state()?.nativeGuild||state()?.guild||ctx?.data?.guild||{};
  const gid=String(guild.id||ctx?.data?.guild?.id||"");
- const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere"),icon=String(guild.icon||"");
- const role=String(ctx?.data?.member?.membership_role||"");
+ const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere");
+ const icon=String(guild.icon||""),banner=String(guild.server_banner||"");
  const count=Number(guild.member_count||guild.memberCount||ctx?.data?.guild?.member_count||0);
+ const role=String(ctx?.data?.member?.membership_role||"");
+ const admin=!!ctx?.admin||["owner","admin"].includes(role)||String(guild.owner_user_id||"")===String(window.__cmdAccountId||"");
  const root=document.createElement("div");root.id="csm-server-menu";
- const img=(/^(https?:\/\/|data:image\/)/.test(icon))?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon">🏠</span>';
- const buttons=[
-  ["boost","◈","Boost"],
-  ["invite","♧","Inviter"],
-  ["notifications","♧","Notifications"],
-  ["overview","⚙","Paramètres"]
- ].map(([key,ico,label])=>'<button type="button" data-csm-quick="'+key+'"><b>'+ico+'</b><small>'+label+'</small></button>').join("");
- root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Actions du serveur">'+
-  '<div class="csm-server-menu-handle"></div>'+
+ const img=/^(https?:\/\/|data:image\/)/i.test(icon)?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon" aria-hidden="true">🏠</span>';
+ const photo=/^(https?:\/\/|data:image\/)/i.test(banner)?'<div class="csm-server-cover" style="background-image:linear-gradient(#1e1d25a0,#1e1d25ee),url('+escapeHtml(banner)+')"></div>':'';
+ const shortcut=[["boost","◈","Boost"],["invite","♙＋","Inviter"],["notifications","♧","Notifications"],["overview","⚙","Paramètres"]]
+ .map(([key,ico,label])=>'<button type="button" data-csm-quick="'+key+'"><b>'+ico+'</b><small>'+label+'</small></button>').join("");
+ const row=(key,ico,label,extra="")=>'<button type="button" data-csm-quick="'+key+'"><span class="csm-server-row-ico">'+ico+'</span><span class="csm-server-row-name">'+label+'</span>'+extra+'<span class="csm-server-chevron">›</span></button>';
+ root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Menu du serveur">'+
+  '<div class="csm-server-menu-handle"></div>'+photo+
   '<div class="csm-server-menu-server">'+img+'<h3>'+escapeHtml(name)+'</h3>'+
-  '<p>'+((guild.source_discord_id||ctx?.source)?'Serveur Discord importé':'Serveur de communauté')+(count?' · '+count+' membres':'')+'</p></div>'+
-  '<div class="csm-server-menu-quick">'+buttons+'</div>'+
-  '<div class="csm-server-menu-list">'+
-  '<button type="button" data-csm-quick="search">⌕ Chercher des salons <span>›</span></button>'+
-  '<button type="button" data-csm-quick="channels">＋ Créer un salon <span>›</span></button>'+
-  '<button type="button" data-csm-quick="categories">▤ Créer une catégorie <span>›</span></button>'+
-  (gid?'<a href="/profile?server='+code+'">♙ Modifier le profil par serveur <span>›</span></a>':'')+
-  '<button type="button" data-csm-quick="channels">☷ Montrer tous les salons <span>›</span></button>'+
-  '</div>'+
+  '<p><span class="csm-server-kind">✦ Serveur de communauté</span> · '+count+' membres</p></div>'+
+  '<div class="csm-server-menu-quick">'+shortcut+'</div>'+
+  '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+'</div>'+
+  (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+'</div>':'')+
+  (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
-  '<p id="csmMenuStatus" role="status" aria-live="polite"></p>'+
-  '</section>';
- document.body.appendChild(root);
- const shut=()=>root.remove();
+  '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
+ document.body.append(root);document.body.classList.add("csm-server-menu-open");
+ const shut=()=>{root.remove();document.body.classList.remove("csm-server-menu-open")};
  root.querySelector(".csm-server-menu-shade").onclick=shut;
+ const status=root.querySelector("#csmMenuStatus");
  root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
-  if(key==="boost"){if(gid)location.href="/server-boosts/"+code;else location.href="/stars";return}
-  if(key==="invite"){shut();if(gid&&typeof window.cmdOpenServerInvites==="function"){await window.cmdOpenServerInvites(gid);return}await open("invites");return}
+  if(key==="boost"){shut();location.assign(gid?"/server-boosts/"+code:"/stars");return}
+  if(key==="invite"){
+   shut();if(gid&&typeof window.cmdOpenServerInvites==="function")await window.cmdOpenServerInvites(gid);
+   else await open("invites");return;
+  }
   if(key==="notifications"){
-   const status=root.querySelector("#csmMenuStatus");
-   if(!("Notification" in window)){status.textContent="Les notifications ne sont pas disponibles sur ce navigateur.";return}
-   try{const permission=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
-    status.textContent=permission==="granted"?"Notifications autorisées sur cet appareil. Régle aussi les alertes dans les paramètres de CMD Sphere.":"Autorisation de notification non accordée.";
-   }catch{status.textContent="Impossible de demander l’autorisation."}
+   try{
+    if(!("Notification" in window)){status.textContent="Notifications non disponibles sur cet appareil.";return}
+    const granted=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
+    status.textContent=granted==="granted"?"Notifications du navigateur autorisées.":"Active les notifications depuis les paramètres de ton appareil.";
+   }catch(e){status.textContent="Impossible d'activer les notifications : "+e.message}
    return;
   }
-  if(key==="search"){shut();const input=document.querySelector("#cmdChannelSearch");if(input){input.focus();input.scrollIntoView({block:"nearest"})}else await open("channels");return}
-  shut();
-  if(key==="categories"||key==="channels")await open("channels");
-  else await open(key);
+  if(key==="search"){shut();let input=document.querySelector("#cmdChannelSearch");if(input){input.focus();input.scrollIntoView({block:"nearest"})}else await open("channels");return}
+  if(key==="showchannels"){shut();const panel=document.querySelector("#cmdServerChannels");if(panel){panel.querySelectorAll(".cmd-server-section.collapsed").forEach(s=>s.classList.remove("collapsed"));panel.querySelectorAll('[aria-expanded="false"]').forEach(b=>b.setAttribute("aria-expanded","true"));panel.scrollIntoView({block:"start",behavior:"smooth"})}else await open("channels");return}
+  if(key==="markread"){
+   if(!gid){status.textContent="Ouvre d'abord un serveur CMD Sphere.";return}
+   button.disabled=true;
+   try{
+    const resp=await fetch("/api/native/mark-all-read",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:gid})});
+    const data=await resp.json();if(!resp.ok)throw Error(data.error||"Impossible de marquer les salons comme lus");
+    document.querySelectorAll(".cmd-channel-unread,.cmd-native-unread").forEach(x=>x.remove());
+    status.textContent="Tous les salons du serveur sont marqués comme lus.";
+   }catch(e){status.textContent=e.message}finally{button.disabled=false}
+   return;
+  }
+  if(key==="create-channel"||key==="create-category"){
+   shut();if(!admin){await open("channels");return}
+   await open("channels");
+   const form=document.querySelector(key==="create-channel"?"#csm-create-channel":"#csm-create-category");
+   if(form){form.scrollIntoView({block:"center",behavior:"smooth"});form.querySelector("input")?.focus()}
+   return;
+  }
+  shut();await open(key);
  });
  root.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();shut()}};
- root.querySelector('[data-csm-quick="invite"]')?.focus();
+ root.querySelector('[data-csm-quick="invite"]')?.focus({preventScroll:true});
 }
+
 function install(){
  const button=$('#serverSettingsBtn');if(button)button.onclick=()=>open();
  const title=$('#gtitle');if(title&&!title.dataset.csmBound){title.dataset.csmBound='1';title.style.cursor='pointer';title.setAttribute('title','Ouvrir le menu du serveur');title.setAttribute('role','button');title.setAttribute('tabindex','0');title.addEventListener('click',menu);title.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();menu()}})}
