@@ -3214,11 +3214,25 @@ async function sendNativeChannelMessage(auth,input){
     LEFT JOIN cmd_accounts a ON a.id::text=m.sender_user_id
     WHERE m.id=$1 LIMIT 1`,[id]);
   const row=r.rows[0];
-  const recipients=await pool.query("SELECT user_id FROM cmd_native_members WHERE guild_id=$1 AND user_id<>$2 LIMIT 500",[guildId,String(auth.user.id)]);
-  if(recipients.rows.length){
+  const recipients=await pool.query(`SELECT m.user_id,
+    COALESCE(p.mode,g.default_notifications,'mentions') AS notify_mode,
+    a.username
+    FROM cmd_native_members m
+    JOIN cmd_native_guilds g ON g.id=m.guild_id
+    LEFT JOIN cmd_native_notification_prefs p ON p.guild_id=m.guild_id AND p.user_id=m.user_id
+    LEFT JOIN cmd_accounts a ON a.id::text=m.user_id
+    WHERE m.guild_id=$1 AND m.user_id<>$2 LIMIT 500`,[guildId,String(auth.user.id)]);
+  const lowerBody=String(body||"").toLowerCase();
+  const notifyRecipients=recipients.rows.filter(x=>{
+    if(x.notify_mode==="none")return false;
+    if(x.notify_mode==="all")return true;
+    const username=String(x.username||"").toLowerCase();
+    return lowerBody.includes("@everyone")||lowerBody.includes("@here")||!!(username&&lowerBody.includes("@"+username));
+  });
+  if(notifyRecipients.length){
     const name=String(row.author_name||auth.user.displayName||auth.user.name||"Utilisateur");
     const preview=body||(attachments.length?"📎 Pièce jointe":"📊 Sondage");
-    notifyUsers(recipients.rows.map(x=>x.user_id),{
+    notifyUsers(notifyRecipients.map(x=>x.user_id),{
       kind:"message",title:name+" · #"+String(ch.name||"salon"),
       body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
     });
