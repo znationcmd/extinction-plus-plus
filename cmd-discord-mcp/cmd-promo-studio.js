@@ -127,6 +127,9 @@ function open(context={}){
 function installEffectsGallery(controls){
  const card=$("#cmdStudioEffect",controls)?.closest(".cmd-studio-card")||$(".cmd-studio-card",controls)[3];if(!card)return;
  // Keep the underlying select synchronized; thumbnails are selectable accessible buttons.
+ for(const [name,options] of [["Effect",EFFECT_OPTIONS],["Filter",FILTER_OPTIONS]]){
+  const select=$("#cmdStudio"+name,controls);if(select){select.replaceChildren(...options.map(([v,label])=>new Option(label,v)));select.value=state[name.toLowerCase()]}
+ }
  const heading1=document.createElement("h4");heading1.className="cmd-studio-effect-heading";heading1.textContent="Effets · toucher pour appliquer et voir";
  const fx=document.createElement("div");fx.id="cmdStudioEffectsGallery";
  const heading2=document.createElement("h4");heading2.className="cmd-studio-effect-heading";heading2.textContent="Filtres · aperçu sur ta vidéo";
