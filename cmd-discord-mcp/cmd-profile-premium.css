@@ -175,3 +175,33 @@ body.cmd-premium-body:before{content:"";position:fixed;inset:0;pointer-events:no
  .cmd-premium-profile .titleRow{padding-inline:9px}
  .cmd-premium-profile .hero.cmd-pm-hero .banner{height:170px!important}
 }
+
+/* Studio IA lives in the member's own profile, not over the cover photo. */
+.cmd-premium-profile .cmd-pm-studio-panel{margin:0 0 12px!important;}
+.cmd-premium-profile .cmd-pm-studio-card{padding:17px 16px!important;display:grid;gap:10px;}
+.cmd-premium-profile .cmd-pm-studio-type{font:700 11px/1.4 system-ui;color:#d6afd9;}
+.cmd-premium-profile .cmd-pm-studio-launch{
+ display:block;width:100%;min-height:46px;padding:10px 14px;
+ color:#fff;background:linear-gradient(105deg,#833ac8,#bb4ad7);
+ border:1px solid #d1a2ed99;border-radius:12px;
+ font:850 14px/1.3 system-ui;text-align:center;cursor:pointer;
+}
+.cmd-premium-profile #cmdPmProfileVideos{min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:6px;}
+.cmd-premium-profile #cmdPmProfileVideos>p{grid-column:1/-1;margin:0;font-size:12px;}
+.cmd-premium-profile #cmdPmProfileVideos .cmd-pm-video-item{
+ position:relative;display:grid;gap:5px;padding:7px;min-width:0;
+ background:#191121;border:1px solid #bc91cc50;border-radius:12px;
+}
+.cmd-premium-profile #cmdPmProfileVideos video,
+.cmd-premium-profile #cmdPmProfileVideos img{
+ width:100%;aspect-ratio:9/16;object-fit:contain;display:block;max-height:210px;
+ background:#090909;border:0;border-radius:8px;
+}
+.cmd-premium-profile #cmdPmProfileVideos .cmd-pm-video-caption{
+ font-size:12px;font-weight:700;color:#f6e7fa;overflow-wrap:anywhere;
+}
+.cmd-premium-profile #cmdPmProfileVideos button{
+ min-height:32px;border-radius:8px;border:1px solid #a485ad66;
+ background:#45274c;color:#fff;padding:7px 10px;font-size:12px;
+}
+@media(min-width:650px){.cmd-premium-profile #cmdPmProfileVideos{grid-template-columns:repeat(3,minmax(0,1fr));}}
