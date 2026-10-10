@@ -3301,6 +3301,27 @@ async function ownerAssignNativeRole(auth,input){
  await pool.query('UPDATE cmd_native_members SET profile_role_id=$3 WHERE guild_id=$1 AND user_id=$2',[gid,user,selected[0]||null]);
  return {saved:true,user:{user_id:user,role_ids:selected,profile_role_id:selected[0]||null}};
 }
+// Assign one CMD Sphere role to up to 30 members in one owner-approved operation.
+async function ownerAssignNativeRoleBatch(auth,input){
+ const gid=String(input.guildId||""),requested=String(input.roleId||"");
+ const ids=Array.isArray(input.userIds)?input.userIds:[];
+ if(!Array.isArray(input.userIds)||ids.length>30||new Set(ids).size!==ids.length||ids.some(v=>typeof v!=="string"||!/^[a-z0-9-]{1,100}$/i.test(v)))throw new Error("Sélectionne au maximum 30 membres valides.");
+ const own=await pool.query('SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2',[gid,String(auth.user.id)]);
+ if(!own.rows.length)throw new Error("Seul le propriétaire peut attribuer des rôles.");
+ const role=await pool.query("SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[gid,requested]);
+ if(!role.rows.length)throw new Error("Rôle introuvable dans ce serveur.");
+ if(!ids.length)return {saved:true,count:0};
+ const members=await pool.query("SELECT user_id FROM cmd_native_members WHERE guild_id=$1 AND user_id=ANY($2::text[])",[gid,ids]);
+ if(members.rows.length!==ids.length)throw new Error("Certains membres ne font pas partie de ce serveur.");
+ const client=await pool.connect();
+ try{
+  await client.query("BEGIN");
+  await client.query("INSERT INTO cmd_native_member_roles(guild_id,user_id,role_id) SELECT $1,m.user_id,$3 FROM cmd_native_members m WHERE m.guild_id=$1 AND m.user_id=ANY($2::text[]) ON CONFLICT DO NOTHING",[gid,ids,role.rows[0].id]);
+  await client.query("UPDATE cmd_native_members SET profile_role_id=COALESCE(profile_role_id,$3) WHERE guild_id=$1 AND user_id=ANY($2::text[])",[gid,ids,String(role.rows[0].id)]);
+  await client.query("COMMIT");
+  return {saved:true,count:ids.length,roleId:String(role.rows[0].id)};
+ }catch(e){await client.query("ROLLBACK");throw e}finally{client.release()}
+}
 // Repair a single imported server from the user's already stored mirror.
  // Does not call Discord, overwrite local messages, or change Discord.
 async function ensureArchivedChannelsForNativeGuild(auth,nativeId){
@@ -4565,6 +4586,11 @@ const httpServer=createServer(async(req,res)=>{
         const out=await importOwnedDiscordGuilds(auth);
         sendJson(res,200,{imported:out.imported,skipped:out.failed,ownedCount:out.ownedCount});
       }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/roles/assign-batch"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const body=await readFormBodyJson(req);sendJson(res,200,await ownerAssignNativeRoleBatch(auth,body))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/roles/assign"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
