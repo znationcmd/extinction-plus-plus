@@ -42,8 +42,8 @@ const css=[
  "#cmd-role-wizard .rw-track{height:9px;background:#34343a;margin:20px 0 10px;border-radius:15px;position:relative}",
  "#cmd-role-wizard .rw-track span{height:9px;display:block;border-radius:15px;background:var(--rw-color,#5865f2);width:var(--rw-width,0%)}",
  "#cmd-role-wizard .rw-presets-name{display:flex;justify-content:space-between;gap:2px;font-size:13px;margin:0 0 25px}",
- "#cmd-role-wizard .rw-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}",
- "#cmd-role-wizard .rw-card{display:flex;flex-direction:column;gap:12px;min-height:240px;text-align:left;background:#25252a;color:white;border:2px solid #383840;border-radius:18px;padding:17px}",
+ "#cmd-role-wizard .rw-presets{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-inline:contain;padding:0 22px 12px 0}#cmd-role-wizard .rw-presets::-webkit-scrollbar{display:none}",
+ "#cmd-role-wizard .rw-card{flex:0 0 calc(100% - 50px);scroll-snap-align:start;display:flex;flex-direction:column;gap:22px;min-height:380px;text-align:left;background:#25252a;color:white;border:2px solid #383840;border-radius:18px;padding:24px}",
  "#cmd-role-wizard .rw-card.selected{border-color:var(--rw-color,#5964f3);background:#30303d}",
  "#cmd-role-wizard .rw-card strong{font-size:22px}",
  "#cmd-role-wizard .rw-card small{font-size:14px;color:#dedee6;line-height:1.45}",
@@ -62,7 +62,7 @@ const css=[
  "#cmd-role-wizard .rw-person small{color:#b2b1bb;margin-top:4px}",
  "#cmd-role-wizard .rw-error{color:#ffc2c7;min-height:20px;font-size:14px;margin:8px 0}",
  "#cmd-role-wizard .rw-count{color:#c6c3d0;font-size:14px;margin-bottom:10px}",
- "@media(max-width:470px){#cmd-role-wizard .rw-page{padding-left:16px;padding-right:16px}#cmd-role-wizard .rw-presets{gap:8px}#cmd-role-wizard .rw-card{min-height:205px;padding:11px}#cmd-role-wizard .rw-card strong{font-size:18px}#cmd-role-wizard .rw-card small{font-size:13px}#cmd-role-wizard .rw-list{max-height:45dvh}}"
+ "@media(max-width:470px){#cmd-role-wizard .rw-page{padding-left:16px;padding-right:16px}#cmd-role-wizard .rw-presets{gap:12px}#cmd-role-wizard .rw-card{min-height:42dvh;padding:20px;flex-basis:calc(100% - 48px)}#cmd-role-wizard .rw-card strong{font-size:24px}#cmd-role-wizard .rw-card small{font-size:16px}#cmd-role-wizard .rw-list{max-height:45dvh}}"
 ].join("\n");
 window.cmdOpenRoleWizard=async function({guildId,onDone}={}){
  if(!/^[0-9a-f-]{36}$/i.test(String(guildId||"")))throw Error("Serveur CMD Sphere invalide.");
@@ -98,6 +98,19 @@ window.cmdOpenRoleWizard=async function({guildId,onDone}={}){
    root.querySelector("#rwNext").onclick=()=>{st.name=n.value.trim();if(!st.name)return;st.step=2;render()};
   }else if(st.step===2){
    root.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{setPreset(Number(b.dataset.preset));render()});
+   const carousel=root.querySelector(".rw-presets");
+   const cards=[...root.querySelectorAll(".rw-card")];
+   if(cards[st.preset])carousel.scrollLeft=cards[st.preset].offsetLeft-cards[0].offsetLeft;
+   carousel.addEventListener("scroll",()=>{
+    if(cards.length<2)return;
+    const width=cards[1].offsetLeft-cards[0].offsetLeft;
+    const index=Math.max(0,Math.min(cards.length-1,Math.round(carousel.scrollLeft/Math.max(1,width))));
+    if(index===st.preset)return;
+    setPreset(index);
+    cards.forEach((c,i)=>c.classList.toggle("selected",i===index));
+    const track=root.querySelector(".rw-track");if(track){track.style.setProperty("--rw-width",String((index/3)*100)+"%");track.style.setProperty("--rw-color",presets[index].color)}
+    root.querySelectorAll("[data-role-permission]").forEach(c=>c.checked=!!st.permissions[c.dataset.rolePermission]);
+   },{passive:true});
    root.querySelectorAll("[data-role-permission]").forEach(b=>b.onchange=()=>{st.permissions[b.dataset.rolePermission]=b.checked});
    root.querySelector("#rwHosting").onchange=e=>{st.hosting=e.target.checked};
    root.querySelector("#rwNext").onclick=()=>{st.step=3;render()};
