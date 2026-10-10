@@ -976,3 +976,20 @@
 body.cmd-scene-editor-open #cmd-sphere-tools{display:none!important}
 body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]){z-index:100001!important}
 body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-events:auto!important;position:relative;z-index:12!important}
+
+/* Lazy, full-frame previews: fetch only visible thumbnails on iPhone, keep the full composition. */
+#cmdSceneSheet .cmd-hd-scene-thumb{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  overflow:hidden!important;background:#1c192a!important;isolation:isolate!important;
+  filter:none!important;transform:none!important;
+}
+#cmdSceneSheet .cmd-hd-scene-thumb .cmd-scene-thumb-image{
+  display:block!important;width:100%!important;height:100%!important;max-width:100%!important;
+  object-fit:contain!important;object-position:center!important;
+  image-rendering:auto!important;filter:none!important;transform:none!important;
+}
+#cmdSceneSheet .cmd-imported-avatar-art,
+#cmdSceneSheet .cmd-universe-item-image{
+  image-rendering:auto!important;filter:none!important;
+  object-fit:contain!important;object-position:center!important;
+}
