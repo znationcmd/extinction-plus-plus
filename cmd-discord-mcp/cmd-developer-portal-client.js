@@ -58,16 +58,16 @@ function appIcon(app){
  return /^https:\/\//.test(icon)?'<img src="'+h(icon)+'" alt="">':h((app?.name||"C").slice(0,1).toUpperCase());
 }
 function home(){
- return wrapper("Mes applications","Crée des bots et des applications indépendants de Discord. Choisis ensuite une application pour accéder à tous ses réglages.",
+ return wrapper("Mes applications","Crée des bots et des applications indépendants des plateformes externes. Choisis ensuite une application pour accéder à tous ses réglages.",
   '<section class="dev-card"><h2>Mes applications CMD Sphere</h2><div class="dev-list">'+
   (all.map(a=>'<div class="dev-app"><div class="dev-app-icon">'+appIcon(a)+'</div><div class="dev-app-meta"><b>'+h(a.name)+'</b><small>'+h(a.description||"Application CMD Sphere")+'</small></div><button class="dev-btn" type="button" data-open-app="'+h(a.id)+'">Ouvrir</button></div>').join("")||'<p>Aucune application. Crée ton premier bot CMD Sphere ci-dessous.</p>')+
   '</div></section>'+
   card("Créer une nouvelle application",'<form id="dev-create">'+fld("Nom de l’application","name","","required minlength=\"2\" maxlength=\"80\" placeholder=\"CMD Bot ARK\"")+
-  area("Description","description","","maxlength=\"500\"")+fld("ID Discord facultatif pour les invitations sur les deux plateformes","discordClientId","","inputmode=\"numeric\" pattern=\"[0-9]{15,22}\"")+
+  area("Description","description","","maxlength=\"500\"")+fld("ID de plateforme externe (facultatif)","discordClientId","","inputmode=\"numeric\" pattern=\"[0-9]{15,22}\"")+
   '<button class="dev-btn primary" type="submit">Créer l’application</button></form><div id="dev-created-secret" class="dev-alert" hidden></div>')+
   card("Ce qui fonctionne déjà",'<div class="dev-grid"><div class="dev-tile"><b>Applications</b><p>Créer, modifier et inviter sur CMD Sphere.</p></div>'+
   '<div class="dev-tile"><b>Permissions</b><p>Lecture des salons, lecture et envoi de messages : accès contrôlé par serveur.</p></div>'+
-  '<div class="dev-tile"><b>API indépendante</b><p>Bot connecté avec clé CMD, sans compte Discord obligatoire.</p></div></div>'));
+  '<div class="dev-tile"><b>API indépendante</b><p>Bot connecté avec clé CMD, sans compte externe obligatoire.</p></div></div>'));
 }
 function overview(){
  const c=current.config||{};
@@ -75,7 +75,7 @@ function overview(){
   card("Application",'<form id="dev-save-overview">'+fld("Nom","name",current.name,'required minlength="2" maxlength="80"')+
   area("Description","description",current.description,'maxlength="500"')+
   fld("Adresse de l’icône (HTTPS)","iconUrl",c.iconUrl,'inputmode="url" placeholder="https://…"')+
-  fld("ID de l’application Discord (facultatif)","discordClientId",current.discord_client_id,'inputmode="numeric" pattern="[0-9]{15,22}"')+
+  fld("ID de l’application externe (facultatif)","discordClientId",current.discord_client_id,'inputmode="numeric" pattern="[0-9]{15,22}"')+
   fld("Site d’assistance (HTTPS)","supportUrl",c.supportUrl,'inputmode="url"')+
   fld("Politique de confidentialité (HTTPS)","privacyUrl",c.privacyUrl,'inputmode="url"')+
   fld("Conditions d’utilisation (HTTPS)","termsUrl",c.termsUrl,'inputmode="url"')+
@@ -86,7 +86,7 @@ function overview(){
 function installation(){
  const url=location.origin+"/apps/choose?client_id="+encodeURIComponent(current.id);
  return wrapper("Installation","Configure les invitations CMD Sphere et consulte les serveurs qui ont autorisé le bot.",
-  card("Lien d’invitation",'<p>Un même lien permet de choisir CMD Sphere et Discord lorsque ton application dispose également d’un identifiant Discord.</p>'+
+  card("Lien d’invitation",'<p>Un même lien permet de choisir CMD Sphere et le service lié lorsque ton application dispose également d’un identifiant de la plateforme liée.</p>'+
   '<code class="dev-code">'+h(url)+'</code><div class="dev-row" style="margin-top:12px">'+
   '<button type="button" class="dev-btn primary" data-copy="'+h(url)+'">Copier le lien</button>'+link("Tester l’invitation","/apps/choose?client_id="+encodeURIComponent(current.id))+'</div>')+
   card("Permissions CMD Sphere",'<p>Le propriétaire du serveur doit approuver explicitement les permissions demandées.</p>'+
@@ -115,7 +115,7 @@ function bot(){
    '<div class="dev-tile"><b>Voir les salons</b><p>Liste les salons autorisés.</p></div>'+
    '<div class="dev-tile"><b>Lire les messages</b><p>Messages CMD Sphere des salons autorisés.</p></div>'+
    '<div class="dev-tile"><b>Envoyer des messages</b><p>Messages natifs envoyés avec l’identité du bot.</p></div></div>'+
-   '<p>Les bots Discord existants doivent adapter leur code à cette API. Les événements temps réel, les intents et toutes les permissions Discord ne sont pas encore disponibles.</p>')+
+   '<p>Les bots du service externe doivent adapter leur code à cette API. Les événements temps réel, les intents et toutes les permissions du service externe ne sont pas encore disponibles.</p>')+
   card("API du bot",'<code class="dev-code">Authorization: Bearer &lt;CLE_SECRETE&gt;\nGET /api/cmd-bot/guilds\nGET /api/cmd-bot/channels?guildId=…\nGET /api/cmd-bot/messages?guildId=…&amp;channelId=…\nPOST /api/cmd-bot/messages</code>'));
 }
 function commandsView(){
@@ -136,7 +136,7 @@ function docs(){
  return wrapper("Documentation développeur","Utilise ton jeton privé pour appeler l’API CMD Sphere depuis ton serveur ou ton programme.",
   card("Premiers appels",'<code class="dev-code">GET '+h(location.origin)+'/api/cmd-bot/guilds\nAuthorization: Bearer TA_CLE_PRIVEE\n\nPOST '+h(location.origin)+'/api/cmd-bot/messages\nContent-Type: application/json\nAuthorization: Bearer TA_CLE_PRIVEE\n{"guildId":"…","channelId":"…","content":"Bonjour !"}</code>'+
   '<p>Le bot doit être invité sur le serveur CMD Sphere avec la permission correspondante.</p>')+
-  card("Ressources",'<p>Portail CMD Sphere indépendant de Discord. L’installation est contrôlée par chaque administrateur et les données restent dans les serveurs CMD Sphere.</p>'));
+  card("Ressources",'<p>Portail CMD Sphere indépendant des plateformes externes. L’installation est contrôlée par chaque administrateur et les données restent dans les serveurs CMD Sphere.</p>'));
 }
 function memberPanel(kind){
  const team=kind==="team",owner=current.developer_role==="owner";
