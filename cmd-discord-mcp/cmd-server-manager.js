@@ -78,7 +78,7 @@ function roleEditor(role){
 }
 function roles(){
  const all=ctx.data.roles||[];
- return intro('Rôles','Gérer les rôles, couleurs et permissions.')+(canEdit()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEdit()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier</button>':'')+'</div>').join('')+'</div>'+info(note());
+ return intro('Rôles','Gérer les rôles, couleurs et permissions.')+(canEdit()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEdit()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations Discord sont générées depuis Discord.'))+toDiscord();
@@ -89,6 +89,34 @@ function other(){
  if(currentTab==='automod')return intro('AutoMod','Modération automatisée du serveur.')+info('L’édition des règles AutoMod Discord n’est pas accessible depuis ce panneau.')+toDiscord();
  return intro('Journal d’audit','Suivi de la configuration et des événements.')+info('L’historique d’audit Discord ne peut pas être modifié dans CMD Sphere.')+toDiscord();
 }
+
+async function loadHostingRoles(){
+ const area=$('#csm-hosting-role-permissions');if(!area||!ctx?.owner||!isNative())return;
+ const gid=id();area.textContent="Chargement des autorisations CMD Hosting…";
+ try{
+  const d=await request('/api/cmd-hosting/roles?guildId='+safe(gid));
+  if(!area.isConnected||id()!==gid)return;
+  area.replaceChildren();
+  const h=document.createElement('h3');h.textContent='🎮 Contrôle du serveur CMD Hosting';area.append(h);
+  const p=document.createElement('p');p.textContent='Le propriétaire choisit les rôles autorisés, puis leurs membres. Les rôles de profil personnels ne donnent aucun accès. La permission ne concerne que ce serveur CMD Sphere.';area.append(p);
+  if(!(d.roles||[]).length){const notice=document.createElement('p');notice.textContent='Crée d’abord un rôle pour déléguer la gestion CMD Hosting.';area.append(notice);return}
+  for(const role of d.roles){
+   const wrapper=document.createElement('div');wrapper.className='csm-hosting-role';wrapper.style.cssText='border:1px solid #ffffff26;border-radius:12px;padding:12px;margin:8px 0;background:#282331';
+   const label=document.createElement('label');label.className='csm-check';const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=!!role.enabled;const title=document.createElement('span');title.textContent='Autoriser le rôle « '+role.name+' » à gérer CMD Hosting';label.append(toggle,title);wrapper.append(label);
+   const list=document.createElement('div');list.style.cssText='display:grid;gap:7px;margin:11px 0 4px;padding-left:12px';
+   for(const member of (d.members||[])){
+    if(member.membership_role==='owner')continue;
+    const line=document.createElement('label');line.className='csm-check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=(d.grants||[]).some(g=>String(g.role_id)===String(role.id)&&String(g.user_id)===String(member.user_id));
+    const text=document.createElement('span');text.textContent='Attribuer à '+member.name;line.append(checkbox,text);
+    checkbox.onchange=async()=>{checkbox.disabled=true;try{await request('/api/cmd-hosting/roles?guildId='+safe(gid),{kind:'member',roleId:role.id,userId:member.user_id,enabled:checkbox.checked});notify('Accès du membre mis à jour')}catch(e){checkbox.checked=!checkbox.checked;notify(e.message,false)}finally{checkbox.disabled=false}};
+    list.append(line);
+   }
+   toggle.onchange=async()=>{toggle.disabled=true;try{await request('/api/cmd-hosting/roles?guildId='+safe(gid),{kind:'permission',roleId:role.id,enabled:toggle.checked});notify('Permission CMD Hosting mise à jour')}catch(e){toggle.checked=!toggle.checked;notify(e.message,false)}finally{toggle.disabled=false}};
+   wrapper.append(list);area.append(wrapper);
+  }
+ }catch(e){area.textContent='Autorisations CMD Hosting indisponibles : '+e.message}
+}
+
 function render(){
  if(!ctx)return;
  const modal=$('#serverSettingsModal'),box=$('#serverSettingsBody');if(!modal||!box)return;
@@ -104,6 +132,7 @@ function render(){
  box.querySelectorAll('[data-csm-edit-channel]').forEach(e=>e.addEventListener('click',()=>editChannel(e.dataset.csmEditChannel)));
  box.querySelectorAll('[data-csm-edit-role]').forEach(e=>e.addEventListener('click',()=>editRole(e.dataset.csmEditRole)));
  if(currentTab==='integrations'){loadInstalledCMDApps();loadNativeWebhooks();loadWebhooks()}
+ if(currentTab==='roles'&&isNative()&&ctx.owner)loadHostingRoles();
  const active=box.querySelector('.csm-nav button.chosen');if(active&&window.matchMedia?.('(max-width:760px)').matches)active.scrollIntoView({block:'nearest',inline:'center'});
 }
 async function loadInstalledCMDApps(){
@@ -318,16 +347,21 @@ function menu(){
   '<div class="csm-server-menu-quick">'+shortcut+'</div>'+
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
-  (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
+  (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
  document.body.append(root);document.body.classList.add("csm-server-menu-open");
  const shut=()=>{root.remove();document.body.classList.remove("csm-server-menu-open")};
  root.querySelector(".csm-server-menu-shade").onclick=shut;
+ const hostingBtn=root.querySelector('[data-csm-quick="hosting"]');
+ if(hostingBtn){hostingBtn.hidden=true;
+  fetch('/api/cmd-hosting/association?guildId='+code,{credentials:'same-origin',cache:'no-store'}).then(async resp=>{if(resp.ok){const data=await resp.json();if(data.canManage!==false&&hostingBtn.isConnected)hostingBtn.hidden=false}}).catch(()=>{});
+ }
  const status=root.querySelector("#csmMenuStatus");
  root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
+  if(key==="hosting"){shut();if(typeof window.cmdOpenHostingPanel==="function")window.cmdOpenHostingPanel(gid);else notify("Gestion CMD Hosting indisponible, actualise la page",false);return;}
   if(key==="boost"){shut();location.assign(gid?"/server-boosts/"+code:"/stars");return}
   if(key==="invite"){
    shut();if(gid&&typeof window.cmdOpenServerInvites==="function")await window.cmdOpenServerInvites(gid);
