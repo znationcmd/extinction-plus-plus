@@ -6,15 +6,25 @@ const MODES=[["video","🎬 Vidéo"],["photos","🖼️ Photos animées"],["stor
 const THEMES={epic:["Épique","#090d27","#58309c"],neon:["Néon","#111025","#ea318f"],survival:["Survie","#0c1c1a","#437c48"],rp:["Roleplay","#221522","#ae624c"],space:["Galaxie","#081323","#207ac7"],minimal:["Sobre","#181923","#454957"]};
 const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
+let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
-const state={mode:"video",theme:"epic",format:"9:16",effect:"zoom",transition:"fade",filter:"natural",duration:12,music:"electro",musicStart:0,volume:40,headline:"Rejoins notre serveur !",subtitle:"Une communauté t'attend",emoji:"🚀",title:"Publicité de mon serveur",guildId:""};
+const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const note=t=>{const n=$("#cmdStudioNotice");if(n)n.textContent=String(t||"")};
 function buttonHTML(arr,key){return arr.map(([v,label])=>'<button type="button" data-studio-'+key+'="'+safe(v)+'" class="'+(state[key]===v?"selected":"")+'">'+label+'</button>').join("")}
-function open(){
- if(root){root.hidden=false;document.body.classList.add("cmd-studio-active");return}
- root=document.createElement("section");root.id="cmdPromoStudio";root.setAttribute("role","dialog");root.setAttribute("aria-modal","true");root.setAttribute("aria-label","Studio publicité CMD Sphere");
- root.innerHTML='<header class="cmd-studio-header"><b>🎬 CMD Sphere · Studio Pub</b><button type="button" id="cmdStudioClose" aria-label="Fermer">✕</button></header>'+
+function open(context={}){
+ const user=String(context.profileId||document.querySelector("#profileForm")?.dataset.userId||"member").slice(0,120);
+ const guild=String(context.serverId||new URLSearchParams(location.search).get("server")||"").slice(0,64);
+ const nextScope=user+":"+guild;
+ if(studioScope&&studioScope!==nextScope){
+  stop();clips.forEach(item=>URL.revokeObjectURL(item.url));clips=[];musicFile=null;selectedTrack=null;recorded=null;
+  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
+  if(root){root.remove();root=null;canvas=null;ctx=null}
+ }
+ studioScope=nextScope;studioProfileGuild=guild;
+ if(root){root.hidden=false;document.body.classList.add("cmd-studio-active");closeTool();render(0);return}
+ root=document.createElement("section");root.id="cmdPromoStudio";root.setAttribute("role","dialog");root.setAttribute("aria-modal","true");root.setAttribute("aria-label","Studio vidéo CMD Sphere");
+ root.innerHTML='<header class="cmd-studio-header"><b>Studio IA · CMD Sphere</b><button type="button" id="cmdStudioClose" aria-label="Fermer">✕</button></header>'+
  '<div class="cmd-studio-main"><div class="cmd-studio-preview"><canvas id="cmdStudioCanvas" width="540" height="960" aria-label="Prévisualisation animée"></canvas><div class="cmd-studio-playbar"><button type="button" id="cmdStudioPlay">▶ Aperçu avec musique</button><span id="cmdStudioClock">0:00 / 0:12</span></div><input id="cmdStudioSeek" class="cmd-studio-seek" type="range" min="0" max="12" step="0.1" value="0" aria-label="Avancer ou reculer dans la vidéo"><small>Lecture synchronisée de la vidéo, de ses effets et de sa musique. Déplace la barre pour choisir un moment.</small></div>'+
  '<div class="cmd-studio-controls"><h2>Que veux-tu créer ?</h2><div class="cmd-studio-choices" id="cmdStudioModes">'+buttonHTML(MODES,"mode")+'</div>'+
  '<div class="cmd-studio-card"><h3>1. Images et vidéos</h3><label class="cmd-studio-upload">＋ Ajouter photos ou vidéos<input id="cmdStudioMedia" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" multiple></label><div id="cmdStudioFiles" class="cmd-studio-files"></div><small>Choisis plusieurs images pour un diaporama. Les fichiers sources peuvent dépasser 10 Mo (150 Mo par fichier).</small></div>'+
@@ -24,6 +34,44 @@ function open(){
  '<div class="cmd-studio-card cmd-studio-music"><h3>5. 🎵 Ajouter un son</h3><button type="button" id="cmdStudioOpenMusic" class="cmd-studio-add-sound">🎵 Parcourir les vraies musiques　⌕</button><div id="cmdStudioSelectedSong" class="cmd-studio-selected-song" aria-live="polite">Aucun morceau choisi dans la bibliothèque.</div><label>Choix de la musique<select id="cmdStudioMusic"><option value="library">🎧 Musique de la bibliothèque</option><option value="electro">Électro CMD (générée)</option><option value="epic">Épique CMD (générée)</option><option value="chill">Chill CMD (générée)</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer mon son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Choisis un vrai morceau et écoute son aperçu.</small><label>✂️ Début de l’extrait : <output id="cmdStudioMusicStartLabel">0:00</output><input id="cmdStudioMusicStart" type="range" min="0" max="240" step="1" value="0"></label><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Les morceaux libres indiquent leur artiste et licence. Les chansons commerciales de TikTok ne sont pas accessibles sans contrat de licence.</small></div>'+
  '<div class="cmd-studio-card"><h3>6. Publicité de serveur</h3><label>Titre de publication<input id="cmdStudioTitle" maxlength="100"></label><label>Mon serveur<select id="cmdStudioServer"><option value="">Choisir mon serveur…</option></select></label><small>Pour publier dans CMD Sphere, tu dois être propriétaire ou administrateur de ton serveur.</small></div>'+
  '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div><section id="cmdStudioMusicSheet" class="cmd-studio-music-sheet" hidden role="dialog" aria-modal="true" aria-label="Choisir une musique"><div class="cmd-studio-music-panel"><header><b>🎵 Ajouter un son</b><button type="button" id="cmdStudioCloseMusic" aria-label="Fermer">✕</button></header><label class="cmd-studio-search">⌕ <input type="search" id="cmdStudioMusicQuery" placeholder="Rechercher une musique, un style…" autocomplete="off"></label><div class="cmd-studio-music-genres" id="cmdStudioMusicGenres"><button type="button" data-search-music="instrumental">Instrumental</button><button type="button" data-search-music="rock music">Rock</button><button type="button" data-search-music="pop music">Pop</button><button type="button" data-search-music="electronic music">Électro</button><button type="button" data-search-music="piano">Piano</button><button type="button" data-search-music="jazz">Jazz</button><button type="button" data-search-music="classical music">Classique</button><button type="button" data-search-music="hip hop music">Hip-hop</button></div><div id="cmdStudioMusicResults" class="cmd-studio-music-results"><p>Recherche des titres accessibles…</p></div><div class="cmd-studio-music-foot"><small>Catalogue : Wikimedia Commons · morceaux à licence libre identifiée. Écoute un titre avant de l’ajouter. Les obligations de crédit restent applicables.</small><button type="button" id="cmdStudioMusicDone">Terminer</button></div></div></section>';
+ // One clean video preview, right-side tools, and two main actions.
+ const preview=$(".cmd-studio-preview",root),controls=$(".cmd-studio-controls",root);
+ const surface=document.createElement("div");surface.className="cmd-studio-surface";
+ const videoCanvas=$("#cmdStudioCanvas",root);videoCanvas.before(surface);surface.append(videoCanvas);
+ const textHandle=document.createElement("div");textHandle.id="cmdStudioTextHandle";textHandle.className="cmd-studio-draggable";textHandle.hidden=true;textHandle.setAttribute("aria-label","Déplacer le texte");surface.append(textHandle);
+ const stickerHandle=document.createElement("div");stickerHandle.id="cmdStudioStickerHandle";stickerHandle.className="cmd-studio-draggable";stickerHandle.hidden=true;stickerHandle.setAttribute("aria-label","Déplacer le sticker");surface.append(stickerHandle);
+ const toolbar=document.createElement("nav");toolbar.id="cmdStudioToolRail";toolbar.setAttribute("aria-label","Outils vidéo");
+ toolbar.innerHTML='<button type="button" data-cmd-tool="media"><span>▧</span><small>Médias</small></button>'+
+  '<button type="button" data-cmd-tool="text"><span>Aa</span><small>Texte</small></button>'+
+  '<button type="button" data-cmd-tool="sticker"><span>☻</span><small>Stickers</small></button>'+
+  '<button type="button" data-cmd-tool="music"><span>♫</span><small>Son</small></button>'+
+  '<button type="button" data-cmd-tool="effect"><span>✦</span><small>Effets</small></button>'+
+  '<button type="button" data-cmd-tool="filter"><span>◉</span><small>Filtres</small></button>'+
+  '<button type="button" data-cmd-tool="format"><span>▣</span><small>Format</small></button>'+
+  '<button type="button" data-cmd-tool="clips"><span>✂</span><small>Clips</small></button>';
+ preview.append(toolbar);
+ const titles=["Médias","Format et modèle","Texte et stickers","Effets et filtres","Musique et son","Publication"];
+ const tools=["media","format","text","effect","music","publish"];
+ $(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
+ const heading=document.createElement("header");heading.className="cmd-studio-tool-header";heading.innerHTML='<strong id="cmdStudioToolName">Outils</strong><button type="button" id="cmdStudioHideTool" aria-label="Masquer les outils">✕</button>';
+ controls.prepend(heading);
+ const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioStory">Ta Story</button><button type="button" id="cmdStudioNext">Suivant</button>';root.append(bottom);
+ $("#cmdStudioHideTool",root).onclick=closeTool;
+ $("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
+ $("#cmdStudioNext",root).onclick=()=>showTool("publish");
+ $("#cmdStudioStory",root).onclick=publishStory;
+ for(const [handle,x,y] of [[textHandle,"textX","textY"],[stickerHandle,"stickerX","stickerY"]]){
+  handle.addEventListener("pointerdown",e=>{e.preventDefault();handle.setPointerCapture(e.pointerId);handle.dataset.dragging="true"});
+  handle.addEventListener("pointermove",e=>{
+   if(handle.dataset.dragging!=="true")return;
+   const rect=surface.getBoundingClientRect();if(!rect.width||!rect.height)return;
+   state[x]=Math.max(.08,Math.min(.92,(e.clientX-rect.left)/rect.width));
+   state[y]=Math.max(.08,Math.min(.92,(e.clientY-rect.top)/rect.height));
+   render(previewCursor);
+  });
+  const done=()=>{delete handle.dataset.dragging};
+  handle.addEventListener("pointerup",done);handle.addEventListener("pointercancel",done);
+ }
  document.body.append(root);document.body.classList.add("cmd-studio-active");
  canvas=$("#cmdStudioCanvas");ctx=canvas.getContext("2d",{alpha:false});
  $("#cmdStudioClose").onclick=close;
@@ -48,7 +96,49 @@ function open(){
  $("#cmdStudioSaveDraft").onclick=saveDraft;$("#cmdStudioLoadDraft").onclick=loadDraft;
  $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
  document.addEventListener("keydown",onEscape);
- loadServers();resize();render(0);
+ loadServers();resize();render(0);closeTool();
+}
+function showTool(tool){
+ if(!root)return;
+ activeTool=tool;
+ const panel=({sticker:"text",filter:"effect",clips:"media"})[tool]||tool;
+ const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");
+ $("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
+ const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
+ $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Suivant · Enregistrer ou publier"})[tool]||"Outils";
+ $("[data-cmd-tool]",root).forEach(btn=>btn.classList.toggle("selected",btn.dataset.cmdTool===tool));
+ updateDragHandles();
+ if(panel==="text"){const input=$("#cmdStudio"+(tool==="sticker"?"Emoji":"Headline"));if(input)input.focus({preventScroll:true})}
+ controls.scrollTop=0;
+}
+function closeTool(){
+ activeTool="";if(!root)return;const controls=$(".cmd-studio-controls",root);
+ controls.classList.remove("cmd-tool-open");
+ $("[data-tool-panel]",controls).forEach(card=>card.hidden=false);
+ $("[data-cmd-tool]",root).forEach(btn=>btn.classList.remove("selected"));
+ updateDragHandles();
+}
+function updateDragHandles(){
+ if(!root)return;
+ for(const [id,value,x,y,enabled] of [["cmdStudioTextHandle",state.headline,"textX","textY",activeTool==="text"],["cmdStudioStickerHandle",state.emoji,"stickerX","stickerY",activeTool==="sticker"]]){
+  const el=$("#"+id);if(!el)continue;
+  el.hidden=!enabled||!String(value||"").trim();el.textContent=String(value||"").slice(0,45);
+  el.style.left=100*(state[x]||.5)+"%";el.style.top=100*(state[y]||.5)+"%";
+ }
+}
+async function publishStory(){
+ if(!root)return;const btn=$("#cmdStudioStory");btn.disabled=true;
+ try{
+  if(!recorded){
+   note("Préparation de ta Story…");
+   if(state.mode==="poster")await savePng();else if(state.mode==="gif")await exportGif();else await exportVideo();
+  }
+  if(!recorded?.size){note("L'export n'est pas disponible. Consulte le message dans les options.");return}
+  const response=await fetch("/api/cmd-profile-videos",{method:"POST",credentials:"same-origin",headers:{"content-type":recorded.type,"x-cmd-title":"Ma Story","x-cmd-kind":state.mode,"x-cmd-profile-guild":studioProfileGuild},body:recorded});
+  const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||"Publication refusée");
+  note("Ta Story est enregistrée dans ton profil CMD Sphere.");
+  document.dispatchEvent(new CustomEvent("cmd:profile-video-saved"));
+ }catch(e){note("Ta Story : "+(e.message||e))}finally{btn.disabled=false}
 }
 function choose(btn){
  const attr=[...btn.attributes].find(x=>x.name.startsWith("data-studio-"));if(!attr)return;
