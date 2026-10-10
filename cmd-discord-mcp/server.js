@@ -3962,7 +3962,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);
       if(url.pathname==="/"&&auth){redirect(res,baseUrl+"/dashboard");return}
       if(!auth){html(res,dashboardPage(null));return}
-      try{html(res,dashboardPage(auth,await listNativeGuilds(auth)).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261009b" defer></script></body>'))}catch{html(res,dashboardPage(auth,[]).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261009b" defer></script></body>'))}
+      try{html(res,dashboardPage(auth,await listNativeGuilds(auth)).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010guild2" defer></script></body>'))}catch{html(res,dashboardPage(auth,[]).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010guild2" defer></script></body>'))}
       return;
     }
     if(req.method==="GET"&&url.pathname.startsWith("/native/")){
@@ -4234,7 +4234,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
         const [threads,prefs,native,discord,folders,layout,friends,profile,groups]=await Promise.all([listDmThreads(auth),getDmPreferences(auth),listNativeGuilds(auth),linkedDiscordGuilds(auth),getServerFolders(auth),getServerLayout(auth),listFriends(auth),getGlobalProfile(auth),listGroupDms(auth)]);
-        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261009c" defer></script></body>'));
+        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010guild2" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/friends"){
