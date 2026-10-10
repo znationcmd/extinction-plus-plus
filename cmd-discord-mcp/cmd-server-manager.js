@@ -23,6 +23,7 @@ function id(){return String(ctx?.data?.guild?.id||'')}
 function isNative(){return ctx?.mode==='native'}
 function canEdit(){return !!ctx?.admin}
 function canEditRoles(){return isNative()?!!ctx?.owner:canEdit()}
+function canEditChannels(){return isNative()?(!ctx?.source&&(canEdit()||!!ctx?.data?.permissions?.manageChannels||!!ctx?.data?.permissions?.administrator)):canEdit()}
 function discordUrl(){return /^\d{15,22}$/.test(String(ctx?.source||''))?'https://discord.com/channels/'+safe(ctx.source):''}
 function gicon(){const v=String(newIcon||ctx?.data?.guild?.icon||'');return /^https?:\/\//.test(v)||/^data:image\//.test(v)?'<img src="'+escapeHtml(v)+'" alt="">':'🏠'}
 function intro(s,sub){return '<h2 class="csm-title">'+escapeHtml(s)+'</h2><p class="csm-lead">'+escapeHtml(sub||'')+'</p>'}
@@ -60,11 +61,11 @@ function options(chosen,arr){return arr.map(([value,label])=>'<option value="'+e
 const types=[['text','# Texte'],['voice','🔊 Vocal'],['announcement','📢 Annonces'],['forum','🗂️ Forum'],['category','📁 Catégorie']];
 function chanItem(c){
  const ico=c.type==='category'?'📁':c.type==='voice'?'🔊':c.type==='forum'?'🗂️':'#';
- return '<div class="csm-line"><span>'+ico+'</span><div><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.topic||c.type||'')+'</small></div>'+(canEdit()?'<button type="button" data-csm-edit-channel="'+escapeHtml(c.id)+'" class="csm-btn">Modifier</button>':'')+'</div>';
+ return '<div class="csm-line"><span>'+ico+'</span><div><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.topic||c.type||'')+'</small></div>'+(canEditChannels()?'<button type="button" data-csm-edit-channel="'+escapeHtml(c.id)+'" class="csm-btn">Modifier</button>':'')+'</div>';
 }
 function channels(){
  const all=ctx.data.channels||[],cats=all.filter(x=>x.type==='category'),rooms=all.filter(x=>x.type!=='category');
- const create=canEdit()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
+ const create=canEditChannels()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
  return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis la plateforme liée','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
 }
 /* Discord-style permission categories; CMD Hosting remains a separate owner-controlled server permission. */
@@ -264,7 +265,8 @@ function requireConfirmation(message){
  return true;
 }
 async function mutate(action,payload){
- if(!canEdit())throw Error('Permissions de gestion manquantes.');
+ const isChannelAction=['create_category','create_channel','update_channel','delete_channel','set_channel_permissions'].includes(action);
+ if(!(isChannelAction?canEditChannels():action.includes('role')?canEditRoles():canEdit()))throw Error('Permissions de gestion manquantes.');
  if(!requireConfirmation('Confirmer : '+action.replaceAll('_',' ')))return null;
  const r=await request(isNative()?'/api/native/action':'/api/dashboard/action',
   {...(isNative()?{nativeGuildId:id()}:{guildId:id(),bot:ctx.bot}),action,...payload});
