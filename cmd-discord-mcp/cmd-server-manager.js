@@ -49,7 +49,7 @@ function overview(){
  const g=ctx.data.guild;
  if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Le nom et l’icône de ce serveur externe sont gérés sur la plateforme liée. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
  return intro('Vue d’ensemble','Nom, image et paramètres du serveur CMD Sphere.')+
- '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/jpeg,image/png,image/webp" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
+ '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
  field('Nom du serveur','name',g.name,'required maxlength="100" '+(ctx.owner?'':'disabled'))+
  '<label class="csm-field">Description<textarea name="description" maxlength="1000" '+(ctx.owner?'':'disabled')+'>'+escapeHtml(g.server_description||'')+'</textarea></label>'+
  '<label class="csm-field">Notifications par défaut<select name="defaultNotifications" '+(ctx.owner?'':'disabled')+'><option value="mentions" '+(g.default_notifications==='all'?'':'selected')+'>Mentions uniquement</option><option value="all" '+(g.default_notifications==='all'?'selected':'')+'>Tous les messages</option></select></label>'+
@@ -403,12 +403,46 @@ async function mutate(action,payload){
  notify(r.warning||'Modification enregistrée.',!r.warning);
  await update();return r;
 }
+async function prepareServerIcon(file){
+ if(!file)throw Error('Choisis une photo.');
+ const name=String(file.name||'');
+ if(!(/^(image\/)/i.test(file.type)||/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(name)))
+  throw Error('Sélectionne une photo de ta galerie (JPEG, PNG, WebP ou HEIC compatible avec ton iPhone).');
+ if(file.size>30*1024*1024)throw Error('Photo trop volumineuse (maximum 30 Mo avant compression).');
+ const objectUrl=URL.createObjectURL(file);
+ try{
+  const photo=await new Promise((resolve,reject)=>{
+   const image=new Image();
+   image.onload=()=>resolve(image);
+   image.onerror=()=>reject(Error('Ce format photo ne peut pas être ouvert. Sur iPhone, exporte la photo en JPEG puis réessaie.'));
+   image.src=objectUrl;
+  });
+  const iw=photo.naturalWidth,ih=photo.naturalHeight;
+  if(!iw||!ih)throw Error('Impossible de lire la taille de cette photo.');
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
+  const ctx=canvas.getContext('2d');
+  if(!ctx)throw Error('Conversion photo non disponible sur cet appareil.');
+  ctx.fillStyle='#20182e';ctx.fillRect(0,0,512,512);
+  // Keep the complete image visible in the square; never stretch/crop a player's logo.
+  const scale=Math.min(512/iw,512/ih),w=Math.max(1,Math.round(iw*scale)),h=Math.max(1,Math.round(ih*scale));
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(photo,Math.round((512-w)/2),Math.round((512-h)/2),w,h);
+  let data=canvas.toDataURL('image/jpeg',0.88);
+  if(data.length>2400000)data=canvas.toDataURL('image/jpeg',0.7);
+  if(!/^data:image\/jpeg;base64,/.test(data)||data.length>2700000)throw Error('Impossible de compresser cette photo. Essaie une autre image.');
+  return data;
+ }finally{URL.revokeObjectURL(objectUrl)}
+}
+window.cmdPrepareServerIcon=prepareServerIcon;
 async function readIcon(e){
  const file=e.target.files?.[0];if(!file)return;
- if(file.size>2000000){notify('Pour éviter les erreurs de stockage, utilise une icône de moins de 2 Mo.',false);return}
- if(!/^image\/(png|jpeg|webp)$/.test(file.type)){notify('Format PNG, JPEG ou WebP requis.',false);return}
- newIcon=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(rd.result);rd.onerror=reject;rd.readAsDataURL(file)});
- const preview=$('.csm-icon-preview');if(preview)preview.innerHTML=gicon();
+ const input=e.target;input.disabled=true;
+ try{
+  const icon=await prepareServerIcon(file);newIcon=icon;
+  const preview=$('.csm-icon-preview');if(preview)preview.innerHTML=gicon();
+  notify('Photo prête. Appuie sur « Enregistrer les modifications » pour l’appliquer.');
+ }catch(error){notify(error.message,false)}
+ finally{input.disabled=false;input.value=''}
 }
 async function saveIdentity(e){
  e.preventDefault();if(!isNative()||!ctx.owner)return;
