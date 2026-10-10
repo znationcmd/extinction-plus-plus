@@ -36,7 +36,8 @@ async function hostingMemberAccess(pool,gid,uid){
  if(!m.rows.length)return {allowed:false,owner:false,ownerId};
  // Only owner-issued membership assignments count; profile_role_id is user-editable and never grants control.
  const grants=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id AND ra.enabled=TRUE JOIN cmd_native_roles r ON r.id=rm.role_id AND r.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 LIMIT 1",[gid,uid]);
- return {allowed:!!grants.rows.length,owner:false,ownerId};
+ const assigned=await pool.query("SELECT 1 FROM cmd_native_member_roles mr JOIN cmd_sphere_hosting_role_access a ON a.guild_id=mr.guild_id AND a.role_id=mr.role_id AND a.enabled=TRUE JOIN cmd_native_roles r ON r.id=mr.role_id AND r.guild_id=mr.guild_id WHERE mr.guild_id=$1 AND mr.user_id=$2 LIMIT 1",[gid,uid]);
+ return {allowed:!!grants.rows.length||!!assigned.rows.length,owner:false,ownerId};
 }
 async function hostingOwnerToken(pool,uid){
  const r=await pool.query("SELECT token_enc FROM cmd_sphere_hosting_links WHERE user_id=$1 AND expires_at>NOW()",[uid]);
