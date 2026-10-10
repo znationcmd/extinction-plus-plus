@@ -1,9 +1,9 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import {readFileSync} from "node:fs";
-import {join} from "node:path";
-import vm from "node:vm";
-const code=readFileSync(join(import.meta.dirname||new URL(".",import.meta.url).pathname,"..","server.js"),"utf8");
+const test=require("node:test");
+const assert=require("node:assert/strict");
+const {readFileSync}=require("node:fs");
+const {join}=require("node:path");
+const vm=require("node:vm");
+const code=readFileSync(join(__dirname,"..","server.js"),"utf8");
 const begin=code.indexOf("async function nativeMessageActionAccess(");
 const end=code.indexOf("async function sendNativeChannelMessage(",begin);
 const routines=code.slice(begin,end);
@@ -43,7 +43,7 @@ test("member access reports owner status without checking Discord roles",async()
  assert.equal(details.isOwner,true);assert.equal(details.userId,"owner");
 });
 test("UI offers friend requests and owner moderation only on CMD native messages",()=>{
- const js=readFileSync(join(import.meta.dirname||new URL(".",import.meta.url).pathname,"..","cmd-social-message-actions.js"),"utf8");
+ const js=readFileSync(join(__dirname,"..","cmd-social-message-actions.js"),"utf8");
  assert.match(js,/\/api\/friends\/request/);assert.match(js,/\/api\/native\/messages\/delete/);
  assert.match(js,/article\.dataset\.cmdSource==='cmd'/);
 });
