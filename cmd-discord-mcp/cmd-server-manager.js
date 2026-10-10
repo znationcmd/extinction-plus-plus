@@ -148,6 +148,17 @@ function renderHostingRoleMembers(role){
 
 const csmRoleStyle=document.createElement('style');csmRoleStyle.textContent="\n/* Native role editor improvements (safe for iPhone and desktop). */\n.csm-role-member-assignments{margin:18px 0 26px;border:1px solid #9874c56b;border-radius:17px;padding:16px;background:#251d31}\n.csm-role-member-assignments h4{font-size:17px;margin:0 0 9px}\n.csm-member-search{width:100%;max-width:100%;padding:13px;background:#17141d;border:1px solid #ffffff4d;color:#fff;border-radius:12px;font:16px system-ui}\n.csm-role-member-list,.csm-members-list{display:grid;gap:5px;margin-top:12px}\n.csm-member-row{display:flex;align-items:center;gap:12px;padding:12px 9px;min-width:0;min-height:62px;border-radius:11px;background:#ffffff09;overflow-wrap:anywhere}\n.csm-member-row[hidden]{display:none!important}\n.csm-member-row>input[type=checkbox]{width:22px;height:22px;flex:none;margin-left:auto;accent-color:#9462db}\n.csm-member-avatar{width:42px;height:42px;flex:none;border-radius:50%;object-fit:cover}\n.csm-member-placeholder{display:grid;place-items:center;background:#44334f;font-size:23px}\n.csm-member-name,.csm-member-detail{flex:1;min-width:0;font-weight:750}\n.csm-member-detail small,.csm-member-status{display:block;font-size:12px;color:#d1b9e4;font-weight:400;overflow-wrap:anywhere}\n.csm-role-member-assignments .csm-lead{margin:0 0 12px}\n@media(max-width:460px){.csm-role-member-assignments{padding:12px}.csm-member-row{gap:7px}.csm-member-avatar{width:36px;height:36px}}\n";document.head.append(csmRoleStyle);
 /* CMD Sphere native member assignments: owner-authorized, never alter a linked Discord guild. */
+function openNativeInviteFromSettings(){
+ const gid=id();
+ if(typeof window.cmdOpenServerInvites==='function'){
+  close();Promise.resolve(window.cmdOpenServerInvites(gid)).catch(e=>notify('Invitations : '+e.message,false));return
+ }
+ currentTab='invites';editing=null;render();
+}
+function newInviteButton(){
+ const button=document.createElement('button');button.type='button';button.className='csm-btn primary';
+ button.textContent='🔗 Inviter une personne';button.onclick=openNativeInviteFromSettings;return button;
+}
 async function fetchNativeMemberCache(force=false){
  if(!isNative())return {members:[]};
  if(!nativeMemberCache||force)nativeMemberCache=await request('/api/native/members?guildId='+safe(id()));
@@ -174,7 +185,7 @@ async function renderRoleAssignments(role){
   const title=document.createElement('h4');title.textContent='Attribuer ce rôle aux membres';host.append(title);
   const help=document.createElement('p');help.className='csm-lead';help.textContent='Sélectionne les membres à ajouter ou à retirer. La modification est enregistrée sur CMD Sphere, sans modifier Discord.';host.append(help);
   if(!members.length){
-   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Invite une personne et attends qu’elle rejoigne CMD Sphere, puis reviens ici pour lui attribuer ce rôle.';host.append(empty);
+   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Invite une personne et attends qu’elle rejoigne CMD Sphere, puis reviens ici pour lui attribuer ce rôle.';host.append(empty);host.append(newInviteButton());
    return;
   }
   const search=document.createElement('input');search.type='search';search.placeholder='Rechercher un membre';search.className='csm-member-search';search.setAttribute('aria-label','Rechercher un membre');host.append(search);
@@ -209,7 +220,7 @@ async function renderNativeMembersTab(){
   host.replaceChildren();
   const all=Array.isArray(data.members)?data.members:[];
   const summary=document.createElement('p');summary.className='csm-lead';summary.textContent=all.length+' membre'+(all.length>1?'s':'')+' sur ce serveur.';host.append(summary);
-  if(all.length<=1){const notice=document.createElement('p');notice.className='csm-info';notice.textContent='Ton serveur ne compte pas encore d’autre membre. Envoie son lien d’invitation : un utilisateur doit rejoindre ce serveur avant que tu puisses lui attribuer un rôle.';host.append(notice)}
+  if(all.length<=1){const notice=document.createElement('p');notice.className='csm-info';notice.textContent='Ton serveur ne compte pas encore d’autre membre. Envoie son lien d’invitation : un utilisateur doit rejoindre ce serveur avant que tu puisses lui attribuer un rôle.';host.append(notice);if(ctx.owner)host.append(newInviteButton())}
   if(ctx.owner){
    const link=document.createElement('button');link.type='button';link.className='csm-btn primary';link.textContent='Gérer les rôles et leurs membres';link.onclick=()=>{currentTab='roles';render()};host.append(link);
   }
