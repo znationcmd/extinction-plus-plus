@@ -23,7 +23,7 @@ function id(){return String(ctx?.data?.guild?.id||'')}
 function isNative(){return ctx?.mode==='native'}
 function canEdit(){return !!ctx?.admin}
 function canEditRoles(){return isNative()?!!ctx?.owner:canEdit()}
-function canEditChannels(){return isNative()?(!ctx?.source&&(canEdit()||!!ctx?.data?.permissions?.manageChannels||!!ctx?.data?.permissions?.administrator)):canEdit()}
+function canEditChannels(){return isNative()?(!!ctx?.owner||canEdit()||!!ctx?.data?.permissions?.manageChannels||!!ctx?.data?.permissions?.administrator):canEdit()}
 function discordUrl(){return /^\d{15,22}$/.test(String(ctx?.source||''))?'https://discord.com/channels/'+safe(ctx.source):''}
 function gicon(){const v=String(newIcon||ctx?.data?.guild?.icon||'');return /^https?:\/\//.test(v)||/^data:image\//.test(v)?'<img src="'+escapeHtml(v)+'" alt="">':'🏠'}
 function intro(s,sub){return '<h2 class="csm-title">'+escapeHtml(s)+'</h2><p class="csm-lead">'+escapeHtml(sub||'')+'</p>'}
@@ -31,7 +31,7 @@ function btn(label,action,klass){return '<button type="button" data-csm-action="
 function field(label,name,value,attrs){return '<label class="csm-field">'+escapeHtml(label)+'<input name="'+escapeHtml(name)+'" value="'+escapeHtml(value??'')+'" '+(attrs||'')+'></label>'}
 function info(s){return '<div class="csm-info">'+escapeHtml(s)+'</div>'}
 function toDiscord(){return discordUrl()?'<a class="csm-btn" target="_blank" rel="noopener noreferrer" href="'+discordUrl()+'">Ouvrir la plateforme connectée ↗</a>':''}
-function note(){return ctx.source&&isNative()?'Serveur importé dans CMD Sphere. Une confirmation explicite est demandée avant toute opération qui pourrait modifier le serveur externe. La copie CMD Sphere reste indépendante pour ses messages locaux.':'Enregistrez pour appliquer les modifications autorisées.'}
+function note(){return ctx.source&&isNative()?'Serveur importé dans CMD Sphere : les modifications locales de salons et de rôles ne changent jamais Discord. La synchronisation depuis Discord est une action distincte et explicite.':'Enregistrez pour appliquer les modifications autorisées.'}
 async function getContext(){
  const s=state();if(!s?.nativeGuild&&!s?.guild)throw Error('Sélectionne d’abord un serveur.');
  if(s.nativeGuild){

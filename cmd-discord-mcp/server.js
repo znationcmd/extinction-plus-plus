@@ -3653,27 +3653,11 @@ async function applyNativeLocalAction(auth,input){
   return {ok:true,synced:false,roleId:input._createdRoleId||null};
 }
 async function applyNativeStructureAction(auth,input){
-  const gid=String(input.nativeGuildId||"");
-  const action=String(input.action||"");
-  if(["create_role","update_role","delete_role"].includes(action))await requireNativeOwner(auth,gid);
-  else await requireNativePermission(auth,gid,"manageChannels");
-  const g=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[gid]);if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
-  const sourceId=String(g.rows[0].source_discord_id||"");
-  // Role management in CMD Sphere must not mutate linked Discord servers.
-  if(["create_role","update_role","delete_role"].includes(String(input.action||"")))return applyNativeLocalAction(auth,input);
-  if(/^\d{15,22}$/.test(sourceId)){
-    // Never let a locally delegated CMD Sphere role operate the external provider.
-    await requireNativeAdmin(auth,gid);
-    const bot=await resolveBot(auth,sourceId,input.bot||undefined),remote={...input,guildId:sourceId};
-    delete remote.nativeGuildId;
-    if(remote.channelId)remote.channelId=await nativeSourceId(gid,"channel",remote.channelId);
-    if(remote.parentId)remote.parentId=await nativeSourceId(gid,"channel",remote.parentId);
-    if(remote.roleId)remote.roleId=await nativeSourceId(gid,"role",remote.roleId);
-    await backend(bot,"action",{body:remote});
-    try{await syncNativeFromDiscord(auth,sourceId,bot)}
-    catch(e){return {ok:true,synced:false,remoteApplied:true,bot,botName:bots[bot].label,warning:"Modification appliquée sur Discord, mais la copie CMD Sphere n'a pas pu être actualisée : "+e.message}}
-    return {ok:true,synced:true,bot,botName:bots[bot].label};
-  }
+  // Native CMD Sphere guild management is always local, including imported guilds.
+  // Import/sync routes may read a linked Discord server with authorization,
+  // but editing a CMD Sphere structure must never mutate that external server.
+  // applyNativeLocalAction enforces owner rights for roles and effective
+  // manageChannels rights for channels before touching the local database.
   return applyNativeLocalAction(auth,input);
 }
 async function updateNativeProfile(auth,input){
@@ -4803,7 +4787,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname.startsWith("/api/native/guild/")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion au service externe requise"});return}
-      try{const id=url.pathname.split("/").pop();try{await ensureArchivedChannelsForNativeGuild(auth,id)}catch(restoreError){console.warn("[archive-view] repair skipped:",restoreError.message)}sendJson(res,200,await nativeGuildDetail(auth,id))}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{const id=url.pathname.split("/").pop();sendJson(res,200,await nativeGuildDetail(auth,id))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="POST"&&/^\/api\/webhooks\/[^/]+\/[^/]+$/.test(url.pathname)){
       try{const parts=url.pathname.split('/');const message=await receiveNativeWebhook(pool,parts[3],parts[4],await readFormBodyJson(req));sendJson(res,200,message)}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
