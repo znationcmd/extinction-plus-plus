@@ -111,7 +111,7 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
    }
    if(req.method==="POST"&&path==="/api/cmd-profile-videos"){
      const rawGuild=txt(req.headers["x-cmd-profile-guild"],64),guild=/^(?:[0-9]{8,24}|[0-9a-f-]{36})$/i.test(rawGuild)?rawGuild:"";
-     const mime=txt(String(req.headers["content-type"]||"").split(";")[0],40),title=txt(req.headers["x-cmd-title"],100)||"Ma vidéo",kind=txt(req.headers["x-cmd-kind"],20)||"story";
+     const mime=txt(String(req.headers["content-type"]||"").split(";")[0],40),title=txt((()=>{const value=txt(req.headers["x-cmd-title"],300);try{return decodeURIComponent(value)}catch{return value}})(),100)||"Ma vidéo",kind=txt(req.headers["x-cmd-kind"],20)||"story";
      if(rawGuild&&!guild){send(res,400,{error:"Profil de serveur invalide"});return true}
      if(guild){const memberNative=UUID.test(guild)?await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[guild,user]):{rows:[]};const memberDiscord=Array.isArray(auth.guildIds)&&auth.guildIds.some(id=>String(id)===guild);if(!memberNative.rows.length&&!memberDiscord){send(res,403,{error:"Tu dois appartenir à ce serveur"});return true}}
      if(!MIME.has(mime)){send(res,415,{error:"Format de vidéo/image non accepté"});return true}
