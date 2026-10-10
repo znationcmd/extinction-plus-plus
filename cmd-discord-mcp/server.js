@@ -1067,6 +1067,15 @@ async function initNativeDb(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(guild_id,source_role_id)
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_member_roles(
+    guild_id UUID NOT NULL,
+    user_id TEXT NOT NULL,
+    role_id UUID NOT NULL REFERENCES cmd_native_roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(guild_id,user_id,role_id),
+    FOREIGN KEY(guild_id,user_id) REFERENCES cmd_native_members(guild_id,user_id) ON DELETE CASCADE
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_member_roles_role_idx ON cmd_native_member_roles(guild_id,role_id)');
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channel_messages(
     id UUID PRIMARY KEY,
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -3261,24 +3270,36 @@ async function nativeMemberList(auth,guildId){
     COALESCE(NULLIF(m.profile_avatar_data_url,''),NULLIF(p.avatar_data_url,'')) AS avatar
     FROM cmd_native_members m LEFT JOIN cmd_global_profiles p ON p.user_id=m.user_id
     WHERE m.guild_id=$1 ORDER BY CASE m.membership_role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,m.joined_at LIMIT 1000`,[String(guildId)]);
-  return {members:rows.rows};
+  const grants=await pool.query('SELECT user_id,role_id::text AS role_id FROM cmd_native_member_roles WHERE guild_id=$1',[String(guildId)]);
+  const byUser=new Map();
+  for(const grant of grants.rows){if(!byUser.has(grant.user_id))byUser.set(grant.user_id,[]);byUser.get(grant.user_id).push(grant.role_id)}
+  return {members:rows.rows.map(row=>({...row,role_ids:byUser.get(row.user_id)||[]}))};
 }
 // Role assignment belongs only to the actual CMD Sphere guild owner.
 async function ownerAssignNativeRole(auth,input){
- const guildId=String(input.guildId||""),userId=String(input.userId||""),requested=String(input.roleId||"").trim();
- const isOwner=await pool.query("SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2",[guildId,String(auth.user.id)]);
- if(!isOwner.rows.length)throw new Error("Seul le propriétaire peut donner ou retirer les rôles.");
- if(!/^[a-z0-9-]{1,100}$/i.test(userId))throw new Error("Membre incorrect");
- const member=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[guildId,userId]);
- if(!member.rows.length)throw new Error("Ce membre n'appartient pas au serveur.");
- let roleId=null;
- if(requested){
-   const role=await pool.query("SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[guildId,requested]);
-   if(!role.rows.length)throw new Error("Ce rôle n'existe pas dans le serveur.");
-   roleId=String(role.rows[0].id);
+ const gid=String(input.guildId||""),user=String(input.userId||""),requested=String(input.roleId||"").trim();
+ const owner=await pool.query('SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2',[gid,String(auth.user.id)]);
+ if(!owner.rows.length)throw new Error("Seul le propriétaire peut attribuer ou retirer des rôles.");
+ if(!/^[a-z0-9-]{1,100}$/i.test(user))throw new Error("Membre incorrect");
+ const member=await pool.query('SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2',[gid,user]);
+ if(!member.rows.length)throw new Error("Ce membre n'appartient pas à ce serveur.");
+ if(!requested){
+   await pool.query('DELETE FROM cmd_native_member_roles WHERE guild_id=$1 AND user_id=$2',[gid,user]);
+   await pool.query('UPDATE cmd_native_members SET profile_role_id=NULL WHERE guild_id=$1 AND user_id=$2',[gid,user]);
+   return {saved:true,user:{user_id:user,role_ids:[]}};
  }
- const updated=await pool.query("UPDATE cmd_native_members SET profile_role_id=$3 WHERE guild_id=$1 AND user_id=$2 RETURNING user_id,profile_role_id",[guildId,userId,roleId]);
- return {saved:true,user:updated.rows[0]};
+ const r=await pool.query('SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,requested]);
+ if(!r.rows.length)throw new Error("Le rôle n'existe pas dans ce serveur.");
+ const roleId=String(r.rows[0].id),enabled=input.enabled!==false;
+ if(enabled){
+   await pool.query('INSERT INTO cmd_native_member_roles(guild_id,user_id,role_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[gid,user,roleId]);
+ }else{
+   await pool.query('DELETE FROM cmd_native_member_roles WHERE guild_id=$1 AND user_id=$2 AND role_id=$3',[gid,user,roleId]);
+ }
+ const roleRows=await pool.query('SELECT role_id::text AS role_id FROM cmd_native_member_roles WHERE guild_id=$1 AND user_id=$2 ORDER BY created_at',[gid,user]);
+ const selected=roleRows.rows.map(x=>x.role_id);
+ await pool.query('UPDATE cmd_native_members SET profile_role_id=$3 WHERE guild_id=$1 AND user_id=$2',[gid,user,selected[0]||null]);
+ return {saved:true,user:{user_id:user,role_ids:selected,profile_role_id:selected[0]||null}};
 }
 // Repair a single imported server from the user's already stored mirror.
  // Does not call Discord, overwrite local messages, or change Discord.
@@ -3411,7 +3432,7 @@ async function applyNativeLocalAction(auth,input){
     if(row.rows[0].type==="category")await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND source_parent_id=$2',[gid,parentKey]);
     await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id]);
   }else if(action==="create_role"){
-    const name=safeText(input.name,100);if(!name)throw new Error("Nom requis.");const id=crypto.randomUUID();
+    const name=safeText(input.name,100);if(!name)throw new Error("Nom requis.");const id=crypto.randomUUID();input._createdRoleId=id;
     await pool.query('INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[id,gid,id,name,safeText(input.color,20)||null,JSON.stringify(input.permissions||{}),Number(input.position||0),Boolean(input.hoist),Boolean(input.mentionable)]);
   }else if(action==="update_role"){
     const id=String(input.roleId||"");const row=await pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,id]);if(!row.rows[0])throw new Error("Rôle introuvable.");
@@ -3423,13 +3444,15 @@ async function applyNativeLocalAction(auth,input){
     await pool.query('UPDATE cmd_native_channels SET permission_overwrites=$3::jsonb WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2)',[gid,id,JSON.stringify(perms)]);
   }else throw new Error("Action non autorisée.");
   await pool.query('UPDATE cmd_native_guilds SET updated_at=NOW() WHERE id=$1',[gid]);
-  return {ok:true,synced:false};
+  return {ok:true,synced:false,roleId:input._createdRoleId||null};
 }
 async function applyNativeStructureAction(auth,input){
   const gid=String(input.nativeGuildId||"");await requireNativeAdmin(auth,gid);
   if(["create_role","update_role","delete_role"].includes(String(input.action||"")))await requireNativeOwner(auth,gid);
   const g=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[gid]);if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const sourceId=String(g.rows[0].source_discord_id||"");
+  // Role management in CMD Sphere must not mutate linked Discord servers.
+  if(["create_role","update_role","delete_role"].includes(String(input.action||"")))return applyNativeLocalAction(auth,input);
   if(/^\d{15,22}$/.test(sourceId)){
     const bot=await resolveBot(auth,sourceId,input.bot||undefined),remote={...input,guildId:sourceId};
     delete remote.nativeGuildId;
