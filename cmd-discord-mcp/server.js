@@ -2703,6 +2703,22 @@ async function requireNativeMember(auth,guildId){
 async function requireNativeAdmin(auth,guildId){
   const m=await requireNativeMember(auth,guildId);if(!["owner","admin"].includes(m.membership_role))throw new Error("Permission administrateur requise.");return m;
 }
+// Compute effective local CMD Sphere permissions exclusively from owner-assigned roles.
+// The profile's display role is cosmetic and is deliberately ignored for authorization.
+async function effectiveNativePermissions(userId,guildId){
+ const member=await nativeMembership(userId,guildId);
+ if(!member)return null;
+ if(member.membership_role==="owner"||member.membership_role==="admin")return {administrator:true,manageGuild:true,manageChannels:true,manageRoles:true};
+ const q=await pool.query("SELECT r.permissions FROM cmd_native_member_roles mr JOIN cmd_native_roles r ON r.id=mr.role_id AND r.guild_id=mr.guild_id WHERE mr.guild_id=$1 AND mr.user_id=$2",[String(guildId),String(userId)]);
+ const aggregate={};
+ for(const row of q.rows){const p=row.permissions&&typeof row.permissions==="object"?row.permissions:{};for(const [key,value] of Object.entries(p)){if(value===true)aggregate[key]=true}}
+ return aggregate;
+}
+async function requireNativePermission(auth,guildId,permission){
+ const granted=await effectiveNativePermissions(String(auth.user.id),guildId);
+ if(!granted||!(granted.administrator||granted[permission]))throw new Error("Permission manquante : "+permission);
+ return granted;
+}
 async function requireNativeOwner(auth,guildId){
   const m=await requireNativeMember(auth,guildId);if(String(m.membership_role)!=="owner")throw new Error("Seul le propriétaire du serveur peut modifier son tag.");return m;
 }
@@ -3421,7 +3437,8 @@ async function nativeGuildDetail(auth,id){
     }catch(error){console.warn("[archive-count] "+error.message)}
   }
   const activeCode=await activeInviteForGuild(pool,id);
-  return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:activeCode?baseUrl+"/invite/"+encodeURIComponent(activeCode):""};
+  const permissions=await effectiveNativePermissions(String(auth.user.id),String(id));
+  return {guild:g.rows[0],member,permissions:permissions||{},channels:channels.rows,roles:roles.rows,inviteUrl:activeCode?baseUrl+"/invite/"+encodeURIComponent(activeCode):""};
 }
 async function nativeSourceId(guildId,kind,id){
   const table=kind==="role"?"cmd_native_roles":"cmd_native_channels";
@@ -3439,8 +3456,10 @@ async function syncNativeGuildById(auth,nativeGuildId){
   return syncNativeFromDiscord(auth,sourceId,bot);
 }
 async function applyNativeLocalAction(auth,input){
-  const gid=String(input.nativeGuildId||"");await requireNativeAdmin(auth,gid);
+  const gid=String(input.nativeGuildId||"");
   const action=String(input.action||"");
+  if(["create_role","update_role","delete_role"].includes(action))await requireNativeOwner(auth,gid);
+  else await requireNativePermission(auth,gid,"manageChannels");
   if(action==="create_category"){
     const name=safeText(input.name,100);if(!name)throw new Error("Nom requis.");
     const id=crypto.randomUUID(),pos=Number(input.position||0);
@@ -3478,13 +3497,17 @@ async function applyNativeLocalAction(auth,input){
   return {ok:true,synced:false,roleId:input._createdRoleId||null};
 }
 async function applyNativeStructureAction(auth,input){
-  const gid=String(input.nativeGuildId||"");await requireNativeAdmin(auth,gid);
-  if(["create_role","update_role","delete_role"].includes(String(input.action||"")))await requireNativeOwner(auth,gid);
+  const gid=String(input.nativeGuildId||"");
+  const action=String(input.action||"");
+  if(["create_role","update_role","delete_role"].includes(action))await requireNativeOwner(auth,gid);
+  else await requireNativePermission(auth,gid,"manageChannels");
   const g=await pool.query('SELECT source_discord_id FROM cmd_native_guilds WHERE id=$1 LIMIT 1',[gid]);if(!g.rows[0])throw new Error("Serveur CMD introuvable.");
   const sourceId=String(g.rows[0].source_discord_id||"");
   // Role management in CMD Sphere must not mutate linked Discord servers.
   if(["create_role","update_role","delete_role"].includes(String(input.action||"")))return applyNativeLocalAction(auth,input);
   if(/^\d{15,22}$/.test(sourceId)){
+    // Never let a locally delegated CMD Sphere role operate the external provider.
+    await requireNativeAdmin(auth,gid);
     const bot=await resolveBot(auth,sourceId,input.bot||undefined),remote={...input,guildId:sourceId};
     delete remote.nativeGuildId;
     if(remote.channelId)remote.channelId=await nativeSourceId(gid,"channel",remote.channelId);
