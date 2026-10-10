@@ -1,5 +1,4 @@
-/* CMD Sphere — custom illustration scene INSIDE existing /profile banner (not a separate profile).
-   Original profile avatar, banner upload, name, status and badges remain unchanged. */
+/* CMD Sphere — separate avatar-and-scene card below Bio. Original profile banner and avatar remain untouched. */
 (()=>{"use strict";
 if(window.__cmdProfileScene)return;window.__cmdProfileScene=true;
 const $=(s,r=document)=>r.querySelector(s);
@@ -99,18 +98,18 @@ function decorateScene(scene){
 }
 function present(s=state,img=custom){
  if(!slot)return;
- if(s.scene==="none"){slot.classList.remove("cmd-scene-active");if(scenery)scenery.replaceChildren();return}
- slot.classList.add("cmd-scene-active");slot.dataset.scene=scenes.some(a=>a[0]===s.scene)?s.scene:"forest";
+ slot.classList.add("cmd-scene-active");
+ slot.dataset.scene=scenes.some(a=>a[0]===s.scene)?s.scene:"none";
  scenery.replaceChildren();
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
- const light=document.createElement("div");light.className="cmd-scene-scenery";if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
+ const light=document.createElement("div");light.className="cmd-scene-scenery";if(s.scene==="none"){light.style.cssText="background:linear-gradient(135deg,#23122e,#472863);opacity:1";light.textContent=""}else if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";
  const chosenAvatar=/^reference-avatar-(\d+)$/.exec(s.avatarPreset||"");
  const chosenIndex=chosenAvatar?Number(chosenAvatar[1]):-1;
  if(chosenIndex>=0&&chosenIndex<importedAvatarCount&&importedAvatarTiles[chosenIndex]){
   const img=new Image();img.src=importedAvatarTiles[chosenIndex];img.alt="Avatar CMD Sphere "+(chosenIndex+1);img.className="cmd-saved-imported-avatar";
   person.append(img);person.classList.add("cmd-scene-selected-avatar");
- }else if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {const photo=s.gender==="female"?"https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=420&fit=crop&q=80":"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=420&fit=crop&q=80";person.innerHTML='<img class="cmd-avatar-fallback-photo" src="'+photo+'" alt="Portrait de remplacement en cas d’indisponibilité du modèle 3D">';}
+ }else if(s.avatarStyle==="photo"&&characterPhoto){const img=new Image();img.src=characterPhoto;img.alt="Personnage personnalisé";person.append(img);person.classList.add("cmd-scene-photo-person")}else {person.innerHTML=drawAvatarSticker(s);person.classList.add("cmd-scene-selected-avatar")}
  scenery.append(person);
  if(s.pet!=="none"){
   const animal=document.createElement("div");animal.className="cmd-scene-pet";
@@ -158,17 +157,34 @@ async function shareProfile(){
  try{await call();set(enabled?"Ton profil est public par lien. Tu peux désactiver le partage à tout moment.":"Ton profil est privé. Active le partage si tu souhaites diffuser un lien.")}catch(e){set(e.message);for(const b of buttons)b.disabled=true}
 }
 
-function mountBanner(){
- const banner=$("#bannerTap");if(!banner||$("#cmdSceneWrap"))return;
- const wrap=document.createElement("div");wrap.id="cmdSceneWrap";wrap.className="cmd-scene-wrap";
- banner.before(wrap);wrap.append(banner);
- scenery=document.createElement("span");scenery.id="cmdSceneBackdrop";scenery.className="cmd-scene-backdrop";scenery.setAttribute("aria-hidden","true");banner.prepend(scenery);
- const btn=document.createElement("button");btn.id="cmdSceneEdit";btn.type="button";btn.textContent="🎭 Avatar & décor";btn.setAttribute("aria-label","Personnaliser mon avatar, mon animal et mon décor de profil");btn.onclick=e=>{e.preventDefault();e.stopPropagation();openSheet()};wrap.append(btn);
-  const shareButton=document.createElement("button");shareButton.type="button";shareButton.id="cmdSceneShare";shareButton.textContent="↗ Partager le profil";shareButton.onclick=e=>{e.preventDefault();e.stopPropagation();void shareProfile()};wrap.append(shareButton);
- slot=wrap;
- const edit=$("#profileForm"),section=document.createElement("div");
- if(edit){section.className="cmd-scene-form-entry";section.innerHTML='<h3>🎭 Personnalisation CMD Sphere</h3><p>Ouvre « Avatar & décor » sur ta bannière pour modifier ton personnage, tes tenues et ton univers.</p>';edit.querySelector("h2")?.after(section)}
+/* A dedicated profile card below Bio. Never wrap or overwrite the genuine banner. */
+function mountSceneCard(){
+ const main=$("#cmdPmDetailMain");
+ if(!main)return;
+ let existing=$("#cmdSceneWrap");
+ if(existing){slot=existing;scenery=$("#cmdSceneBackdrop",existing);return}
+ const bio=$(".cmd-pm-bio-original",main);
+ const cardSection=document.createElement("section");
+ cardSection.className="cmd-pm-section cmd-pm-panel-principal cmd-profile-universe-section";
+ cardSection.dataset.panel="principal";
+ cardSection.innerHTML='<div class="cmd-pm-card cmd-profile-universe-card" id="cmdSceneCard">'+
+  '<div class="cmd-pm-card-head"><h3>🎭 Avatar & décor</h3><button type="button" id="cmdSceneEdit" aria-label="Personnaliser mon personnage, animal et décor">✎ Personnaliser</button></div>'+
+  '<div id="cmdSceneWrap" class="cmd-pm-scene-stage" role="img" aria-label="Mon personnage et son univers personnalisé">'+
+   '<div id="cmdSceneBackdrop" class="cmd-scene-backdrop" aria-hidden="true"></div>'+
+  '</div>'+
+  '<div class="cmd-pm-scene-actions"><span>Personnage · Animal · Décor</span><button type="button" id="cmdSceneShare">↗ Partager</button></div>'+
+  '</div>';
+ // Keeping the biography in place is intentional: the new card follows it.
+ if(bio)bio.after(cardSection);
+ else {const first=main.querySelector('[data-panel="principal"]');if(first)first.after(cardSection);else main.append(cardSection)}
+ slot=$("#cmdSceneWrap",cardSection);
+ scenery=$("#cmdSceneBackdrop",cardSection);
+ const edit=$("#cmdSceneEdit",cardSection);
+ edit.onclick=e=>{e.preventDefault();e.stopPropagation();openSheet()};
+ const share=$("#cmdSceneShare",cardSection);
+ share.onclick=e=>{e.preventDefault();e.stopPropagation();void shareProfile()};
 }
+
 /* Self-contained illustrated pets instead of emoji heads in the actual scene. */
 function drawPet(kind){
  if(kind==="none")return "";
@@ -566,13 +582,13 @@ async function save(){
  finally{busy=false;btn.disabled=false;heroSave.disabled=false}
 }
 async function initialize(){
- mountBanner();
+ mountSceneCard();
  if(!slot){
   let attempts=0;
-  const retry=setInterval(()=>{mountBanner();if(slot){clearInterval(retry);initialize()}else if(++attempts>=30)clearInterval(retry)},500);
+  const retry=setInterval(()=>{mountSceneCard();if(slot){clearInterval(retry);initialize()}else if(++attempts>=30)clearInterval(retry)},500);
   return;
  }
- // The banner already provides the avatar editor entry; no floating duplicate.
+ // The independent profile card owns the editor, not the cover banner.
 
  try{
   const r=await fetch("/api/profile/scene",{credentials:"same-origin",cache:"no-store"});if(!r.ok)return;
