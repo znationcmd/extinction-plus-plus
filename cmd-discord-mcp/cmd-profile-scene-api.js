@@ -1,4 +1,5 @@
 import "./unpack-profile-assets.cjs";
+import "./cmd-generate-landscape-assets.cjs";
 import {readFileSync} from "node:fs";
 const individualUniverse=JSON.parse(readFileSync(new URL("./public/universe/v1/manifest.json",import.meta.url),"utf8"));
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
