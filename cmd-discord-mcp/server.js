@@ -4376,6 +4376,20 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);
       if(await handleCmdNativeInvites(req,res,url,{pool,auth,baseUrl,sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeAdmin}))return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/native/mark-all-read"){
+      const auth=dashboardAuth(req);
+      if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      try{
+        const data=await readFormBodyJson(req),guildId=String(data.guildId||"");
+        if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(guildId)){sendJson(res,400,{error:"Serveur invalide"});return}
+        await requireNativeMember(auth,guildId);
+        const marked=await pool.query(`INSERT INTO cmd_native_channel_reads(user_id,guild_id,channel_id,last_read_at,updated_at)
+        SELECT $1,c.guild_id,c.id,NOW(),NOW() FROM cmd_native_channels c WHERE c.guild_id=$2
+        ON CONFLICT(user_id,channel_id) DO UPDATE SET guild_id=EXCLUDED.guild_id,last_read_at=NOW(),updated_at=NOW()
+        RETURNING channel_id`,[String(auth.user.id),guildId]);
+        sendJson(res,200,{ok:true,marked:marked.rows.length});
+      }catch(e){sendJson(res,/membre/i.test(e.message)?403:400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,{guilds:await listNativeGuilds(auth)})}catch(e){sendJson(res,500,{error:e.message})}return;
