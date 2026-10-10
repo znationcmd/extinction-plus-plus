@@ -929,10 +929,93 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       if((d.errors||[]).length)toast((d.errors||[]).length+' serveur(s) non lisibles pour les webhooks',false);
     }catch(e){box.innerHTML='<h2>Webhooks du service lié</h2><p>'+esc(e.message)+'</p>'}
   }
+
+  const cmdServerTemplates=[['custom','🪄','Créer le mien'],['gaming','🎮','Gaming'],['school','📘','Club scolaire'],['study','📚','Groupe d’étude'],['friends','💗','Amis'],['art','🎨','Artistes et créateurs'],['community','🌍','Communauté locale']];
+  let cmdWizard={step:1,template:'custom',audience:'friends',name:'',icon:'',saving:false};
+  function cmdWizardStyles(){
+   if(document.getElementById('cmdServerWizardCSS'))return;
+   const css=document.createElement('style');css.id='cmdServerWizardCSS';
+   css.textContent='#addModal.cmd-server-wizard{z-index:20050!important;padding:0!important;align-items:stretch!important;background:#19191f!important}'+
+    '#addModal.cmd-server-wizard>.add-card{width:min(690px,100%)!important;max-height:100dvh!important;height:100dvh!important;border:0!important;border-radius:0!important;background:#19191f!important;overflow-y:auto!important;padding:calc(20px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom))!important}'+
+    '#addModal.cmd-server-wizard>.add-card>div:first-child:not(#addBody){display:none!important}'+
+    '#addModal .cmd-wizard-nav{display:flex;justify-content:space-between;align-items:center}'+
+    '#addModal .cmd-wizard-nav button{background:transparent;border:0;color:#fff;font-size:29px;padding:12px;cursor:pointer}'+
+    '#addModal .cmd-wizard-title{text-align:center;margin:43px 0 38px}'+
+    '#addModal .cmd-wizard-title h2{font-size:clamp(28px,6vw,38px);line-height:1.2;margin:0 0 18px}'+
+    '#addModal .cmd-wizard-title p{font-size:17px;line-height:1.5;color:#d1ccd7}'+
+    '#addModal .cmd-wizard-list{background:#28272d;border-radius:17px;overflow:hidden}'+
+    '#addModal .cmd-wizard-choice{width:100%;display:flex;align-items:center;gap:17px;min-height:72px;color:#fff;font:600 17px system-ui;text-align:left;padding:16px;background:#28272d;border:0;border-bottom:1px solid #ffffff14;cursor:pointer}'+
+    '#addModal .cmd-wizard-choice:last-child{border:0}'+
+    '#addModal .cmd-wizard-choice:hover,#addModal .cmd-wizard-choice:focus-visible{background:#41344b;outline:2px solid #827bfb;outline-offset:-2px}'+
+    '#addModal .cmd-wizard-choice span{font-size:27px}'+
+    '#addModal .cmd-wizard-hint{text-align:center;margin:28px 0;color:#aaa6b0}'+
+    '#addModal .cmd-wizard-hint button{border:0;background:none;color:#93a0ff;font:inherit;cursor:pointer}'+
+    '#addModal .cmd-wizard-file{display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:50%;width:140px;height:140px;border:3px dashed #9b95a7;margin:24px auto 30px;background:#24242d;font-size:37px;cursor:pointer;overflow:hidden}'+
+    '#addModal .cmd-wizard-file img{height:100%;width:100%;object-fit:cover}'+
+    '#addModal .cmd-wizard-name{display:grid;gap:8px;color:#ccc;font-weight:750}'+
+    '#addModal .cmd-wizard-name input{min-height:62px;border:2px solid #7e71f0!important;border-radius:14px!important;padding:15px!important;font-size:17px!important}'+
+    '#addModal .cmd-wizard-public{display:flex;align-items:center;gap:10px;margin:20px 0;color:#ccc;font-size:13px}'+
+    '#addModal .cmd-wizard-public input{width:20px;height:20px;accent-color:#5865f2}'+
+    '#addModal .cmd-wizard-submit{display:block;width:100%;min-height:60px;background:#5865f2;border:0;border-radius:14px;font-size:18px;color:#fff;font-weight:800}'+
+    '#addModal .cmd-wizard-error{min-height:22px;color:#ffd1d4;font-size:14px}';
+   document.head.append(css);
+  }
+  function cmdWizardStart(){
+   cmdWizard={step:1,template:'custom',audience:'friends',name:'',icon:'',saving:false};
+   cmdWizardStyles();qs('#addModal').classList.add('cmd-server-wizard');cmdWizardRender();
+  }
+  function cmdWizardRender(){
+   const host=qs('#addBody'),step=cmdWizard.step;
+   const nav='<nav class="cmd-wizard-nav"><button id="cmdWBack" aria-label="Retour" type="button">←</button><button id="cmdWClose" aria-label="Fermer" type="button">×</button></nav>';
+   if(step===1)host.innerHTML=nav+'<header class="cmd-wizard-title"><h2>Crée ton serveur</h2><p>Ton serveur est l’endroit où tu retrouves tes amis.<br>Crée le tien et lance une discussion.</p></header>'+
+    '<section class="cmd-wizard-list">'+cmdServerTemplates.map(t=>'<button type="button" class="cmd-wizard-choice" data-template="'+t[0]+'"><span>'+t[1]+'</span>'+t[2]+'</button>').join('')+'</section>'+
+    '<p class="cmd-wizard-hint">Tu as déjà une invitation ? <button id="cmdWJoin">Rejoindre un serveur</button></p>';
+   else if(step===2)host.innerHTML=nav+'<header class="cmd-wizard-title"><h2>Dis-nous en plus sur ton serveur</h2><p>Est-il destiné à quelques amis ou à une communauté plus importante ?</p></header>'+
+    '<section class="cmd-wizard-list"><button type="button" class="cmd-wizard-choice" data-audience="community"><span>🌍</span>Pour un club ou une communauté</button>'+
+    '<button type="button" class="cmd-wizard-choice" data-audience="friends"><span>🎮</span>Pour mes amis et moi</button></section>'+
+    '<p class="cmd-wizard-hint">Tu ne sais pas ? <button id="cmdWSkip">Ignorer cette question</button></p>';
+   else host.innerHTML=nav+'<header class="cmd-wizard-title"><h2>Crée ton serveur</h2><p>Ajoute son image et donne-lui un nom.</p></header>'+
+    '<form id="cmdWForm"><label for="cmdWFile" class="cmd-wizard-file"><span id="cmdWCamera">📷</span><img id="cmdWPreview" alt="Aperçu de l’icône" hidden></label>'+
+    '<input id="cmdWFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>'+
+    '<label class="cmd-wizard-name">Nom du serveur<input name="name" maxlength="100" required id="cmdWName" placeholder="Mon serveur CMD Sphere" value="'+esc(cmdWizard.name)+'"></label>'+
+    '<label class="cmd-wizard-public"><input type="checkbox" name="isPublic"> Afficher ce serveur dans Découvrir (facultatif)</label>'+
+    '<p class="cmd-wizard-hint">En créant ce serveur, tu acceptes les règles de CMD Sphere.</p><p id="cmdWError" class="cmd-wizard-error" role="alert"></p>'+
+    '<button class="cmd-wizard-submit" id="cmdWSubmit" type="submit">Créer un serveur</button></form>';
+   host.querySelector('#cmdWBack').onclick=()=>{if(step===1){qs('#addModal').classList.remove('cmd-server-wizard');renderAdd('menu')}else{cmdWizard.step=step-1;cmdWizardRender()}};
+   host.querySelector('#cmdWClose').onclick=closeAdd;
+   host.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>{cmdWizard.template=b.dataset.template;cmdWizard.step=2;cmdWizardRender()});
+   host.querySelectorAll('[data-audience]').forEach(b=>b.onclick=()=>{cmdWizard.audience=b.dataset.audience;cmdWizard.step=3;cmdWizardRender()});
+   if(host.querySelector('#cmdWJoin'))host.querySelector('#cmdWJoin').onclick=()=>{qs('#addModal').classList.remove('cmd-server-wizard');renderAdd('join')};
+   if(host.querySelector('#cmdWSkip'))host.querySelector('#cmdWSkip').onclick=()=>{cmdWizard.step=3;cmdWizardRender()};
+   if(step===3){
+    const image=host.querySelector('#cmdWPreview');
+    if(cmdWizard.icon){image.src=cmdWizard.icon;image.hidden=false;host.querySelector('#cmdWCamera').hidden=true}
+    host.querySelector('#cmdWName').oninput=e=>cmdWizard.name=e.target.value;
+    host.querySelector('#cmdWFile').onchange=e=>{
+     const file=e.target.files?.[0];if(!file)return;
+     if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>1500000){host.querySelector('#cmdWError').textContent='Choisis un PNG, JPEG ou WebP de moins de 1,5 Mo.';return}
+     const reader=new FileReader();reader.onload=()=>{cmdWizard.icon=String(reader.result);image.src=cmdWizard.icon;image.hidden=false;host.querySelector('#cmdWCamera').hidden=true;host.querySelector('#cmdWError').textContent=''};reader.onerror=()=>host.querySelector('#cmdWError').textContent='Image illisible';reader.readAsDataURL(file);
+    };
+    host.querySelector('#cmdWForm').onsubmit=cmdWizardSubmit;
+   }
+  }
+  async function cmdWizardSubmit(e){
+   e.preventDefault();if(cmdWizard.saving)return;
+   const form=e.currentTarget,name=String(new FormData(form).get('name')||'').trim(),isPublic=form.elements.isPublic.checked;
+   const error=qs('#cmdWError'),button=qs('#cmdWSubmit');
+   if(!name){error.textContent='Le nom du serveur est obligatoire.';return}
+   button.disabled=true;cmdWizard.saving=true;button.textContent='Création en cours…';
+   try{
+    const result=await api('/api/native/guilds',{method:'POST',body:JSON.stringify({name,isPublic,template:cmdWizard.template,audience:cmdWizard.audience})});
+    const guild=result.guild;if(!guild?.id)throw Error('Identifiant du serveur manquant');
+    if(cmdWizard.icon){try{await api('/api/native/server-identity',{method:'POST',body:JSON.stringify({guildId:guild.id,name,isPublic,iconDataUrl:cmdWizard.icon})})}catch(err){toast('Serveur créé, icône non enregistrée : '+err.message,false)}}
+    closeAdd();location.assign('/dashboard?openNative='+encodeURIComponent(guild.id));
+   }catch(err){error.textContent='Création impossible : '+err.message;button.disabled=false;button.textContent='Réessayer';cmdWizard.saving=false}
+  }
   function openAdd(view='menu'){qs('#addModal').classList.add('on');renderAdd(view)}
-  function closeAdd(){qs('#addModal').classList.remove('on')}
-  function renderAdd(view){const box=qs('#addBody');if(view==='menu'){box.innerHTML='<h2>Ajouter un serveur</h2><p class="muted">Comme sur une application communautaire classique.</p><div class="add-grid"><button class="btn add-choice" onclick="renderAdd(\'create\')"><b>＋ Créer un serveur</b><br><small>Nouvel espace CMD Sphere</small></button><button class="btn add-choice" onclick="renderAdd(\'join\')"><b>🔗 J’ai une invitation</b><br><small>Rejoindre par lien ou code</small></button><button class="btn add-choice" onclick="renderAdd(\'discover\')"><b>◎ Découvrir</b><br><small>Voir les serveurs publics</small></button><button class="btn add-choice" onclick="renderAdd(\'import\')"><b>⬇ Importer Discord</b><br><small>Copier salons, rôles et permissions</small></button></div>';return}if(view==='create'){box.innerHTML='<h2>Créer un serveur CMD Sphere</h2><form id="createNative"><p><input name="name" required maxlength="100" placeholder="Nom du serveur"></p><label><input type="checkbox" name="isPublic" style="width:auto"> Visible dans Découvrir</label><p><button class="btn primary">Créer</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#createNative').onsubmit=createNative;return}if(view==='join'){box.innerHTML='<h2>Rejoindre un serveur</h2><form id="joinNative"><p><input name="invite" required placeholder="Lien ou code d’invitation CMD Sphere"></p><p><button class="btn primary">Rejoindre</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#joinNative').onsubmit=joinNative;return}if(view==='discover'){box.innerHTML='<h2>Découvrir</h2><div id="discoverNative"><p class="muted">Chargement…</p></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadDiscover();return}if(view==='import'){box.innerHTML='<h2>Importer depuis un service externe</h2><p class="muted">Tous les Discord dont tu es propriétaire sont importés. Avec un bot CMD : structure complète. Sans bot : nom + icône, structure à synchroniser plus tard.</p><p><a class="btn primary" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mon compte Discord</a></p><button class="btn" onclick="importAll()">Relancer l’import depuis les données déjà synchronisées</button><div id="importList"></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadImports();return}}
-  async function createNative(e){e.preventDefault();const f=new FormData(e.currentTarget);try{await api('/api/native/guilds',{method:'POST',body:JSON.stringify({name:f.get('name'),isPublic:f.get('isPublic')==='on'})});closeAdd();await loadGuilds();toast('Serveur CMD Sphere créé')}catch(x){toast(x.message,false)}}
+  function closeAdd(){qs('#addModal').classList.remove('on','cmd-server-wizard')}
+  function renderAdd(view){if(view!=='create')qs('#addModal').classList.remove('cmd-server-wizard');const box=qs('#addBody');if(view==='menu'){box.innerHTML='<h2>Ajouter un serveur</h2><p class="muted">Comme sur une application communautaire classique.</p><div class="add-grid"><button class="btn add-choice" onclick="renderAdd(\'create\')"><b>＋ Créer un serveur</b><br><small>Nouvel espace CMD Sphere</small></button><button class="btn add-choice" onclick="renderAdd(\'join\')"><b>🔗 J’ai une invitation</b><br><small>Rejoindre par lien ou code</small></button><button class="btn add-choice" onclick="renderAdd(\'discover\')"><b>◎ Découvrir</b><br><small>Voir les serveurs publics</small></button><button class="btn add-choice" onclick="renderAdd(\'import\')"><b>⬇ Importer Discord</b><br><small>Copier salons, rôles et permissions</small></button></div>';return}if(view==='create'){cmdWizardStart();return}if(view==='join'){box.innerHTML='<h2>Rejoindre un serveur</h2><form id="joinNative"><p><input name="invite" required placeholder="Lien ou code d’invitation CMD Sphere"></p><p><button class="btn primary">Rejoindre</button> <button type="button" class="btn" onclick="renderAdd(\'menu\')">Retour</button></p></form>';qs('#joinNative').onsubmit=joinNative;return}if(view==='discover'){box.innerHTML='<h2>Découvrir</h2><div id="discoverNative"><p class="muted">Chargement…</p></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadDiscover();return}if(view==='import'){box.innerHTML='<h2>Importer depuis un service externe</h2><p class="muted">Tous les Discord dont tu es propriétaire sont importés. Avec un bot CMD : structure complète. Sans bot : nom + icône, structure à synchroniser plus tard.</p><p><a class="btn primary" href="/dashboard-login?link=1&next=/dashboard?sync=1">↻ Synchroniser mon compte Discord</a></p><button class="btn" onclick="importAll()">Relancer l’import depuis les données déjà synchronisées</button><div id="importList"></div><p><button class="btn" onclick="renderAdd(\'menu\')">Retour</button></p>';loadImports();return}}
+
   function joinNative(e){e.preventDefault();let v=String(new FormData(e.currentTarget).get('invite')||'').trim();try{if(v.includes('/invite/'))v=new URL(v).pathname.split('/').filter(Boolean).pop()}catch{}if(v)location.href='/invite/'+encodeURIComponent(v)}
   async function loadDiscover(){try{const d=await api('/api/native/discover');qs('#discoverNative').innerHTML=(d.guilds||[]).map(g=>'<div class="native-box"><strong>'+esc(g.name)+'</strong><small>'+Number(g.member_count||0)+' membre(s)</small><p><a class="btn primary" href="'+esc(g.inviteUrl)+'">Rejoindre</a></p></div>').join('')||'<p class="muted">Aucun serveur public.</p>'}catch(x){toast(x.message,false)}}
   async function loadImports(){try{const d=await api('/api/dashboard/guilds');qs('#importList').innerHTML=(d.guilds||[]).map(g=>'<div class="native-box"><strong>'+esc(g.name)+'</strong><small>'+(g.installed?'Bot CMD disponible':'Aucun bot CMD installé')+'</small>'+(g.installed?'<p><button class="btn" onclick="importOne(\''+esc(g.id)+'\')">Importer</button></p>':'')+'</div>').join('')}catch(x){toast(x.message,false)}}
