@@ -215,3 +215,27 @@ body.csm-server-menu-open{overflow:hidden!important}
  #csm-server-menu .csm-server-menu-server .csm-server-menu-icon{width:64px!important;height:64px!important}
  #csm-server-menu .csm-server-menu-quick button b{height:52px!important}
 }
+
+/* Per-server notification and event subpanels. */
+#csm-server-menu .csm-server-menu-action-pane{
+ position:relative;display:grid;gap:9px;background:#33313b;border:1px solid #ffffff22;
+ padding:17px 15px;margin:11px 0 18px;border-radius:16px;box-shadow:0 8px 25px #0003;
+}
+#csm-server-menu .csm-server-menu-action-pane h3{font:800 17px system-ui;margin:0 0 4px!important;color:#fff}
+#csm-server-menu .csm-server-menu-action-pane p{color:#c7c4cd;font:13px/1.4 system-ui;margin:2px 0 8px}
+#csm-server-menu .csm-server-menu-action-pane label{display:grid;gap:5px;font:600 14px system-ui;color:#f4f0f7;padding:8px 1px}
+#csm-server-menu .csm-server-menu-action-pane label:has(input[type="radio"]){display:flex;align-items:center;gap:10px}
+#csm-server-menu .csm-server-menu-action-pane input:not([type="radio"]){
+ width:100%;min-height:43px;border:1px solid #736779;border-radius:10px;
+ background:#201b25;color:white;padding:10px 11px;box-sizing:border-box;
+}
+#csm-server-menu .csm-server-menu-action-pane input[type="radio"]{accent-color:#af70df;min-width:20px;min-height:20px}
+#csm-server-menu .csm-server-menu-action-pane button,
+#csm-server-menu .csm-server-menu-action-pane form button{
+ width:100%!important;min-height:44px!important;
+ border-radius:11px!important;display:flex!important;justify-content:center!important;
+ color:white!important;background:#75449c!important;margin-top:8px!important;
+}
+#csm-server-menu .csm-server-menu-action-pane button.csm-server-pane-back{background:#49414d!important}
+#csm-server-menu .csm-server-event-list{display:grid;gap:5px;margin:7px 0}
+#csm-server-menu .csm-server-event-list p{margin:4px 0;background:#29242e;padding:10px;border-radius:10px}
