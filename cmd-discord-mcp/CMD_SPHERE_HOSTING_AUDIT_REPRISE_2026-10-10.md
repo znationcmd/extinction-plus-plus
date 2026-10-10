@@ -84,3 +84,17 @@ Date : 10 octobre 2026. Document de continuité pour reprendre **les projets exi
 6. À chaque étape renseigner commit, déploiement, fichiers, nombre de fichiers HD réellement installés, tests exacts et blocages. « Railway SUCCESS » n’est jamais « tout marche ».
 
 **Ce fichier est le point de reprise à consulter avant chaque nouvelle session ou handoff Work.**
+
+
+## Contrôle complémentaire du 10 octobre — images originales et iPhone
+**Archives récupérées dans la bibliothèque**, vérifiées localement en lecture seule :
+- `CMD_Sphere_62_Fonds_Horizontaux_Nets.zip` : **62 fonds WEBP 1920×1080**, **62 miniatures 640×360**, manifeste additionnel (125 éléments au total). Dimensions vérifiées sur pixels, netteté HD native non démontrée.
+- `CMD_Sphere_54_fonds_individuels_sans_doublons.zip` : **53 images WEBP verticales lisibles** (984×1362/1365) et un élément vide ; ne jamais annoncer 54 images valides.
+- Inventaire conservatoire d’archives : **619 éléments graphiques** exactement, soit 68 avatars, 360 accessoires, 62 fonds horizontaux, 62 miniatures, 53 fonds verticaux, 14 planches de scènes. Les animaux/véhicules/maisons peuvent se trouver dans les catalogues encodés séparés et **ne sont pas inclus dans ce total**.
+- Les anciennes images avatar/accessoires sont en RGB sans canal alpha dans l’inventaire : elles **ne sont pas** des avatars transparents HD achevés. Préserver les fichiers originaux et les choix en base.
+- Vérifier attentivement le mapping des IDs `cmd-fond` (archive source) vs `cmd-restored` (archive restaurée dans GitHub) avant toute modification. Ne jamais remplacer les anciens IDs en base par supposition.
+**Progrès iPhone réalisés dans GitHub** :
+- `ad09e3982085ded6fb9508adcbcfaf246ecb17a3` : code `cmd-hosting-panel.js` corrigé pour une carte pleine largeur sur le profil, CSS masquant le sélecteur de langue durant les modales, version d’assets renouvelée. Code fusionné ; à tester sur iPhone après Railway SUCCESS.
+- PR 12 (`cmd-sphere/roles-invitations-ux-20261010`) : bouton « Inviter quelqu’un » dans les rôles et membres lorsque le serveur ne contient encore que le propriétaire. Redirection vers le vrai gestionnaire d’invitations native. À fusionner seulement quand Railway est à nouveau stable et sans déploiement en cours.
+- Le précédent commit `6bb29646bee2eba460161d599ad064c99bf3507f` a bien atteint SUCCESS avec démarrage valide : création mobile en trois étapes en production, à tester fonctionnellement avec un compte connecté.
+**Limites :** le site public Railway et les pages authentifiées n’ont pas été testés dans un navigateur iPhone réel depuis cette session. Aucun résultat n'est annoncé « TERMINÉ ET TESTÉ » pour les interactions.
