@@ -315,6 +315,7 @@ document.addEventListener("error",event=>{
   const pathname=new URL(img.src,location.href).pathname;
   if(/^\/avatars\/v4\/(?:thumbs\/)?avatar-[0-9]{2}\.webp$/.test(pathname))
    original=pathname.replace("/avatars/v4/thumbs/","/avatars/v3/").replace("/avatars/v4/","/avatars/v3/").replace(/\.webp$/,".png");
+  else if(/^\/cmd-restored-fonds\/thumb_[a-z0-9_]+\.webp$/.test(pathname))original=pathname.replace("/cmd-restored-fonds/thumb_","/cmd-restored-fonds/");
   else if(/^\/universe\/v2\/(?:thumbs\/)?(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(pathname))
    original=pathname.replace("/universe/v2/thumbs/","/universe/v1/").replace("/universe/v2/","/universe/v1/").replace(/\.webp$/,pathname.includes("/scene-")?".webp":".png");
  }catch{}
@@ -443,7 +444,7 @@ async function loadSupplementalScenes(){
 void loadSupplementalScenes();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
-   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-hd-scene-thumb">'+(sceneReferenceIndex(value)>=0?'<img class="cmd-scene-thumb-image" loading="lazy" decoding="async" src="'+escape(sceneTiles[sceneReferenceIndex(value)])+'" alt="'+escape(name)+'">':'<span class="cmd-scene-choice-symbol">'+(icon||'✦')+'</span>')+'</div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
+   const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-hd-scene-thumb">'+(sceneReferenceIndex(value)>=0?'<img class="cmd-scene-thumb-image" loading="lazy" decoding="async" src="'+escape(sceneTiles[sceneReferenceIndex(value)].replace("/cmd-restored-fonds/","/cmd-restored-fonds/thumb_"))+'" alt="'+escape(name)+'">':'<span class="cmd-scene-choice-symbol">'+(icon||'✦')+'</span>')+'</div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
    return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup.replaceAll('/universe/v2/','/universe/v2/thumbs/')+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
