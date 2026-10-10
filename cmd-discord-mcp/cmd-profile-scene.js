@@ -414,6 +414,33 @@ function applyOriginalSheets(){
  if(typeof state!=="undefined"&&sceneReferenceIndex(state.scene)>=0)present();
 }
 loadOriginalSheets();
+// Recovered 62 landscape backgrounds: add choices without ever replacing any old ID.
+async function loadSupplementalScenes(){
+ try{
+  const response=await fetch("/cmd-restored-fonds/manifest.json",{credentials:"same-origin",cache:"no-store"});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const incoming=await response.json();
+  if(!Array.isArray(incoming))throw Error("Invalid supplemental scene manifest");
+  let added=0;
+  for(const item of incoming){
+   if(!item||typeof item.id!=="string"||!/^cmd-restored-[a-z0-9-]+$/.test(item.id))continue;
+   if(typeof item.src!=="string"||!/^\/cmd-restored-fonds\/[a-z0-9_]+\.webp$/.test(item.src))continue;
+   if(individualUniverse.scenes.some(x=>x.id===item.id))continue;
+   const entry={id:item.id,label:String(item.label||"Décor supplémentaire").slice(0,85),src:item.src,width:1920,height:1080};
+   individualUniverse.scenes.push(entry);
+   universeAssets.set(entry.id,entry);
+   scenes.push([entry.id,entry.label,""]);
+   sceneTiles.push(entry.src);
+   added++;
+  }
+  if(added){
+   if(sheet&&!sheet.hidden&&sheet.querySelector('[data-scene-tab="scene"].selected')){renderSheet("scene");refreshEditor();}
+   if(sceneReferenceIndex(state.scene)>=0)present();
+   console.info("[CMD Sphere] "+added+" additional scene choices ready");
+  }
+ }catch(error){console.warn("[CMD Sphere supplemental scenes]",error)}
+}
+void loadSupplementalScenes();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
    const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-hd-scene-thumb">'+(sceneReferenceIndex(value)>=0?'<img class="cmd-scene-thumb-image" loading="lazy" decoding="async" src="'+escape(sceneTiles[sceneReferenceIndex(value)])+'" alt="'+escape(name)+'">':'<span class="cmd-scene-choice-symbol">'+(icon||'✦')+'</span>')+'</div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
