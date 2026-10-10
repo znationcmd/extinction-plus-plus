@@ -27,7 +27,9 @@ const legacyVehicleImages={"compact": "/universe/v1/vehicle-001.png", "sportscar
 pets.splice(0,pets.length,["none","Aucun",""] ,...individualUniverse.pets.map(x=>[x.id,x.label,""]));
 vehicles.splice(0,vehicles.length,["none","Aucun véhicule",""] ,...individualUniverse.vehicles.map(x=>[x.id,x.label,""]));
 homes.splice(0,homes.length,["none","Aucune maison",""] ,...individualUniverse.homes.map(x=>[x.id,x.label,""]));
-scenes.splice(0,scenes.length,["none","Sans décor",""] ,...individualUniverse.scenes.map(x=>[x.id,x.label,""]));
+// Preserve identifiers while placing truly sharp SVG wallpapers at the top of the catalogue.
+const cmdOrderedScenes=[...individualUniverse.scenes.filter(x=>x.id.startsWith("cmd-hd-")),...individualUniverse.scenes.filter(x=>!x.id.startsWith("cmd-hd-"))];
+scenes.splice(0,scenes.length,["none","Sans décor",""] ,...cmdOrderedScenes.map(x=>[x.id,x.label,""]));
 const petImages={cat:"https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=300&fit=crop",fox:"https://images.unsplash.com/photo-1474511320723-9a56873867b5?w=300&fit=crop",horse:"https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=300&fit=crop",bird:"https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=300&fit=crop",duck:"https://images.unsplash.com/photo-1555852095-64e7428df0fa?w=300&fit=crop",flamingo:"https://images.unsplash.com/photo-1497206365907-f5e630693df0?w=300&fit=crop",stork:"https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&fit=crop",dog:"https://images.unsplash.com/photo-1552053831-71594a27632d?w=300&fit=crop",rabbit:"https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=300&fit=crop",wolf:"",turtle:"https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=300&fit=crop"};
 const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"]);
 const originalPetIndex={dog:4,cat:8,"dog-spotted":1,"dog-golden":5,"dog-husky":17,"dog-puppy":11,"cat-tabby":8,"cat-blue":9,"cat-ginger":13,"cat-black":14,"cat-siamese":7,"dog-bulldog":10,"dog-terrier":3,"dog-shepherd":2,"dog-pug":19};
