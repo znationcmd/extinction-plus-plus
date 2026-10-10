@@ -61,6 +61,31 @@ test("@everyone remains automatic and cannot be assigned as an explicit role",as
  await assert.rejects(()=>db.fn({user:{id:"owner"}},{guildId:gid,userId:"owner",roleId}),/@everyone/);
  assert.equal(db.mutations,0);
 });
+test("Joined members inherit @everyone permissions even without assigned custom roles",async()=>{
+ const start=server.indexOf("async function effectiveNativePermissions(userId,guildId){");
+ const end=server.indexOf("async function requireNativePermission(",start);
+ assert.ok(start>=0&&end>start);
+ let sql="",called=0;
+ const pool={query:async(q)=>{sql=q;called++;return{rows:[{permissions:{viewChannels:true,sendMessages:true}}]}}};
+ const member=async()=>({membership_role:"member"});
+ const fn=vm.runInNewContext("(function(pool,nativeMembership){"+server.slice(start,end)+";return effectiveNativePermissions})")(pool,member);
+ const granted=await fn("alice",gid);
+ assert.equal(granted.viewChannels,true);
+ assert.equal(granted.sendMessages,true);
+ assert.match(sql,/@everyone/);
+ assert.equal(called,1);
+});
+test("Owner retains administrator privileges even with no custom roles",async()=>{
+ const start=server.indexOf("async function effectiveNativePermissions(userId,guildId){");
+ const end=server.indexOf("async function requireNativePermission(",start);
+ const pool={query:async()=>{throw Error("Owner bypass should not require role lookup")}};
+ const member=async()=>({membership_role:"owner"});
+ const fn=vm.runInNewContext("(function(pool,nativeMembership){"+server.slice(start,end)+";return effectiveNativePermissions})")(pool,member);
+ const granted=await fn("owner",gid);
+ assert.equal(granted.administrator,true);
+ assert.equal(granted.manageRoles,true);
+ assert.equal(granted.manageChannels,true);
+});
 test("Owner self-role shortcut remains visible and uses server-side role API",()=>{
  assert.ok(roleUI.includes("M’attribuer ce rôle"));
  assert.ok(roleUI.includes("Retirer ce rôle de mon profil"));
