@@ -20,9 +20,58 @@ export async function initCmdPromos(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_promos(id UUID PRIMARY KEY, guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE, owner_user_id TEXT NOT NULL, title VARCHAR(100) NOT NULL, format VARCHAR(30) NOT NULL, kind VARCHAR(20) NOT NULL DEFAULT 'video', media BYTEA NOT NULL, bytes INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
  await pool.query("ALTER TABLE cmd_sphere_promos ADD COLUMN IF NOT EXISTS music_credit JSONB NOT NULL DEFAULT '{}'::jsonb");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_promos_guild_idx ON cmd_sphere_promos(guild_id,created_at DESC)");
+ await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_profile_videos(id UUID PRIMARY KEY, user_id TEXT NOT NULL, profile_guild TEXT NOT NULL DEFAULT '', title VARCHAR(100) NOT NULL, format VARCHAR(30) NOT NULL, kind VARCHAR(20) NOT NULL DEFAULT 'story', media BYTEA NOT NULL, bytes INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+ await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_profile_videos_idx ON cmd_sphere_profile_videos(user_id,profile_guild,created_at DESC)");
 }
 export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
  const path=url.pathname;
+ if(path.startsWith("/api/cmd-profile-videos")){
+   const media=/^\/api\/cmd-profile-videos\/media\/([0-9a-f-]{36})$/i.exec(path);
+   if(media&&req.method==="GET"){
+     if(!UUID.test(media[1])){send(res,400,{error:"Vidéo incorrecte"});return true}
+     const q=await pool.query("SELECT media,format FROM cmd_sphere_profile_videos WHERE id=$1 LIMIT 1",[media[1]]);
+     if(!q.rows.length){send(res,404,{error:"Vidéo introuvable"});return true}
+     const bytes=q.rows[0].media,total=bytes.length,range=String(req.headers.range||"");
+     if(range){
+       const parts=/^bytes=(\d*)-(\d*)$/.exec(range);
+       if(!parts||(!parts[1]&&!parts[2])){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return true}
+       let start=parts[1]?Number(parts[1]):Math.max(0,total-Number(parts[2])),end=parts[2]&&parts[1]?Number(parts[2]):total-1;
+       if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>=total||end<start){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return true}
+       end=Math.min(end,total-1);res.writeHead(206,{"content-type":q.rows[0].format,"content-length":end-start+1,"content-range":"bytes "+start+"-"+end+"/"+total,"accept-ranges":"bytes","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes.subarray(start,end+1));return true;
+     }
+     res.writeHead(200,{"content-type":q.rows[0].format,"content-length":total,"accept-ranges":"bytes","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes);return true;
+   }
+   if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere"});return true}
+   const user=String(auth.user.id),scoped=txt(url.searchParams.get("server"),64),scope=UUID.test(scoped)?scoped:"";
+   if(req.method==="GET"&&path==="/api/cmd-profile-videos"){
+     const q=await pool.query("SELECT id,title,format,kind,bytes,created_at FROM cmd_sphere_profile_videos WHERE user_id=$1 AND profile_guild=$2 ORDER BY created_at DESC LIMIT 24",[user,scope]);
+     send(res,200,{items:q.rows.map(v=>({...v,mediaUrl:"/api/cmd-profile-videos/media/"+v.id}))});return true;
+   }
+   if(req.method==="POST"&&path==="/api/cmd-profile-videos"){
+     const rawGuild=txt(req.headers["x-cmd-profile-guild"],64),guild=UUID.test(rawGuild)?rawGuild:"";
+     const mime=txt(String(req.headers["content-type"]||"").split(";")[0],40),title=txt(req.headers["x-cmd-title"],100)||"Ma vidéo",kind=txt(req.headers["x-cmd-kind"],20)||"story";
+     if(rawGuild&&!guild){send(res,400,{error:"Profil de serveur invalide"});return true}
+     if(guild){const member=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[guild,user]);if(!member.rows.length){send(res,403,{error:"Tu dois appartenir à ce serveur"});return true}}
+     if(!MIME.has(mime)){send(res,415,{error:"Format de vidéo/image non accepté"});return true}
+     const count=await pool.query("SELECT COUNT(*)::int AS total FROM cmd_sphere_profile_videos WHERE user_id=$1 AND profile_guild=$2",[user,guild]);
+     if(Number(count.rows[0]?.total||0)>=24){send(res,409,{error:"24 vidéos maximum par profil. Supprime une ancienne vidéo."});return true}
+     const chunks=[];let size=0,overflow=false;
+     for await(const chunk of req){size+=chunk.length;if(size>MAX_MEDIA){overflow=true;break}chunks.push(chunk)}
+     if(overflow){req.resume();send(res,413,{error:"Fichier supérieur à 60 Mo"});return true}
+     const bytes=Buffer.concat(chunks);
+     if(!fileValid(bytes,mime)){send(res,400,{error:"Fichier invalide"});return true}
+     const id=crypto.randomUUID();
+     await pool.query("INSERT INTO cmd_sphere_profile_videos(id,user_id,profile_guild,title,format,kind,media,bytes) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,user,guild,title,mime,kind,bytes,bytes.length]);
+     send(res,201,{id,ok:true,mediaUrl:"/api/cmd-profile-videos/media/"+id});return true;
+   }
+   const del=/^\/api\/cmd-profile-videos\/([0-9a-f-]{36})$/i.exec(path);
+   if(req.method==="DELETE"&&del){
+     if(!UUID.test(del[1])){send(res,400,{error:"Vidéo invalide"});return true}
+     const q=await pool.query("DELETE FROM cmd_sphere_profile_videos WHERE id=$1 AND user_id=$2 RETURNING id",[del[1],user]);
+     send(res,q.rows.length?200:404,q.rows.length?{ok:true}:{error:"Vidéo introuvable"});return true;
+   }
+   send(res,405,{error:"Méthode non autorisée"});return true;
+ }
  if(!path.startsWith("/api/cmd-promos")&&!path.startsWith("/pub/"))return false;
  const match=/^\/(?:api\/cmd-promos\/file|pub)\/([0-9a-f-]{36})$/i.exec(path);
  if(match){
