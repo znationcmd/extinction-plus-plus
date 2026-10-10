@@ -155,3 +155,63 @@
  justify-content:center!important;
 }
 #csm-server-menu #csmMenuStatus{text-align:center;font:12px system-ui;color:#c8bccf}
+
+/* CMD Sphere server action sheet — separated icon/name, grouped actions, iPhone safe area. */
+body.csm-server-menu-open{overflow:hidden!important}
+#csm-server-menu{z-index:14000!important;touch-action:pan-y}
+#csm-server-menu .csm-server-menu-body{
+ width:min(730px,100%)!important;padding:0 16px calc(17px + env(safe-area-inset-bottom))!important;
+ max-height:min(94dvh,990px)!important;overscroll-behavior:contain!important;
+ border-radius:26px 26px 0 0!important;background:#25242a!important;
+}
+#csm-server-menu .csm-server-menu-shade{background:#08040cc7!important}
+#csm-server-menu .csm-server-menu-handle{margin:12px auto 15px!important;position:relative;z-index:2}
+#csm-server-menu .csm-server-cover{
+ height:85px!important;margin:-35px -16px 13px!important;background-size:cover!important;
+ background-position:center!important;border:0!important;
+}
+#csm-server-menu .csm-server-menu-server{
+ display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;column-gap:14px!important;
+ row-gap:5px!important;text-align:left!important;align-items:center!important;
+ padding:10px 2px 19px!important;
+}
+#csm-server-menu .csm-server-menu-server .csm-server-menu-icon{
+ grid-row:span 2;display:block!important;width:74px!important;height:74px!important;
+ border-radius:18px!important;object-fit:cover!important;object-position:center!important;
+ margin:0!important;overflow:hidden!important;
+}
+#csm-server-menu .csm-server-menu-server span.csm-server-menu-icon{display:grid!important;place-items:center!important}
+#csm-server-menu .csm-server-menu-server h3{
+ font-size:18px!important;line-height:1.25!important;grid-column:2!important;
+ align-self:end;margin:0!important;
+}
+#csm-server-menu .csm-server-menu-server p{
+ font-size:12px!important;font-weight:500!important;
+ grid-column:2!important;align-self:start;
+ line-height:1.45!important;margin:0!important;color:#b9b6c2!important;
+}
+#csm-server-menu .csm-server-kind{background:#45414b;padding:3px 7px;border-radius:18px;font-size:11px}
+#csm-server-menu .csm-server-menu-quick{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important}
+#csm-server-menu .csm-server-menu-quick button b{
+ width:min(60px,100%)!important;height:57px!important;border-radius:18px!important;
+ background:#3b3942!important;font-weight:800!important;font-size:27px!important;
+}
+#csm-server-menu .csm-server-menu-quick button:active b{background:#51465e!important}
+#csm-server-menu .csm-server-menu-quick button small{font-size:12px!important}
+#csm-server-menu .csm-server-menu-list{background:#323138!important;margin:11px 0 16px!important}
+#csm-server-menu .csm-server-menu-list button,
+#csm-server-menu .csm-server-menu-list a{
+ min-height:64px!important;justify-content:flex-start!important;gap:13px!important;
+ padding:13px 17px!important;
+}
+#csm-server-menu .csm-server-row-ico{flex:0 0 27px;font:700 23px/1 system-ui;text-align:center;color:#f0ebf7}
+#csm-server-menu .csm-server-row-name{flex:1!important;min-width:0!important}
+#csm-server-menu .csm-server-chevron{color:#aaa7af;font-size:29px!important;font-weight:300!important}
+#csm-server-menu #csmMenuStatus{line-height:1.45!important}
+@media(max-width:420px){
+ #csm-server-menu .csm-server-menu-body{padding-left:12px!important;padding-right:12px!important}
+ #csm-server-menu .csm-server-cover{margin-left:-12px!important;margin-right:-12px!important}
+ #csm-server-menu .csm-server-menu-server{grid-template-columns:67px minmax(0,1fr)!important;column-gap:11px!important}
+ #csm-server-menu .csm-server-menu-server .csm-server-menu-icon{width:64px!important;height:64px!important}
+ #csm-server-menu .csm-server-menu-quick button b{height:52px!important}
+}
