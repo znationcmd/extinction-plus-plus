@@ -35,15 +35,27 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
    const media=/^\/api\/cmd-profile-videos\/media\/([0-9a-f-]{36})$/i.exec(path);
    if(media&&req.method==="GET"){
      if(!UUID.test(media[1])){send(res,400,{error:"Vidéo incorrecte"});return true}
-     const q=await pool.query("SELECT media,format FROM cmd_sphere_profile_videos WHERE id=$1 LIMIT 1",[media[1]]);
+     const q=await pool.query("SELECT media,format,user_id,profile_guild FROM cmd_sphere_profile_videos WHERE id=$1 LIMIT 1",[media[1]]);
      if(!q.rows.length){send(res,404,{error:"Vidéo introuvable"});return true}
-     const bytes=q.rows[0].media,total=bytes.length,range=String(req.headers.range||"");
+     const item=q.rows[0],guild=String(item.profile_guild||""),viewer=String(auth?.user?.id||"");
+     if(guild){
+       if(!viewer){send(res,401,{error:"Connexion nécessaire pour cette vidéo privée"});return true}
+       if(viewer!==String(item.user_id)){
+         let membership=false;
+         if(UUID.test(guild)){
+           const allowed=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[guild,viewer]);
+           membership=!!allowed.rows.length;
+         }else membership=Array.isArray(auth?.guildIds)&&auth.guildIds.some(g=>String(g)===guild);
+         if(!membership){send(res,403,{error:"Vidéo réservée aux membres de ce serveur"});return true}
+       }
+     }
+     const bytes=item.media,total=bytes.length,range=String(req.headers.range||"");
      if(range){
        const parts=/^bytes=(\d*)-(\d*)$/.exec(range);
        if(!parts||(!parts[1]&&!parts[2])){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return true}
        let start=parts[1]?Number(parts[1]):Math.max(0,total-Number(parts[2])),end=parts[2]&&parts[1]?Number(parts[2]):total-1;
        if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>=total||end<start){res.writeHead(416,{"content-range":"bytes */"+total});res.end();return true}
-       end=Math.min(end,total-1);res.writeHead(206,{"content-type":q.rows[0].format,"content-length":end-start+1,"content-range":"bytes "+start+"-"+end+"/"+total,"accept-ranges":"bytes","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes.subarray(start,end+1));return true;
+       end=Math.min(end,total-1);res.writeHead(206,{"content-type":q.rows[0].format,"content-length":end-start+1,"content-range":"bytes "+start+"-"+end+"/"+total,"accept-ranges":"bytes","cache-control":guild?"private, no-store":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes.subarray(start,end+1));return true;
      }
      res.writeHead(200,{"content-type":q.rows[0].format,"content-length":total,"accept-ranges":"bytes","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes);return true;
    }
@@ -52,7 +64,11 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
 
    // Studio feed: public personal videos only. Videos scoped to a private server never enter this feed.
    if(req.method==="GET"&&path==="/api/cmd-profile-videos/feed"){
-     const mode=url.searchParams.get("mode")==="following"?"following":"all";
+     const requestedMode=url.searchParams.get("mode");
+     const mode=["following","creator"].includes(requestedMode)?requestedMode:"all";
+     const creatorParam=txt(url.searchParams.get("creator"),100);
+     const creator=creatorParam==="me"?user:creatorParam;
+     if(mode==="creator"&&!/^[a-z0-9-]{1,100}$/i.test(creator)){send(res,400,{error:"Créateur incorrect"});return true}
      const offset=Math.min(500,Math.max(0,parseInt(url.searchParams.get("offset")||"0",10)||0));
      const focus=txt(url.searchParams.get("video"),50);
      if(focus&&!UUID.test(focus)){send(res,400,{error:"Vidéo incorrecte"});return true}
@@ -63,9 +79,10 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
        "EXISTS(SELECT 1 FROM cmd_sphere_studio_likes l WHERE l.video_id=p.id AND l.user_id=$2) AS liked,"+
        "EXISTS(SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.followed_id=p.user_id AND f.follower_id=$2) AS following "+
        "FROM cmd_sphere_profile_videos p LEFT JOIN cmd_sphere_studio_authors a ON a.user_id=p.user_id "+
-       "WHERE p.profile_guild='' AND p.format LIKE 'video/%' AND ($1='all' OR EXISTS (SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.follower_id=$2 AND f.followed_id=p.user_id)) "+
+       "WHERE p.profile_guild='' AND p.format LIKE 'video/%' "+
+       "AND ($1='all' OR ($1='creator' AND p.user_id=$6) OR ($1='following' AND EXISTS (SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.follower_id=$2 AND f.followed_id=p.user_id))) "+
        "AND ($5::uuid IS NULL OR p.id=$5) ORDER BY p.created_at DESC LIMIT $3 OFFSET $4",
-       [mode,user,12,offset,focus||null]
+       [mode,user,12,offset,focus||null,creator]
      );
      send(res,200,{items:q.rows.map(v=>({...v,mediaUrl:"/api/cmd-profile-videos/media/"+v.id,own:v.user_id===user})),nextOffset:offset+q.rows.length,hasMore:q.rows.length===12});return true;
    }
