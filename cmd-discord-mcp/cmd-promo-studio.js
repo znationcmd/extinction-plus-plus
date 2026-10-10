@@ -69,11 +69,10 @@ function open(context={}){
  const camera=document.createElement("input");camera.type="file";camera.id="cmdStudioCameraCapture";
  camera.setAttribute("accept","video/*,image/*");camera.setAttribute("capture","environment");camera.hidden=true;root.append(camera);
  camera.onchange=e=>{addFiles(e.target.files);camera.value="";showTool("media")};
- const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioStory">Ta Story</button><button type="button" id="cmdStudioNext">Suivant</button>';root.append(bottom);
+ const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioLocalSave" aria-label="Enregistrer la création sur mon appareil">↓ Enregistrer sur mon appareil</button>';root.append(bottom);
  $("#cmdStudioHideTool",root).onclick=closeTool;
  $$("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
- $("#cmdStudioNext",root).onclick=()=>showTool("publish");
- $("#cmdStudioStory",root).onclick=publishStory;
+ $("#cmdStudioLocalSave",root).onclick=saveLocally;
  for(const [handle,x,y] of [[textHandle,"textX","textY"],[stickerHandle,"stickerX","stickerY"]]){
   handle.addEventListener("pointerdown",e=>{e.preventDefault();handle.setPointerCapture(e.pointerId);handle.dataset.dragging="true"});
   handle.addEventListener("pointermove",e=>{
@@ -142,23 +141,17 @@ function updateDragHandles(){
   el.style.left=100*(state[x]||.5)+"%";el.style.top=100*(state[y]||.5)+"%";
  }
 }
-async function publishStory(){
- if(!root)return;
- if(!clips.length&&!String(state.headline||"").trim()&&!String(state.emoji||"").trim()){
-  showTool("media");note("Ajoute une photo, une vidéo ou du texte pour créer ta Story.");return;
- }
- const btn=$("#cmdStudioStory");btn.disabled=true;
+async function saveLocally(){
+ const button=$("#cmdStudioLocalSave",root);if(!button||button.disabled)return;
+ button.disabled=true;
+ const original=button.textContent;button.textContent="⏳ Préparation du fichier…";
  try{
-  if(!recorded){
-   note("Préparation de ta Story…");
-   if(state.mode==="poster")await savePng({download:false});else if(state.mode==="gif")await exportGif({download:false});else await exportVideo({download:false});
-  }
-  if(!recorded?.size){note("L'export n'est pas disponible. Consulte le message dans les options.");return}
-  const response=await fetch("/api/cmd-profile-videos",{method:"POST",credentials:"same-origin",headers:{"content-type":recorded.type,"x-cmd-title":"Ma Story","x-cmd-kind":state.mode,"x-cmd-profile-guild":studioProfileGuild},body:recorded});
-  const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||"Publication refusée");
-  note("Ta Story est enregistrée dans ton profil CMD Sphere.");
-  document.dispatchEvent(new CustomEvent("cmd:profile-video-saved"));
- }catch(e){note("Ta Story : "+(e.message||e))}finally{btn.disabled=false}
+  // Download to the user’s device only: never call CMD Sphere's publishing API.
+  const type=state.mode==="poster"?"png":state.mode==="gif"?"gif":"video";
+  const success=type==="png"?await savePng({download:true}):type==="gif"?await exportGif({download:true}):await exportVideo({download:true});
+  if(!success)note("Enregistrement impossible avec ce format. Essaie PNG ou un navigateur compatible.");
+ }catch(e){note("Impossible d’enregistrer : "+(e.message||e))}
+ finally{button.disabled=false;button.textContent=original}
 }
 function choose(btn){
  const attr=[...btn.attributes].find(x=>x.name.startsWith("data-studio-"));if(!attr)return;
@@ -380,7 +373,7 @@ function blobDownload(blob,filename){
 async function savePng(options={}){
  stop();render(0);
  const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));if(!blob){note("Export image non pris en charge.");return}
- recorded=blob;$("#cmdStudioPublish").disabled=false;if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video.png");note("Image PNG exportée. Tu peux maintenant la publier.");
+ recorded=blob;$("#cmdStudioPublish").disabled=false;if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video.png");note("Image enregistrée sur cet appareil.");return true;
 }
 function synthMusic(audio,dest,total){
  const vol=state.volume/100;if(state.music==="none"||state.music==="file"||state.music==="library"||!vol)return;
@@ -400,8 +393,8 @@ async function exportGif(options={}){
   const ratio=canvas.width/canvas.height,w=ratio>1?480:ratio===1?380:300,h=Math.round(w/ratio);
   const blob=await window.CMDEncodeAnimatedGif({source:canvas,draw:async t=>render(t),duration:state.duration,fps:7,width:w,height:h,onProgress:(done,total)=>{if(done%5===0||done===total)note("Animation "+done+"/"+total+" images…")}});
   if(!blob.size)throw Error("GIF vide");recorded=blob;$("#cmdStudioPublish").disabled=blob.size>60*1024*1024;
-  if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video.gif");note("GIF animé exporté : "+(blob.size/1048576).toFixed(1)+" Mo. Un GIF ne peut pas contenir de musique.");
- }catch(error){note("Export GIF impossible : "+(error.message||error))}
+  if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video.gif");note("GIF enregistré sur cet appareil ("+(blob.size/1048576).toFixed(1)+" Mo). Un GIF ne peut pas contenir de musique.");return true;
+ }catch(error){note("Export GIF impossible : "+(error.message||error));return false}
  finally{btn.disabled=false}
 }
 async function exportVideo(options={}){
@@ -439,8 +432,8 @@ async function exportVideo(options={}){
   if(recordedUrl)URL.revokeObjectURL(recordedUrl);recordedUrl=URL.createObjectURL(blob);
   $("#cmdStudioPublish").disabled=blob.size>60*1024*1024;
   if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video."+(blob.type==="video/mp4"?"mp4":"webm"));
-  note("Vidéo avec musique créée : "+(blob.size/1048576).toFixed(1)+" Mo."+(blob.size>60*1048576?" Réduis sa durée pour la publier.":" Tu peux aussi la publier sur CMD Sphere."));
- }catch(e){console.error("[CMD Studio export]",e);note("Export impossible : "+(e.message||e)+". Tu peux essayer l’image PNG.")}
+  note("Vidéo prête sur ton appareil ("+(blob.size/1048576).toFixed(1)+" Mo).");return true;
+ }catch(e){console.error("[CMD Studio export]",e);note("Export impossible : "+(e.message||e)+". Essaie le format image PNG.");return false}
  finally{soundtrack?.pause();if(soundtrack?.src?.startsWith("blob:"))URL.revokeObjectURL(soundtrack.src);stream?.getTracks().forEach(t=>t.stop());try{await audio?.close()}catch{};exportButton.disabled=false;videoRecorder=null}
 }
 async function loadServers(){
