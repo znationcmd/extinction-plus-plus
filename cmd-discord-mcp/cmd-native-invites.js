@@ -4,6 +4,12 @@
 import crypto from "node:crypto";
 const CODE=/^[a-zA-Z0-9_-]{4,80}$/;
 const ID=/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
+export function normalizeInviteCode(value){
+ const raw=String(value??"").trim();
+ if(!raw)return "";
+ return raw.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+  .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
+}
 export const inviteExpiry=(days,now=new Date())=>{
  if(![3,30,"never"].includes(days))throw Object.assign(new Error("Expiration autorisée : 3 jours, 30 jours ou jamais."),{status:400});
  return days==="never"?null:new Date(now.getTime()+Number(days)*86400000);
@@ -94,8 +100,9 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    await requireNativeAdmin(auth,id);
    const period=body.expiry==="3"?3:body.expiry==="30"?30:body.expiry==="never"?"never":null;
    const expiresAt=inviteExpiry(period);
-   const custom=String(body.customCode||"").trim().toLowerCase();
-   if(custom&&!/^[a-z0-9][a-z0-9-]{3,39}$/.test(custom)){sendJson(res,400,{error:"Lien personnalisé : 4 à 40 caractères, lettres, chiffres et tirets."});return true}
+   const requested=String(body.customCode||"").trim();
+   const custom=normalizeInviteCode(requested);
+   if(requested&&(custom.length<4||custom.length>40)){sendJson(res,400,{error:"Ton lien personnalisé doit contenir entre 4 et 40 lettres ou chiffres. Les espaces sont convertis en tirets."});return true}
    const code=custom||crypto.randomBytes(18).toString("base64url");
    const label=String(body.label||"Invitation").trim().slice(0,70);
    try{
