@@ -993,3 +993,20 @@ body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-e
   image-rendering:auto!important;filter:none!important;
   object-fit:contain!important;object-position:center!important;
 }
+
+/* CMD_SCENE_SHARPNESS_OVERRIDE_20261010
+   Show the original scene in its entirety. No enlarged Gaussian blur over
+   the real preview or its gallery thumbnails. Preserve user-selected scenes. */
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit::before,
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit::after,
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::before,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::before{
+ content:none!important;display:none!important;filter:none!important;
+}
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-hero-landscape.cmd-scene-full-fit,
+#cmdSceneBackdrop .cmd-scene-scenery.cmd-scene-full-fit::after,
+#cmdSceneSheet .cmd-scene-catalog-card[data-scene-choice="scene"] .cmd-scene-landscape.cmd-scene-full-fit::after{
+ filter:none!important;backdrop-filter:none!important;transform:none!important;
+ background-size:contain!important;background-position:center!important;
+ background-repeat:no-repeat!important;
+}
