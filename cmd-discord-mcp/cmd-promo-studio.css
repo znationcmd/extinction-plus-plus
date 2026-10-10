@@ -206,10 +206,11 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
  padding:10px 12px!important;color:#131313!important;
  font:850 15px/1.2 system-ui!important;background:#f9f9f9!important;
 }
-#cmdPromoStudio #cmdStudioNext{
+#cmdPromoStudio #cmdStudioLocalSave{
  color:#fff!important;background:#ff3155!important;
+ width:100%!important;flex:1 1 100%!important;
 }
-#cmdPromoStudio #cmdStudioStory:disabled,#cmdPromoStudio #cmdStudioNext:disabled{opacity:.5;}
+#cmdPromoStudio #cmdStudioLocalSave:disabled{opacity:.5;}
 #cmdPromoStudio .cmd-studio-draggable{
  position:absolute!important;z-index:6;transform:translate(-50%,-50%);
  touch-action:none!important;user-select:none!important;-webkit-user-select:none!important;
