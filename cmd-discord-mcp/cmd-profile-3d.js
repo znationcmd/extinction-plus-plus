@@ -592,10 +592,9 @@ function refresh(){
  const state=snapshot();currentState=state;
  if(!editor){const mount=document.querySelector("#cmdSceneHero");if(mount)editor=createCanvas(mount,"editor")}
  if(editor)update(editor,state);
- // Profile banner remains a personalized scene; renderer only starts when a 3D profile is saved.
- const profile=document.querySelector("#bannerTap");
- if(!banner&&profile&&state.avatarStyle==="3d"&&document.querySelector("#cmdSceneWrap.cmd-scene-active"))banner=createCanvas(profile,"banner");
- if(banner){banner.wrapper.hidden=!document.querySelector("#cmdSceneWrap.cmd-scene-active");update(banner,state)}
+ // The real uploaded profile cover must NEVER be replaced by an avatar/3D scene.
+ // Only the standalone Avatar & decor editor owns a 3D renderer.
+ if(banner){banner.wrapper.hidden=true}
 }
 document.addEventListener("cmd-avatar-3d:update",refresh);
 document.addEventListener("visibilitychange",()=>visible=!document.hidden);
