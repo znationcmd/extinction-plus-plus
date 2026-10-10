@@ -4978,6 +4978,25 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&/^\/universe\/v1\/hd-[a-z0-9-]+\.svg$/.test(url.pathname)){
       try{const art=readFileSync(new URL("./public"+url.pathname,import.meta.url));res.writeHead(200,{"content-type":"image/svg+xml","cache-control":"public,max-age=86400","content-security-policy":"default-src 'none'; style-src 'unsafe-inline'","x-content-type-options":"nosniff"});res.end(art)}catch{res.writeHead(404).end("Fond introuvable")}return;
     }
+    // Enhanced display assets are separate from all original v1/v3 files.
+    // Strict path patterns and safe fallback mean an original can never be deleted by this route.
+    if(req.method==="GET"&&(
+      /^\\/universe\\/v2\\/(pet|vehicle|home|scene)-[0-9]{3}\\.webp$/.test(url.pathname)||
+      /^\\/avatars\\/v4\\/avatar-(0[1-9]|[1-5][0-9]|6[0-8])\\.webp$/.test(url.pathname)
+    )){
+      try{
+        const picture=readFileSync(new URL("./public"+url.pathname,import.meta.url));
+        res.writeHead(200,{"content-type":"image/webp","cache-control":"public, max-age=31536000, immutable","x-content-type-options":"nosniff"});
+        res.end(picture);
+      }catch(error){sendJson(res,404,{error:"Version d'affichage indisponible"});}
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-display-quality-report.json"){
+      try{const result=readFileSync(new URL("./public/cmd-display-quality-report.json",import.meta.url),"utf8");
+          res.writeHead(200,{"content-type":"application/json","cache-control":"no-store"});res.end(result);
+      }catch{sendJson(res,404,{error:"Rapport indisponible"});}
+      return;
+    }
     // Versioned individual avatar assets: strict filenames prevent traversal.
     if(req.method==="GET"&&/^\/universe\/v1\/(pet|vehicle|home|scene)-[0-9]{3}\.(png|webp)$/.test(url.pathname)){
       try{const image=readFileSync(new URL("./public"+url.pathname,import.meta.url));res.writeHead(200,{"content-type":url.pathname.endsWith(".webp")?"image/webp":"image/png","cache-control":"public, max-age=31536000, immutable","x-content-type-options":"nosniff"});res.end(image)}catch(e){sendJson(res,404,{error:"Image introuvable"})}return;
