@@ -294,7 +294,7 @@ const importedAvatarCount=68;
 const importedAvatarTiles=Array.from({length:importedAvatarCount},(_,i)=>"/avatars/v3/avatar-"+String(i+1).padStart(2,"0")+".png");
 const originalSheets=[];
 const loadedSheets=new Map();
-const petTiles=[],sceneTiles=individualUniverse.scenes.map(x=>x.src),homeTiles=individualUniverse.homes.map(x=>x.src);
+const petTiles=[],sceneTiles=individualUniverse.scenes.map(x=>x.id.startsWith('cmd-hd-')?x.src+'?v=20261010wide35':x.src),homeTiles=individualUniverse.homes.map(x=>x.src);
 function sceneReferenceIndex(value){return individualUniverse.scenes.findIndex(x=>x.id===value)}
 function sceneReferenceStyle(value){
  const n=sceneReferenceIndex(value);if(n<0)return "";
