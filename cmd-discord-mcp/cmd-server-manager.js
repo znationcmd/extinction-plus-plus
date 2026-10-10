@@ -43,7 +43,8 @@ async function getContext(){
  }
 }
 function nav(){
- return '<nav class="csm-nav" aria-label="Menu paramètres du serveur">'+config.map(([group,links])=>'<div class="csm-nav-group"><h3>'+group+'</h3>'+links.map(s=>{const [tab,ico,label]=s.split('|');return '<button type="button" data-csm-tab="'+tab+'" class="'+(currentTab===tab?'chosen':'')+'"><span>'+ico+'</span>'+label+'</button>'}).join('')+'</div>').join('')+'</nav>';
+ return '<nav class="csm-nav" aria-label="Menu paramètres du serveur">'+config.map(([group,links])=>'<div class="csm-nav-group"><h3>'+group+'</h3>'+links.map(s=>{const [tab,ico,label]=s.split('|');return '<button type="button" data-csm-tab="'+tab+'" class="'+(currentTab===tab?'chosen':'')+'"><span>'+ico+'</span>'+label+'</button>'}).join('')+'</div>').join('')+
+ (isNative()?'<div class="csm-nav-group"><h3>PROPRIÉTÉ ET SORTIE</h3><button type="button" data-csm-tab="lifecycle" class="'+(currentTab==='lifecycle'?'chosen':'')+'"><span>'+(ctx.owner?'👑':'↪')+'</span>'+(ctx.owner?'Propriété et suppression':'Quitter le serveur')+'</button></div>':'')+'</nav>';
 }
 function overview(){
  const g=ctx.data.guild;
@@ -92,6 +93,11 @@ function roles(){
  return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier et attribuer</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
+ if(currentTab==='lifecycle'&&isNative())return intro(ctx.owner?'Propriété et suppression':'Quitter le serveur',ctx.owner?'Le propriétaire conserve tous ses droits, quels que soient les rôles affichés.':'Un membre peut quitter un serveur sans effacer les messages ni les comptes des autres.')+
+ (ctx.owner?'<div class="csm-server-lifecycle"><h3>👑 Propriétaire du serveur</h3>'+info('Tu possèdes toutes les permissions automatiquement, même sans rôle Administrateur. Tu peux attribuer des rôles à ton propre compte pour leur affichage.')+
+ '<div class="csm-actions">'+btn('Attribuer mes rôles','roles','primary')+btn('Transférer la propriété','transfer-guild')+btn('Supprimer définitivement ce serveur','delete-guild','danger')+'</div><div id="csm-transfer-ui" aria-live="polite"></div>'+
+ info('La suppression exige le nom exact du serveur et ne supprime aucun serveur Discord lié.')+'</div>':
+ '<div class="csm-server-lifecycle"><h3>Quitter ce serveur</h3>'+info('Tu perdras l’accès et les rôles de ce serveur. Les messages de la communauté restent conservés.')+btn('Quitter le serveur','leave-guild','danger')+'</div>');
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations du service connecté sont générées depuis la plateforme liée.'))+toDiscord();
  if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+(isNative()?'<a class="csm-btn primary" href="/apps/directory">＋ Inviter un bot CMD Sphere</a><a class="csm-btn" href="/developers">CMD Sphere Développeur</a>':'')+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks externes','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div>'+(isNative()?'<section id="csm-installed-cmd-apps" aria-live="polite">'+info('Chargement des bots CMD Sphere installés…')+'</section>':'')+'<section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
  if(currentTab==='appearance')return intro('Personnalisation','Icône, description et identité du serveur.')+btn('Modifier la vue d’ensemble','overview','primary')+(isNative()?'<a class="csm-btn" href="/profile?server='+safe(id())+'">Profil du serveur ↗</a>':'')+toDiscord();
@@ -146,7 +152,7 @@ function renderHostingRoleMembers(role){
 }
 
 
-const csmRoleStyle=document.createElement('style');csmRoleStyle.textContent="\n/* Native role editor improvements (safe for iPhone and desktop). */\n.csm-role-member-assignments{margin:18px 0 26px;border:1px solid #9874c56b;border-radius:17px;padding:16px;background:#251d31}\n.csm-role-member-assignments h4{font-size:17px;margin:0 0 9px}\n.csm-member-search{width:100%;max-width:100%;padding:13px;background:#17141d;border:1px solid #ffffff4d;color:#fff;border-radius:12px;font:16px system-ui}\n.csm-role-member-list,.csm-members-list{display:grid;gap:5px;margin-top:12px}\n.csm-member-row{display:flex;align-items:center;gap:12px;padding:12px 9px;min-width:0;min-height:62px;border-radius:11px;background:#ffffff09;overflow-wrap:anywhere}\n.csm-member-row[hidden]{display:none!important}\n.csm-member-row>input[type=checkbox]{width:22px;height:22px;flex:none;margin-left:auto;accent-color:#9462db}\n.csm-member-avatar{width:42px;height:42px;flex:none;border-radius:50%;object-fit:cover}\n.csm-member-placeholder{display:grid;place-items:center;background:#44334f;font-size:23px}\n.csm-member-name,.csm-member-detail{flex:1;min-width:0;font-weight:750}\n.csm-member-detail small,.csm-member-status{display:block;font-size:12px;color:#d1b9e4;font-weight:400;overflow-wrap:anywhere}\n.csm-role-member-assignments .csm-lead{margin:0 0 12px}\n@media(max-width:460px){.csm-role-member-assignments{padding:12px}.csm-member-row{gap:7px}.csm-member-avatar{width:36px;height:36px}}\n";document.head.append(csmRoleStyle);
+const csmRoleStyle=document.createElement('style');csmRoleStyle.textContent="\n/* Explicit ownership settings; adaptable to iPhone screen widths. */\n.csm-owner-self{border:1px solid #a56aff66;background:#42285e44!important;flex-wrap:wrap}\n.csm-owner-self>strong{flex:1;min-width:130px}\n.csm-owner-self>.csm-btn{white-space:normal;min-height:45px;max-width:100%}\n.csm-owner-self>.csm-member-status{flex-basis:100%}\n.csm-server-lifecycle{border:1px solid #a36cc859;border-radius:17px;padding:17px;background:#231b2c}\n.csm-server-lifecycle .csm-actions{display:flex;flex-wrap:wrap;gap:10px}\n.csm-server-lifecycle .csm-btn.danger{border-color:#ee647caa}\n"+"\n/* Native role editor improvements (safe for iPhone and desktop). */\n.csm-role-member-assignments{margin:18px 0 26px;border:1px solid #9874c56b;border-radius:17px;padding:16px;background:#251d31}\n.csm-role-member-assignments h4{font-size:17px;margin:0 0 9px}\n.csm-member-search{width:100%;max-width:100%;padding:13px;background:#17141d;border:1px solid #ffffff4d;color:#fff;border-radius:12px;font:16px system-ui}\n.csm-role-member-list,.csm-members-list{display:grid;gap:5px;margin-top:12px}\n.csm-member-row{display:flex;align-items:center;gap:12px;padding:12px 9px;min-width:0;min-height:62px;border-radius:11px;background:#ffffff09;overflow-wrap:anywhere}\n.csm-member-row[hidden]{display:none!important}\n.csm-member-row>input[type=checkbox]{width:22px;height:22px;flex:none;margin-left:auto;accent-color:#9462db}\n.csm-member-avatar{width:42px;height:42px;flex:none;border-radius:50%;object-fit:cover}\n.csm-member-placeholder{display:grid;place-items:center;background:#44334f;font-size:23px}\n.csm-member-name,.csm-member-detail{flex:1;min-width:0;font-weight:750}\n.csm-member-detail small,.csm-member-status{display:block;font-size:12px;color:#d1b9e4;font-weight:400;overflow-wrap:anywhere}\n.csm-role-member-assignments .csm-lead{margin:0 0 12px}\n@media(max-width:460px){.csm-role-member-assignments{padding:12px}.csm-member-row{gap:7px}.csm-member-avatar{width:36px;height:36px}}\n";document.head.append(csmRoleStyle);
 /* CMD Sphere native member assignments: owner-authorized, never alter a linked Discord guild. */
 async function fetchNativeMemberCache(force=false){
  if(!isNative())return {members:[]};
@@ -172,9 +178,28 @@ async function renderRoleAssignments(role){
   const members=data.members||[];
   host.replaceChildren();
   const title=document.createElement('h4');title.textContent='Attribuer ce rôle aux membres';host.append(title);
-  const help=document.createElement('p');help.className='csm-lead';help.textContent='Sélectionne les membres à ajouter ou à retirer. La modification est enregistrée sur CMD Sphere, sans modifier Discord.';host.append(help);
-  if(!members.length){
-   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Une personne doit accepter ton invitation et rejoindre ce serveur CMD Sphere avant de recevoir un rôle.';host.append(empty);
+  const help=document.createElement('p');help.className='csm-lead';help.textContent='Le propriétaire a déjà tous les droits. Les rôles peuvent aussi modifier les couleurs, badges et groupes affichés.';host.append(help);
+  const ownerId=String(ctx.data.guild?.owner_user_id||ctx.data.member?.user_id||'');
+  const self=members.find(m=>String(m.user_id)===ownerId);
+  if(ownerId){
+   const own=document.createElement('div');own.className='csm-member-row csm-owner-self';
+   const label=document.createElement('strong');label.textContent='👑 Mon compte (propriétaire)';own.append(label);
+   const enabled=(self?.role_ids||[]).some(x=>String(x)===String(role.id));
+   const toggle=document.createElement('button');toggle.type='button';toggle.className='csm-btn primary';toggle.textContent=enabled?'Retirer ce rôle de mon profil':'M’attribuer ce rôle';
+   const status=document.createElement('small');status.className='csm-member-status';status.setAttribute('role','status');own.append(toggle,status);host.append(own);
+   toggle.onclick=async()=>{
+    toggle.disabled=true;status.textContent='Enregistrement…';
+    try{
+     const result=await request('/api/native/roles/assign',{guildId:currentGuild,userId:ownerId,roleId:String(role.id),enabled:!enabled});
+     if(!result.saved)throw Error('Attribution non confirmée');
+     nativeMemberCache=null;await renderRoleAssignments(role);
+     notify(enabled?'Rôle retiré de ton profil.':'Rôle ajouté à ton profil.');
+    }catch(error){status.textContent=error.message;notify('Attribution impossible : '+error.message,false);toggle.disabled=false}
+   };
+  }
+  const otherMembers=members.filter(m=>String(m.user_id)!==ownerId);
+  if(!otherMembers.length){
+   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Tu peux t’attribuer ce rôle ci-dessus. Pour les autres, invite une personne à rejoindre CMD Sphere.';host.append(empty);
    const invite=document.createElement('button');invite.type='button';invite.className='csm-btn primary';invite.textContent='🔗 Inviter quelqu’un';
    invite.onclick=()=>{const gid=id();if(typeof window.cmdOpenServerInvites==='function'){close();void window.cmdOpenServerInvites(gid)}else{currentTab='invites';editing=null;render()}};
    host.append(invite);
@@ -183,7 +208,7 @@ async function renderRoleAssignments(role){
   const search=document.createElement('input');search.type='search';search.placeholder='Rechercher un membre';search.className='csm-member-search';search.setAttribute('aria-label','Rechercher un membre');host.append(search);
   const list=document.createElement('div');list.className='csm-role-member-list';host.append(list);
   let ownerSelfButton=null;
-  for(const member of members){
+  for(const member of otherMembers){
    const row=document.createElement('label');row.className='csm-member-row';
    row.append(memberAvatarNode(member));
    const name=document.createElement('span');name.className='csm-member-name';name.textContent=(member.display_name||'Membre')+(member.membership_role==='owner'?' · Propriétaire (toi)':'');row.append(name);
@@ -510,7 +535,7 @@ function menu(){
  const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere");
  const icon=String(guild.icon||""),banner=String(guild.server_banner||"");
  const count=Number(guild.member_count||guild.memberCount||ctx?.data?.guild?.member_count||0);
- const role=String(guild.membership_role||((ctx?.data?.guild?.id===gid)?ctx?.data?.member?.membership_role:"")||"");
+ const role=String(guild.membership_role||((ctx?.data?.guild?.id===gid)?ctx?.data?.member?.membership_role:"")||((ctx?.data?.guild?.id===gid&&ctx.owner)?"owner":"")||"");
  const admin=["owner","admin"].includes(role)||((ctx?.data?.guild?.id===gid)&&!!ctx?.admin);
  const root=document.createElement("div");root.id="csm-server-menu";
  const img=/^(https?:\/\/|data:image\/)/i.test(icon)?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon" aria-hidden="true">🏠</span>';
@@ -540,7 +565,7 @@ function menu(){
  root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
-  if(key==="ownership"){shut();await open("overview");return}
+  if(key==="ownership"){shut();await open("lifecycle");return}
   if(key==="leave-guild"){shut();try{await getContext();await submitGuildLifecycle("leave")}catch(e){notify(e.message,false)}return}
   if(key==="hosting"){shut();if(typeof window.cmdOpenHostingPanel==="function")window.cmdOpenHostingPanel(gid);else notify("Gestion CMD Hosting indisponible, actualise la page",false);return;}
   if(key==="boost"){shut();location.assign(gid?"/server-boosts/"+code:"/stars");return}
