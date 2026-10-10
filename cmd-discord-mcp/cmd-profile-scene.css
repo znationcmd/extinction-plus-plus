@@ -857,7 +857,7 @@
   background-image:none!important;background-color:#21172b!important;
 }
 #cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit::before{
-  content:"";position:absolute;inset:-8%;z-index:0;pointer-events:none;
+  display:block!important;content:""!important;position:absolute;inset:-8%;z-index:0;pointer-events:none;
   background:var(--cmd-scene-bg) center/cover no-repeat;
   filter:blur(19px) saturate(1.14) brightness(.86);
   transform:scale(1.08);
@@ -965,3 +965,8 @@
   height:100%!important;
   object-position:center center!important;
 }
+
+/* Keep live avatar and pet above both HD scenery layers in the editor. */
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-preview,
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-float-header,
+#cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit #cmdSceneLabel{position:relative;z-index:3}
