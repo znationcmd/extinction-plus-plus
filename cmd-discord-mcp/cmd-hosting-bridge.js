@@ -20,6 +20,9 @@ export async function initCmdHostingBridge(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_hosting_guild_links(guild_id UUID PRIMARY KEY REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,owner_user_id TEXT NOT NULL,rental_id UUID NOT NULL,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_hosting_role_access(guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,role_id UUID NOT NULL REFERENCES cmd_native_roles(id) ON DELETE CASCADE,enabled BOOLEAN NOT NULL DEFAULT FALSE,PRIMARY KEY(guild_id,role_id))");
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_hosting_role_members(guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,role_id UUID NOT NULL REFERENCES cmd_native_roles(id) ON DELETE CASCADE,user_id TEXT NOT NULL,PRIMARY KEY(guild_id,role_id,user_id))");
+ // One-time safe migration from old Hosting role grants to the owner-controlled CMD Sphere role assignments.
+ await pool.query("INSERT INTO cmd_native_member_roles(guild_id,role_id,user_id) SELECT old.guild_id,old.role_id,old.user_id FROM cmd_sphere_hosting_role_members old JOIN cmd_native_members m ON m.guild_id=old.guild_id AND m.user_id=old.user_id JOIN cmd_native_roles r ON r.id=old.role_id AND r.guild_id=old.guild_id ON CONFLICT DO NOTHING");
+ await pool.query("DELETE FROM cmd_sphere_hosting_role_members");
 
  await pool.query("ALTER TABLE cmd_sphere_hosting_pending ADD COLUMN IF NOT EXISTS guild_id UUID");
  // Local-only permission role, never propagated into Discord.
@@ -35,9 +38,8 @@ async function hostingMemberAccess(pool,gid,uid){
  const m=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
  if(!m.rows.length)return {allowed:false,owner:false,ownerId};
  // Only owner-issued membership assignments count; profile_role_id is user-editable and never grants control.
- const grants=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id AND ra.enabled=TRUE JOIN cmd_native_roles r ON r.id=rm.role_id AND r.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 LIMIT 1",[gid,uid]);
  const assigned=await pool.query("SELECT 1 FROM cmd_native_member_roles mr JOIN cmd_sphere_hosting_role_access a ON a.guild_id=mr.guild_id AND a.role_id=mr.role_id AND a.enabled=TRUE JOIN cmd_native_roles r ON r.id=mr.role_id AND r.guild_id=mr.guild_id WHERE mr.guild_id=$1 AND mr.user_id=$2 LIMIT 1",[gid,uid]);
- return {allowed:!!grants.rows.length||!!assigned.rows.length,owner:false,ownerId};
+ return {allowed:!!assigned.rows.length,owner:false,ownerId};
 }
 async function hostingOwnerToken(pool,uid){
  const r=await pool.query("SELECT token_enc FROM cmd_sphere_hosting_links WHERE user_id=$1 AND expires_at>NOW()",[uid]);
@@ -96,7 +98,7 @@ export async function handleCmdHostingBridge(req,res,url,{pool,auth,baseUrl}){
    }
    const roles=await pool.query("SELECT r.id,r.name,COALESCE(a.enabled,FALSE) AS enabled FROM cmd_native_roles r LEFT JOIN cmd_sphere_hosting_role_access a ON a.role_id=r.id AND a.guild_id=r.guild_id WHERE r.guild_id=$1 ORDER BY r.position DESC,r.name",[gid]);
    const members=await pool.query("SELECT m.user_id,COALESCE(NULLIF(m.profile_display_name,''),NULLIF(a.display_name,''),a.username,'Membre') AS name,m.membership_role FROM cmd_native_members m LEFT JOIN cmd_accounts a ON a.id::text=m.user_id WHERE m.guild_id=$1 ORDER BY m.joined_at LIMIT 500",[gid]);
-   const grants=await pool.query("SELECT role_id,user_id FROM cmd_sphere_hosting_role_members WHERE guild_id=$1",[gid]);
+   const grants=await pool.query("SELECT role_id,user_id FROM cmd_native_member_roles WHERE guild_id=$1",[gid]);
    json(res,200,{roles:roles.rows,members:members.rows,grants:grants.rows});return true;
   }
   if(req.method!=="POST"){json(res,405,{error:"Méthode non autorisée"});return true}
@@ -115,8 +117,8 @@ export async function handleCmdHostingBridge(req,res,url,{pool,auth,baseUrl}){
    if(!targetUid||targetUid===uid){json(res,400,{error:"Choisis un autre membre"});return true}
    const m=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[gid,targetUid]);
    if(!m.rows.length){json(res,404,{error:"Membre introuvable"});return true}
-   if(d.enabled)await pool.query("INSERT INTO cmd_sphere_hosting_role_members(guild_id,role_id,user_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",[gid,roleId,targetUid]);
-   else await pool.query("DELETE FROM cmd_sphere_hosting_role_members WHERE guild_id=$1 AND role_id=$2 AND user_id=$3",[gid,roleId,targetUid]);
+   if(d.enabled)await pool.query("INSERT INTO cmd_native_member_roles(guild_id,role_id,user_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",[gid,roleId,targetUid]);
+   else await pool.query("DELETE FROM cmd_native_member_roles WHERE guild_id=$1 AND role_id=$2 AND user_id=$3",[gid,roleId,targetUid]);
    json(res,200,{saved:true});return true;
   }
   json(res,400,{error:"Modification non autorisée"});return true;
