@@ -204,6 +204,9 @@ export const CMD_PREMIUM_ART_CSS=`
 .cmd-avatar-art>img{inset:5%;width:90%;height:90%;object-fit:contain}
 .cmd-effect-preview{display:block;overflow:hidden;background:#080817!important}
 .cmd-effect-preview img{width:100%;height:100%;object-fit:cover;image-rendering:auto;filter:none}
+.cmd-effect-live-image{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;opacity:.78;pointer-events:none;filter:none}
+.cmd-effect-live-image[hidden]{display:none!important}
+#effectPicker .pickerPreview:has(.cmd-effect-live-image:not([hidden])) .mockCard{z-index:2;position:relative;background:#150f2ad9;border-color:#c4b3ee66;box-shadow:0 0 28px #0008}
 .cmd-effect-preview[data-active="true"] img{filter:brightness(1.09)}
 @media(prefers-reduced-motion:no-preference){.effectTile:hover .cmd-effect-preview img,.effectTile.selected .cmd-effect-preview img{animation:cmdEffectSceneBreathe 5s ease-in-out infinite alternate}@keyframes cmdEffectSceneBreathe{from{filter:brightness(.9) saturate(.85)}to{filter:brightness(1.23) saturate(1.12)}}}
 .diamondCard .cmd-gem-art{height:285px}
