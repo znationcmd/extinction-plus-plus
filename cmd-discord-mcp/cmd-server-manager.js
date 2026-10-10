@@ -182,6 +182,7 @@ async function renderRoleAssignments(role){
   }
   const search=document.createElement('input');search.type='search';search.placeholder='Rechercher un membre';search.className='csm-member-search';search.setAttribute('aria-label','Rechercher un membre');host.append(search);
   const list=document.createElement('div');list.className='csm-role-member-list';host.append(list);
+  let ownerSelfButton=null;
   for(const member of members){
    const row=document.createElement('label');row.className='csm-member-row';
    row.append(memberAvatarNode(member));
@@ -196,9 +197,15 @@ async function renderRoleAssignments(role){
      member.role_ids=result.user?.role_ids||[];
      msg.textContent=enabled?'Ajouté':'Retiré';
     }catch(error){box.checked=!enabled;msg.textContent='Erreur : '+error.message;notify(error.message,false)}
-    finally{box.disabled=false}
+    finally{box.disabled=false;if(member.membership_role==='owner'&&ownerSelfButton){ownerSelfButton.disabled=false;ownerSelfButton.textContent=box.checked?'Retirer ce rôle de mon profil':'M’attribuer ce rôle'}}
    };
    list.append(row);
+   if(member.membership_role==='owner'){
+    ownerSelfButton=document.createElement('button');ownerSelfButton.type='button';ownerSelfButton.className='csm-btn primary';
+    ownerSelfButton.textContent=box.checked?'Retirer ce rôle de mon profil':'M’attribuer ce rôle';
+    ownerSelfButton.onclick=()=>{if(box.disabled)return;ownerSelfButton.disabled=true;box.click()};
+    host.insertBefore(ownerSelfButton,search);
+   }
   }
   search.oninput=()=>{const term=search.value.trim().toLocaleLowerCase();list.querySelectorAll('.csm-member-row').forEach(row=>{row.hidden=!row.querySelector('.csm-member-name').textContent.toLocaleLowerCase().includes(term)})};
  }catch(error){host.textContent='Impossible de charger les membres : '+error.message}
