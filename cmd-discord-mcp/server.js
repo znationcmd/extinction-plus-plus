@@ -169,6 +169,7 @@ function clearDashboardCookies(){
 function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261010avatarcard1"><link rel="stylesheet" href="/cmd-profile-premium.css?v=20261010avatarcard1"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script src="/cmd-profile-scene.js?v=20261010avatarcard1" defer></script><script src="/cmd-profile-premium.js?v=20261010avatarcard1" defer></script><script type="module" src="/cmd-profile-3d.js?v=20261010avatarcard1"></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
+    if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-touch-organizer.js?v=20261010gesture1"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
@@ -249,6 +250,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     for(const key of ld.itemKeys||[]){const node=nodes.get(key);if(node&&!appended.has(key)){rail.appendChild(node);appended.add(key)}}
     for(const [key,node] of nodes)if(!appended.has(key)){rail.appendChild(node);appended.add(key)}
     setupRailReorder();
+    window.__cmdRefreshGuildRail=loadGuilds;
     for(const g of d.guilds||[]){
       const b=document.createElement('button');b.className='btn guild'+(g.installed?'':' off');b.innerHTML='<strong>'+esc(g.name)+'</strong><br><span class="muted">'+(g.installed?g.availableBots.map(x=>esc(x.name)).join(' · '):'Aucun bot CMD installé')+'</span>';b.onclick=()=>selectGuild(g,b);e.appendChild(b);
     }
@@ -4691,6 +4693,7 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":css?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL(css?"./cmd-chat-polish.css":"./cmd-chat-polish.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-touch-organizer.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-touch-organizer.js",import.meta.url),"utf8"));return;}
     if(req.method==="GET"&&url.pathname==="/cmd-profile-premium.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-profile-premium.css",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-profile-premium.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-profile-premium.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-profile/crystals.svg"){res.writeHead(200,{"content-type":"image/svg+xml","cache-control":"public, max-age=86400","x-content-type-options":"nosniff","content-security-policy":"default-src 'none'; style-src 'unsafe-inline'"});res.end(readFileSync(new URL("./cmd-premium-crystals.svg",import.meta.url),"utf8"));return}
