@@ -22,7 +22,7 @@ test("@everyone is automatic and cannot be granted as a custom role",async()=>{
   if(sql.includes("SELECT id,name FROM cmd_native_roles"))return {rows:[{id:"role-id",name:"@everyone"}]};
   throw Error("unexpected SQL");
  }};
- const f=vm.runInNewContext("(function(pool){"+server.slice(start,end)+";return ownerAssignNativeRole})")(pool);
+ const f=vm.runInNewContext("(function(pool){"+server.slice(start,end)+"\n;return ownerAssignNativeRole})")(pool);
  await assert.rejects(f({user:{id:"owner"}},{guildId:"guild",userId:"owner",roleId:"role"}),/@everyone/);
  assert.equal(queries.filter(q=>q.includes("INSERT INTO cmd_native_member_roles")).length,0);
 });
