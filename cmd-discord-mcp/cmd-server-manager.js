@@ -174,7 +174,10 @@ async function renderRoleAssignments(role){
   const title=document.createElement('h4');title.textContent='Attribuer ce rôle aux membres';host.append(title);
   const help=document.createElement('p');help.className='csm-lead';help.textContent='Sélectionne les membres à ajouter ou à retirer. La modification est enregistrée sur CMD Sphere, sans modifier Discord.';host.append(help);
   if(!members.length){
-   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Invite une personne et attends qu’elle rejoigne CMD Sphere, puis reviens ici pour lui attribuer ce rôle.';host.append(empty);
+   const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun autre membre dans ce serveur. Une personne doit accepter ton invitation et rejoindre ce serveur CMD Sphere avant de recevoir un rôle.';host.append(empty);
+   const invite=document.createElement('button');invite.type='button';invite.className='csm-btn primary';invite.textContent='🔗 Inviter quelqu’un';
+   invite.onclick=()=>{const gid=id();if(typeof window.cmdOpenServerInvites==='function'){close();void window.cmdOpenServerInvites(gid)}else{currentTab='invites';editing=null;render()}};
+   host.append(invite);
    return;
   }
   const search=document.createElement('input');search.type='search';search.placeholder='Rechercher un membre';search.className='csm-member-search';search.setAttribute('aria-label','Rechercher un membre');host.append(search);
@@ -209,7 +212,7 @@ async function renderNativeMembersTab(){
   host.replaceChildren();
   const all=Array.isArray(data.members)?data.members:[];
   const summary=document.createElement('p');summary.className='csm-lead';summary.textContent=all.length+' membre'+(all.length>1?'s':'')+' sur ce serveur.';host.append(summary);
-  if(all.length<=1){const notice=document.createElement('p');notice.className='csm-info';notice.textContent='Ton serveur ne compte pas encore d’autre membre. Envoie son lien d’invitation : un utilisateur doit rejoindre ce serveur avant que tu puisses lui attribuer un rôle.';host.append(notice)}
+  if(all.length<=1){const notice=document.createElement('p');notice.className='csm-info';notice.textContent='Ton serveur ne compte pas encore d’autre membre. Invite une personne et attends son arrivée avant de lui attribuer un rôle.';host.append(notice);const invite=document.createElement('button');invite.type='button';invite.className='csm-btn primary';invite.textContent='🔗 Inviter des personnes';invite.onclick=()=>{const gid=id();if(typeof window.cmdOpenServerInvites==='function'){close();void window.cmdOpenServerInvites(gid)}else{currentTab='invites';editing=null;render()}};host.append(invite)}
   if(ctx.owner){
    const link=document.createElement('button');link.type='button';link.className='csm-btn primary';link.textContent='Gérer les rôles et leurs membres';link.onclick=()=>{currentTab='roles';render()};host.append(link);
   }
