@@ -725,3 +725,99 @@
 #cmdSceneSheet #cmdSceneHero[data-scene]{
  background-repeat:no-repeat!important;background-position:center center!important;
 }
+
+/* CMD SPHERE — OCT 2026: avatar & decor is a real standalone profile information card.
+   Never overwrite, enlarge, position over, or replace the user-uploaded banner. */
+.cmd-premium-profile .cmd-profile-universe-section{
+ display:block;margin:0 0 12px!important;padding:0!important;width:100%;
+}
+.cmd-premium-profile .cmd-profile-universe-card{
+ padding:16px!important;overflow:hidden;isolation:isolate;
+}
+.cmd-premium-profile .cmd-profile-universe-card .cmd-pm-card-head{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:9px;flex-wrap:wrap;margin-bottom:13px;
+}
+.cmd-premium-profile .cmd-profile-universe-card .cmd-pm-card-head h3{
+ margin:0!important;font-size:16px!important;
+}
+.cmd-premium-profile .cmd-profile-universe-card #cmdSceneEdit,
+.cmd-premium-profile .cmd-profile-universe-card #cmdSceneShare{
+ position:static!important;inset:auto!important;transform:none!important;
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:38px;min-width:0;max-width:100%;padding:8px 12px!important;
+ background:#613679b8!important;color:#f9ecff!important;
+ border:1px solid #c99de788!important;border-radius:11px!important;
+ box-shadow:none!important;backdrop-filter:none!important;
+ font:750 12px/1.3 system-ui!important;white-space:normal;cursor:pointer;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage{
+ display:block;position:relative;isolation:isolate;
+ width:100%;height:clamp(245px,55vw,380px);min-height:245px;
+ overflow:hidden!important;border-radius:14px;
+ border:1px solid #aa7ccd4d;background:#171224;
+ aspect-ratio:auto;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage #cmdSceneBackdrop{
+ display:block!important;position:absolute;inset:0;overflow:hidden!important;
+ opacity:1!important;pointer-events:none!important;
+ background-position:center;background-size:cover;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-scenery{
+ opacity:1!important;transform:none!important;inset:0!important;
+ background-size:cover;background-position:center;background-repeat:no-repeat;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person,
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person.cmd-scene-selected-avatar{
+ position:absolute!important;left:50%!important;top:4%!important;
+ bottom:auto!important;transform:translateX(-50%)!important;
+ width:min(54%,250px)!important;height:94%!important;
+ max-height:94%!important;overflow:visible!important;
+ z-index:3!important;aspect-ratio:auto!important;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person svg,
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person img{
+ display:block!important;width:100%!important;height:100%!important;
+ object-fit:contain!important;object-position:center bottom!important;
+ max-width:100%!important;max-height:100%!important;
+ border:0!important;background:transparent!important;
+ mask:none!important;-webkit-mask:none!important;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-pet{
+ position:absolute!important;right:6%!important;left:auto!important;
+ bottom:6%!important;width:min(26%,125px)!important;
+ height:min(38%,130px)!important;max-width:125px!important;
+ z-index:4!important;display:flex;align-items:end;justify-content:center;
+ font-size:58px!important;
+}
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-pet img,
+.cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-pet svg{
+ width:100%!important;height:100%!important;object-fit:contain!important;
+ object-position:center bottom!important;background:transparent!important;
+}
+.cmd-premium-profile .cmd-pm-scene-actions{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:12px;flex-wrap:wrap;padding-top:12px;
+}
+.cmd-premium-profile .cmd-pm-scene-actions span{
+ font:550 12px/1.5 system-ui;color:#d1badd;
+}
+@media(max-width:600px){
+ .cmd-premium-profile .cmd-profile-universe-card{padding:13px!important}
+ .cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage{
+  height:clamp(230px,68vw,340px);min-height:230px;
+ }
+ .cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person,
+ .cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-person.cmd-scene-selected-avatar{
+  width:min(59%,210px)!important;height:94%!important;
+ }
+ .cmd-premium-profile #cmdSceneWrap.cmd-pm-scene-stage .cmd-scene-pet{
+  width:26%!important;height:32%!important;right:4%!important;
+ }
+}
+/* Put the uploaded cover image back in control of the banner, independently. */
+.cmd-premium-profile .hero.cmd-pm-hero #bannerTap{
+ position:relative!important;width:100%!important;
+ height:188px!important;min-height:188px!important;
+ background-size:cover!important;background-position:center!important;
+}
