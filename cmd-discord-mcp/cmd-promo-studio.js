@@ -634,7 +634,7 @@ async function loadDraft(){
 }
 const CMD_STUDIO_FEED_STYLES="\n#cmdStudioFeed{position:fixed;z-index:10040;inset:0;background:#050408;color:#fff;font-family:system-ui,-apple-system,sans-serif;overflow:hidden}\n#cmdStudioFeed *{box-sizing:border-box}\n#cmdStudioFeed button,#cmdStudioFeed a{font:inherit;color:inherit}\n#cmdStudioFeed .csf-tabs{position:absolute;z-index:5;top:env(safe-area-inset-top,0px);left:0;right:0;height:66px;display:flex;justify-content:center;align-items:center;gap:20px;background:linear-gradient(#0009,transparent);pointer-events:none}\n#cmdStudioFeed .csf-tabs>*{pointer-events:auto}\n#cmdStudioFeed button{border:0;background:transparent;cursor:pointer}\n#cmdStudioFeed .csf-tabs button{font-weight:750;opacity:.72;padding:12px 0}\n#cmdStudioFeed .csf-tabs button[aria-selected=true]{border-bottom:2px solid #e3ccff;opacity:1}\n#cmdStudioFeed .csf-close{position:absolute;left:13px;top:14px;min-width:38px;min-height:38px;border-radius:50%;background:#0008!important}\n#cmdStudioFeed .csf-scroll{height:100%;width:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}\n#cmdStudioFeed .csf-scroll::-webkit-scrollbar{display:none}\n#cmdStudioFeed .csf-item{height:100%;height:100dvh;width:100%;position:relative;scroll-snap-align:start;scroll-snap-stop:always;background:#0d0a14}\n#cmdStudioFeed .csf-video{height:100%;width:100%;object-fit:contain;background:#070509}\n#cmdStudioFeed .csf-shade{position:absolute;inset:55% 0 0;background:linear-gradient(transparent,#000b);pointer-events:none}\n#cmdStudioFeed .csf-meta{position:absolute;bottom:calc(90px + env(safe-area-inset-bottom,0px));left:16px;right:86px;text-shadow:0 1px 4px #000c;max-width:560px}\n#cmdStudioFeed .csf-meta strong{display:block;font-size:17px}\n#cmdStudioFeed .csf-meta p{font-size:14px;line-height:1.3;overflow-wrap:anywhere}\n#cmdStudioFeed .csf-rail{position:absolute;right:9px;bottom:calc(90px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:18px;width:72px}\n#cmdStudioFeed .csf-rail button{display:flex;flex-direction:column;align-items:center;gap:3px;text-shadow:0 2px 6px #000d}\n#cmdStudioFeed .csf-rail .csf-icon{width:49px;height:49px;display:grid;place-items:center;border-radius:50%;background:#17121d7d;font-size:27px}\n#cmdStudioFeed .csf-rail small{font-size:11px;font-weight:750}\n#cmdStudioFeed .csf-rail .csf-liked{color:#ff5686}\n#cmdStudioFeed .csf-foot{position:absolute;bottom:0;left:0;right:0;height:calc(68px + env(safe-area-inset-bottom,0px));background:#09060bc9;display:flex;align-items:flex-start;justify-content:space-around;padding:10px 4px 0;z-index:4}\n#cmdStudioFeed .csf-foot button{font-size:13px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:58px}\n#cmdStudioFeed .csf-foot span{font-size:21px}\n#cmdStudioFeed .csf-create{color:#d9b2ff!important}\n#cmdStudioFeed .csf-sound{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));right:16px;background:#0009!important;padding:9px;border-radius:20px}\n#cmdStudioFeed .csf-empty{min-height:100%;display:grid;place-content:center;text-align:center;padding:32px;gap:20px}\n#cmdStudioFeed .csf-empty button{background:#7337bc;border-radius:12px;padding:15px}\n#cmdStudioFeed .csf-comments{position:absolute;bottom:0;left:0;right:0;height:min(65dvh,620px);z-index:9;background:#211e27;border-radius:22px 22px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 50px #000a;display:flex;flex-direction:column;gap:12px}\n#cmdStudioFeed .csf-comments[hidden]{display:none}\n#cmdStudioFeed .csf-comment-list{overflow:auto;flex:1}\n#cmdStudioFeed .csf-comment-list p{overflow-wrap:anywhere;border-bottom:1px solid #ffffff12;padding:7px 0}\n#cmdStudioFeed .csf-comment-list b{color:#ddc0fa}\n#cmdStudioFeed .csf-comment-form{display:flex;gap:8px}\n#cmdStudioFeed .csf-comment-form input{background:#16121a;border:1px solid #ffffff40;border-radius:12px;color:#fff;padding:12px;width:100%;font-size:16px}\n#cmdStudioFeed .csf-comment-form button{background:#804bb5;border-radius:12px;padding:8px 14px}\nbody.cmd-studio-feed-active{overflow:hidden!important}\n";
 
-let feedRoot=null,feedObserver=null,feedMode="all",feedItems=[],feedOffset=0,feedLoading=false,feedMore=false,feedFocus="",feedBackToEditor=false;
+let feedRoot=null,feedObserver=null,feedMode="all",feedCreator="",feedItems=[],feedOffset=0,feedLoading=false,feedMore=false,feedFocus="",feedBackToEditor=false;
 function feedEl(tag,classes,text){const el=document.createElement(tag);if(classes)el.className=classes;if(text!==undefined)el.textContent=text;return el}
 async function feedApi(url,options){const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...options});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Erreur de chargement");return d}
 function closeFeed(){
@@ -664,7 +664,9 @@ function renderFeedCard(item){
    if(navigator.share){try{await navigator.share({title:item.title||"CMD Sphere Studio",url});return}catch(e){if(e.name==="AbortError")return}}
    try{await navigator.clipboard.writeText(url);alert("Lien copié")}catch{prompt("Copie le lien de la vidéo",url)}
  };
- rail.append(follow,like,comments,share);article.append(rail);
+ const creator=feedEl("button");creator.append(feedEl("span","csf-icon","▣"),feedEl("small","","Profil"));
+ creator.onclick=()=>openFeed({creator:item.user_id});
+ rail.append(follow,like,comments,creator,share);article.append(rail);
  return article;
 }
 async function openFeedComments(item,countNode){
@@ -688,10 +690,11 @@ async function loadFeed(reset=false){
  const holder=feedRoot.querySelector(".csf-scroll");
  try{
   const params=new URLSearchParams({mode:feedMode,offset:String(feedOffset)});
+  if(feedCreator)params.set("creator",feedCreator);
   if(feedFocus)params.set("video",feedFocus);
   const d=await feedApi("/api/cmd-profile-videos/feed?"+params);
   feedOffset=d.nextOffset;feedMore=d.hasMore;feedItems.push(...d.items);
-  if(!feedItems.length){const empty=feedEl("div","csf-empty");empty.append(feedEl("h2","","Aucune vidéo pour le moment"),feedEl("p","",feedMode==="following"?"Abonne-toi à des créateurs depuis « Pour toi ».":"Les vidéos publiées dans Studio apparaîtront ici."));const create=feedEl("button","","＋ Créer une vidéo");create.onclick=()=>{closeFeed();window.cmdOpenPromoStudio?.({source:"profile"})};empty.append(create);holder.append(empty)}
+  if(!feedItems.length){const empty=feedEl("div","csf-empty");empty.append(feedEl("h2","","Aucune vidéo pour le moment"),feedEl("p","",feedMode==="following"?"Abonne-toi à des créateurs depuis « Pour toi ».":feedMode==="creator"?"Ce profil n’a pas encore publié de vidéo publique.":"Les vidéos publiées dans Studio apparaîtront ici."));const create=feedEl("button","","＋ Créer une vidéo");create.onclick=()=>{closeFeed();window.cmdOpenPromoStudio?.({source:"profile"})};empty.append(create);holder.append(empty)}
   for(const item of d.items)holder.append(renderFeedCard(item));
   feedObserver?.disconnect();feedObserver=new IntersectionObserver(entries=>{for(const e of entries){const v=e.target.querySelector("video");if(!v)continue;if(e.isIntersecting&&e.intersectionRatio>.6&&!feedRoot.querySelector(".csf-comments"))void v.play().catch(()=>{});else v.pause()}},{root:holder,threshold:[0,.6,1]});
   holder.querySelectorAll(".csf-item").forEach(el=>feedObserver.observe(el));
@@ -702,14 +705,22 @@ async function loadFeed(reset=false){
 function openFeed(opts={}){
  if(feedRoot){closeFeed()}
  feedBackToEditor=!!root&&!root.hidden; if(feedBackToEditor){stop();root.hidden=true;document.body.classList.remove("cmd-studio-active")}
- feedMode="all";feedFocus=opts.id||"";
+ feedCreator=String(opts.creator||"");feedMode=feedCreator?"creator":"all";feedFocus=opts.id||"";
  feedRoot=feedEl("section");feedRoot.id="cmdStudioFeed";feedRoot.setAttribute("aria-label","Vidéos de CMD Sphere Studio");
  if(!document.getElementById("cmdStudioFeedStyle")){const style=feedEl("style");style.id="cmdStudioFeedStyle";style.textContent=CMD_STUDIO_FEED_STYLES;document.head.append(style)}
  const scroll=feedEl("main","csf-scroll");const top=feedEl("nav","csf-tabs");top.setAttribute("aria-label","Fil Studio");
  const close=feedEl("button","csf-close","✕");close.setAttribute("aria-label","Fermer Studio");close.onclick=closeFeed;
  const all=feedEl("button","","Pour toi"),following=feedEl("button","","Abonnements");
- for(const [b,mode] of [[all,"all"],[following,"following"]]){b.setAttribute("aria-selected",String(mode===feedMode));b.onclick=()=>{feedFocus="";feedMode=mode;all.setAttribute("aria-selected",String(mode==="all"));following.setAttribute("aria-selected",String(mode==="following"));loadFeed(true)}}
- top.append(close,following,all);
+ const creatorTab=feedEl("button","","Profil vidéos");
+ creatorTab.hidden=feedMode!=="creator";
+ for(const [b,mode] of [[all,"all"],[following,"following"]]){
+   b.setAttribute("aria-selected",String(mode===feedMode));b.onclick=()=>{
+     feedFocus="";feedCreator="";feedMode=mode;creatorTab.hidden=true;
+     all.setAttribute("aria-selected",String(mode==="all"));following.setAttribute("aria-selected",String(mode==="following"));loadFeed(true);
+   }
+ }
+ creatorTab.setAttribute("aria-selected",String(feedMode==="creator"));
+ top.append(close,following,all,creatorTab);
  const footer=feedEl("nav","csf-foot");footer.setAttribute("aria-label","Navigation Studio");
  for(const [label,icon,handler] of [["Accueil","⌂",()=>location.assign("/dashboard")],["Amis","♧",()=>location.assign("/messages")],["Créer","＋",()=>{closeFeed();window.cmdOpenPromoStudio?.({source:"profile"})}],["Messages","◌",()=>location.assign("/messages")],["Profil","♙",()=>location.assign("/profile")]]){
   const b=feedEl("button",label==="Créer"?"csf-create":"");b.append(feedEl("span","",icon),document.createTextNode(label));b.onclick=handler;footer.append(b)}
@@ -737,6 +748,11 @@ function addStudioFeedLinks(){
  if(openButton&&!document.getElementById("cmdPmWatchStudio")){
   const watch=feedEl("button","cmd-pm-studio-launch","▶ Regarder les vidéos");
   watch.id="cmdPmWatchStudio";watch.style.marginTop="10px";watch.style.background="#302139";watch.onclick=()=>openFeed();openButton.after(watch);
+  if(!document.getElementById("cmdPmMyStudio")){
+   const mine=feedEl("button","cmd-pm-studio-launch","▣ Mes vidéos");
+   mine.id="cmdPmMyStudio";mine.style.marginTop="10px";mine.onclick=()=>openFeed({creator:"me"});
+   watch.after(mine);
+  }
  }
  if(root&&!document.getElementById("cmdStudioPostFeed")){
   const bottom=document.getElementById("cmdStudioBottomBar");
@@ -749,5 +765,5 @@ function addStudioFeedLinks(){
 
 function mount(){const old=$("#cmdPromoLaunch");if(old)old.remove()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
-function start(){mount();window.cmdOpenPromoStudio=function(ctx){open(ctx);addStudioFeedLinks()};window.cmdOpenStudioFeed=openFeed;addStudioFeedLinks();if(new URLSearchParams(location.search).has("watch"))openFeed({id:new URLSearchParams(location.search).get("watch")});}
+function start(){mount();window.cmdOpenPromoStudio=function(ctx){open(ctx);addStudioFeedLinks()};window.cmdOpenStudioFeed=openFeed;addStudioFeedLinks();const params=new URLSearchParams(location.search);if(params.has("watch"))openFeed({id:params.get("watch")});else if(params.has("studioUser"))openFeed({creator:params.get("studioUser")});}
 })();
