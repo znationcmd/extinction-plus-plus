@@ -184,6 +184,10 @@ function html(res,body,status=200,headers={}){
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
+
+    if(typeof body==="string"&&(body.includes('id="channelMessages"')||(body.includes('id="messages"')&&body.includes('CMD Sphere · sans bot')))){
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
+    }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
 function dashboardPage(auth,initialNativeGuilds=[]){
@@ -476,7 +480,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const divider=day&&day!==lastDay?'<div class="message-day">'+esc(day)+'</div>':'';if(day)lastDay=day;
       const authorName=m.author?.displayName||m.author?.globalName||m.author?.username||'Utilisateur';
       const av=m.author?.avatar&&/^https:\/\//i.test(m.author.avatar)?'<img src="'+esc(m.author.avatar)+'" alt="">':'<span>'+esc(String(authorName).slice(0,1).toUpperCase())+'</span>';
-      return divider+'<article class="discord-message'+(String(m.author?.id||"")===String(window.CMD_CHAT_USER_ID||"")?' cmd-own-message':'')+'" data-message-id="'+esc(m.id)+'" data-cmd-author-id="'+esc(m.author?.id||"")+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+(m.source==='discord_archive'?'<span class="bot-badge">DISCORD</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time>'+(m.source==='discord_archive'?'':'<button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button>')+'</div>'+messageBody(m)+(String(m.content||'').trim()||(m.embeds||[]).some(e=>e.title||e.description||(e.fields||[]).some(f=>f.name||f.value))?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
+      return divider+'<article class="discord-message'+(String(m.author?.id||"")===String(window.CMD_CHAT_USER_ID||"")?' cmd-own-message':'')+'" data-message-id="'+esc(m.id)+'" data-cmd-author-id="'+esc(m.author?.id||"")+'" data-cmd-author-name="'+esc(authorName)+'" data-cmd-author-bot="'+(m.author?.bot?'1':'0')+'" data-cmd-source="'+esc(m.source||(CHAT.mode==='native'?'cmd':CHAT.mode==='archive'?'discord_archive':'discord'))+'"><div class="msg-avatar">'+av+'</div><div class="msg-main"><div class="msg-meta"><b>'+esc(authorName)+'</b>'+(m.author?.bot?'<span class="bot-badge">BOT</span>':'')+(m.source==='discord_archive'?'<span class="bot-badge">DISCORD</span>':'')+'<time>'+esc(formatWhen(m.timestamp))+'</time>'+(m.source==='discord_archive'?'':'<button class="reply-mini" data-reply-message="'+esc(String(m.id))+'">↩</button>')+'</div>'+messageBody(m)+(String(m.content||'').trim()||(m.embeds||[]).some(e=>e.title||e.description||(e.fields||[]).some(f=>f.name||f.value))?'<div class="cmd-translation-tools"><button type="button" class="cmd-translate-action">🌐 Traduire</button><button type="button" class="cmd-original-action" hidden>Voir l’original</button></div>':'')+'</div></article>';
     }).join('');
     const normal=rows.filter(m=>Number(m.type||0)===0&&(CHAT.mode!=='combined'||m.source==='discord_archive')),
       empty=normal.filter(m=>!hasDiscordMessageContent(m));
@@ -487,6 +491,16 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     if(qs('#loadMoreMessages'))qs('#loadMoreMessages').onclick=()=>loadDiscordMessages(false,false);
     if(qs('#loadAllMessages')){if(CHAT.mode==='combined')qs('#loadAllMessages').textContent='⇧ Charger trois lots (sans bloquer le téléphone)';qs('#loadAllMessages').onclick=()=>loadDiscordMessages(false,true)}
     if(scrollBottom)requestAnimationFrame(()=>box.scrollTop=box.scrollHeight);
+  }
+  function reconcileNativeRecentMessages(list){
+    if(!Array.isArray(list))return;
+    const native=m=>m.source==='cmd'||(CHAT.mode==='native'&&m.source!=='discord_archive');
+    if(!list.length){CHAT.messages=CHAT.messages.filter(m=>!native(m));return}
+    const latest=new Set(list.map(m=>String(m.id)));
+    const dates=list.map(m=>Date.parse(m.timestamp||0)).filter(Number.isFinite);
+    if(!dates.length)return;
+    const oldest=Math.min(...dates);
+    CHAT.messages=CHAT.messages.filter(m=>!native(m)||Date.parse(m.timestamp||0)<oldest||latest.has(String(m.id)));
   }
   function mergeChannelMessages(list){
     const map=new Map(CHAT.messages.map(m=>[String(m.id),m]));
@@ -647,12 +661,12 @@ function dashboardPage(auth,initialNativeGuilds=[]){
           '?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100')));
         if(version!==CHAT.version||!CHAT.open)return;
         const previous=CHAT.messages.length;
-        fetched.forEach((out,i)=>{if(out.status==='fulfilled')mergeChannelMessages((out.value.messages||[]).map(m=>({...m,source:modes[i]==='native'?'cmd':'discord_archive'})))});
+        fetched.forEach((out,i)=>{if(out.status==='fulfilled'){const list=(out.value.messages||[]).map(m=>({...m,source:modes[i]==='native'?'cmd':'discord_archive'}));if(modes[i]==='native')reconcileNativeRecentMessages(list);mergeChannelMessages(list)}});
         if(previous!==CHAT.messages.length)renderChannelMessages(false);
       }catch{}
       return;
     }
-    try{const u=CHAT.mode==='native'?'/api/native/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':CHAT.mode==='archive'?'/api/native/history?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':'/api/dashboard/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&bot='+encodeURIComponent(CHAT.bot)+'&limit=100';const d=await api(u);if(version!==CHAT.version||!CHAT.open)return;const before=CHAT.messages.length,previous=JSON.stringify(CHAT.messages);mergeChannelMessages(d.messages||[]);if(JSON.stringify(CHAT.messages)!==previous){renderChannelMessages(CHAT.messages.length>before);qs('#channelSubtitle').textContent=CHAT.messages.length+' message(s) · actualisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}}catch{}
+    try{const u=CHAT.mode==='native'?'/api/native/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':CHAT.mode==='archive'?'/api/native/history?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100':'/api/dashboard/messages?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&bot='+encodeURIComponent(CHAT.bot)+'&limit=100';const d=await api(u);if(version!==CHAT.version||!CHAT.open)return;const before=CHAT.messages.length,previous=JSON.stringify(CHAT.messages);if(CHAT.mode==='native')reconcileNativeRecentMessages(d.messages||[]);mergeChannelMessages(d.messages||[]);if(JSON.stringify(CHAT.messages)!==previous){renderChannelMessages(CHAT.messages.length>before);qs('#channelSubtitle').textContent=CHAT.messages.length+' message(s) · actualisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}}catch{}
   }
   function replyDiscordMessage(id,author,content){CHAT.replyTo=String(id);qs('#replyText').textContent='Répondre à '+author+(content?' · '+content:'');updateReplyBar()}
   function updateReplyBar(){const b=qs('#replyBar');if(!b)return;b.classList.toggle('on',Boolean(CHAT.replyTo));if(!CHAT.replyTo)qs('#replyText').textContent=''}
@@ -2779,7 +2793,7 @@ function nativeGuildPage(auth,d){
   '<header class="top"><a href="/dashboard?openNative='+encodeURIComponent(gid)+'">‹</a>'+(icon?'<img src="'+escHtml(icon)+'" alt="">':'<div class="fallback">'+escHtml(String(g.name||"?").slice(0,2).toUpperCase())+'</div>')+'<h1>'+name+'</h1></header>'+
   '<main class="wrap"><section class="serverHead"><b>'+name+'</b><div class="muted">'+Number(g.member_count||1)+' membre(s) · CMD Sphere autonome</div>'+(g.founder_auto_boost?'<span style="color:#83fbe8;font-size:12px;font-weight:800">👑 ★ Boost fondateur permanent</span>':'')+'<div class="actions"><button class="btn primary" id="copyInvite">Copier invitation</button><a class="btn" href="/profile?server='+encodeURIComponent(gid)+'">Profil du serveur</a></div></section><div>'+ (channels||'<div class="empty">Aucun salon synchronisé.</div>') +'</div></main>'+
   '<section class="overlay" id="chat"><header class="chatHead"><button class="back" id="closeChat">‹</button><div class="chatTitle"><b id="title"># salon</b><small id="sub">CMD Sphere · sans bot</small></div><button class="btn" id="refreshChat">↻</button></header><div class="messages" id="messages"><div class="empty">Chargement…</div></div><div class="composerWrap"><form class="composer" id="composer"><textarea id="input" placeholder="Envoyer un message dans ce salon…"></textarea><button>Envoyer</button></form></div></section>'+
-  '<script>const GID='+JSON.stringify(gid)+';let active=null,poll=null;const $=s=>document.querySelector(s);function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;"}[c]))}function when(v){try{return new Date(v).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch{return""}}async function api(url,opt){const r=await fetch(url,{cache:"no-store",...opt,headers:{"content-type":"application/json",...(opt?.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Erreur");return d}function render(d){const rows=d.messages||[];$("#messages").innerHTML=rows.slice().reverse().map(m=>{const a=m.author||{},av=a.avatar&&/^https:\\/\\//.test(a.avatar)?\'<img src="\'+esc(a.avatar)+\'" alt="">\':\'<span>\'+esc(String(a.username||"?").slice(0,1).toUpperCase())+\'</span>\';return \'<article class="msg"><div class="avatar">\'+av+\'</div><div class="body"><div class="meta"><b>\'+esc(a.username||"Utilisateur")+\'</b><time>\'+esc(when(m.timestamp))+\'</time></div><div class="text">\'+esc(m.content||"").replace(/\\n/g,"<br>")+\'</div></div></article>\'}).join("")||\'<div class="empty">Aucun message. Écris le premier.</div>\';$("#messages").scrollTop=$("#messages").scrollHeight;$("#sub").textContent=(d.channel?.topic?d.channel.topic+" · ":"")+"CMD Sphere · sans bot"}async function load(){if(!active)return;try{render(await api("/api/native/messages?guildId="+encodeURIComponent(GID)+"&channelId="+encodeURIComponent(active)+"&limit=100"))}catch(e){$("#sub").textContent=e.message}}async function openCh(id,name){active=id;$("#title").textContent="# "+name;$("#chat").classList.add("on");await load();clearInterval(poll);poll=setInterval(load,3500);$("#input").focus()}document.querySelectorAll(".openCh").forEach(b=>b.onclick=()=>openCh(b.dataset.id,b.dataset.name));const queryChannel=new URLSearchParams(location.search).get("channel");if(queryChannel){const target=Array.from(document.querySelectorAll(".openCh")).find(b=>b.dataset.id===queryChannel);if(target)openCh(target.dataset.id,target.dataset.name)}$("#closeChat").onclick=()=>{$("#chat").classList.remove("on");clearInterval(poll);poll=null;active=null};$("#refreshChat").onclick=load;$("#composer").onsubmit=async e=>{e.preventDefault();const input=$("#input"),content=input.value.trim();if(!active||!content)return;const old=input.value;input.value="";try{await api("/api/native/messages",{method:"POST",body:JSON.stringify({guildId:GID,channelId:active,content})});await load()}catch(x){input.value=old;alert(x.message)}};$("#copyInvite").onclick=()=>navigator.clipboard?.writeText('+JSON.stringify(d.inviteUrl||"")+');const params=new URLSearchParams(location.search),wanted=params.get("channel");if(wanted){const row=[...document.querySelectorAll(".openCh")].find(b=>b.dataset.id===wanted);if(row)row.click()}</script></body></html>';
+  '<script>const GID='+JSON.stringify(gid)+';let active=null,poll=null;const $=s=>document.querySelector(s);function esc(v){return String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;"}[c]))}function when(v){try{return new Date(v).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch{return""}}async function api(url,opt){const r=await fetch(url,{cache:"no-store",...opt,headers:{"content-type":"application/json",...(opt?.headers||{})}}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Erreur");return d}function render(d){const rows=d.messages||[];$("#messages").innerHTML=rows.slice().reverse().map(m=>{const a=m.author||{},av=a.avatar&&/^https:\\/\\//.test(a.avatar)?\'<img src="\'+esc(a.avatar)+\'" alt="">\':\'<span>\'+esc(String(a.username||"?").slice(0,1).toUpperCase())+\'</span>\';return \'<article class="msg" data-message-id="\'+esc(m.id)+\'" data-cmd-author-id="\'+esc(a.id||"")+\'" data-cmd-author-name="\'+esc(a.username||"Utilisateur")+\'" data-cmd-source="cmd"><div class="avatar">\'+av+\'</div><div class="body"><div class="meta"><b>\'+esc(a.username||"Utilisateur")+\'</b><time>\'+esc(when(m.timestamp))+\'</time></div><div class="text">\'+esc(m.content||"").replace(/\\n/g,"<br>")+\'</div></div></article>\'}).join("")||\'<div class="empty">Aucun message. Écris le premier.</div>\';$("#messages").scrollTop=$("#messages").scrollHeight;$("#sub").textContent=(d.channel?.topic?d.channel.topic+" · ":"")+"CMD Sphere · sans bot"}async function load(){if(!active)return;try{render(await api("/api/native/messages?guildId="+encodeURIComponent(GID)+"&channelId="+encodeURIComponent(active)+"&limit=100"))}catch(e){$("#sub").textContent=e.message}}async function openCh(id,name){active=id;$("#title").textContent="# "+name;$("#chat").classList.add("on");await load();clearInterval(poll);poll=setInterval(load,3500);$("#input").focus()}document.querySelectorAll(".openCh").forEach(b=>b.onclick=()=>openCh(b.dataset.id,b.dataset.name));const queryChannel=new URLSearchParams(location.search).get("channel");if(queryChannel){const target=Array.from(document.querySelectorAll(".openCh")).find(b=>b.dataset.id===queryChannel);if(target)openCh(target.dataset.id,target.dataset.name)}$("#closeChat").onclick=()=>{$("#chat").classList.remove("on");clearInterval(poll);poll=null;active=null};$("#refreshChat").onclick=load;$("#composer").onsubmit=async e=>{e.preventDefault();const input=$("#input"),content=input.value.trim();if(!active||!content)return;const old=input.value;input.value="";try{await api("/api/native/messages",{method:"POST",body:JSON.stringify({guildId:GID,channelId:active,content})});await load()}catch(x){input.value=old;alert(x.message)}};$("#copyInvite").onclick=()=>navigator.clipboard?.writeText('+JSON.stringify(d.inviteUrl||"")+');const params=new URLSearchParams(location.search),wanted=params.get("channel");if(wanted){const row=[...document.querySelectorAll(".openCh")].find(b=>b.dataset.id===wanted);if(row)row.click()}</script></body></html>';
 }
 
 async function nativeMembership(userId,guildId){
@@ -3343,6 +3357,44 @@ function sanitizeNativeMetadata(v){
     if(question&&options.length>=2)out.poll={question,options};
   }
   return out;
+}
+/* CMD Sphere local member cards and message moderation; external archives are not mutated. */
+async function nativeMessageActionAccess(auth,guildId){
+ const member=await requireNativeMember(auth,String(guildId||""));
+ return {userId:String(auth.user.id),guildId:String(guildId),isOwner:String(member.membership_role)==="owner"};
+}
+async function nativeMemberPublicCard(auth,guildId,userId){
+ const gid=String(guildId||""),uid=String(userId||"");
+ await requireNativeMember(auth,gid);
+ if(!/^[0-9a-f-]{36}$/i.test(uid))throw Object.assign(new Error("Profil CMD Sphere indisponible."),{status:404});
+ const member=await nativeMembership(uid,gid);
+ if(!member)throw Object.assign(new Error("Cette personne ne fait pas partie du serveur."),{status:404});
+ const account=await accountCardById(uid);
+ if(!account)return {id:uid,displayName:member.profile_display_name||"Utilisateur externe",avatar:member.profile_avatar_data_url||null,
+   bio:member.profile_bio||"",status:member.profile_status||"",membershipRole:member.membership_role,external:true,friendStatus:"unavailable"};
+ const extra=await pool.query("SELECT bio,banner_data_url,accent_color FROM cmd_global_profiles WHERE user_id=$1 LIMIT 1",[uid]);
+ const profile=extra.rows[0]||{},me=String(auth.user.id);
+ let friendStatus=uid===me?"self":await areFriends(me,uid)?"friends":"none";
+ if(friendStatus==="none"){
+   const requests=await pool.query("SELECT requester_user_id FROM cmd_friend_requests WHERE status='pending' AND ((requester_user_id=$1 AND target_user_id=$2) OR (requester_user_id=$2 AND target_user_id=$1)) LIMIT 1",[me,uid]);
+   if(requests.rows[0])friendStatus=String(requests.rows[0].requester_user_id)===me?"sent":"received";
+ }
+ return {...account,displayName:member.profile_display_name||account.displayName,avatar:member.profile_avatar_data_url||account.avatar,
+   bio:member.profile_bio||profile.bio||"",status:member.profile_status||account.status,
+   banner:profile.banner_data_url||null,accentColor:profile.accent_color||"#7c3aed",
+   membershipRole:member.membership_role,external:false,friendStatus};
+}
+async function deleteOwnOrOwnerNativeMessage(auth,input){
+ const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||"");
+ if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant de message invalide."),{status:400});
+ const channel=await nativeTextChannel(auth,guildId,channelId);
+ const member=await requireNativeMember(auth,guildId);
+ const isOwner=String(member.membership_role)==="owner";
+ const deleted=await pool.query(`DELETE FROM cmd_native_channel_messages
+   WHERE id=$1 AND guild_id=$2 AND channel_id=$3 AND (sender_user_id=$4 OR $5::boolean)
+   RETURNING id`,[messageId,guildId,String(channel.id),String(auth.user.id),isOwner]);
+ if(!deleted.rows.length)throw Object.assign(new Error("Message introuvable ou suppression non autorisée."),{status:403});
+ return {ok:true,messageId,guildId,channelId:String(channel.id)};
 }
 async function sendNativeChannelMessage(auth,input){
   const guildId=String(input.guildId||""),ch=await nativeTextChannel(auth,guildId,input.channelId),body=String(input.content||"").trim();
@@ -4829,6 +4881,22 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,await importedDiscordHistory(auth,guildId,channelId,{before,limit}));
       }catch(e){sendJson(res,400,{error:e.message})}return;
     }
+
+    if(req.method==="GET"&&url.pathname==="/api/native/message-controls"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await nativeMessageActionAccess(auth,url.searchParams.get("guildId")||""))}
+      catch(e){sendJson(res,e.status||403,{error:e.message})}return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/native/member-profile"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{profile:await nativeMemberPublicCard(auth,url.searchParams.get("guildId")||"",url.searchParams.get("userId")||"")})}
+      catch(e){sendJson(res,e.status||403,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/messages/delete"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await deleteOwnOrOwnerNativeMessage(auth,await readFormBodyJson(req)))}
+      catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -5068,6 +5136,11 @@ const httpServer=createServer(async(req,res)=>{
       res.end(readFileSync(new URL(css?"./cmd-chat-polish.css":"./cmd-chat-polish.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-touch-organizer.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-touch-organizer.js",import.meta.url),"utf8"));return;}
+
+    if(req.method==="GET"&&url.pathname==="/cmd-social-message-actions.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-social-message-actions.js",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-message-polish.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-message-polish.js",import.meta.url),"utf8"));return;}
     if(req.method==="GET"&&url.pathname==="/cmd-profile-premium.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-profile-premium.css",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-page-position.js"){
