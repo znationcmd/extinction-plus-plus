@@ -1,4 +1,13 @@
 # CMD Sphere + CMD Hosting — Audit de reprise vérifiable
+
+## Reprise supplémentaire — test des sources graphiques, 10/10/2026 (16 h 55, Corse)
+- Archive originale `cmd-sphere-68-avatars-individuels.zip` inspectée : **68 fichiers PNG RGB sans transparence**, largeur **90 ou 91 px**, hauteur **256 px**. Certaines découpes visibles contiennent des membres d'autres personnages ou coupent des bras/personnages. **Ces sources ne peuvent pas donner une vraie image Ultra HD simplement par agrandissement.** NE PAS écraser les originaux ni les associer à tort à des silhouettes propres. Recréer les sujets complets, détourés et détaillés un à un, puis conserver les identifiants.
+- Archive `CMD_Sphere_62_Fonds_Horizontaux_Nets.zip` inspectée : **62 images 1920×1080 et 62 miniatures 640×360**, toutes en WebP RGB ; le code de déploiement en conserve les originaux. Les dimensions seules ne prouvent pas la netteté des détails.
+- Archive `CMD_Sphere_54_fonds_individuels_sans_doublons.zip` inspectée : **53 images**, pas 54, aux dimensions **984×1362 ou 984×1365** (format vertical), donc ne doivent pas être traitées comme des fonds 16:9 sans composition adaptée.
+- Le bouton + de la colonne des serveurs utilisait encore une page autonome `/servers/add`. Nouveau correctif préparé sur `cmd-sphere/route-creation-mobile-20261010` : acheminer ce chemin vers `/dashboard?createServer=1` pour ouvrir l'assistant en trois étapes intégré à la plateforme, sans supprimer les fonctionnalités rejoindre/importer.
+- Pour un serveur ayant seulement le propriétaire, un bouton d'invitation a été ajouté dans les pages membres et attribution de rôles. La gestion reste liée à des comptes ayant effectivement rejoint le serveur.
+- Ces correctifs sont distincts de la validation de la qualité HD et des installations réelles de mods DayZ/ARK. Aucune simulation ne remplace les tests.
+
 Date : 10 octobre 2026. Document de continuité pour reprendre **les projets existants** sans réinitialisation ni perte.
 
 ## Règles absolues
