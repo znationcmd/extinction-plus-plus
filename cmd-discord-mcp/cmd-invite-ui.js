@@ -1,4 +1,31 @@
-/* QR-Code-generator JavaScript — Copyright (c) Project Nayuki; adapted by Cyphrme. MIT License. https://github.com/Cyphrme/QRGenJS/blob/master/LICENSE.md */
+/*
+QR Code generator library (JavaScript) (qrgen)
+
+Additions by Cyphr.me 2022
+https://github.com/Cyphrme/QRGenJS
+
+Copyright (c) Project Nayuki. (MIT License)
+https://www.nayuki.io/page/qr-code-generator-library
+
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+- The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+- The Software is provided "as is", without warranty of any kind, express or
+  implied, including but not limited to the warranties of merchantability,
+  fitness for a particular purpose and noninfringement. In no event shall the
+  authors or copyright holders be liable for any claim, damages or other
+  liability, whether in an action of contract, tort or otherwise, arising from,
+  out of or in connection with the Software or the use or other dealings in the
+  Software.
+
+*/
+
 "use strict";var qrcodegen=new function(){this.QrCode=function(e,n,i,u){if(e<O||e>T)throw"Version value out of range";if(u<-1||u>7)throw"Mask value out of range";if(!(n instanceof D))throw"QrCode.Ecc expected";for(var f=e*4+17,g=[],v=0;v<f;v++)g.push(!1);for(var d=[],E=[],v=0;v<f;v++)d.push(g.slice()),E.push(g.slice());C();var R=z(i);if(X(R),u==-1)for(var b=1/0,v=0;v<8;v++){F(v),N(v);var P=$();P<b&&(u=v,b=P),F(v)}if(u<0||u>7)throw"Assertion error";F(u),N(u),E=null,Object.defineProperty(this,"version",{value:e}),Object.defineProperty(this,"size",{value:f}),Object.defineProperty(this,"errorCorrectionLevel",{value:n}),Object.defineProperty(this,"mask",{value:u}),this.getModule=function(r,t){return 0<=r&&r<f&&0<=t&&t<f&&d[t][r]},this.drawCanvas=function(r,t,a){if(r<=0||t<0)throw"Value out of range";var o=(f+t*2)*r;a.width=o,a.height=o;for(var s=a.getContext("2d"),c=-t;c<f+t;c++)for(var l=-t;l<f+t;l++)s.fillStyle=this.getModule(l,c)?"#000000":"#FFFFFF",s.fillRect((l+t)*r,(c+t)*r,r,r)},this.toSvgString=function(r){if(r<0)throw"Border must be non-negative";for(var t=[],a=0;a<f;a++)for(var o=0;o<f;o++)this.getModule(o,a)&&t.push("M"+(o+r)+","+(a+r)+"h1v1h-1z");return`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 `+(f+r*2)+" "+(f+r*2)+`" stroke="none">
@@ -143,7 +170,7 @@ async function refresh(){
 async function open(guild){
  guild=String(guild||guildId());
  if(!uuid.test(guild)){hint("Sélectionne d’abord un serveur CMD Sphere.");return false}
- activeGuild=guild;mask.classList.add("open");$("#cmdInvTitle").textContent="Inviter un ami · Ce serveur";
+ activeGuild=guild;activeName=String($(".cmd-server-heading strong")?.textContent||"Serveur");mask.classList.add("open");$("#cmdInvTitle").textContent="Inviter un ami · "+activeName;
  list.textContent="Chargement des invitations…";
  hint("");
  try{await refresh()}catch(e){list.textContent="";hint(e.message,true)}
@@ -163,13 +190,19 @@ let launch=null,lastGuild="";
 function install(){
  if(!launch){
   launch=document.createElement("button");launch.type="button";launch.className="cmd-inv-launch";launch.id="cmdInviteFriends";launch.textContent="＋ Inviter un ami";
-  launch.onclick=()=>{if(!open(guildId()))alert("Ouvre d’abord le serveur que tu veux partager.")};
+  launch.onclick=()=>{void open(guildId())};
  }
  const root=$("#workspace"),native=Boolean(root?.dataset.nativeGuildId)&&Boolean($(".sphere-app.cmd-native-selected"));
  const header=$(".cmd-server-head-actions");
+ const nativeButton=header?.querySelector("#cmdInviteCopy");
  if(native&&header&&header.isConnected){
-  if(launch.parentElement!==header){launch.remove();header.append(launch)}
-  launch.hidden=false;
+  if(nativeButton){
+   nativeButton.textContent="👥 Inviter un ami";
+   launch.hidden=true;launch.remove();
+  }else{
+   if(launch.parentElement!==header){launch.remove();header.append(launch)}
+   launch.hidden=false;
+  }
  }else{launch.hidden=true;launch.remove()}
  const id=native?guildId():"";
  if(id!==lastGuild){lastGuild=id;if(id&&mask.classList.contains("open")&&id!==activeGuild)close()}
