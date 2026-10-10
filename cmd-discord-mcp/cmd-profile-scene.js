@@ -269,7 +269,7 @@ const beardOptions=[["none","Sans barbe"],["stubble","Barbe de 3 jours"],["short
 const faceShapes=[["oval","Ovale"],["round","Rond"],["square","Carré"],["heart","Cœur"]];
 const browStyles=[["natural","Naturels"],["thick","Épais"],["thin","Fins"],["arched","Arquées"]];
 const eyeShapes=[["normal","Classiques"],["wide","Grands"],["almond","En amande"]];
-const tabs=[["avatar","Avatar","◉"],["pet","Mon univers","♧"],["scene","Scènes","▧"]];
+const tabs=[["avatar","Avatar","◉"],["pet","Mon univers","♧"],["scene","Fonds & décors","▧"]];
 function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
 const clothingIcons={"hoodie":"🧥","tshirt":"👕","jacket":"🧥","shirt":"👔","dress":"👗","sport":"🎽","suit":"🤵","armor":"🛡️","jeans":"👖","dark":"👖","shorts":"🩳","skirt":"👗","cargo":"👖","formal":"👞","sneakers":"👟","boots":"🥾","sandals":"🩴","glasses":"🕶️","cap":"🧢","hat":"👒","none":"✕"};
 function garmentArt(value){
@@ -427,7 +427,7 @@ function contents(tab){
  if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits)+screenshotCatalogue("vestes");
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return universePicker();
- if(tab==="scene")return '<h2>Mes scènes</h2><p class="cmd-scene-section-intro">Décors individuels, sans prix ni couronne, adaptés à tous les écrans.</p>'+picker("Paysages","scene",scenes,"scene");
+ if(tab==="scene")return '<h2>Fonds pour Avatar & décor</h2><p class="cmd-scene-section-intro">Choisis le paysage derrière ton personnage, ton animal et tes objets. Ta bannière de profil reste inchangée. Chaque décor conserve son cadrage complet.</p>'+picker("Arrière-plans d’avatar","scene",scenes,"scene");
  return avatarEditor();
 }
 function renderSheet(tab){
@@ -554,7 +554,7 @@ function openSheet(){
  '</div>'+
  '<nav class="cmd-scene-tabs" aria-label="Choisir les personnalisations">'+tabs.map(([k,v])=>'<button type="button" data-scene-tab="'+k+'" aria-pressed="false">'+navIcons[k]+'<small>'+v+'</small></button>').join("")+'</nav>'+
  '<section id="cmdSceneOptions" class="cmd-scene-market" aria-live="polite"></section>'+
- '<div class="cmd-scene-footer"><span id="cmdSceneNotice" role="status" aria-live="polite"></span><div class="cmd-scene-footer-actions"><button type="button" id="cmdSceneReset">Fond d’origine</button><button type="button" id="cmdSceneSave">Enregistrer sur mon profil</button></div></div>'+
+ '<div class="cmd-scene-footer"><span id="cmdSceneNotice" role="status" aria-live="polite"></span><div class="cmd-scene-footer-actions"><button type="button" id="cmdSceneReset">Décor neutre</button><button type="button" id="cmdSceneSave">Enregistrer sur mon profil</button></div></div>'+
  '</div>';
  document.body.append(sheet);
  preview=$("#cmdScenePreviewPerson");
@@ -565,7 +565,7 @@ function openSheet(){
   const button=$("#cmdSceneLabel");button.setAttribute("aria-expanded",String(expanded));
   button.textContent=expanded?"Réduire l’aperçu ⤡":"Aperçu en direct ⤢";
  });
- $("#cmdSceneReset").onclick=()=>{state.scene="none";renderSheet("scene");refreshEditor();$("#cmdSceneNotice").textContent="Le fond d'origine sera retrouvé après enregistrement."};
+ $("#cmdSceneReset").onclick=()=>{state.scene="none";renderSheet("scene");refreshEditor();$("#cmdSceneNotice").textContent="Le décor neutre sera enregistré sans modifier la bannière de ton profil."};
  $("#cmdSceneSave").onclick=save;$("#cmdScenePreviewSave").onclick=save;
  $$("[data-scene-tab]",sheet).forEach(b=>b.onclick=()=>showTab(b.dataset.sceneTab));
  sheet.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();closeSheet()}});
