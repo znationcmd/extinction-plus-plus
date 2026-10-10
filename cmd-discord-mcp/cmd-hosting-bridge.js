@@ -31,11 +31,9 @@ async function hostingMemberAccess(pool,gid,uid){
  if(ownerId===uid)return {allowed:true,owner:true,ownerId};
  const m=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
  if(!m.rows.length)return {allowed:false,owner:false,ownerId};
- // Owner-assigned CMD Sphere role (profile_role_id) grants access only when that role is enabled by the owner.
- const roleGrant=await pool.query("SELECT 1 FROM cmd_native_members m JOIN cmd_native_roles r ON r.guild_id=m.guild_id AND r.id::text=m.profile_role_id JOIN cmd_sphere_hosting_role_access p ON p.guild_id=m.guild_id AND p.role_id=r.id AND p.enabled=TRUE WHERE m.guild_id=$1 AND m.user_id=$2 LIMIT 1",[gid,uid]);
- // Keep previously owner-granted per-member access backward compatible.
- const legacy=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id JOIN cmd_native_roles role ON role.id=rm.role_id AND role.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 AND ra.enabled=TRUE LIMIT 1",[gid,uid]);
- return {allowed:!!roleGrant.rows.length||!!legacy.rows.length,owner:false,ownerId};
+ // Only owner-issued membership assignments count; profile_role_id is user-editable and never grants control.
+ const grants=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id AND ra.enabled=TRUE JOIN cmd_native_roles r ON r.id=rm.role_id AND r.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 LIMIT 1",[gid,uid]);
+ return {allowed:!!grants.rows.length,owner:false,ownerId};
 }
 async function hostingOwnerToken(pool,uid){
  const r=await pool.query("SELECT token_enc FROM cmd_sphere_hosting_links WHERE user_id=$1 AND expires_at>NOW()",[uid]);
@@ -87,6 +85,11 @@ export async function handleCmdHostingBridge(req,res,url,{pool,auth,baseUrl}){
   const access=await hostingMemberAccess(pool,gid,uid);
   if(!access.owner){json(res,403,{error:"Seul le propriétaire attribue les accès CMD Hosting"});return true}
   if(req.method==="GET"){
+   const preset=await pool.query("SELECT 1 FROM cmd_native_roles WHERE guild_id=$1 AND source_role_id=$2 LIMIT 1",[gid,"cmd-hosting-"+gid]);
+   if(!preset.rows.length){const newId=crypto.randomUUID();
+    await pool.query("INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,'Gestion CMD Hosting','#9160cf',$4::jsonb,1,TRUE,FALSE) ON CONFLICT(guild_id,source_role_id) DO NOTHING",[newId,gid,"cmd-hosting-"+gid,JSON.stringify({manageCmdHosting:true})]);
+    await pool.query("INSERT INTO cmd_sphere_hosting_role_access(guild_id,role_id,enabled) SELECT $1,id,TRUE FROM cmd_native_roles WHERE guild_id=$1 AND source_role_id=$2 ON CONFLICT(guild_id,role_id) DO NOTHING",[gid,"cmd-hosting-"+gid]);
+   }
    const roles=await pool.query("SELECT r.id,r.name,COALESCE(a.enabled,FALSE) AS enabled FROM cmd_native_roles r LEFT JOIN cmd_sphere_hosting_role_access a ON a.role_id=r.id AND a.guild_id=r.guild_id WHERE r.guild_id=$1 ORDER BY r.position DESC,r.name",[gid]);
    const members=await pool.query("SELECT m.user_id,COALESCE(NULLIF(m.profile_display_name,''),NULLIF(a.display_name,''),a.username,'Membre') AS name,m.membership_role FROM cmd_native_members m LEFT JOIN cmd_accounts a ON a.id::text=m.user_id WHERE m.guild_id=$1 ORDER BY m.joined_at LIMIT 500",[gid]);
    const grants=await pool.query("SELECT role_id,user_id FROM cmd_sphere_hosting_role_members WHERE guild_id=$1",[gid]);
@@ -131,6 +134,7 @@ export async function handleCmdHostingBridge(req,res,url,{pool,auth,baseUrl}){
   }
   if(!access.owner){json(res,403,{error:"Seul le propriétaire peut changer la location associée"});return true}
   if(req.method==="DELETE"){
+   if(!allowed(req,baseUrl)){json(res,403,{error:"Origine refusée"});return true}
    await pool.query("DELETE FROM cmd_sphere_hosting_guild_links WHERE guild_id=$1 AND owner_user_id=$2",[guildId,uid]);json(res,200,{ok:true});return true}
   if(req.method!=="POST"){json(res,405,{error:"Méthode non autorisée"});return true}
   if(!allowed(req,baseUrl)){json(res,403,{error:"Origine interdite"});return true}
