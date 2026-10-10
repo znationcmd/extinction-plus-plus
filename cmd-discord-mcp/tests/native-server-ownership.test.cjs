@@ -38,7 +38,10 @@ test("owner is included in custom role assignment list and can be selected",()=>
  assert.ok(ui.includes("const members=data.members||[];"));
  assert.ok(ui.includes("member.membership_role==='owner'?' · Propriétaire (toi)'"));
  assert.ok(ui.includes("'/api/native/roles/assign'"));
- assert.ok(!ui.includes("const members=(data.members||[]).filter(m=>m.membership_role!=='owner')"));
+ const start=ui.indexOf("async function renderRoleAssignments(role){");
+ const end=ui.indexOf("async function renderNativeMembersTab(){",start);
+ assert.ok(start>=0&&end>start);
+ assert.ok(!ui.slice(start,end).includes("filter(m=>m.membership_role!==\u0027owner\u0027)"));
 });
 
 test("member can leave without deleting messages or guild",async()=>{
