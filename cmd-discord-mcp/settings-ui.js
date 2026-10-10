@@ -156,12 +156,12 @@
         ['Avancés','terminal','advanced','']
       ]},
       {label:'Outils CMD',rows:[
-        ['Synchroniser mes Discord','sync','sync',''],
-        ['Reconnecter Discord','link','relink',''],
+        ['Synchroniser mes serveurs liés','sync','sync',''],
+        ['Reconnecter mon compte externe','link','relink',''],
         ['Dossiers de serveurs','folder','folders',''],
-        ['Bots Discord','bot','bots',''],
+        ['Bots liés','bot','bots',''],
         ['Webhooks','link','webhooks',''],
-        ['Sauvegarde Discord','save','backup','']
+        ['Sauvegarde des serveurs liés','save','backup','']
       ]},
       {label:'Assistance',rows:[
         ['Assistance','help','support',''],
@@ -258,7 +258,7 @@
     }
     var pages={
       social:["Contenu et social","Accède à tes messages privés et gère les conversations et relations de CMD Sphere.",'<a class="cmd-set-cta" href="/messages">Ouvrir les messages</a>'],
-      privacy:["Données et confidentialité","Paramètres de confidentialité de CMD Sphere. Les autorisations et le fonctionnement de Discord restent indépendants de CMD Sphere.",'<a class="cmd-set-cta" href="/connections">Gérer mes connexions</a><a class="cmd-set-cta secondary" href="/profile">Paramètres de mon profil</a>'],
+      privacy:["Données et confidentialité","Paramètres de confidentialité de CMD Sphere. Les autorisations et le fonctionnement de du service externe restent indépendants de CMD Sphere.",'<a class="cmd-set-cta" href="/connections">Gérer mes connexions</a><a class="cmd-set-cta secondary" href="/profile">Paramètres de mon profil</a>'],
       device:["Appareils","Informations concernant cet appareil et ta session CMD Sphere.",'<p id="cmdDeviceText" class="cmd-small"></p>'],
       invites:["Scanner / invitations","La création et la réception des invitations CMD Sphere se font depuis les serveurs.",'<a class="cmd-set-cta" href="/servers/add">Créer ou rejoindre un serveur</a>'],
       premium:["CMD Premium","Personnalisations, abonnements et avantages proposés par CMD Sphere.",'<a class="cmd-set-cta" href="/shop">Voir les offres CMD Premium</a>'],
@@ -270,7 +270,7 @@
       language:["Langue","Choisis la langue de l'interface CMD Sphere.",'<label for="cmdLanguageChoice">Langue de l’application</label><select id="cmdLanguageChoice"><option value="fr">Français</option><option value="en">English</option><option value="us">English (USA)</option><option value="de">Deutsch</option><option value="es">Español</option><option value="it">Italiano</option><option value="ru">Русский</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="co">Corsu</option></select><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les messages visibles sont traduits dans ta langue lorsque le service gratuit est disponible. Le texte original reste accessible. La traduction utilise un service externe et peut être momentanément indisponible.</p><p id="cmdSubStatus" class="cmd-status"></p>'],
       notifications:["Notifications","Active les notifications de messages et d'appels sur cet appareil. L'autorisation système ne garantit pas à elle seule les alertes lorsque le navigateur est fermé.",'<p id="cmdNotifState" class="cmd-small"></p><button type="button" class="cmd-set-cta" data-cmd-subaction="notif">Autoriser les notifications</button><a class="cmd-set-cta secondary" href="/messages">Messages et appels</a><p id="cmdSubStatus" class="cmd-status"></p>'],
       appicon:["Icône de l'appli","Installe CMD Sphere depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil » sur iPhone ou « Installer l'application » sur les navigateurs compatibles.",'<a class="cmd-set-cta secondary" href="/dashboard">Revenir à CMD Sphere</a>'],
-      advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes Discord</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots Discord</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde Discord</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter Discord</a>'],
+      advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes serveurs liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde des serveurs liés</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter mon compte externe</a>'],
       support:["Assistance","Un problème de connexion ou de synchronisation ? Vérifie les diagnostics et contacte l'équipe CMD.",'<a class="cmd-set-cta" href="mailto:znation.cmd@gmail.com?subject=Assistance%20CMD%20Sphere">Contacter CMD</a><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="diagnostics">Voir les diagnostics</button>'],
       diagnostics:["Diagnostics","Vérifie la disponibilité de CMD Sphere et recharge les fichiers de l’application.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="health">Tester le serveur</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="refresh">Actualiser l’application</button><p id="cmdSubStatus" class="cmd-status"></p>'],
       whatsnew:["Nouveautés CMD Sphere","Nouvelle présentation des paramètres : menu regroupé par catégories, recherche, raccourcis de synchronisation et personnalisation locale.",'<button type="button" class="cmd-set-cta secondary" data-cmd-subaction="refresh">Actualiser l’application</button>']
