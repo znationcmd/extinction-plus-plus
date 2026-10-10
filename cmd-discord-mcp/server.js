@@ -1297,6 +1297,17 @@ async function initNativeDb(){
     PRIMARY KEY(user_id,channel_id)
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_channel_reads_user_guild_idx ON cmd_native_channel_reads(user_id,guild_id)');
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_events(
+    id UUID PRIMARY KEY, guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    creator_user_id TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
+    starts_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+  await pool.query("CREATE INDEX IF NOT EXISTS cmd_native_events_guild_idx ON cmd_native_events(guild_id,starts_at)");
+  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_notification_prefs(
+    guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'mentions',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(guild_id,user_id))`);
+
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_shop_installs(
     user_id TEXT NOT NULL,
     item_type TEXT NOT NULL,
@@ -4403,6 +4414,50 @@ const httpServer=createServer(async(req,res)=>{
     if(url.pathname==="/api/native/invites"||url.pathname==="/api/native/invites/revoke"){
       const auth=dashboardAuth(req);
       if(await handleCmdNativeInvites(req,res,url,{pool,auth,baseUrl,sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeAdmin}))return;
+    }
+    
+    if(url.pathname==="/api/native/events"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        let input=req.method==="POST"?await readFormBodyJson(req):{};
+        const guildId=String(input.guildId||url.searchParams.get("guildId")||"");
+        if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(guildId)){sendJson(res,400,{error:"Serveur invalide"});return}
+        await requireNativeMember(auth,guildId);
+        if(req.method==="GET"){
+          const rows=await pool.query("SELECT id,title,description,starts_at,created_at FROM cmd_native_events WHERE guild_id=$1 AND starts_at>NOW()-INTERVAL '1 day' ORDER BY starts_at ASC LIMIT 40",[guildId]);
+          sendJson(res,200,{events:rows.rows});return;
+        }
+        if(req.method==="POST"){
+          await requireNativeAdmin(auth,guildId);
+          const title=safeText(input.title,100),description=safeText(input.description||"",800),date=new Date(String(input.startsAt||""));
+          if(!title||!Number.isFinite(date.getTime())||date.getTime()<Date.now()-60000||date.getTime()>Date.now()+365*86400000){sendJson(res,400,{error:"Indique un titre et une date future dans les 12 prochains mois."});return}
+          const uuid=crypto.randomUUID();
+          await pool.query("INSERT INTO cmd_native_events(id,guild_id,creator_user_id,title,description,starts_at) VALUES($1,$2,$3,$4,$5,$6)",[uuid,guildId,String(auth.user.id),title,description,date]);
+          sendJson(res,201,{ok:true,id:uuid});return;
+        }
+        sendJson(res,405,{error:"Méthode non autorisée"});return;
+      }catch(e){sendJson(res,/membre|Permission/i.test(e.message)?403:400,{error:e.message});return}
+    }
+    if(url.pathname==="/api/native/notifications"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const input=req.method==="POST"?await readFormBodyJson(req):{};
+        const guildId=String(input.guildId||url.searchParams.get("guildId")||"");
+        if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(guildId)){sendJson(res,400,{error:"Serveur invalide"});return}
+        await requireNativeMember(auth,guildId);
+        if(req.method==="GET"){
+          const data=await pool.query("SELECT mode FROM cmd_native_notification_prefs WHERE guild_id=$1 AND user_id=$2",[guildId,String(auth.user.id)]);
+          sendJson(res,200,{mode:data.rows[0]?.mode||"mentions"});return;
+        }
+        if(req.method==="POST"){
+          const mode=String(input.mode||"");
+          if(!["all","mentions","none"].includes(mode)){sendJson(res,400,{error:"Choisis toutes, mentions ou aucune notification."});return}
+          await pool.query(`INSERT INTO cmd_native_notification_prefs(guild_id,user_id,mode) VALUES($1,$2,$3)
+             ON CONFLICT(guild_id,user_id) DO UPDATE SET mode=EXCLUDED.mode,updated_at=NOW()`,[guildId,String(auth.user.id),mode]);
+          sendJson(res,200,{ok:true,mode});return;
+        }
+        sendJson(res,405,{error:"Méthode non autorisée"});return;
+      }catch(e){sendJson(res,/membre/i.test(e.message)?403:400,{error:e.message});return}
     }
     if(req.method==="POST"&&url.pathname==="/api/native/mark-all-read"){
       const auth=dashboardAuth(req);
