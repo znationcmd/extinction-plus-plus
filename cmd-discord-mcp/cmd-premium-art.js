@@ -35,11 +35,17 @@ function seedFor(key){let seed=1234567;for(const c of key)seed=(Math.imul(seed,3
 function rand(seed){let v=seed;return()=>{v=(Math.imul(v,1664525)+1013904223)>>>0;return v/4294967296}}
 const f=n=>Number(n).toFixed(1);
 function crystal(x,y,w,h,color,rotation=0){
-  return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rotation)+')" filter="url(#shine)">'+
-  '<path d="M0 '+f(-h)+' L'+f(-w*.57)+' '+f(-h*.19)+' L'+f(-w*.42)+' '+f(h*.48)+' L'+f(w*.28)+' '+f(h*.53)+' L'+f(w*.57)+' '+f(-h*.25)+' Z" fill="url(#gem)" stroke="'+color+'" stroke-width="1.5"/>'+
-  '<path d="M0 '+f(-h)+' L0 '+f(h*.53)+' L'+f(w*.57)+' '+f(-h*.25)+' Z" fill="#fff" opacity=".2"/>'+
-  '<path d="M0 '+f(-h)+' L0 '+f(h*.53)+' L'+f(-w*.57)+' '+f(-h*.19)+' Z" fill="#000" opacity=".22"/>'+
-  '<path d="M0 '+f(-h)+' L0 '+f(h*.45)+'" stroke="#fff" stroke-opacity=".6" stroke-width="1.8"/></g>'
+  // Resolution-independent, sharp multi-facet gemstone with individually edged planes.
+  return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rotation)+')">'+
+   '<path d="M0 '+f(-h)+' L'+f(-w*.63)+' '+f(-h*.24)+' L'+f(-w*.46)+' '+f(h*.50)+' L0 '+f(h*.66)+' L'+f(w*.48)+' '+f(h*.41)+' L'+f(w*.64)+' '+f(-h*.27)+' Z" fill="url(#gem)" stroke="'+color+'" stroke-width="1.9" stroke-linejoin="round"/>'+
+   '<path d="M0 '+f(-h)+' L'+f(-w*.63)+' '+f(-h*.24)+' L'+f(-w*.17)+' '+f(-h*.08)+' Z" fill="#fff" opacity=".58"/>'+
+   '<path d="M0 '+f(-h)+' L'+f(w*.64)+' '+f(-h*.27)+' L'+f(w*.20)+' '+f(-h*.11)+' Z" fill="#fff" opacity=".23"/>'+
+   '<path d="M'+f(-w*.63)+' '+f(-h*.24)+' L'+f(-w*.46)+' '+f(h*.50)+' L0 '+f(h*.66)+' L'+f(-w*.17)+' '+f(-h*.08)+' Z" fill="#090421" opacity=".40"/>'+
+   '<path d="M'+f(w*.64)+' '+f(-h*.27)+' L'+f(w*.48)+' '+f(h*.41)+' L0 '+f(h*.66)+' L'+f(w*.20)+' '+f(-h*.11)+' Z" fill="#0c0929" opacity=".38"/>'+
+   '<path d="M'+f(-w*.17)+' '+f(-h*.08)+' L0 '+f(h*.66)+' L'+f(w*.20)+' '+f(-h*.11)+' L0 '+f(-h)+' Z" fill="#fff" opacity=".22"/>'+
+   '<path d="M0 '+f(-h)+' L'+f(-w*.17)+' '+f(-h*.08)+' L0 '+f(h*.66)+' L'+f(w*.20)+' '+f(-h*.11)+' Z" fill="none" stroke="#fff" stroke-opacity=".56" stroke-width=".9"/>'+
+   '<path d="M'+f(-w*.49)+' '+f(-h*.24)+' L'+f(-w*.24)+' '+f(-h*.41)+'" stroke="#fff" stroke-opacity=".85" stroke-width="2.6" stroke-linecap="round"/>'+
+   '<circle cx="'+f(-w*.25)+'" cy="'+f(-h*.43)+'" r="2.3" fill="#fff" opacity=".91"/></g>';
 }
 function flower(x,y,s,rng){
   const petals=Array.from({length:5},(_,i)=>'<ellipse cx="0" cy="'+f(-s*.46)+'" rx="'+f(s*.32)+'" ry="'+f(s*.52)+'" fill="url(#gem)" stroke="#fff" stroke-opacity=".28" transform="rotate('+(i*72)+')"/>').join('');
@@ -56,8 +62,12 @@ return crystal(x,y,size*.5,size*.86,color,rot);
 }
 function frameArt(key,meta){
   const rng=rand(seedFor(key)),family=meta.family,hue=meta.hue,shapes=[];
-  shapes.push('<rect x="43" y="49" width="554" height="342" rx="43" fill="none" stroke="url(#gold)" stroke-width="7" opacity=".78" filter="url(#glow)"/>');
-  shapes.push('<rect x="57" y="63" width="526" height="314" rx="32" fill="none" stroke="url(#gem)" stroke-width="2.6" opacity=".8"/>');
+  // Three clean metal-and-crystal rails remain visible even on Retina mobile cards.
+  shapes.push('<rect x="42" y="48" width="556" height="344" rx="44" fill="none" stroke="'+hue+'" stroke-opacity=".22" stroke-width="15" filter="url(#glow)"/>');
+  shapes.push('<rect x="45" y="51" width="550" height="338" rx="40" fill="none" stroke="url(#gold)" stroke-width="5.4" opacity=".98"/>');
+  shapes.push('<rect x="55" y="61" width="530" height="318" rx="34" fill="none" stroke="#fff" stroke-opacity=".52" stroke-width="1.6"/>');
+  shapes.push('<rect x="66" y="72" width="508" height="296" rx="25" fill="none" stroke="'+hue+'" stroke-opacity=".57" stroke-width="2.0"/>');
+  shapes.push('<path d="M116 57 H521 M116 383 H521" fill="none" stroke="#fff" stroke-opacity=".58" stroke-width="1.3"/>');
   for(let i=0;i<46;i++){
     const group=i%4;
     let x,y,ang;
@@ -74,8 +84,10 @@ function frameArt(key,meta){
 }
 function avatarArt(key,meta){
  const rng=rand(seedFor(key)),family=meta.family,hue=meta.hue,o=[];
- o.push('<circle cx="200" cy="200" r="160" fill="none" stroke="url(#gold)" stroke-width="7" opacity=".75" filter="url(#glow)"/>');
- o.push('<circle cx="200" cy="200" r="148" fill="none" stroke="url(#gem)" stroke-width="3" opacity=".68"/>');
+ o.push('<circle cx="200" cy="200" r="163" fill="none" stroke="'+hue+'" stroke-width="13" stroke-opacity=".28" filter="url(#glow)"/>');
+ o.push('<circle cx="200" cy="200" r="160" fill="none" stroke="url(#gold)" stroke-width="5.2" opacity=".98"/>');
+ o.push('<circle cx="200" cy="200" r="152" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="1.6"/>');
+ o.push('<circle cx="200" cy="200" r="146" fill="none" stroke="url(#gem)" stroke-width="2.7" opacity=".82"/>');
  const n=family==="crystal"?30:family==="celestial"?23:family==="garden"?27:family==="fire"?40:32;
  for(let i=0;i<n;i++){const angle=Math.PI*2*i/n+rng()*.17;const radius=159+(rng()-.5)*14;const x=200+Math.cos(angle)*radius,y=200+Math.sin(angle)*radius;
  o.push(piece(family,x,y,22+rng()*30,rng,hue,angle*180/Math.PI+90));
@@ -92,7 +104,7 @@ export function renderCmdPremiumSvg(type,key){
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+view+'" fill="none" aria-hidden="true"><defs>'+
  '<linearGradient id="gem" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
  '<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient>'+
- '<filter id="shine" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation=".4"/></filter>'+
+ '<filter id="shine" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="1" stdDeviation=".35" flood-color="#110623" flood-opacity=".28"/></filter>'+
  '<filter id="glow" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="2"/></filter>'+
  '</defs>'+content+'</svg>';
 }
@@ -105,7 +117,7 @@ export const CMD_PREMIUM_ART_CSS=`
 .cmd-gem-art .cmd-gem-mock .cmd-gem-avatar:after{content:"";position:absolute;left:11px;top:31px;width:28px;height:13px;border-radius:50% 50% 30% 30%;background:#d8d5e6}
 .cmd-gem-art .cmd-gem-mock i{position:absolute;left:70px;right:10%;height:6px;top:37%;border-radius:3px;background:#a5a0bd55}
 .cmd-gem-art .cmd-gem-mock i:last-child{top:55%;right:29%;background:#a5a0bd33}
-.cmd-gem-art>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;filter:drop-shadow(0 0 7px #af7ff777)}
+.cmd-gem-art>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 7px #af7ff777)}
 .cmd-gem-art.cmd-avatar-art{height:190px}
 .cmd-avatar-art .cmd-gem-mock{inset:21% 30%;aspect-ratio:1;border-radius:50%;background:#271d39}
 .cmd-avatar-art>img{inset:5%;width:90%;height:90%;object-fit:contain}
