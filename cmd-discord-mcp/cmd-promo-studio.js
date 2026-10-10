@@ -8,7 +8,7 @@ const FORMATS={"9:16":[720,1280],"1:1":[720,720],"16:9":[1280,720]};
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
 let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
-const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
+const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const note=t=>{const message=String(t||"");const n=$("#cmdStudioNotice");if(n)n.textContent=message;const toast=$("#cmdStudioToast");if(toast){toast.textContent=message;toast.hidden=!message}};
 function buttonHTML(arr,key){return arr.map(([v,label])=>'<button type="button" data-studio-'+key+'="'+safe(v)+'" class="'+(state[key]===v?"selected":"")+'">'+label+'</button>').join("")}
@@ -18,7 +18,7 @@ function open(context={}){
  const nextScope=user+":"+guild;
  if(studioScope&&studioScope!==nextScope){
   stop();clips.forEach(item=>URL.revokeObjectURL(item.url));clips=[];musicFile=null;selectedTrack=null;recorded=null;
-  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
+  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:12,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
   if(root){root.remove();root=null;canvas=null;ctx=null}
  }
  studioScope=nextScope;studioProfileGuild=guild;
@@ -49,6 +49,7 @@ function open(context={}){
   '<button type="button" data-cmd-tool="effect"><span>✦</span><small>Effets</small></button>'+
   '<button type="button" data-cmd-tool="filter"><span>◉</span><small>Filtres</small></button>'+
   '<button type="button" data-cmd-tool="format"><span>▣</span><small>Format</small></button>'+
+  '<button type="button" data-cmd-tool="camera"><span>◉</span><small>Caméra</small></button>'+
   '<button type="button" data-cmd-tool="clips"><span>✂</span><small>Clips</small></button>';
  preview.append(toolbar);
  const titles=["Médias","Format et modèle","Texte et stickers","Effets et filtres","Musique et son","Publication"];
@@ -56,6 +57,15 @@ function open(context={}){
  $(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
  const heading=document.createElement("header");heading.className="cmd-studio-tool-header";heading.innerHTML='<strong id="cmdStudioToolName">Outils</strong><button type="button" id="cmdStudioHideTool" aria-label="Masquer les outils">✕</button>';
  controls.prepend(heading);
+ const cropCard=$(".cmd-studio-card",controls)[1];
+ const cropSetting=document.createElement("label");cropSetting.textContent="Recadrage";
+ const cropSelect=document.createElement("select");cropSelect.id="cmdStudioCrop";
+ cropSelect.innerHTML='<option value="cover">Remplir l’écran</option><option value="contain">Afficher toute l’image</option>';
+ cropSelect.value=state.crop||"cover";cropSetting.append(cropSelect);cropCard.append(cropSetting);
+ cropSelect.onchange=()=>{state.crop=cropSelect.value;recorded=null;render(previewCursor)};
+ const camera=document.createElement("input");camera.type="file";camera.id="cmdStudioCameraCapture";
+ camera.setAttribute("accept","video/*,image/*");camera.setAttribute("capture","environment");camera.hidden=true;root.append(camera);
+ camera.onchange=e=>{addFiles(e.target.files);camera.value="";showTool("media")};
  const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioStory">Ta Story</button><button type="button" id="cmdStudioNext">Suivant</button>';root.append(bottom);
  $("#cmdStudioHideTool",root).onclick=closeTool;
  $("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
@@ -103,6 +113,7 @@ function showTool(tool){
  if(!root)return;
  activeTool=tool;
  const panel=({sticker:"text",filter:"effect",clips:"media"})[tool]||tool;
+ if(tool==="camera"){$("#cmdStudioCameraCapture")?.click();return}
  const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");controls.dataset.activeTool=tool;
  $("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
  const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
@@ -212,7 +223,7 @@ function drawMedia(item,t,local,slot){
  ctx.save();ctx.translate(w/2+x,h/2+y);ctx.scale(zoom,zoom);
  const filters={natural:"none",vivid:"saturate(1.6) contrast(1.12)",warm:"sepia(.24) saturate(1.3)",retro:"sepia(.6) contrast(1.2)",mono:"grayscale(1) contrast(1.18)"};
  ctx.filter=filters[state.filter]||"none";
- const scale=Math.max(w/iw,h/ih);ctx.drawImage(el,-iw*scale/2,-ih*scale/2,iw*scale,ih*scale);
+ const scale=state.crop==="contain"?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);ctx.drawImage(el,-iw*scale/2,-ih*scale/2,iw*scale,ih*scale);
  ctx.restore();
 }
 function render(time=0){
