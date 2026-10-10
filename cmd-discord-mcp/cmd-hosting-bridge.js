@@ -31,8 +31,11 @@ async function hostingMemberAccess(pool,gid,uid){
  if(ownerId===uid)return {allowed:true,owner:true,ownerId};
  const m=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2",[gid,uid]);
  if(!m.rows.length)return {allowed:false,owner:false,ownerId};
- const grant=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id JOIN cmd_native_roles role ON role.id=rm.role_id AND role.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 AND ra.enabled=TRUE LIMIT 1",[gid,uid]);
- return {allowed:!!grant.rows.length,owner:false,ownerId};
+ // Owner-assigned CMD Sphere role (profile_role_id) grants access only when that role is enabled by the owner.
+ const roleGrant=await pool.query("SELECT 1 FROM cmd_native_members m JOIN cmd_native_roles r ON r.guild_id=m.guild_id AND r.id::text=m.profile_role_id JOIN cmd_sphere_hosting_role_access p ON p.guild_id=m.guild_id AND p.role_id=r.id AND p.enabled=TRUE WHERE m.guild_id=$1 AND m.user_id=$2 LIMIT 1",[gid,uid]);
+ // Keep previously owner-granted per-member access backward compatible.
+ const legacy=await pool.query("SELECT 1 FROM cmd_sphere_hosting_role_members rm JOIN cmd_sphere_hosting_role_access ra ON ra.guild_id=rm.guild_id AND ra.role_id=rm.role_id JOIN cmd_native_roles role ON role.id=rm.role_id AND role.guild_id=rm.guild_id WHERE rm.guild_id=$1 AND rm.user_id=$2 AND ra.enabled=TRUE LIMIT 1",[gid,uid]);
+ return {allowed:!!roleGrant.rows.length||!!legacy.rows.length,owner:false,ownerId};
 }
 async function hostingOwnerToken(pool,uid){
  const r=await pool.query("SELECT token_enc FROM cmd_sphere_hosting_links WHERE user_id=$1 AND expires_at>NOW()",[uid]);
