@@ -2,13 +2,13 @@ const STYLES="#cmdHostingLaunch{display:inline-flex;align-items:center;justify-c
 /* CMD Sphere - CMD Hosting server owner console. */
 (()=>{"use strict";if(window.__cmdHostingPanel)return;window.__cmdHostingPanel=true;
 const $=(s,r=document)=>r.querySelector(s);
-const style=document.createElement("style");style.textContent=STYLES;document.head.append(style);
+const style=document.createElement("style");style.textContent=STYLES+"#cmdHostingDialog .ch-header{display:flex;flex-wrap:wrap;gap:9px;align-items:center}#cmdHostingDialog .ch-header h2{flex:1;min-width:180px}#cmdHostingDialog .ch-direct-link{display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px;font:700 13px system-ui;color:#c8aaff;padding:8px;min-height:36px}#cmdHostingDialog .ch-header button{flex:none}";document.head.append(style);
 async function call(path,opts){const r=await fetch("/api/cmd-hosting/"+path,{credentials:"same-origin",cache:"no-store",...opts});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Connexion impossible");return d}
 let layer=null,body=null,notice=null,activeGuild='';
 function info(t){if(notice)notice.textContent=String(t||"")}
 function build(){layer=document.createElement("section");layer.id="cmdHostingShade";layer.hidden=true;layer.setAttribute("role","dialog");layer.setAttribute("aria-modal","true");layer.setAttribute("aria-label","Gestion CMD Hosting");
 const box=document.createElement("div");box.id="cmdHostingDialog";const head=document.createElement("div");head.className="ch-header";
-const title=document.createElement("h2");title.textContent="Mes serveurs CMD Hosting";const close=document.createElement("button");close.textContent="✕";close.setAttribute("aria-label","Fermer");close.onclick=()=>{layer.hidden=true};head.append(title,close);
+const title=document.createElement("h2");title.textContent="Mes serveurs CMD Hosting";const close=document.createElement("button");close.textContent="✕";close.setAttribute("aria-label","Fermer");close.onclick=()=>{layer.hidden=true};const siteLink=document.createElement("a");siteLink.href="https://cmd-hosting-web-production.up.railway.app/d/cmd";siteLink.target="_blank";siteLink.rel="noopener noreferrer";siteLink.textContent="↗ Ouvrir CMD Hosting";siteLink.className="ch-direct-link";head.append(title,siteLink,close);
 const intro=document.createElement("p");intro.textContent="Pilote tes serveurs depuis CMD Sphere. Les droits sont vérifiés sur ton compte CMD Hosting.";
 body=document.createElement("div");notice=document.createElement("p");notice.className="ch-notice";notice.setAttribute("role","status");
 box.append(head,intro,body,notice);layer.append(box);document.body.append(layer);layer.addEventListener("click",e=>{if(e.target===layer)layer.hidden=true})}
@@ -26,7 +26,7 @@ try{if(activeGuild){
  const state=await call("status");if(!state.linked){const p=document.createElement("p");p.textContent="Associe une fois ton compte CMD Hosting. Ensuite, seuls tes serveurs apparaîtront ici.";
 const connect=document.createElement("button");connect.className="ch-primary";connect.textContent="🔗 Associer CMD Hosting";connect.onclick=async()=>{connect.disabled=true;info("Connexion sécurisée…");try{const r=await call("connect",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});location.assign(r.url)}catch(e){connect.disabled=false;info(e.message)}};body.append(p,connect);info("");return}
 const data=await call("servers");info("");renderServers(data.servers||[],true);return;
- }catch(e){info("Impossible de charger : "+e.message)} }
+ }catch(e){info("Impossible de charger la liaison : "+e.message+". Utilise « Ouvrir CMD Hosting » pour accéder directement à ton hébergeur ; la connexion des comptes reste à vérifier.")} }
 function renderServers(servers,isOwner){
  const bar=document.createElement("div");bar.className="ch-actions";const refresh=document.createElement("button");refresh.textContent="↻ Actualiser";refresh.onclick=()=>open(activeGuild);const unlink=document.createElement("button");unlink.textContent="Dissocier";unlink.hidden=!!activeGuild;unlink.onclick=async()=>{if(!confirm("Dissocier CMD Hosting de CMD Sphere ?"))return;unlink.disabled=true;try{await call("disconnect",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});open()}catch(e){unlink.disabled=false;info(e.message)}};bar.append(refresh,unlink);body.append(bar);
 if(!Array.isArray(servers)||!servers.length){const msg=document.createElement("p");msg.textContent="Aucun serveur associé à ce compte CMD Hosting.";body.append(msg);return}
