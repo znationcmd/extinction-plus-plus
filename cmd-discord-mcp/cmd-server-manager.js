@@ -333,7 +333,7 @@ function menu(){
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
   if(key==="boost"){if(gid)location.href="/server-boosts/"+code;else location.href="/stars";return}
-  if(key==="invite"){shut();const launch=document.querySelector(".cmd-invite-launch");if(launch){launch.click();return}await open("invites");return}
+  if(key==="invite"){shut();if(gid&&typeof window.cmdOpenServerInvites==="function"){await window.cmdOpenServerInvites(gid);return}await open("invites");return}
   if(key==="notifications"){
    const status=root.querySelector("#csmMenuStatus");
    if(!("Notification" in window)){status.textContent="Les notifications ne sont pas disponibles sur ce navigateur.";return}
