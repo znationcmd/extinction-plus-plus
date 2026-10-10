@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s);
 const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safe=v=>encodeURIComponent(String(v||''));
 const notify=(msg,ok=true)=>{try{if(typeof toast==='function')toast(msg,ok);else alert(msg)}catch{alert(msg)}};
-let ctx=null,currentTab='overview',newIcon=null,editing=null,opening=false;
+let ctx=null,currentTab='overview',newIcon=null,editing=null,opening=false,hostingRoleData=null;
 const config=[
   ['PARAMÈTRES',['overview|ⓘ|Vue d’ensemble','channels|☰|Salons et catégories','roles|🛡️|Rôles','invites|🔗|Invitations']],
   ['COMMUNAUTÉ',['members|👥|Membres','appearance|🎨|Personnalisation','integrations|🧩|Intégrations']],
@@ -66,14 +66,23 @@ function channels(){
  const create=canEdit()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
  return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis Discord','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
 }
-const perms=[['viewChannels','Voir les salons'],['sendMessages','Envoyer des messages'],['readHistory','Consulter l’historique'],['connect','Se connecter au vocal'],['speak','Parler en vocal'],['manageChannels','Gérer les salons'],['manageMessages','Gérer les messages'],['manageRoles','Gérer les rôles'],['administrator','Administrateur']];
+/* Discord-style permission categories; CMD Hosting remains a separate owner-controlled server permission. */
+const permissionGroups=[
+ ['Générales',[['viewChannels','Voir les salons'],['manageChannels','Gérer les salons'],['manageRoles','Gérer les rôles'],['manageGuild','Gérer le serveur'],['viewAuditLog',"Voir le journal d'audit"],['manageWebhooks','Gérer les webhooks'],['manageEmojisAndStickers','Gérer les expressions'],['manageEvents','Gérer les événements'],['createInstantInvite','Créer des invitations'],['administrator','Administrateur']]],
+ ['Membres',[['kickMembers','Expulser des membres'],['banMembers','Bannir des membres'],['moderateMembers','Exclure temporairement des membres'],['changeNickname','Modifier son pseudo'],['manageNicknames','Gérer les pseudos']]],
+ ['Salons textuels',[['sendMessages','Envoyer des messages'],['sendTTSMessages','Envoyer des messages de synthèse vocale'],['manageMessages','Gérer les messages'],['embedLinks','Intégrer des liens'],['attachFiles','Joindre des fichiers'],['readHistory',"Voir l'historique des messages"],['mentionEveryone','Mentionner @everyone et tous les rôles'],['useExternalEmojis','Utiliser des emojis externes'],['useExternalStickers','Utiliser des stickers externes'],['addReactions','Ajouter des réactions'],['createPublicThreads','Créer des fils publics'],['createPrivateThreads','Créer des fils privés'],['sendMessagesInThreads','Envoyer des messages dans les fils'],['manageThreads','Gérer les fils'],['sendVoiceMessages','Envoyer des messages vocaux'],['sendPolls','Créer des sondages']]],
+ ['Salons vocaux',[['connect','Se connecter'],['speak','Parler'],['stream','Vidéo'],['useVAD','Utiliser la détection de voix'],['prioritySpeaker','Parole prioritaire'],['muteMembers','Rendre des membres muets'],['deafenMembers','Rendre des membres sourds'],['moveMembers','Déplacer des membres'],['useSoundboard','Utiliser la table de mixage'],['useExternalSounds','Utiliser des sons externes']]],
+ ['Applications et événements',[['useApplicationCommands','Utiliser les commandes des applications'],['createEvents','Créer des événements'],['manageEvents','Gérer les événements'],['requestToSpeak','Demander à prendre la parole']]]
+];
 function roleEditor(role){
  const p=role?.permissions&&typeof role.permissions==='object'?role.permissions:{};
  return '<form id="csm-role-form" class="csm-form csm-sub"><h3>'+(role?'Modifier le rôle':'Créer un rôle')+'</h3>'+field('Nom','name',role?.name||'','required maxlength="100"')+
  '<label class="csm-field">Couleur<input type="color" name="color" value="'+(/^#[0-9a-f]{6}$/i.test(String(role?.color||''))?role.color:'#5865f2')+'"></label>'+
  '<label class="csm-check"><input type="checkbox" name="hoist" '+(role?.hoist?'checked':'')+'>Afficher séparément</label>'+
  '<label class="csm-check"><input type="checkbox" name="mentionable" '+(role?.mentionable?'checked':'')+'>Autoriser les mentions</label>'+
- '<h4>Permissions du rôle</h4>'+perms.map(([key,label])=>'<label class="csm-check"><input type="checkbox" data-csm-permission="'+key+'" '+(p[key]?'checked':'')+'>'+label+'</label>').join('')+
+ permissionGroups.map(([group,items])=>'<h4>'+group+'</h4>'+items.map(([key,label])=>'<label class="csm-check"><input type="checkbox" data-csm-permission="'+key+'" '+(p[key]?'checked':'')+'>'+label+'</label>').join('')).join('')+
+ '<h4>CMD Hosting — permission supplémentaire</h4><label class="csm-check"><input type="checkbox" data-csm-hosting-permission '+(role&&hostingRoleData?.roles?.some(r=>String(r.id)===String(role.id)&&r.enabled)?'checked':'')+' '+(!role||!ctx.owner?'disabled':'')+'>Gérer le serveur CMD Hosting associé (démarrer, arrêter, redémarrer)</label><p class="csm-info">Accès accordé uniquement aux membres auxquels le propriétaire attribue ce rôle. Aucun accès à la facturation ou aux autres serveurs.</p>'+
+
  '<div class="csm-actions"><button type="submit" class="csm-btn primary">Enregistrer</button>'+(role&&role.name!=='@everyone'?btn('Supprimer','delete-role','danger'):'')+btn('Annuler','cancel-role')+'</div></form>';
 }
 function roles(){
@@ -92,29 +101,45 @@ function other(){
 
 async function loadHostingRoles(){
  const area=$('#csm-hosting-role-permissions');if(!area||!ctx?.owner||!isNative())return;
- const gid=id();area.textContent="Chargement des autorisations CMD Hosting…";
+ const guildId=id();area.textContent="Chargement des autorisations…";
  try{
-  const d=await request('/api/cmd-hosting/roles?guildId='+safe(gid));
-  if(!area.isConnected||id()!==gid)return;
+  hostingRoleData=await request('/api/cmd-hosting/roles?guildId='+safe(guildId));
+  if(!area.isConnected||guildId!==id())return;
   area.replaceChildren();
-  const h=document.createElement('h3');h.textContent='🎮 Contrôle du serveur CMD Hosting';area.append(h);
-  const p=document.createElement('p');p.textContent='Le propriétaire choisit les rôles autorisés, puis leurs membres. Les rôles de profil personnels ne donnent aucun accès. La permission ne concerne que ce serveur CMD Sphere.';area.append(p);
-  if(!(d.roles||[]).length){const notice=document.createElement('p');notice.textContent='Crée d’abord un rôle pour déléguer la gestion CMD Hosting.';area.append(notice);return}
-  for(const role of d.roles){
-   const wrapper=document.createElement('div');wrapper.className='csm-hosting-role';wrapper.style.cssText='border:1px solid #ffffff26;border-radius:12px;padding:12px;margin:8px 0;background:#282331';
-   const label=document.createElement('label');label.className='csm-check';const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=!!role.enabled;const title=document.createElement('span');title.textContent='Autoriser le rôle « '+role.name+' » à gérer CMD Hosting';label.append(toggle,title);wrapper.append(label);
-   const list=document.createElement('div');list.style.cssText='display:grid;gap:7px;margin:11px 0 4px;padding-left:12px';
-   for(const member of (d.members||[])){
-    if(member.membership_role==='owner')continue;
-    const line=document.createElement('label');line.className='csm-check';const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=(d.grants||[]).some(g=>String(g.role_id)===String(role.id)&&String(g.user_id)===String(member.user_id));
-    const text=document.createElement('span');text.textContent='Attribuer à '+member.name;line.append(checkbox,text);
-    checkbox.onchange=async()=>{checkbox.disabled=true;try{await request('/api/cmd-hosting/roles?guildId='+safe(gid),{kind:'member',roleId:role.id,userId:member.user_id,enabled:checkbox.checked});notify('Accès du membre mis à jour')}catch(e){checkbox.checked=!checkbox.checked;notify(e.message,false)}finally{checkbox.disabled=false}};
-    list.append(line);
-   }
-   toggle.onchange=async()=>{toggle.disabled=true;try{await request('/api/cmd-hosting/roles?guildId='+safe(gid),{kind:'permission',roleId:role.id,enabled:toggle.checked});notify('Permission CMD Hosting mise à jour')}catch(e){toggle.checked=!toggle.checked;notify(e.message,false)}finally{toggle.disabled=false}};
-   wrapper.append(list);area.append(wrapper);
+  const heading=document.createElement('h3');heading.textContent='🎮 Gestion CMD Hosting';area.append(heading);
+  const note=document.createElement('p');note.textContent='Comme dans les rôles Discord : ouvre un rôle, règle ses permissions et attribue-le aux membres. La permission CMD Hosting est réservée au propriétaire du serveur.';area.append(note);
+  const newIds=new Set((hostingRoleData.roles||[]).map(r=>String(r.id)));
+  if((ctx.data.roles||[]).some(r=>newIds.has(String(r.id)))===false&&newIds.size){
+   // The default Hosting role is created on first visit, so refresh the server's role list once.
+   const fresh=await request('/api/native/guild/'+safe(guildId));
+   ctx.data.roles=fresh.roles||ctx.data.roles;
+   if(currentTab==='roles'&&!editing){render();return}
   }
- }catch(e){area.textContent='Autorisations CMD Hosting indisponibles : '+e.message}
+  const selected=(ctx.data.roles||[]).find(r=>r.id===editing?.id);
+  if(selected){const check=$('#csm-role-editor [data-csm-hosting-permission]');if(check)check.checked=!!hostingRoleData.roles?.find(r=>String(r.id)===String(selected.id))?.enabled;renderHostingRoleMembers(selected)}
+ }catch(e){area.textContent='Rôles CMD Hosting indisponibles : '+e.message}
+}
+function renderHostingRoleMembers(role){
+ const parent=$('#csm-role-editor');if(!parent||!role||!ctx?.owner||!hostingRoleData)return;
+ parent.querySelector('.csm-hosting-role-members')?.remove();
+ const group=document.createElement('section');group.className='csm-hosting-role-members';group.style.cssText='padding:12px;margin:12px 0;border:1px solid #ffffff26;border-radius:12px';
+ const title=document.createElement('h4');title.textContent='Membres ayant ce rôle';group.append(title);
+ const text=document.createElement('p');text.textContent='Seul le propriétaire peut attribuer ou retirer ce rôle. Les membres ne peuvent pas se donner eux-mêmes ces droits.';group.append(text);
+ for(const member of hostingRoleData.members||[]){
+  if(member.membership_role==='owner')continue;
+  const label=document.createElement('label');label.className='csm-check';
+  const checkbox=document.createElement('input');checkbox.type='checkbox';
+  checkbox.checked=(hostingRoleData.grants||[]).some(g=>String(g.role_id)===String(role.id)&&String(g.user_id)===String(member.user_id));
+  label.append(checkbox,document.createTextNode(member.name));
+  checkbox.onchange=async()=>{const enabled=checkbox.checked;checkbox.disabled=true;
+   try{await request('/api/cmd-hosting/roles?guildId='+safe(id()),{kind:'member',roleId:role.id,userId:member.user_id,enabled});
+    if(enabled)hostingRoleData.grants.push({role_id:role.id,user_id:member.user_id});
+    else hostingRoleData.grants=hostingRoleData.grants.filter(g=>String(g.role_id)!==String(role.id)||String(g.user_id)!==String(member.user_id));
+    notify('Attribution du rôle enregistrée');
+   }catch(e){checkbox.checked=!enabled;notify(e.message,false)}finally{checkbox.disabled=false}
+  };group.append(label);
+ }
+ parent.append(group);
 }
 
 function render(){
@@ -288,6 +313,17 @@ function editRole(roleId){
 }
 function showRole(role){
  const box=$('#csm-role-editor');box.innerHTML=roleEditor(role);
+ if(role&&ctx.owner&&isNative()){
+  const hosting=box.querySelector('[data-csm-hosting-permission]');
+  if(hosting){hosting.onchange=async()=>{const enabled=hosting.checked;hosting.disabled=true;
+   try{await request('/api/cmd-hosting/roles?guildId='+safe(id()),{kind:'permission',roleId:role.id,enabled});
+    const record=hostingRoleData?.roles?.find(r=>String(r.id)===String(role.id));if(record)record.enabled=enabled;
+    notify('Permission Gérer CMD Hosting '+(enabled?'activée':'désactivée'));
+   }catch(e){hosting.checked=!enabled;notify(e.message,false)}finally{hosting.disabled=false}
+  }}
+  if(hostingRoleData)renderHostingRoleMembers(role);
+ }
+
  box.querySelector('form').addEventListener('submit',async e=>{
   e.preventDefault();const f=e.currentTarget,d=new FormData(f),permissions={};
   f.querySelectorAll('[data-csm-permission]').forEach(v=>{permissions[v.dataset.csmPermission]=v.checked});
