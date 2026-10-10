@@ -3459,8 +3459,9 @@ async function ownerAssignNativeRole(auth,input){
    await pool.query('UPDATE cmd_native_members SET profile_role_id=NULL WHERE guild_id=$1 AND user_id=$2',[gid,user]);
    return {saved:true,user:{user_id:user,role_ids:[]}};
  }
- const r=await pool.query('SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,requested]);
+ const r=await pool.query('SELECT id,name FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,requested]);
  if(!r.rows.length)throw new Error("Le rôle n'existe pas dans ce serveur.");
+ if(r.rows[0].name==='@everyone')throw new Error('Tous les membres possèdent déjà @everyone automatiquement.');
  const roleId=String(r.rows[0].id),enabled=input.enabled!==false;
  if(enabled){
    await pool.query('INSERT INTO cmd_native_member_roles(guild_id,user_id,role_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[gid,user,roleId]);
@@ -3479,8 +3480,9 @@ async function ownerAssignNativeRoleBatch(auth,input){
  if(!Array.isArray(input.userIds)||ids.length>30||new Set(ids).size!==ids.length||ids.some(v=>typeof v!=="string"||!/^[a-z0-9-]{1,100}$/i.test(v)))throw new Error("Sélectionne au maximum 30 membres valides.");
  const own=await pool.query('SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2',[gid,String(auth.user.id)]);
  if(!own.rows.length)throw new Error("Seul le propriétaire peut attribuer des rôles.");
- const role=await pool.query("SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[gid,requested]);
+ const role=await pool.query("SELECT id,name FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[gid,requested]);
  if(!role.rows.length)throw new Error("Rôle introuvable dans ce serveur.");
+ if(role.rows[0].name==="@everyone")throw new Error("@everyone est attribué automatiquement.");
  if(!ids.length)return {saved:true,count:0};
  const members=await pool.query("SELECT user_id FROM cmd_native_members WHERE guild_id=$1 AND user_id=ANY($2::text[])",[gid,ids]);
  if(members.rows.length!==ids.length)throw new Error("Certains membres ne font pas partie de ce serveur.");
@@ -3627,13 +3629,15 @@ async function applyNativeLocalAction(auth,input){
     if(row.rows[0].type==="category")await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND source_parent_id=$2',[gid,parentKey]);
     await pool.query('DELETE FROM cmd_native_channels WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id]);
   }else if(action==="create_role"){
-    const name=safeText(input.name,100);if(!name)throw new Error("Nom requis.");const id=crypto.randomUUID();input._createdRoleId=id;
+    const name=safeText(input.name,100);if(!name||name==="@everyone")throw new Error("Nom de rôle invalide ou réservé.");const id=crypto.randomUUID();input._createdRoleId=id;
     await pool.query('INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9)',[id,gid,id,name,safeText(input.color,20)||null,JSON.stringify(input.permissions||{}),Number(input.position||0),Boolean(input.hoist),Boolean(input.mentionable)]);
   }else if(action==="update_role"){
     const id=String(input.roleId||"");const row=await pool.query('SELECT * FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,id]);if(!row.rows[0])throw new Error("Rôle introuvable.");
+    const proposedName=safeText(input.name||row.rows[0].name,100);
+    if((proposedName==="@everyone")!==(row.rows[0].name==="@everyone"))throw new Error("Le rôle @everyone ne peut pas être renommé ni recréé.");
     await pool.query('UPDATE cmd_native_roles SET name=$3,color=$4,permissions=$5::jsonb,position=$6,hoist=$7,mentionable=$8 WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),safeText(input.color||row.rows[0].color,20)||null,JSON.stringify(input.permissions||row.rows[0].permissions||{}),Number(input.position??row.rows[0].position??0),input.hoist==null?Boolean(row.rows[0].hoist):Boolean(input.hoist),input.mentionable==null?Boolean(row.rows[0].mentionable):Boolean(input.mentionable)]);
   }else if(action==="delete_role"){
-    const id=String(input.roleId||"");await pool.query('DELETE FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2)',[gid,id]);
+    const id=String(input.roleId||"");await pool.query("DELETE FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) AND name<>\'@everyone\'",[gid,id]);
   }else if(action==="set_channel_permissions"){
     const id=String(input.channelId||"");const perms=Array.isArray(input.permissionOverwrites)?input.permissionOverwrites:[];
     await pool.query('UPDATE cmd_native_channels SET permission_overwrites=$3::jsonb WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2)',[gid,id,JSON.stringify(perms)]);
