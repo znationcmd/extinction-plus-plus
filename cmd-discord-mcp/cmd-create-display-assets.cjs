@@ -34,8 +34,19 @@ async function processImage(directory,filename,destDirectory,type){
       .sharpen({sigma:1.05,m1:1,m2:2})
       .webp({quality:86,effort:4,alphaQuality:100})
       .toFile(output);
+   // Lightweight catalogue thumbnail. The selected profile preview keeps the full display image.
+   // Files are written only into v2/v4; original v1/v3 assets remain untouched.
+   const thumbDir=path.join(destDirectory,"thumbs");
+   fs.mkdirSync(thumbDir,{recursive:true});
+   const thumbSize=scene?{width:480,height:270}:avatar?{width:180,height:512}:{width:320,height:320};
+   const thumbResult=await sharp(input,{failOn:"error"})
+      .resize({...thumbSize,fit:"inside",kernel:"lanczos3"})
+      .sharpen({sigma:0.8,m1:1,m2:2})
+      .webp({quality:78,effort:3,alphaQuality:95})
+      .toFile(path.join(thumbDir,outputName));
    report.files.push({
      kind:type,source:filename,output:outputName,
+     thumbnailWidth:thumbResult.width,thumbnailHeight:thumbResult.height,
      sourceWidth:meta.width,sourceHeight:meta.height,
      displayWidth:result.width,displayHeight:result.height,
      sourceLowResolution:meta.width<700||meta.height<700
