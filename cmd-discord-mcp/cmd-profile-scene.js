@@ -123,7 +123,7 @@ function present(s=state,img=custom){
  slot.dataset.scene=scenes.some(a=>a[0]===s.scene)?s.scene:"none";
  scenery.replaceChildren();
  if(s.scene==="custom"&&img){const photo=document.createElement("div");photo.className="cmd-scene-personal-image";photo.style.backgroundImage='url("'+img.replace(/["\\]/g,"")+'")';scenery.append(photo)}
- const light=document.createElement("div");light.className="cmd-scene-scenery";if(s.scene==="none"){light.style.cssText="background:linear-gradient(135deg,#23122e,#472863);opacity:1";light.textContent=""}else if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}scenery.append(light);
+ const light=document.createElement("div");light.className="cmd-scene-scenery";if(s.scene==="none"){light.style.cssText="background:linear-gradient(135deg,#23122e,#472863);opacity:1";light.textContent=""}else if(sceneReferenceIndex(s.scene)>=0){light.style.cssText=sceneReferenceStyle(s.scene);light.textContent=""}else if(scenePhotoUrls[s.scene]){light.style.backgroundImage="url("+scenePhotoUrls[s.scene]+")";light.style.backgroundSize="cover";light.style.backgroundPosition="center";light.textContent="";}else{light.textContent=decorateScene(s.scene)}if(sceneReferenceIndex(s.scene)>=0)sceneFittedBackdrop(light,sceneTiles[sceneReferenceIndex(s.scene)]);scenery.append(light);
  const person=document.createElement("div");person.className="cmd-scene-person";
  const chosenAvatar=/^reference-avatar-(\d+)$/.exec(s.avatarPreset||"");
  const chosenIndex=chosenAvatar?Number(chosenAvatar[1]):-1;
@@ -301,6 +301,15 @@ function sceneReferenceStyle(value){
  const picture=sceneTiles[n];
  return picture?"background-image:url("+JSON.stringify(picture)+");background-size:contain;background-position:center;background-repeat:no-repeat":"background-color:#181427;";
 }
+// The artwork remains complete and sharp; an enlarged soft copy fills the unused side space.
+function sceneFittedBackdrop(element,picture){
+ if(!element||!picture)return;
+ const background="url("+JSON.stringify(picture)+")";
+ element.style.setProperty("--cmd-scene-bg",background);
+ element.style.backgroundImage="none";
+ element.classList.add("cmd-scene-full-fit");
+}
+
 
 function sheetArt(sheet,index){const x=index%4,y=Math.floor(index/4)%4;return '<span class="cmd-original-catalog-art" data-original-sheet="'+sheet+'" style="display:block;width:100%;height:100%;min-height:84px;background-size:400% 400%;background-position:'+(x*100/3)+'% '+(y*100/3)+'%;background-repeat:no-repeat;border-radius:10px"></span>'}
 async function prepareUniverseTiles(name,cols,rows,target,removeCornerBadges=false){
@@ -373,7 +382,7 @@ function applyOriginalSheets(){
  applyScreenshotCatalogue();
  document.querySelectorAll("[data-original-sheet]").forEach(el=>{const src=loadedSheets.get(el.dataset.originalSheet);if(src)el.style.backgroundImage='url("'+src+'")'});
  document.querySelectorAll("[data-original-pet]").forEach(el=>{const src=loadedSheets.get("pets");if(src)el.style.backgroundImage='url("'+src+'")'});
- document.querySelectorAll("[data-scene-choice='scene']").forEach(el=>{const value=el.dataset.value;if(sceneReferenceIndex(value)<0)return;const art=el.querySelector(".cmd-scene-landscape");if(art)art.style.cssText=sceneReferenceStyle(value)});
+ document.querySelectorAll("[data-scene-choice='scene']").forEach(el=>{const value=el.dataset.value;if(sceneReferenceIndex(value)<0)return;const art=el.querySelector(".cmd-scene-landscape");if(art){art.style.cssText=sceneReferenceStyle(value);sceneFittedBackdrop(art,sceneTiles[sceneReferenceIndex(value)])}});
  if(typeof state!=="undefined"&&sceneReferenceIndex(state.scene)>=0)present();
 }
 loadOriginalSheets();
@@ -477,7 +486,23 @@ function renderStickerPreview(){
  live.dataset.avatar=idx>=0?String(idx):"illustrated";
 
  const pet=$("#cmdScenePreviewPet");hero.dataset.individualPet=universeAssets.has(state.pet)||!!legacyPetImages[state.pet]?"true":"false";if(pet){pet.innerHTML=state.pet!=="none"?originalPetArt(state.pet):"";pet.hidden=state.pet==="none"}
- if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?sceneTiles[reference]:(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"contain":"cover","important");hero.style.setProperty("background-position","center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");}if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?universeArtwork("vehicle",state.vehicle,vehicles.find(v=>v[0]===state.vehicle)?.[2]):"")+(state.home!=="none"?universeArtwork("home",state.home,""):"");applyOriginalSheets()}}
+ if(hero){const sceneId=state.scene;const reference=sceneReferenceIndex(sceneId);const photo=reference>=0?sceneTiles[reference]:(sceneId==="custom"?custom:scenePhotoUrls[sceneId]);hero.style.setProperty("background-image",photo?'url("'+String(photo).replace(/"/g,"")+'")':"none","important");hero.style.setProperty("background-size",reference>=0?"contain":"cover","important");hero.style.setProperty("background-position","center","important");hero.style.setProperty("background-repeat","no-repeat","important");hero.style.setProperty("background-color","#141020","important");
+  const landscape=hero.querySelector(".cmd-scene-hero-landscape");
+  if(landscape){
+    if(reference>=0&&photo){
+      sceneFittedBackdrop(landscape,photo);
+      hero.style.setProperty("--cmd-scene-bg","url("+JSON.stringify(photo)+")");
+      hero.classList.add("cmd-scene-full-fit");
+      hero.style.setProperty("background-image","none","important");
+    }else{
+      hero.classList.remove("cmd-scene-full-fit");
+      hero.style.removeProperty("--cmd-scene-bg");
+      landscape.classList.remove("cmd-scene-full-fit");
+      landscape.style.removeProperty("--cmd-scene-bg");
+      landscape.style.removeProperty("background-image");
+    }
+  }
+ }if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?universeArtwork("vehicle",state.vehicle,vehicles.find(v=>v[0]===state.vehicle)?.[2]):"")+(state.home!=="none"?universeArtwork("home",state.home,""):"");applyOriginalSheets()}}
 }
 function installStickerStyles(){
  if(document.getElementById("cmdStickerStyle"))return;
