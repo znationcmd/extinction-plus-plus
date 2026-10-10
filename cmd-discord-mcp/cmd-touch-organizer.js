@@ -141,9 +141,12 @@
   if(!targetKey||targetKey===g.key)return;
   const fromTop=topItem(g.el);
   const sourceFolder=g.from;
-  const destFolder=tFolder||targetKey.startsWith("folder:")? (tFolder||targetKey.slice(7)) : "";
-  if(destFolder&&g.key.startsWith("folder:"))return;
-  if(destFolder){
+  const box=target.getBoundingClientRect();
+  const mid=e.clientY>box.top+box.height*.23&&e.clientY<box.bottom-box.height*.23;
+  const destFolder=tFolder||(targetKey.startsWith("folder:")?targetKey.slice(7):"");
+  // A folder can be moved in the rail like any other top-level icon.
+  // A server dropped over the centre of a folder joins it.
+  if(destFolder&&!g.key.startsWith("folder:")&&(tFolder||mid)){
     if(destFolder===sourceFolder){ // reorder inside the current folder
      const folders=(await request(URLS.folders)).folders||[];
      const f=folders.find(x=>String(x.id)===destFolder);if(!f)return;
@@ -153,11 +156,9 @@
     }else await saveFolderInto(g.key,destFolder);
     await reloadRail();notice("Serveur déplacé dans le dossier");return;
   }
-  if(targetKey.startsWith("folder:"))return;
-  const box=target.getBoundingClientRect();
-  const mid=e.clientY>box.top+box.height*.23&&e.clientY<box.bottom-box.height*.23;
-  // Dropping an icon over the centre of another top-level server groups them.
-  if(mid&&!g.key.startsWith("folder:")&&!sourceFolder&&top){
+  // Dropping a server on the centre of another server creates a folder.
+  // Folders themselves can only be reordered, never merged.
+  if(mid&&!g.key.startsWith("folder:")&&!sourceFolder&&top&&!targetKey.startsWith("folder:")){
     await createFolder(g.key,targetKey,layoutKeys());
     await reloadRail();notice("Dossier créé");return;
   }
