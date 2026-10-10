@@ -4,7 +4,7 @@ const STYLES="#cmdHostingLaunch{font:700 13px system-ui;color:#fff;background:#4
 const $=(s,r=document)=>r.querySelector(s);
 const style=document.createElement("style");style.textContent=STYLES;document.head.append(style);
 async function call(path,opts){const r=await fetch("/api/cmd-hosting/"+path,{credentials:"same-origin",cache:"no-store",...opts});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Connexion impossible");return d}
-let layer=null,body=null,notice=null;
+let layer=null,body=null,notice=null,activeGuild='';
 function info(t){if(notice)notice.textContent=String(t||"")}
 function build(){layer=document.createElement("section");layer.id="cmdHostingShade";layer.hidden=true;layer.setAttribute("role","dialog");layer.setAttribute("aria-modal","true");layer.setAttribute("aria-label","Gestion CMD Hosting");
 const box=document.createElement("div");box.id="cmdHostingDialog";const head=document.createElement("div");head.className="ch-header";
@@ -12,20 +12,33 @@ const title=document.createElement("h2");title.textContent="Mes serveurs CMD Hos
 const intro=document.createElement("p");intro.textContent="Pilote tes serveurs depuis CMD Sphere. Les droits sont vérifiés sur ton compte CMD Hosting.";
 body=document.createElement("div");notice=document.createElement("p");notice.className="ch-notice";notice.setAttribute("role","status");
 box.append(head,intro,body,notice);layer.append(box);document.body.append(layer);layer.addEventListener("click",e=>{if(e.target===layer)layer.hidden=true})}
-async function open(){if(!layer)build();layer.hidden=false;body.replaceChildren();info("Chargement de tes serveurs…");
-try{const state=await call("status");if(!state.linked){const p=document.createElement("p");p.textContent="Associe une fois ton compte CMD Hosting. Ensuite, seuls tes serveurs apparaîtront ici.";
+async function open(guildId){activeGuild=typeof guildId==="string"&&/^[a-f0-9-]{36}$/i.test(guildId)?guildId:activeGuild;if(!layer)build();layer.hidden=false;body.replaceChildren();info("Chargement de tes serveurs…");
+try{if(activeGuild){
+ const a=await call("association?guildId="+encodeURIComponent(activeGuild));
+ if(!a.linked){const p=document.createElement("p");p.textContent=a.owner===false?"Compte du propriétaire CMD Hosting non lié.":"Associe ton compte CMD Hosting pour relier une location à ce serveur CMD Sphere.";
+ const connect=document.createElement("button");connect.className="ch-primary";connect.textContent="🔗 Lier CMD Hosting";connect.onclick=async()=>{connect.disabled=true;try{const d=await call("connect",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:activeGuild})});location.assign(d.url)}catch(e){info(e.message);connect.disabled=false}};
+ body.append(p);if(a.owner!==false)body.append(connect);info("");return}
+ if(!a.assigned){const d=await call("servers");const title=document.createElement("p");title.textContent="Sélectionne la location CMD Hosting pour ce serveur Sphere :";body.append(title);
+ const sel=document.createElement("select");sel.style.cssText="display:block;width:100%;font:inherit;background:#302840;color:white;padding:11px;border-radius:10px";for(const s of d.servers||[]){const o=document.createElement("option");o.value=s.id;o.textContent=(s.name||s.id)+" · "+(s.game||"Jeu");sel.append(o)}body.append(sel);
+ const bind=document.createElement("button");bind.className="ch-primary";bind.textContent="Lier cette location";bind.disabled=!(d.servers||[]).length;bind.onclick=async()=>{bind.disabled=true;try{await call("association?guildId="+encodeURIComponent(activeGuild),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({rentalId:sel.value})});await open(activeGuild)}catch(e){bind.disabled=false;info(e.message)}};body.append(bind);info("");return}
+ renderServers([a.server],a.owner===true);info("");return;
+ }
+ const state=await call("status");if(!state.linked){const p=document.createElement("p");p.textContent="Associe une fois ton compte CMD Hosting. Ensuite, seuls tes serveurs apparaîtront ici.";
 const connect=document.createElement("button");connect.className="ch-primary";connect.textContent="🔗 Associer CMD Hosting";connect.onclick=async()=>{connect.disabled=true;info("Connexion sécurisée…");try{const r=await call("connect",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});location.assign(r.url)}catch(e){connect.disabled=false;info(e.message)}};body.append(p,connect);info("");return}
-const data=await call("servers");info("");const bar=document.createElement("div");bar.className="ch-actions";const refresh=document.createElement("button");refresh.textContent="↻ Actualiser";refresh.onclick=open;const unlink=document.createElement("button");unlink.textContent="Dissocier";unlink.onclick=async()=>{if(!confirm("Dissocier CMD Hosting de CMD Sphere ?"))return;unlink.disabled=true;try{await call("disconnect",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});open()}catch(e){unlink.disabled=false;info(e.message)}};bar.append(refresh,unlink);body.append(bar);
-if(!Array.isArray(data.servers)||!data.servers.length){const msg=document.createElement("p");msg.textContent="Aucun serveur associé à ce compte CMD Hosting.";body.append(msg);return}
-for(const server of data.servers){const card=document.createElement("div");card.className="ch-server";
+const data=await call("servers");info("");renderServers(data.servers||[],true);return;
+ }catch(e){info("Impossible de charger : "+e.message)} }
+function renderServers(servers,isOwner){
+ const bar=document.createElement("div");bar.className="ch-actions";const refresh=document.createElement("button");refresh.textContent="↻ Actualiser";refresh.onclick=()=>open(activeGuild);const unlink=document.createElement("button");unlink.textContent="Dissocier";unlink.hidden=!!activeGuild;unlink.onclick=async()=>{if(!confirm("Dissocier CMD Hosting de CMD Sphere ?"))return;unlink.disabled=true;try{await call("disconnect",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});open()}catch(e){unlink.disabled=false;info(e.message)}};bar.append(refresh,unlink);body.append(bar);
+if(!Array.isArray(servers)||!servers.length){const msg=document.createElement("p");msg.textContent="Aucun serveur associé à ce compte CMD Hosting.";body.append(msg);return}
+for(const server of servers){const card=document.createElement("div");card.className="ch-server";
 const name=document.createElement("strong");name.textContent=server.name||"Serveur";const game=document.createElement("div");game.className="ch-status";game.textContent=server.game||"Jeu non renseigné";
 const status=document.createElement("div");status.className="ch-status "+(server.controlReady?"ch-active":"ch-warn");status.textContent=!server.linked?"Machine non reliée":!server.online?"Machine hors ligne":!server.configured?"Jeu non configuré":server.running?"● En ligne":"○ Arrêté";
 const actions=document.createElement("div");actions.className="ch-actions";
 for(const [action,label] of [["start","▶ Démarrer"],["stop","■ Arrêter"],["restart","↻ Redémarrer"]]){const btn=document.createElement("button");btn.textContent=label;btn.disabled=!server.controlReady||(action==="start"&&server.running)||(action!=="start"&&!server.running);
 btn.onclick=async()=>{if(!confirm((action==="start"?"Démarrer":action==="stop"?"Arrêter":"Redémarrer")+" « "+server.name+" » ?"))return;btn.disabled=true;info("Transmission de la commande…");
-try{const r=await call("command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:server.id,action})});info(r.message||"Commande transmise. En attente d'exécution.");setTimeout(()=>{if(layer&&!layer.hidden)open()},3500)}catch(e){info(e.message);btn.disabled=false}};actions.append(btn)}
-card.append(name,game,status,actions);body.append(card)}if(data.note){const n=document.createElement("p");n.textContent=data.note;body.append(n)}
-}catch(e){info("Impossible de charger : "+e.message)}}
+try{const r=await call("command",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:server.id,action,...(activeGuild?{guildId:activeGuild}:{})})});info(r.message||"Commande transmise. En attente d'exécution.");setTimeout(()=>{if(layer&&!layer.hidden)open()},3500)}catch(e){info(e.message);btn.disabled=false}};actions.append(btn)}
+card.append(name,game,status,actions);body.append(card)}if(activeGuild&&isOwner){const unlinkRental=document.createElement("button");unlinkRental.textContent="Dissocier cette location du serveur";unlinkRental.onclick=async()=>{if(!confirm("Dissocier ce serveur de CMD Hosting ?"))return;try{await call("association?guildId="+encodeURIComponent(activeGuild),{method:"DELETE"});await open(activeGuild)}catch(e){info(e.message)}};body.append(unlinkRental)}
+}
 function mount(){if($("#cmdHostingLaunch"))return;const target=$("#dockProfileMain")?.parentElement||$(".cmd-pm-bottom")||$(".cmd-pm-studio-card");if(!target)return;const btn=document.createElement("button");btn.type="button";btn.id="cmdHostingLaunch";btn.textContent="🎮 Mes serveurs CMD Hosting";btn.onclick=open;target.append(btn);
 if(new URLSearchParams(location.search).has("cmdHosting"))setTimeout(()=>{void open();if(new URLSearchParams(location.search).get("cmdHosting")!=="connected")setTimeout(()=>info("Liaison non terminée : connecte-toi d'abord à CMD Hosting."),300)},150)}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();window.cmdOpenHostingPanel=open;})();
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount);else mount();window.cmdOpenHostingPanel=guildId=>{activeGuild=typeof guildId==="string"?guildId:"";open(activeGuild)};})();
