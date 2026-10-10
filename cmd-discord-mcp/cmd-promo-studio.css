@@ -254,3 +254,13 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
 }
 #cmdPromoStudio #cmdStudioModes[hidden]{display:none!important;}
 #cmdPromoStudio .cmd-studio-draggable[hidden]{display:none!important;}
+
+#cmdPromoStudio #cmdStudioEmptyHint{
+ position:absolute!important;z-index:5!important;top:50%!important;left:50%!important;
+ transform:translate(-50%,-50%)!important;max-width:75%!important;
+ padding:13px 17px!important;color:#fff!important;
+ border:1px solid #ffffff70!important;border-radius:16px!important;
+ background:#211b2aca!important;box-shadow:0 5px 22px #0008!important;
+ font:800 14px/1.4 system-ui!important;text-align:center;cursor:pointer;
+}
+#cmdPromoStudio #cmdStudioEmptyHint[hidden]{display:none!important;}
