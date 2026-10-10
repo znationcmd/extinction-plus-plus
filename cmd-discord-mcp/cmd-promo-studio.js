@@ -117,6 +117,64 @@ function open(context={}){
  document.addEventListener("keydown",onEscape);
  loadServers();resize();render(0);closeTool();
 }
+function installEffectsGallery(controls){
+ const card=$("#cmdStudioEffect",controls)?.closest(".cmd-studio-card")||$(".cmd-studio-card",controls)[3];if(!card)return;
+ // Keep the underlying select synchronized; thumbnails are selectable accessible buttons.
+ const heading1=document.createElement("h4");heading1.className="cmd-studio-effect-heading";heading1.textContent="Effets · toucher pour appliquer et voir";
+ const fx=document.createElement("div");fx.id="cmdStudioEffectsGallery";
+ const heading2=document.createElement("h4");heading2.className="cmd-studio-effect-heading";heading2.textContent="Filtres · aperçu sur ta vidéo";
+ const filters=document.createElement("div");filters.id="cmdStudioFiltersGallery";filters.hidden=true;
+ card.prepend(heading1,fx,heading2,filters);
+ for(const [key,options,box] of [["effect",EFFECT_OPTIONS,fx],["filter",FILTER_OPTIONS,filters]]){
+  for(const [value,label] of options){
+   const button=document.createElement("button");button.type="button";button.className="cmd-effect-option";button.dataset.fxType=key;button.dataset.fxValue=value;
+   button.setAttribute("aria-label","Appliquer "+label);button.setAttribute("aria-pressed",String(state[key]===value));
+   const thumb=document.createElement("canvas");thumb.width=110;thumb.height=130;thumb.setAttribute("aria-hidden","true");
+   const text=document.createElement("span");text.textContent=label;button.append(thumb,text);box.append(button);
+   button.onclick=()=>{
+    state[key]=value;recorded=null;
+    const select=$("#cmdStudio"+(key==="effect"?"Effect":"Filter"));if(select)select.value=value;
+    refreshEffectGallery(key);stop();previewCursor=Math.max(.25,Math.min(state.duration*.25,2));
+    render(previewCursor);
+    note(label+" · aperçu appliqué à la vidéo.");
+    if(clips.length)togglePreview();
+   };
+  }
+ }
+}
+function refreshEffectGallery(tool){
+ if(!root)return;
+ const nodes=$('[data-fx-type]',root),source=clips[0]?.element;
+ const canDraw=Boolean(source&&(source.tagName!=="IMG"||source.complete)&&
+     (source.tagName==="IMG"?source.naturalWidth>0:source.videoWidth>0));
+ for(const node of nodes){
+  const key=node.dataset.fxType,value=node.dataset.fxValue,on=state[key]===value;
+  node.classList.toggle("selected",on);node.setAttribute("aria-pressed",String(on));
+  const mini=node.querySelector("canvas"),c=mini?.getContext("2d");if(!c)continue;
+  const w=mini.width,h=mini.height,gradient=c.createLinearGradient(0,0,w,h);
+  gradient.addColorStop(0,"#6d3b9b");gradient.addColorStop(1,"#100a29");
+  c.fillStyle=gradient;c.fillRect(0,0,w,h);
+  c.save();
+  const style=key==="filter"?(FILTER_CSS[value]||"none"):
+    value==="vhs"?"sepia(.5) contrast(1.2)":value==="dream"?"blur(1px) saturate(1.6)":value==="neon"?"saturate(2.1) contrast(1.4)":"none";
+  c.filter=style;
+  if(canDraw){
+   const iw=source.tagName==="IMG"?source.naturalWidth:source.videoWidth;
+   const ih=source.tagName==="IMG"?source.naturalHeight:source.videoHeight;
+   const scale=Math.max(w/iw,h/ih);
+   const dz=["zoom","shake","pulse","dream"].includes(value)?1.13:1;
+   c.translate(w/2,h/2);c.scale(dz,dz);
+   c.drawImage(source,-iw*scale/2,-ih*scale/2,iw*scale,ih*scale);
+  }else{
+   c.fillStyle="#f4dbff";c.font="52px system-ui";c.textAlign="center";c.textBaseline="middle";c.fillText(value==="neon"?"✦":value==="vhs"?"▤":"◉",w/2,h/2);
+  }
+  c.restore();
+  if(key==="effect"&&value==="vhs"){c.fillStyle="#ffffff25";for(let y=0;y<h;y+=8)c.fillRect(0,y,w,1)}
+  if(key==="effect"&&value==="flash"){c.fillStyle="#ffffff55";c.fillRect(0,0,w,h)}
+  if(key==="effect"&&value==="mirror"){c.save();c.translate(w,0);c.scale(-1,1);c.globalAlpha=.5;c.drawImage(mini,0,0);c.restore()}
+  if(key==="effect"&&value==="glitch"){c.fillStyle="#f34bac66";c.fillRect(0,39,w,7)}
+ }
+}
 function showTool(tool){
  if(!root)return;
  activeTool=tool;
@@ -268,6 +326,11 @@ function render(time=0){
   const slot=state.duration/clips.length,idx=Math.min(clips.length-1,Math.floor(Math.max(0,t-.0001)/slot)),local=t-idx*slot;
   const phase=Math.min(1,Math.max(0,local/slot));
   drawMedia(clips[idx],t,Math.max(0,local),slot);
+  if(state.effect==="flash"&&Math.sin(t*12)>0.74){ctx.fillStyle="#ffffff69";ctx.fillRect(0,0,w,h)}
+  if(state.effect==="vhs"){ctx.fillStyle="#ffffff14";for(let y=0;y<h;y+=16)ctx.fillRect(0,y,w,1)}
+  if(state.effect==="glitch"&&Math.floor(t*13)%4===0){ctx.fillStyle="#dd33f366";ctx.fillRect(0,h*.38,w,h*.026)}
+  if(state.effect==="mirror"){ctx.save();ctx.translate(w,0);ctx.scale(-1,1);ctx.globalAlpha=.32;ctx.drawImage(canvas,0,0,w/2,h,0,0,w/2,h);ctx.restore()}
+
   if(state.transition==="fade"){
    if(local<.35){ctx.fillStyle=theme[1];ctx.globalAlpha=(.35-local)/.35;ctx.fillRect(0,0,w,h);ctx.globalAlpha=1}
   }
