@@ -4,7 +4,13 @@ import {readFileSync} from "node:fs";
 const individualUniverse=JSON.parse(readFileSync(new URL("./public/universe/v1/manifest.json",import.meta.url),"utf8"));
 /* CMD Sphere — personalized avatar-and-pet scene rendered inside the existing profile banner. */
 const HD_SCENES=JSON.parse(readFileSync(new URL("./cmd-hd-scenes.json",import.meta.url),"utf8"));
-const SCENES=new Set(["none",...individualUniverse.scenes.map(x=>x.id),...HD_SCENES.map(x=>x.id)]);
+// Supplemental backgrounds are additive; never invalidate previously saved selections.
+let RESTORED_SCENES=[];
+try{
+  const data=JSON.parse(readFileSync(new URL("./public/cmd-restored-fonds/manifest.json",import.meta.url),"utf8"));
+  if(Array.isArray(data))RESTORED_SCENES=data.filter(x=>/^cmd-restored-[a-z0-9-]+$/.test(x?.id||""));
+}catch(error){console.warn("[CMD Sphere] Supplemental scenes not yet available:",error.message);}
+const SCENES=new Set(["none",...individualUniverse.scenes.map(x=>x.id),...HD_SCENES.map(x=>x.id),...RESTORED_SCENES.map(x=>x.id)]);
 const HAIR=new Set(["short","long","curly","bob","shaved","ponytail","buzz","fade","crop","undercut","quiff","swept","wavy","afro","braids","locs"]);
 const BEARDS=new Set(["none","stubble","short","trimmed","full","long","goatee","mustache"]);
 const FACE_SHAPES=new Set(["oval","round","square","heart"]);
