@@ -127,9 +127,9 @@ function renderHostingRoleMembers(role){
  parent.querySelector('.csm-hosting-role-members')?.remove();
  const group=document.createElement('section');group.className='csm-hosting-role-members';group.style.cssText='padding:12px;margin:12px 0;border:1px solid #ffffff26;border-radius:12px';
  const title=document.createElement('h4');title.textContent='Membres ayant ce rôle';group.append(title);
- const text=document.createElement('p');text.textContent='Seul le propriétaire peut attribuer ou retirer ce rôle. Les membres ne peuvent pas se donner eux-mêmes ces droits.';group.append(text);
+ const text=document.createElement('p');text.textContent='Le créateur peut porter ce rôle sans perdre ses droits, et l’attribuer aux membres du serveur.';group.append(text);
  for(const member of hostingRoleData.members||[]){
-  if(member.membership_role==='owner')continue;
+  // The creator can wear Hosting roles; ownership rights are always independent.
   const label=document.createElement('label');label.className='csm-check';
   const checkbox=document.createElement('input');checkbox.type='checkbox';
   checkbox.checked=(hostingRoleData.grants||[]).some(g=>String(g.role_id)===String(role.id)&&String(g.user_id)===String(member.user_id));
@@ -210,6 +210,41 @@ async function renderRoleAssignments(role){
   search.oninput=()=>{const term=search.value.trim().toLocaleLowerCase();list.querySelectorAll('.csm-member-row').forEach(row=>{row.hidden=!row.querySelector('.csm-member-name').textContent.toLocaleLowerCase().includes(term)})};
  }catch(error){host.textContent='Impossible de charger les membres : '+error.message}
 }
+/* Edit roles directly from the member list, including the server creator. */
+function csmOpenMemberRoles(member,slot,summary){
+ if(slot.querySelector('.csm-member-role-picker')){slot.replaceChildren();return}
+ slot.replaceChildren();
+ const panel=document.createElement('section');panel.className='csm-member-role-picker';
+ panel.style.cssText='margin:8px 0 16px;padding:14px;border:1px solid #9465c888;border-radius:14px;background:#241b30';
+ const title=document.createElement('h4');title.textContent='Rôles de '+(member.display_name||'ce membre');panel.append(title);
+ const note=document.createElement('p');note.className='csm-lead';
+ note.textContent=member.membership_role==='owner'?'Le propriétaire conserve tous les droits du serveur, même sans rôle personnalisé.':'Les rôles cochés sont enregistrés sur ce serveur CMD Sphere.';
+ panel.append(note);
+ const roles=(ctx.data.roles||[]).filter(role=>role.name!=='@everyone');
+ if(!roles.length){const empty=document.createElement('p');empty.className='csm-info';empty.textContent='Aucun rôle personnalisé. Crée d’abord un rôle dans la rubrique Rôles.';panel.append(empty)}
+ for(const role of roles){
+  const row=document.createElement('label');row.className='csm-member-row';
+  const label=document.createElement('span');label.className='csm-member-name';label.textContent=role.name;
+  const checkbox=document.createElement('input');checkbox.type='checkbox';
+  checkbox.checked=(member.role_ids||[]).some(value=>String(value)===String(role.id));
+  checkbox.setAttribute('aria-label','Attribuer '+role.name+' à '+(member.display_name||'ce membre'));
+  const status=document.createElement('small');status.className='csm-member-status';
+  row.append(label,checkbox,status);panel.append(row);
+  checkbox.onchange=async()=>{
+   const enabled=checkbox.checked;checkbox.disabled=true;status.textContent='Enregistrement…';
+   try{
+    const result=await request('/api/native/roles/assign',{guildId:id(),userId:String(member.user_id),roleId:String(role.id),enabled});
+    if(!result.saved)throw Error('Enregistrement non confirmé');
+    member.role_ids=result.user?.role_ids||[];
+    status.textContent=enabled?'Attribué':'Retiré';
+    if(summary)summary.textContent=[member.membership_role==='owner'?'Propriétaire':member.membership_role==='admin'?'Administrateur':'Membre',...roleLabels(member)].join(' · ');
+   }catch(error){checkbox.checked=!enabled;status.textContent='Erreur : '+error.message;notify(error.message,false)}
+   finally{checkbox.disabled=false}
+  };
+ }
+ const close=document.createElement('button');close.type='button';close.className='csm-btn';close.textContent='Fermer';close.onclick=()=>slot.replaceChildren();panel.append(close);slot.append(panel);
+}
+
 async function renderNativeMembersTab(){
  const host=$('#csm-native-members');if(!host||!isNative())return;
  const guild=id();host.textContent='Chargement des membres…';
@@ -230,7 +265,10 @@ async function renderNativeMembersTab(){
    const details=document.createElement('div');details.className='csm-member-detail';
    const strong=document.createElement('strong');strong.textContent=member.display_name||'Membre';details.append(strong);
    const small=document.createElement('small');small.textContent=[member.membership_role==='owner'?'Propriétaire':member.membership_role==='admin'?'Administrateur':'Membre',...roleLabels(member)].join(' · ');details.append(small);row.append(details);
-   list.append(row);
+   if(ctx.owner){
+    const button=document.createElement('button');button.type='button';button.className='csm-btn';button.textContent=member.membership_role==='owner'?'Mes rôles':'Attribuer des rôles';row.append(button);
+    const slot=document.createElement('div');slot.className='csm-member-role-slot';list.append(row,slot);button.onclick=()=>csmOpenMemberRoles(member,slot,small);
+   }else list.append(row);
   }
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
 }
@@ -542,7 +580,7 @@ async function menu(){
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
   (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
-  (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété / supprimer'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
+  (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété')+row('delete-guild','🗑️','Supprimer mon serveur'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
  document.body.append(root);document.body.classList.add("csm-server-menu-open");
@@ -557,6 +595,7 @@ async function menu(){
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
   if(key==="ownership"){shut();await open("overview");return}
+  if(key==="delete-guild"){shut();try{await getContext();await submitGuildLifecycle("delete")}catch(e){notify(e.message,false)}return}
   if(key==="leave-guild"){shut();try{await getContext();await submitGuildLifecycle("leave")}catch(e){notify(e.message,false)}return}
   if(key==="hosting"){shut();if(typeof window.cmdOpenHostingPanel==="function")window.cmdOpenHostingPanel(gid);else notify("Gestion CMD Hosting indisponible, actualise la page",false);return;}
   if(key==="boost"){shut();location.assign(gid?"/server-boosts/"+code:"/stars");return}
