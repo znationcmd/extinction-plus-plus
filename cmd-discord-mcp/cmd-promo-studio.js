@@ -55,7 +55,7 @@ function open(context={}){
   '<button type="button" data-cmd-tool="camera"><span>◉</span><small>Caméra</small></button>'+
   '<button type="button" data-cmd-tool="clips"><span>✂</span><small>Clips</small></button>';
  preview.append(toolbar);
- const titles=["Médias","Format et modèle","Texte et stickers","Effets et filtres","Musique et son","Publication"];
+ const titles=["Médias","Format et modèle","Texte et stickers","Effets et filtres","Musique et son","Enregistrement local"];
  const tools=["media","format","text","effect","music","publish"];
  $$(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
  const heading=document.createElement("header");heading.className="cmd-studio-tool-header";heading.innerHTML='<strong id="cmdStudioToolName">Outils</strong><button type="button" id="cmdStudioHideTool" aria-label="Masquer les outils">✕</button>';
@@ -108,6 +108,7 @@ function open(context={}){
  refreshSelectedMusic();
  $("#cmdStudioSaveDraft").onclick=saveDraft;$("#cmdStudioLoadDraft").onclick=loadDraft;
  $("#cmdStudioPng").onclick=savePng;$("#cmdStudioExport").onclick=()=>state.mode==="gif"?exportGif():exportVideo();$("#cmdStudioPublish").onclick=publish;
+ if(studioScope){const publication=$("[data-tool-panel=\"publish\"]",root);if(publication)publication.hidden=true;const pub=$("#cmdStudioPublish",root);if(pub)pub.hidden=true;}
  document.addEventListener("keydown",onEscape);
  loadServers();resize();render(0);closeTool();
 }
@@ -119,7 +120,7 @@ function showTool(tool){
  const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");controls.dataset.activeTool=tool;
  $$("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
  const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
- $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Suivant · Enregistrer ou publier"})[tool]||"Outils";
+ $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Enregistrement local"})[tool]||"Outils";
  $$("[data-cmd-tool]",root).forEach(btn=>btn.classList.toggle("selected",btn.dataset.cmdTool===tool));
  updateDragHandles();
  if(panel==="text"){const input=$("#cmdStudio"+(tool==="sticker"?"Emoji":"Headline"));if(input)input.focus({preventScroll:true})}
@@ -463,7 +464,7 @@ async function loadServers(){
   const select=$("#cmdStudioServer");select.replaceChildren(new Option("Choisir mon serveur…",""));
   for(const g of list)select.append(new Option(g.name||"Serveur",String(g.id)));
   if(state.guildId)select.value=state.guildId;
-  if(!list.length)note("Crée d’abord ton serveur CMD Sphere ou demande le rôle administrateur pour publier.");
+  if(!list.length)if(!studioScope)note("Choisis un serveur si tu souhaites publier une publicité.");
  }catch{note("Impossible de charger les serveurs. L’export local reste disponible.")}
 }
 async function publish(){
