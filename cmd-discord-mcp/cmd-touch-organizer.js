@@ -249,6 +249,86 @@
  function findFloaters(){
   for(const [selector,key] of floatSelectors){const node=$(selector);if(node)installFloat(node,key)}
  }
+
+ // Reorder the actual cards in the Principal profile (Studio IA, Friends, Bio, Avatar).
+ // Only the card heading is a drag handle, so scrolling and regular buttons work.
+ const profilePrefs="cmd_sphere_profile_cards_v1:";
+ function cardKey(node){
+  if(node.classList.contains("cmd-pm-bio-original"))return "bio";
+  if(node.classList.contains("cmd-profile-universe-section"))return "universe";
+  if(node.classList.contains("cmd-pm-studio-panel"))return "studio";
+  if(node.querySelector("#cmdPmBalance"))return "diamonds";
+  if(node.querySelector("#cmdPmFriends"))return "friends";
+  if(node.querySelector("#cmdPmEditLinks"))return "connections";
+  if(node.querySelector("#cmdPmEditNote"))return "note";
+  return "";
+ }
+ function profileStorageKey(){
+  return profilePrefs+location.pathname+":"+new URLSearchParams(location.search).get("server");
+ }
+ let profileMain=null,profileGesture=null,profileApplied=false;
+ function allProfileCards(){return profileMain?[...profileMain.children].filter(x=>x.dataset?.panel==="principal"&&cardKey(x)):[]}
+ function installProfileCards(){
+  const main=$("#cmdPmDetailMain");if(!main)return;
+  if(main!==profileMain){profileMain=main;profileApplied=false}
+  for(const section of allProfileCards()){
+   section.dataset.cmdCardKey=cardKey(section);
+   const heading=section.querySelector("h3")||section.querySelector(".cmd-pm-balance b");
+   if(heading&&!heading.dataset.cmdDragHandle){
+    heading.dataset.cmdDragHandle="true";
+    heading.title="Appui long pour déplacer ce bloc";
+    heading.style.touchAction="none";
+   }
+  }
+  if(profileApplied||main.dataset.cmdProfileMoving)return;
+  profileApplied=true;
+  let keys=[];try{keys=JSON.parse(localStorage.getItem(profileStorageKey())||"[]")}catch{}
+  if(!Array.isArray(keys)||!keys.length)return;
+  const cards=allProfileCards();
+  const positions=new Map(keys.map((k,i)=>[k,i]));
+  const ordered=[...cards].sort((a,b)=>(positions.get(cardKey(a))??999)-(positions.get(cardKey(b))??999));
+  const after=cards.at(-1)?.nextSibling||null;
+  for(const section of ordered)main.insertBefore(section,after);
+ }
+ function saveCardOrder(){
+  try{localStorage.setItem(profileStorageKey(),JSON.stringify(allProfileCards().map(cardKey)))}catch{}
+ }
+ function profileDown(e){
+  const head=e.target.closest?.("[data-cmd-drag-handle]");
+  if(!head||e.button!==0&&!["touch","pen"].includes(e.pointerType))return;
+  const section=head.closest("[data-cmd-card-key]");
+  if(!section||!profileMain?.contains(section)||profileGesture)return;
+  const g={id:e.pointerId,section,y:e.clientY,x:e.clientX,active:false,moved:false};
+  profileGesture=g;
+  g.timer=setTimeout(()=>{
+   if(profileGesture!==g)return;
+   g.active=true;section.classList.add("cmd-organizer-source");
+   profileMain.dataset.cmdProfileMoving="1";
+  },350);
+ }
+ function profileMove(e){
+  const g=profileGesture;if(!g||g.id!==e.pointerId)return;
+  const distance=Math.hypot(e.clientY-g.y,e.clientX-g.x);
+  if(!g.active){if(distance>9){clearTimeout(g.timer);profileGesture=null}return}
+  e.preventDefault();e.stopPropagation();
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-cmd-card-key]");
+  if(!target||target===g.section||target.parentElement!==profileMain)return;
+  g.moved=true;
+  const box=target.getBoundingClientRect();
+  profileMain.insertBefore(g.section,e.clientY>box.top+box.height/2?target.nextSibling:target);
+ }
+ function profileEnd(e){
+  const g=profileGesture;if(!g||g.id!==e.pointerId)return;
+  clearTimeout(g.timer);profileGesture=null;
+  g.section.classList.remove("cmd-organizer-source");
+  if(profileMain)delete profileMain.dataset.cmdProfileMoving;
+  if(g.active&&g.moved){e.preventDefault();e.stopPropagation();saveCardOrder();notice("Position des blocs enregistrée")}
+ }
+ window.addEventListener("pointerdown",profileDown,true);
+ window.addEventListener("pointermove",profileMove,true);
+ window.addEventListener("pointerup",profileEnd,true);
+ window.addEventListener("pointercancel",profileEnd,true);
+
  const style=document.createElement("style");style.textContent=[
  ".cmd-organizer-toast{position:fixed;z-index:100000;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);max-width:88vw;background:#312046;color:white;padding:11px 16px;border-radius:13px;border:1px solid #c6a6e788;box-shadow:0 5px 30px #000a;font:700 12px system-ui;text-align:center;pointer-events:none}",
  ".cmd-organizer-toast.error{background:#782b45}",
@@ -257,10 +337,12 @@
  ".cmd-organizer-source{opacity:.28!important}",
  ".cmd-organizer-drop{outline:3px solid #b6f9ef!important;outline-offset:2px;box-shadow:0 0 17px #b6f9ef77!important}",
  "#railGuilds>[data-layout-key],#msgRailGuilds>[data-layout-key],#railGuilds [data-folder-child-key],#msgRailGuilds .folderChild{touch-action:none;-webkit-user-select:none;user-select:none}",
- ".cmd-float-moving{box-shadow:0 0 0 3px #e0b6ff,0 14px 36px #000b!important;opacity:.9}"
+ ".cmd-float-moving{box-shadow:0 0 0 3px #e0b6ff,0 14px 36px #000b!important;opacity:.9}",
+ "[data-cmd-drag-handle]{-webkit-user-select:none;user-select:none;cursor:grab}",
+ "[data-cmd-card-key].cmd-organizer-source{outline:2px dashed #caaaff;outline-offset:3px}"
  ].join("\n");document.head.append(style);
  let scheduled=false;
- const monitor=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;installRail();findFloaters()})};
+ const monitor=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;installRail();findFloaters();installProfileCards()})};
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",monitor,{once:true});else monitor();
  new MutationObserver(monitor).observe(document.documentElement,{subtree:true,childList:true});
  window.addEventListener("resize",()=>{const p=readPrefs();for(const [sel,key] of floatSelectors){const n=$(sel);if(n&&p[key])setFloatPos(n,p[key])}});
