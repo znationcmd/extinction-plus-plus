@@ -55,7 +55,7 @@ function overview(){
  '<label class="csm-field">Notifications par défaut<select name="defaultNotifications" '+(ctx.owner?'':'disabled')+'><option value="mentions" '+(g.default_notifications==='all'?'':'selected')+'>Mentions uniquement</option><option value="all" '+(g.default_notifications==='all'?'selected':'')+'>Tous les messages</option></select></label>'+
  '<label class="csm-check"><input name="isPublic" type="checkbox" '+(g.is_public?'checked':'')+' '+(ctx.owner?'':'disabled')+'>Serveur visible dans Découvrir</label>'+
  '<label class="csm-check"><input name="welcomeMessage" type="checkbox" '+(g.welcome_message===false?'':'checked')+' '+(ctx.owner?'':'disabled')+'>Activer le message de bienvenue</label>'+
- (ctx.owner?'<button type="submit" class="csm-btn primary">Enregistrer les modifications</button>':info('Seul le propriétaire peut modifier l’identité du serveur.'))+'</form>'+info(note());
+ (ctx.owner?'<button type="submit" class="csm-btn primary">Enregistrer les modifications</button>':info('Seul le propriétaire peut modifier l’identité du serveur.'))+'</form>'+info(note())+(isNative()?(ctx.owner?'<section class="csm-server-lifecycle"><h3>Propriété du serveur</h3><p>Tu disposes de tous les droits sur ce serveur. Tu peux attribuer des rôles à ton propre compte, transférer la propriété ou supprimer uniquement ce serveur CMD Sphere.</p><div class="csm-actions">'+btn('Transférer la propriété','transfer-guild')+btn('Supprimer ce serveur','delete-guild','danger')+'</div><div id="csm-transfer-ui" aria-live="polite"></div></section>':'<section class="csm-server-lifecycle"><h3>Quitter le serveur</h3><p>Tu peux quitter ce serveur sans supprimer les messages ni les comptes des autres membres.</p>'+btn('Quitter ce serveur','leave-guild','danger')+'</section>'):'');
 }
 function options(chosen,arr){return arr.map(([value,label])=>'<option value="'+escapeHtml(value)+'" '+(String(value)===String(chosen)?'selected':'')+'>'+escapeHtml(label)+'</option>').join('')}
 const types=[['text','# Texte'],['voice','🔊 Vocal'],['announcement','📢 Annonces'],['forum','🗂️ Forum'],['category','📁 Catégorie']];
@@ -169,7 +169,7 @@ async function renderRoleAssignments(role){
  try{
   const data=await fetchNativeMemberCache();
   if(!host.isConnected||currentGuild!==id())return;
-  const members=(data.members||[]).filter(m=>m.membership_role!=='owner');
+  const members=data.members||[];
   host.replaceChildren();
   const title=document.createElement('h4');title.textContent='Attribuer ce rôle aux membres';host.append(title);
   const help=document.createElement('p');help.className='csm-lead';help.textContent='Sélectionne les membres à ajouter ou à retirer. La modification est enregistrée sur CMD Sphere, sans modifier Discord.';host.append(help);
@@ -185,7 +185,7 @@ async function renderRoleAssignments(role){
   for(const member of members){
    const row=document.createElement('label');row.className='csm-member-row';
    row.append(memberAvatarNode(member));
-   const name=document.createElement('span');name.className='csm-member-name';name.textContent=member.display_name||'Membre';row.append(name);
+   const name=document.createElement('span');name.className='csm-member-name';name.textContent=(member.display_name||'Membre')+(member.membership_role==='owner'?' · Propriétaire (toi)':'');row.append(name);
    const box=document.createElement('input');box.type='checkbox';box.checked=(member.role_ids||[]).some(x=>String(x)===String(role.id));box.setAttribute('aria-label','Attribuer '+role.name+' à '+(member.display_name||'Membre'));row.append(box);
    const msg=document.createElement('small');msg.className='csm-member-status';row.append(msg);
    box.onchange=async()=>{
@@ -421,7 +421,53 @@ function showRole(role){
  box.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  box.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
+async function submitGuildLifecycle(kind,targetUserId=''){
+ if(!isNative()||!ctx?.data?.guild?.id)return notify('Choisis un serveur CMD Sphere.',false);
+ const gid=id(),name=String(ctx.data.guild.name||''),owner=!!ctx.owner;
+ if(kind==='delete'&&!owner)return notify('Seul le propriétaire peut supprimer le serveur.',false);
+ if(kind==='transfer'&&!owner)return notify('Seul le propriétaire peut transférer le serveur.',false);
+ if(kind==='leave'&&owner)return notify('Transfère la propriété avant de quitter ton serveur.',false);
+ let confirmName='';
+ if(kind==='delete'||kind==='transfer'){
+  const explanation=kind==='delete'?
+    'SUPPRESSION DÉFINITIVE de ce serveur CMD Sphere, ses salons, rôles et messages locaux. Aucun serveur Discord externe ne sera supprimé.':
+    'Tu céderas tous les droits de propriétaire au membre choisi. Cette action ne peut pas être annulée par ton compte.';
+  const typed=window.prompt(explanation+'\n\nSaisis exactement le nom du serveur pour confirmer :\n'+name);
+  if(typed===null)return;
+  confirmName=typed;
+  if(confirmName!==name)return notify('Le nom de confirmation ne correspond pas.',false);
+ }else if(!window.confirm('Quitter « '+name+' » ? Tu perdras l’accès à ce serveur tant que tu n’auras pas reçu une nouvelle invitation.'))return;
+ try{
+  const result=await request('/api/native/guild-lifecycle',{kind,guildId:gid,confirmName,targetUserId});
+  if(!result.ok)throw Error("Action non confirmée");
+  close();
+  try{sessionStorage.removeItem('cmd-native-last-guild')}catch{}
+  location.assign('/dashboard');
+ }catch(error){notify('Action impossible : '+error.message,false)}
+}
+async function openTransferGuild(){
+ const box=$('#csm-transfer-ui');if(!box)return;
+ box.textContent='Chargement des membres pouvant recevoir la propriété…';
+ try{
+  const data=await fetchNativeMemberCache(true);
+  if(!box.isConnected)return;
+  const members=(data.members||[]).filter(m=>m.membership_role!=='owner');
+  box.replaceChildren();
+  if(!members.length){const p=document.createElement('p');p.className='csm-info';p.textContent='Il faut au moins un autre membre pour transférer la propriété. Invite une personne d’abord.';box.append(p);box.append(newInviteButton());return}
+  const label=document.createElement('label');label.className='csm-field';label.textContent='Nouveau propriétaire';
+  const select=document.createElement('select');select.setAttribute('aria-label','Sélectionner le nouveau propriétaire');
+  for(const member of members){const option=document.createElement('option');option.value=String(member.user_id);option.textContent=member.display_name||'Membre';select.append(option)}
+  label.append(select);box.append(label);
+  const button=document.createElement('button');button.type='button';button.className='csm-btn danger';button.textContent='Confirmer le transfert';
+  button.onclick=async()=>{button.disabled=true;try{await submitGuildLifecycle('transfer',select.value)}finally{button.disabled=false}};
+  box.append(button);
+ }catch(error){box.textContent='Impossible de charger les membres : '+error.message}
+}
+
 async function action(which){
+ if(which==='delete-guild'){await submitGuildLifecycle('delete');return}
+ if(which==='leave-guild'){await submitGuildLifecycle('leave');return}
+ if(which==='transfer-guild'){await openTransferGuild();return}
  if(which==='overview'||which==='channels'||which==='roles'){currentTab=which;editing=null;render();return}
  if(which==='new-role'){if(!canEditRoles())return;if(isNative()){try{await window.cmdOpenRoleWizard({guildId:id(),onDone:async()=>{notify('Rôle créé et enregistré dans CMD Sphere.');await update()}})}catch(e){notify(e.message,false)}return}editing={type:'role',id:null};showRole(null);return}
  if(which==='cancel-channel'){$('#csm-channel-editor').innerHTML='';editing=null;return}
