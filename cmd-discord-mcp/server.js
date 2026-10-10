@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js";
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
+import {initCmdNativeInvites,activeInviteForGuild,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -3298,7 +3299,8 @@ async function nativeGuildDetail(auth,id){
       for(const ch of channels.rows)ch.archived_count=counts.get(String(ch.source_channel_id||""))||0;
     }catch(error){console.warn("[archive-count] "+error.message)}
   }
-  return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:baseUrl+"/invite/"+g.rows[0].invite_code};
+  const activeCode=await activeInviteForGuild(pool,id);
+  return {guild:g.rows[0],member,channels:channels.rows,roles:roles.rows,inviteUrl:activeCode?baseUrl+"/invite/"+encodeURIComponent(activeCode):""};
 }
 async function nativeSourceId(guildId,kind,id){
   const table=kind==="role"?"cmd_native_roles":"cmd_native_channels";
@@ -3435,14 +3437,12 @@ async function updateNativeRoleStyle(auth,input){
   return r.rows[0];
 }
 async function discoverNativeGuilds(){
-  const r=await pool.query(`SELECT g.id,g.name,g.icon,g.invite_code,g.updated_at,(SELECT COUNT(*)::int FROM cmd_native_members m WHERE m.guild_id=g.id) member_count
-    FROM cmd_native_guilds g WHERE g.is_public=TRUE ORDER BY member_count DESC,g.updated_at DESC LIMIT 100`);
-  return r.rows.map(x=>({...x,inviteUrl:baseUrl+"/invite/"+x.invite_code}));
+  // Invitation-only visibility: membership is required to see any server or its channels.
+  // Public discovery is deliberately disabled until explicitly joined.
+  return [];
 }
 async function joinNativeByCode(auth,code){
-  const g=await pool.query('SELECT id,name FROM cmd_native_guilds WHERE invite_code=$1 LIMIT 1',[safeText(code,80)]);if(!g.rows[0])throw new Error("Invitation CMD invalide.");
-  await pool.query('INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO NOTHING',[g.rows[0].id,String(auth.user.id),'member',safeText(auth.user.name,80)]);
-  return g.rows[0];
+  return joinNativeInvite(pool,auth,code);
 }
 
 async function backend(bot,kind,{guildId,channelId,before,limit,body}={}){
@@ -4372,6 +4372,10 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,await restoreAllMirrors(pool,auth,importDiscordShell))}
       catch(e){sendJson(res,500,{error:e.message})}return;
     }
+    if(url.pathname==="/api/native/invites"||url.pathname==="/api/native/invites/revoke"){
+      const auth=dashboardAuth(req);
+      if(await handleCmdNativeInvites(req,res,url,{pool,auth,baseUrl,sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeAdmin}))return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/guilds"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion Discord requise"});return}
       try{sendJson(res,200,{guilds:await listNativeGuilds(auth)})}catch(e){sendJson(res,500,{error:e.message})}return;
@@ -4839,7 +4843,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
