@@ -34,7 +34,7 @@ function createShell(){
  const basic=section("cmd-pm-panel-principal",'<div class="cmd-pm-info-grid"><div class="cmd-pm-balance cmd-pm-card"><div><b>💎 Mes diamants</b><small>Solde CMD Sphere</small></div><strong id="cmdPmBalance">—</strong></div></div>');
  basic.dataset.panel="principal";main.append(basic);
  const extraBio=about?about.closest(".section"):null;if(extraBio){main.append(extraBio);extraBio.dataset.panel="principal";}
- const studio=section("cmd-pm-panel-principal cmd-pm-studio-panel",'<div class="cmd-pm-card cmd-pm-studio-card"><div class="cmd-pm-card-head"><h3>🎬 Studio IA</h3><span class="cmd-pm-studio-type">Vidéo · Story · GIF</span></div><p class="cmd-pm-muted">Crée tes vidéos depuis ce profil avec musique, texte, stickers et effets.</p><button type="button" id="cmdPmOpenStudio" class="cmd-pm-studio-launch">＋ Créer une vidéo</button><p id="cmdPmStudioStatus" class="cmd-pm-muted" role="status" hidden></p></div>');
+ const studio=section("cmd-pm-panel-principal cmd-pm-studio-panel",'<div class="cmd-pm-card cmd-pm-studio-card"><div class="cmd-pm-card-head"><h3>🎬 Studio IA</h3><span class="cmd-pm-studio-type">Vidéo · Story · GIF</span></div><p class="cmd-pm-muted">Crée tes vidéos depuis ce profil avec musique, texte, stickers et effets.</p><button type="button" id="cmdPmOpenStudio" class="cmd-pm-studio-launch">＋ Créer une vidéo</button><p id="cmdPmStudioStatus" class="cmd-pm-muted" role="status" hidden></p><div id="cmdPmProfileVideos" class="cmd-pm-profile-videos" aria-label="Mes vidéos publiées"><p class="cmd-pm-muted">Chargement de mes vidéos…</p></div></div>');
  studio.dataset.panel="principal";main.append(studio);
  $("#cmdPmOpenStudio").onclick=()=>{
   if(typeof window.cmdOpenPromoStudio==="function")window.cmdOpenPromoStudio({source:"profile",profileId:document.querySelector("#profileForm")?.dataset.userId||"",serverId:new URLSearchParams(location.search).get("server")||""});
@@ -105,6 +105,35 @@ function renderLinks(){
   editor.append(b);
  }
 }
+async function loadProfileVideos(){
+ const host=$("#cmdPmProfileVideos");if(!host)return;
+ const scope=new URLSearchParams(location.search).get("server")||"";
+ host.textContent="Chargement des vidéos…";
+ try{
+  const resp=await fetch("/api/cmd-profile-videos?server="+encodeURIComponent(scope),{credentials:"same-origin",cache:"no-store"});
+  const data=await resp.json();if(!resp.ok)throw Error(data.error||"Mes vidéos sont indisponibles");
+  const items=Array.isArray(data.items)?data.items:[];host.replaceChildren();
+  if(!items.length){const p=document.createElement("p");p.className="cmd-pm-muted";p.textContent="Aucune vidéo pour le moment. Crée ta première Story.";host.append(p);return}
+  for(const v of items.slice(0,12)){
+   const card=document.createElement("article");card.className="cmd-pm-video-item";
+   const media=document.createElement(String(v.format||"").startsWith("video/")?"video":"img");
+   media.src=v.mediaUrl;media.loading="lazy";
+   if(media.tagName==="VIDEO"){media.controls=true;media.preload="metadata";media.playsInline=true;media.setAttribute("playsinline","")}else media.alt=v.title||"Création CMD Sphere";
+   const label=document.createElement("div");label.className="cmd-pm-video-caption";label.textContent=v.title||"Ma vidéo";
+   const remove=document.createElement("button");remove.type="button";remove.textContent="Supprimer";remove.setAttribute("aria-label","Supprimer cette vidéo");
+   remove.onclick=async()=>{
+    if(!window.confirm("Supprimer définitivement cette vidéo de ton profil CMD Sphere ?"))return;
+    remove.disabled=true;
+    try{
+     const resp=await fetch("/api/cmd-profile-videos/"+encodeURIComponent(v.id),{method:"DELETE",credentials:"same-origin"});
+     if(!resp.ok)throw Error("Suppression refusée");await loadProfileVideos();
+    }catch(err){remove.disabled=false;message(err.message||"Suppression impossible")}
+   };
+   card.append(media,label,remove);host.append(card);
+  }
+ }catch(e){host.textContent="Impossible de charger les vidéos : "+(e.message||e)}
+}
+document.addEventListener("cmd:profile-video-saved",loadProfileVideos);
 async function loadFriends(){
  const box=$("#cmdPmFriends");
  try{
@@ -127,7 +156,7 @@ async function loadBalance(){
 }
 async function bootstrap(){
  createShell();renderNote();renderWishlist();renderLinks();
- await Promise.allSettled([(async()=>{try{const data=await call();extras={note:data.note||"",wishlist:Array.isArray(data.wishlist)?data.wishlist:[],socialLinks:Array.isArray(data.socialLinks)?data.socialLinks:[]};renderNote();renderWishlist();renderLinks()}catch(e){message("Options personnelles indisponibles : "+e.message)}})(),loadFriends(),loadBalance()]);
+ await Promise.allSettled([(async()=>{try{const data=await call();extras={note:data.note||"",wishlist:Array.isArray(data.wishlist)?data.wishlist:[],socialLinks:Array.isArray(data.socialLinks)?data.socialLinks:[]};renderNote();renderWishlist();renderLinks()}catch(e){message("Options personnelles indisponibles : "+e.message)}})(),loadFriends(),loadBalance(),loadProfileVideos()]);
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootstrap);else bootstrap();
 })();
