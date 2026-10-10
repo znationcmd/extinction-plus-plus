@@ -50,7 +50,8 @@ rep(`html(res,'<!doctype html><meta charset="utf-8"><script>location.replace("/"
 const injectCode = `
 function injectCmdSphereUi(body){
   if(typeof body!=="string"||body.indexOf("<body")<0)return body;
-  const toolbar='<div id="cmd-sphere-tools" style="position:fixed;z-index:99999;right:8px;top:max(8px,env(safe-area-inset-top));display:flex;gap:5px;align-items:center;background:#0b0810e8;border:1px solid #ffffff1b;border-radius:12px;padding:4px;backdrop-filter:blur(14px);box-shadow:0 8px 24px #0006">'+
+  const toolbar=body.includes('<title>Profil · CMD Sphere</title>')?'':'<details id="cmd-sphere-tools" style="position:fixed;z-index:99999;right:8px;top:max(8px,env(safe-area-inset-top));width:46px;background:#100b1a;border:1px solid #ffffff35;border-radius:14px;padding:4px;box-shadow:0 8px 24px #0006">'+
+    '<summary aria-label="Choisir la langue" title="Langue" style="display:grid;place-items:center;min-height:38px;list-style:none;cursor:pointer;font-size:24px;color:#fff">🌐</summary><div style="position:absolute;right:0;top:calc(100% + 5px);display:flex;gap:5px;align-items:center;background:#100b1af2;border:1px solid #ffffff30;border-radius:13px;padding:6px;backdrop-filter:blur(14px)">'+
     '<select id="cmd-sphere-language" aria-label="Langue" title="Langue" style="width:138px;max-width:138px;min-width:118px;background:#17101e;color:#fff;border:1px solid #ffffff1c;border-radius:8px;padding:7px 4px;font-size:16px;font-weight:800">'+
     '<option value="fr">🇫🇷 Français</option>'+
     '<option value="en">🇬🇧 English</option>'+
@@ -63,7 +64,7 @@ function injectCmdSphereUi(body){
     '<option value="ja">🇯🇵 日本語</option>'+
     '<option value="zh">🇨🇳 中文</option>'+
     '<option value="co">𓂆 Corsu</option>'+
-    '</select><button id="cmd-sphere-refresh" type="button" title="Actualiser / vérifier les mises à jour" aria-label="Actualiser" style="border:0;border-radius:9px;background:#ffffff10;color:#fff;padding:8px 10px;font-size:19px;font-weight:900">↻</button></div>';
+    '</select><button id="cmd-sphere-refresh" type="button" title="Actualiser / vérifier les mises à jour" aria-label="Actualiser" style="border:0;border-radius:9px;background:#ffffff10;color:#fff;padding:8px 10px;font-size:19px;font-weight:900">↻</button></div></details>';
 
   const client='<script>(function(){'+
   'const languages=["fr","en","us","de","es","it","ru","ko","ja","zh","co"];'+

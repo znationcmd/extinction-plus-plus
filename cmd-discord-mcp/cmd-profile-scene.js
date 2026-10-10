@@ -43,7 +43,7 @@ const true3DPets=new Set(["cat","fox","horse","bird","duck","flamingo","stork"])
 const originalPetIndex={dog:4,cat:8,"dog-spotted":1,"dog-golden":5,"dog-husky":17,"dog-puppy":11,"cat-tabby":8,"cat-blue":9,"cat-ginger":13,"cat-black":14,"cat-siamese":7,"dog-bulldog":10,"dog-terrier":3,"dog-shepherd":2,"dog-pug":19};
 const petSymbol={fox:"🦊",horse:"🐴",rabbit:"🐰",turtle:"🐢",tiger:"🐯",bird:"🦜",duck:"🦆",flamingo:"🦩",stork:"🐦",wolf:"🐺",hamster:"🐹",panda:"🐼",lion:"🦁",bear:"🐻",deer:"🦌",penguin:"🐧",owl:"🦉",dolphin:"🐬",shark:"🦈",butterfly:"🦋",dragon:"🐉"};
 function originalPetArt(value){
- if(value==="none")return "";
+ if(value==="none")return '<span class="cmd-catalogue-none-icon" aria-label="Aucun compagnon">✕</span>';
  const item=pets.find(x=>x[0]===value),index=originalPetIndex[value];
  const art=universeAssets.get(value)?.src||legacyPetImages[value]||(index===undefined?null:petTiles[index]);
  if(art)return '<img class="cmd-universe-item-image cmd-pet-art" src="'+art+'" alt="'+escape(item?.[1]||value)+'" loading="lazy" decoding="async">';

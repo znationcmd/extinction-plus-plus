@@ -1010,3 +1010,7 @@ body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-e
  background-size:contain!important;background-position:center!important;
  background-repeat:no-repeat!important;
 }
+
+/* Visible, accessible empty companion choice and correct image ratio */
+#cmdSceneSheet .cmd-catalogue-none-icon{display:grid!important;place-items:center!important;width:100%!important;min-height:84px!important;color:#cbbbd9!important;font-size:38px!important;line-height:1!important}
+#cmdSceneSheet .cmd-scene-card-art img,#cmdSceneSheet .cmd-imported-avatar-art{image-rendering:auto!important;object-fit:contain!important;max-width:100%!important}

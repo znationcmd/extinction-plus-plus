@@ -10,7 +10,7 @@ function init(){
  if(!form||!hero||$("#cmdProfileEditPreview"))return;
  const css=document.createElement("style");
  css.textContent=
- '#profileForm #cmdProfileEditPreview{position:sticky;top:0;z-index:5;isolation:isolate;margin:8px 0 18px;border:1px solid #b489d2a3;border-radius:15px;background:#24132f;overflow:hidden;box-shadow:0 8px 28px #0008;color:#fff}'+
+ '#profileForm #cmdProfileEditPreview{position:relative;top:auto;z-index:1;isolation:isolate;margin:8px 0 18px;border:1px solid #b489d2a3;border-radius:15px;background:#24132f;overflow:hidden;box-shadow:0 8px 28px #0008;color:#fff}'+
  '#cmdProfileEditPreview .cmd-live-profile-head{padding:7px 11px;background:#33213e;display:flex;align-items:center;justify-content:space-between;font:bold 12px/1.4 system-ui}'+
  '#cmdProfileEditPreview .cmd-live-profile-hint{font:500 10px/1.2 system-ui;color:#e9ccec}'+
  '#cmdProfileEditPreview .cmd-live-cover{height:64px;background:#4d2c63 center / cover no-repeat;position:relative}'+
@@ -21,7 +21,7 @@ function init(){
  '#cmdProfileEditPreview .cmd-live-info{min-width:0;flex:1;display:grid;gap:3px}'+
  '#cmdProfileEditPreview .cmd-live-name{font-size:16px;font-weight:850;overflow-wrap:anywhere;line-height:1.2}'+
  '#cmdProfileEditPreview .cmd-live-detail{font-size:12px;color:#ddd0e7;overflow-wrap:anywhere}'+
- '#cmdProfileEditPreview .cmd-live-bio{padding:8px 12px 11px;white-space:pre-wrap;overflow-wrap:anywhere;font:500 12px/1.35 system-ui;color:#f2e9f4;background:#201526;border-top:1px solid #ffffff23;max-height:85px;overflow:auto}'+
+ '#cmdProfileEditPreview .cmd-live-bio{max-height:150px;overflow-y:auto;padding:8px 12px 11px;white-space:pre-wrap;overflow-wrap:anywhere;font:500 12px/1.35 system-ui;color:#f2e9f4;background:#201526;border-top:1px solid #ffffff23;max-height:85px;overflow:auto}'+
  '#cmdProfileEditPreview .cmd-live-badges{font-size:11px;line-height:1.3;max-height:35px;overflow:auto}'+
  '#cmdProfileEditPreview .cmd-live-name[data-style=glow]{text-shadow:0 0 11px var(--cmd-live-accent)}'+
  '#cmdProfileEditPreview .cmd-live-name[data-style=prism]{background:linear-gradient(110deg,#c390ff,#fff,#e397fc);-webkit-background-clip:text;background-clip:text;color:transparent}'+
