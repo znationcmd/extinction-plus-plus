@@ -4978,6 +4978,19 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&/^\/universe\/v1\/hd-[a-z0-9-]+\.svg$/.test(url.pathname)){
       try{const art=readFileSync(new URL("./public"+url.pathname,import.meta.url));res.writeHead(200,{"content-type":"image/svg+xml","cache-control":"public,max-age=86400","content-security-policy":"default-src 'none'; style-src 'unsafe-inline'","x-content-type-options":"nosniff"});res.end(art)}catch{res.writeHead(404).end("Fond introuvable")}return;
     }
+    // CMD Sphere restored landscape catalogue — separate from existing v1 imagery.
+    if(req.method==="GET"&&/^\/cmd-restored-fonds\/[a-z0-9_]+\.webp$/.test(url.pathname)){
+      try{const img=readFileSync(new URL("./public"+url.pathname,import.meta.url));
+        res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=31536000,immutable","x-content-type-options":"nosniff"});res.end(img);
+      }catch(error){sendJson(res,404,{error:"Fond supplémentaire introuvable"});}
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-restored-fonds/manifest.json"){
+      try{const data=readFileSync(new URL("./public/cmd-restored-fonds/manifest.json",import.meta.url),"utf8");
+        res.writeHead(200,{"content-type":"application/json","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(data);
+      }catch(error){sendJson(res,404,{error:"Catalogue de fonds indisponible"});}
+      return;
+    }
     // Enhanced display assets are separate from all original v1/v3 files.
     // Strict path patterns and safe fallback mean an original can never be deleted by this route.
     if(req.method==="GET"&&(
