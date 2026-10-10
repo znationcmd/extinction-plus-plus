@@ -531,12 +531,13 @@ const navIcons={
 };
 function closeSheet(){
  if(!sheet)return;
+ sheet.classList.remove("cmd-scene-preview-expanded");
  state={...savedState};custom=savedCustom;characterPhoto=savedCharacterPhoto;animalPhoto=savedAnimalPhoto;customDirty=false;characterDirty=false;animalDirty=false;present();sheet.hidden=true;document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
 }
 function openSheet(){
  if(!slot)return;
  if(state.scene==="none")state.scene="neonforest";
- if(sheet){sheet.hidden=false;refreshEditor();showTab("mode");return}
+ if(sheet){sheet.hidden=false;sheet.classList.remove("cmd-scene-preview-expanded");$("#cmdSceneLabel").setAttribute("aria-expanded","false");$("#cmdSceneLabel").textContent="Aperçu en direct ⤢";refreshEditor();showTab("mode");return}
  sheet=document.createElement("div");sheet.id="cmdSceneSheet";
  sheet.setAttribute("role","dialog");sheet.setAttribute("aria-modal","true");
  sheet.setAttribute("aria-label","Personnaliser le décor du profil CMD Sphere");
@@ -546,7 +547,7 @@ function openSheet(){
  '<header class="cmd-scene-float-header"><button type="button" id="cmdSceneClose" aria-label="Fermer sans enregistrer">✕</button><span>CMD SPHERE · MON UNIVERS</span><button type="button" id="cmdScenePreviewSave" aria-label="Enregistrer le décor">Enregistrer</button></header>'+
  '<div class="cmd-scene-preview" aria-label="Aperçu de mon avatar avec mon animal">'+
  '<div id="cmdScenePreviewPerson"></div><div id="cmdScenePreviewPet"></div>'+
- '</div><div class="cmd-scene-scene-tag" id="cmdSceneLabel">Aperçu en direct</div>'+
+ '</div><button type="button" class="cmd-scene-scene-tag" id="cmdSceneLabel" aria-expanded="false" aria-label="Agrandir ou réduire l’aperçu en direct">Aperçu en direct ⤢</button>'+
  '</div>'+
  '<nav class="cmd-scene-tabs" aria-label="Choisir les personnalisations">'+tabs.map(([k,v])=>'<button type="button" data-scene-tab="'+k+'" aria-pressed="false">'+navIcons[k]+'<small>'+v+'</small></button>').join("")+'</nav>'+
  '<section id="cmdSceneOptions" class="cmd-scene-market" aria-live="polite"></section>'+
@@ -554,7 +555,13 @@ function openSheet(){
  '</div>';
  document.body.append(sheet);
  preview=$("#cmdScenePreviewPerson");
- $("#cmdSceneClose").onclick=closeSheet;
+ $("#cmdSceneClose").addEventListener("click",event=>{event.preventDefault();event.stopPropagation();closeSheet()});
+ $("#cmdSceneLabel").addEventListener("click",event=>{
+  event.preventDefault();event.stopPropagation();
+  const expanded=sheet.classList.toggle("cmd-scene-preview-expanded");
+  const button=$("#cmdSceneLabel");button.setAttribute("aria-expanded",String(expanded));
+  button.textContent=expanded?"Réduire l’aperçu ⤡":"Aperçu en direct ⤢";
+ });
  $("#cmdSceneReset").onclick=()=>{state.scene="none";renderSheet("scene");refreshEditor();$("#cmdSceneNotice").textContent="Le fond d'origine sera retrouvé après enregistrement."};
  $("#cmdSceneSave").onclick=save;$("#cmdScenePreviewSave").onclick=save;
  $$("[data-scene-tab]",sheet).forEach(b=>b.onclick=()=>showTab(b.dataset.sceneTab));
