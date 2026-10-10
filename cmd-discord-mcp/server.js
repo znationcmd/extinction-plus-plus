@@ -9,7 +9,7 @@ import crypto from "node:crypto";
 import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js";
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
-import {initCmdNativeInvites,activeInviteForGuild,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
+import {initCmdNativeInvites,activeInviteForGuild,previewNativeInvite,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -4633,9 +4633,16 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname.startsWith("/invite/")){
       const code=safeText(url.pathname.split("/").pop(),80),auth=dashboardAuth(req);
       if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/invite/"+code));return}
-      try{const g=await joinNativeByCode(auth,code);redirect(res,baseUrl+"/dashboard?native="+encodeURIComponent(g.id));}catch(e){html(res,'<!doctype html><meta charset="utf-8"><title>Invitation CMD</title><body style="font-family:system-ui;background:#090b12;color:white;padding:40px"><h1>Invitation CMD Sphere</h1><p>'+safeText(e.message,200)+'</p><a href="/dashboard" style="color:#a78bfa">Retour</a></body>',400)}return;
+      try{
+        const g=await previewNativeInvite(pool,code);
+        const title=escHtml(String(g.name||"Serveur CMD Sphere"));
+        const escapedCode=escHtml(code),total=Math.max(0,Number(g.member_count||0));
+        // Never join on GET or expose other communities. Only the invited guild is shown.
+        html(res,'<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Rejoindre '+title+' · CMD Sphere</title><style>*{box-sizing:border-box}body{min-height:100dvh;margin:0;background:linear-gradient(150deg,#170925,#241534,#080914);color:#f6f2f9;display:flex;align-items:center;justify-content:center;padding:22px;font-family:system-ui}main{width:min(440px,100%);border-radius:23px;border:1px solid #aa76da55;background:#261832;padding:28px 23px;text-align:center;box-shadow:0 24px 90px #0006}h1{font-size:25px;overflow-wrap:anywhere}p{color:#c9bbd4;line-height:1.6}button{width:100%;min-height:53px;border:0;border-radius:13px;background:#9147ce;color:#fff;font-size:16px;font-weight:850;cursor:pointer}a{color:#d5b4f1;display:block;margin-top:22px;text-decoration:none}.icon{font-size:42px}.muted{font-size:12px;color:#a99fb1}</style></head><body><main><div class="icon">👥</div><h1>Rejoindre '+title+'</h1><p>'+total+' membre(s) · Invitation CMD Sphere</p><p>En rejoignant ce serveur, tu accèdes uniquement à ses salons. Les autres serveurs restent privés.</p><form method="post" action="/servers/join"><input type="hidden" name="invite" value="'+escapedCode+'"><button type="submit">Rejoindre ce serveur</button></form><a href="/dashboard">Annuler</a><p class="muted">Aucune inscription aux autres serveurs ne sera effectuée.</p></main></body></html>');
+      }catch(e){html(res,'<!doctype html><meta charset="utf-8"><title>Invitation CMD Sphere</title><body style="font-family:system-ui;background:#090b12;color:white;padding:40px"><h1>Invitation CMD Sphere</h1><p>'+escHtml(String(e.message||"Invitation invalide."))+'</p><a href="/dashboard" style="color:#a78bfa">Retour</a></body>',e.status||400)}
+      return;
     }
-    if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
+        if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
       sendJson(res,200,{name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/app-icon.webp?v=5",sizes:"any",type:"image/webp",purpose:"any maskable"}]},{"content-type":"application/manifest+json","cache-control":"public,max-age=300"});return;
     }
     if(req.method==="GET"&&url.pathname==="/app-icon.webp"){
