@@ -57,7 +57,7 @@ function open(context={}){
  preview.append(toolbar);
  const titles=["Médias","Format et modèle","Texte et stickers","Effets et filtres","Musique et son","Publication"];
  const tools=["media","format","text","effect","music","publish"];
- $(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
+ $$(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
  const heading=document.createElement("header");heading.className="cmd-studio-tool-header";heading.innerHTML='<strong id="cmdStudioToolName">Outils</strong><button type="button" id="cmdStudioHideTool" aria-label="Masquer les outils">✕</button>';
  controls.prepend(heading);
  const cropCard=$(".cmd-studio-card",controls)[1];
@@ -94,7 +94,7 @@ function open(context={}){
  $("#cmdStudioOpenMusic").onclick=openMusicSheet;
  $("#cmdStudioCloseMusic").onclick=$("#cmdStudioMusicDone").onclick=()=>{stopAudition();$("#cmdStudioMusicSheet").hidden=true};
  $("#cmdStudioMusicQuery").addEventListener("input",e=>{clearTimeout(musicSearchTimer);const term=e.target.value.trim();musicSearchTimer=setTimeout(()=>searchMusic(term),400)});
- $("[data-search-music]",root).forEach(b=>b.onclick=()=>{const term=b.dataset.searchMusic;$("#cmdStudioMusicQuery").value=term;searchMusic(term)});
+ $$("[data-search-music]",root).forEach(b=>b.onclick=()=>{const term=b.dataset.searchMusic;$("#cmdStudioMusicQuery").value=term;searchMusic(term)});
  $("#cmdStudioMusicStart").oninput=e=>{state.musicStart=Number(e.target.value)||0;$("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);if(audition&&selectedTrack?.id===auditionId){try{audition.currentTime=state.musicStart}catch{}}if(previewAudio){try{previewAudio.currentTime=state.musicStart}catch{}}};
  $("#cmdStudioMedia").onchange=e=>{addFiles(e.target.files);e.target.value=""};
  $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&f.type.startsWith("audio/")){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;selectedTrack=null;state.musicStart=0;refreshSelectedMusic();note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
@@ -118,10 +118,10 @@ function showTool(tool){
  const panel=({sticker:"text",filter:"effect",clips:"media"})[tool]||tool;
  if(tool==="camera"){$("#cmdStudioCameraCapture")?.click();return}
  const controls=$(".cmd-studio-controls",root);controls.classList.add("cmd-tool-open");controls.dataset.activeTool=tool;
- $("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
+ $$("[data-tool-panel]",controls).forEach(card=>{card.hidden=card.dataset.toolPanel!==panel});
  const modes=$("#cmdStudioModes");if(modes)modes.hidden=panel!=="format";
  $("#cmdStudioToolName").textContent=({media:"Ajouter des médias",clips:"Mon montage",text:"Ajouter du texte",sticker:"Ajouter un sticker",music:"Ajouter un son",effect:"Effets",filter:"Filtres",format:"Format et durée",publish:"Suivant · Enregistrer ou publier"})[tool]||"Outils";
- $("[data-cmd-tool]",root).forEach(btn=>btn.classList.toggle("selected",btn.dataset.cmdTool===tool));
+ $$("[data-cmd-tool]",root).forEach(btn=>btn.classList.toggle("selected",btn.dataset.cmdTool===tool));
  updateDragHandles();
  if(panel==="text"){const input=$("#cmdStudio"+(tool==="sticker"?"Emoji":"Headline"));if(input)input.focus({preventScroll:true})}
  controls.scrollTop=0;
@@ -129,8 +129,8 @@ function showTool(tool){
 function closeTool(){
  activeTool="";if(!root)return;const controls=$(".cmd-studio-controls",root);
  controls.classList.remove("cmd-tool-open");delete controls.dataset.activeTool;
- $("[data-tool-panel]",controls).forEach(card=>card.hidden=false);
- $("[data-cmd-tool]",root).forEach(btn=>btn.classList.remove("selected"));
+ $$("[data-tool-panel]",controls).forEach(card=>card.hidden=false);
+ $$("[data-cmd-tool]",root).forEach(btn=>btn.classList.remove("selected"));
  updateDragHandles();
 }
 function updateDragHandles(){
@@ -164,7 +164,7 @@ function choose(btn){
  const attr=[...btn.attributes].find(x=>x.name.startsWith("data-studio-"));if(!attr)return;
  const key=attr.name.slice(12),value=attr.value;
  if(!(key in state))return;
- state[key]=value;recorded=null;const pb=$("#cmdStudioPublish");if(pb)pb.disabled=true;$("[data-studio-"+key+"]",root).forEach(b=>b.classList.toggle("selected",b===btn));
+ state[key]=value;recorded=null;const pb=$("#cmdStudioPublish");if(pb)pb.disabled=true;$$("[data-studio-"+key+"]",root).forEach(b=>b.classList.toggle("selected",b===btn));
  if(key==="mode"){if(value==="story")state.format="9:16";else if(value==="poster")state.format="1:1";else if(value==="video")state.format="9:16";else if(value==="gif")state.duration=6;
   $("#cmdStudioDuration").value=state.duration;$("#cmdStudioDurLabel").textContent=state.duration+" s";$$("[data-studio-format]",root).forEach(b=>b.classList.toggle("selected",b.dataset.studioFormat===state.format))}
  if(key==="format"||key==="mode")resize();
@@ -296,7 +296,7 @@ function clock(seconds){
 }
 function stopAudition(){
  if(audition){audition.pause();audition.src="";audition=null}
- auditionId="";if(root)$(".cmd-music-play",root).forEach(b=>b.textContent="▶");
+ auditionId="";if(root)$$(".cmd-music-play",root).forEach(b=>b.textContent="▶");
 }
 function openMusicSheet(){
  if(!root)return;
