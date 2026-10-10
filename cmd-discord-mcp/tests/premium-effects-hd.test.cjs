@@ -40,6 +40,10 @@ test("No new effect path enables arbitrary source or unregistered artwork",()=>{
 test("Effect catalog uses vector art, not emoji-only thumbnails",()=>{
  assert.match(server,/cmd-art\/effect\//);
  assert.match(server,/cmd-effect-preview/);
+ assert.match(server,/function updateEffectDemo\(id\)/);
+ assert.match(server,/cmd-effect-live-image/);
+ assert.match(server,/if\(cls==="\.effectTile"\)updateEffectDemo/);
  assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-preview img/);
+ assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-live-image/);
  assert.match(server,/cmd-premium-art\.css\?v=20261010effect1/);
 });
