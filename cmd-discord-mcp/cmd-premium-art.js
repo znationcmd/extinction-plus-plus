@@ -109,6 +109,8 @@ export function renderCmdPremiumSvg(type,key){
  '</defs>'+content+'</svg>';
 }
 export const CMD_PREMIUM_ART_CSS=`
+.cmd-empty-art{display:grid;place-items:center;width:100%;height:100%;font-size:32px;color:#b1abc2}
+
 .cmd-premium-art{position:relative;display:block;pointer-events:none;user-select:none;object-fit:contain;z-index:4}
 .art.cmd-gem-art{height:190px;background:radial-gradient(ellipse at 50% 15%,#75409d55,#141320 72%);overflow:hidden;border-radius:16px}
 .cmd-gem-art .cmd-gem-mock{position:absolute;inset:18% 15% 12%;border-radius:13px;background:linear-gradient(130deg,#2b203b,#171823);border:1px solid #ffffff2b;box-shadow:inset 0 1px #ffffff28}
@@ -125,9 +127,9 @@ export const CMD_PREMIUM_ART_CSS=`
 .diamondCard .cmd-gem-art>img{filter:drop-shadow(0 0 12px #ac9cff99)}
 .diamondCard .cmd-gem-mock{inset:22% 20% 15%}
 .diamondCard .cmd-avatar-art .cmd-gem-mock{inset:22% 33%}
-.cmd-profile-art-frame{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:fill;pointer-events:none;z-index:5;filter:drop-shadow(0 0 9px #ad79e877)}
+.cmd-profile-art-frame{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;pointer-events:none;z-index:5;filter:drop-shadow(0 0 9px #ad79e877)}
 .cmd-profile-art-avatar{position:absolute;left:9px;top:-89px;width:180px;height:180px;object-fit:contain;pointer-events:none;z-index:7}
-.frameThumb img.cmd-frame-thumb{width:100%;height:100%;object-fit:fill;position:absolute;inset:0;filter:drop-shadow(0 0 6px #9c7bfc88)}
+.frameThumb img.cmd-frame-thumb{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;filter:drop-shadow(0 0 6px #9c7bfc88)}
 .avatarThumb img.cmd-avatar-thumb{width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 .frameThumb:has(img),.avatarThumb:has(img){position:relative}
 .cmd-shop-row-note{color:#a5b9d8;font-size:12px}

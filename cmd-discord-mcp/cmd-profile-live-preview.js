@@ -63,9 +63,9 @@ function draw(){
  const avatar=$(".cmd-live-avatar",preview),source=avatarUrl||$(".hero .avatar")?.getAttribute("src")||"/app-icon.webp?v=5";
  if(avatar.getAttribute("src")!==source)avatar.setAttribute("src",source);
  const deco=$(".cmd-live-decoration",preview),decoPresent=Boolean(decoration&&decoration!=="none");
- deco.hidden=!decoPresent;if(decoPresent)deco.src="/cmd-art/avatar/"+encodeURIComponent(decoration)+".svg";
+ deco.hidden=!decoPresent;if(decoPresent)deco.src="/cmd-art/avatar/"+encodeURIComponent(decoration)+".svg?v=20261010hd3";
  const frameImage=$(".cmd-live-avatar-frame",preview),framePresent=Boolean(frame&&frame!=="none");
- frameImage.hidden=!framePresent;if(framePresent)frameImage.src="/cmd-art/frame/"+encodeURIComponent(frame)+".svg";
+ frameImage.hidden=!framePresent;if(framePresent)frameImage.src="/cmd-art/frame/"+encodeURIComponent(frame)+".svg?v=20261010hd3";
  const line=$(".cmd-live-name",preview);line.textContent=name;line.dataset.style=style;
  $(".cmd-live-detail",preview).textContent=[pronouns,status].filter(Boolean).join(" · ")||"Mon profil CMD Sphere";
  $(".cmd-live-bio",preview).textContent=bio||"Ta bio apparaîtra ici.";
