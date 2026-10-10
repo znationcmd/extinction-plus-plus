@@ -195,8 +195,8 @@
   rail.addEventListener("click",e=>{if(Date.now()<(window.__suppressRailClick||0)){e.preventDefault();e.stopImmediatePropagation()}},true);
   notice("Maintiens un serveur pour le déplacer ou créer un dossier");
  }
- // Floating CMD AI, Studio Pub and Invite Friends; drag with a finger and keep normal taps.
- const floatSelectors=[["#cmdAiLauncher","ai"],["#cmdPromoLaunch","studio"],[".cmd-invite-launch","invite"]];
+ // Floating CMD AI and Invite Friends remain movable; Studio IA now lives inside profiles.
+ const floatSelectors=[["#cmdAiLauncher","ai"],[".cmd-invite-launch","invite"]];
  const floatKey="cmd_sphere_floating_controls_v3";
  function readPrefs(){try{return JSON.parse(localStorage.getItem(floatKey)||"{}")}catch{return {}}}
  function setFloatPos(node,pos){
