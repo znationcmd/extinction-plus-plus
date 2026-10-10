@@ -4981,8 +4981,8 @@ const httpServer=createServer(async(req,res)=>{
     // Enhanced display assets are separate from all original v1/v3 files.
     // Strict path patterns and safe fallback mean an original can never be deleted by this route.
     if(req.method==="GET"&&(
-      /^\/universe\/v2\/(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(url.pathname)||
-      /^\/avatars\/v4\/avatar-(0[1-9]|[1-5][0-9]|6[0-8])\.webp$/.test(url.pathname)
+      /^\/universe\/v2\/(?:thumbs\/)?(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(url.pathname)||
+      /^\/avatars\/v4\/(?:thumbs\/)?avatar-(0[1-9]|[1-5][0-9]|6[0-8])\.webp$/.test(url.pathname)
     )){
       try{
         const picture=readFileSync(new URL("./public"+url.pathname,import.meta.url));
