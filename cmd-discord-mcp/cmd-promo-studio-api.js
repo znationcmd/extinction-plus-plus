@@ -42,16 +42,16 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
      res.writeHead(200,{"content-type":q.rows[0].format,"content-length":total,"accept-ranges":"bytes","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"});res.end(bytes);return true;
    }
    if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere"});return true}
-   const user=String(auth.user.id),scoped=txt(url.searchParams.get("server"),64),scope=UUID.test(scoped)?scoped:"";
+   const user=String(auth.user.id),scoped=txt(url.searchParams.get("server"),64),scope=/^(?:[0-9]{8,24}|[0-9a-f-]{36})$/i.test(scoped)?scoped:"";
    if(req.method==="GET"&&path==="/api/cmd-profile-videos"){
      const q=await pool.query("SELECT id,title,format,kind,bytes,created_at FROM cmd_sphere_profile_videos WHERE user_id=$1 AND profile_guild=$2 ORDER BY created_at DESC LIMIT 24",[user,scope]);
      send(res,200,{items:q.rows.map(v=>({...v,mediaUrl:"/api/cmd-profile-videos/media/"+v.id}))});return true;
    }
    if(req.method==="POST"&&path==="/api/cmd-profile-videos"){
-     const rawGuild=txt(req.headers["x-cmd-profile-guild"],64),guild=UUID.test(rawGuild)?rawGuild:"";
+     const rawGuild=txt(req.headers["x-cmd-profile-guild"],64),guild=/^(?:[0-9]{8,24}|[0-9a-f-]{36})$/i.test(rawGuild)?rawGuild:"";
      const mime=txt(String(req.headers["content-type"]||"").split(";")[0],40),title=txt(req.headers["x-cmd-title"],100)||"Ma vidéo",kind=txt(req.headers["x-cmd-kind"],20)||"story";
      if(rawGuild&&!guild){send(res,400,{error:"Profil de serveur invalide"});return true}
-     if(guild){const member=await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[guild,user]);if(!member.rows.length){send(res,403,{error:"Tu dois appartenir à ce serveur"});return true}}
+     if(guild){const memberNative=UUID.test(guild)?await pool.query("SELECT 1 FROM cmd_native_members WHERE guild_id=$1 AND user_id=$2 LIMIT 1",[guild,user]):{rows:[]};const memberDiscord=Array.isArray(auth.guildIds)&&auth.guildIds.some(id=>String(id)===guild);if(!memberNative.rows.length&&!memberDiscord){send(res,403,{error:"Tu dois appartenir à ce serveur"});return true}}
      if(!MIME.has(mime)){send(res,415,{error:"Format de vidéo/image non accepté"});return true}
      const count=await pool.query("SELECT COUNT(*)::int AS total FROM cmd_sphere_profile_videos WHERE user_id=$1 AND profile_guild=$2",[user,guild]);
      if(Number(count.rows[0]?.total||0)>=24){send(res,409,{error:"24 vidéos maximum par profil. Supprime une ancienne vidéo."});return true}
