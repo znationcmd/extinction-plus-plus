@@ -584,7 +584,7 @@ async function menu(){
   '<div class="csm-server-menu-quick">'+shortcut+'</div>'+
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
-  (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
+  (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+(role==='owner'?'<a href="https://cmd-hosting-web-production.up.railway.app/d/cmd" target="_blank" rel="noopener noreferrer"><span class="csm-server-row-ico">↗</span><span class="csm-server-row-name">Ouvrir CMD Hosting</span><span class="csm-server-chevron">›</span></a>':'')+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
   (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété')+row('delete-guild','🗑️','Supprimer mon serveur'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
@@ -592,8 +592,8 @@ async function menu(){
  const shut=()=>{root.remove();document.body.classList.remove("csm-server-menu-open")};
  root.querySelector(".csm-server-menu-shade").onclick=shut;
  const hostingBtn=root.querySelector('[data-csm-quick="hosting"]');
- if(hostingBtn){hostingBtn.hidden=true;
-  fetch('/api/cmd-hosting/association?guildId='+code,{credentials:'same-origin',cache:'no-store'}).then(async resp=>{if(resp.ok){const data=await resp.json();if(data.canManage!==false&&hostingBtn.isConnected)hostingBtn.hidden=false}}).catch(()=>{});
+ if(hostingBtn){hostingBtn.hidden=!(native&&role==='owner');
+  fetch('/api/cmd-hosting/association?guildId='+code,{credentials:'same-origin',cache:'no-store'}).then(async resp=>{if(resp.ok){const data=await resp.json();if(hostingBtn.isConnected)hostingBtn.hidden=!(role==='owner'||data.owner===true||data.canManage===true)}}).catch(()=>{});
  }
  const status=root.querySelector("#csmMenuStatus");
  root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
