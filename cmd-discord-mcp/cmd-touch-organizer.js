@@ -8,6 +8,8 @@
  const $=q=>document.querySelector(q);
  let rail=null,gesture=null,ghost=null,hovered=null,saving=false;
  function notice(message,error){
+  // Keep drag-and-drop and persistence, but do not interrupt navigation with tips or success banners.
+  if(!error)return;
   const box=document.createElement("div");box.className="cmd-organizer-toast";box.textContent=message;box.setAttribute("role","status");
   if(error)box.classList.add("error");document.body.append(box);setTimeout(()=>box.remove(),2600);
  }
@@ -193,7 +195,7 @@
   window.addEventListener("pointerup",onRailUp,true);
   window.addEventListener("pointercancel",e=>{if(gesture?.id===e.pointerId)cancel()},true);
   rail.addEventListener("click",e=>{if(Date.now()<(window.__suppressRailClick||0)){e.preventDefault();e.stopImmediatePropagation()}},true);
-  notice("Maintiens un serveur pour le déplacer ou créer un dossier");
+  // Silent gesture affordance: users can keep long-press dragging.
  }
  // Floating CMD AI and Invite Friends remain movable; Studio IA now lives inside profiles.
  const floatSelectors=[["#cmdAiLauncher","ai"],[".cmd-invite-launch","invite"]];
