@@ -60,7 +60,7 @@ function open(context={}){
  $$(".cmd-studio-card",controls).forEach((card,i)=>{card.dataset.toolPanel=tools[i]||"";const head=card.querySelector("h3");if(head)head.textContent=titles[i]||head.textContent});
  const heading=document.createElement("header");heading.className="cmd-studio-tool-header";heading.innerHTML='<strong id="cmdStudioToolName">Outils</strong><button type="button" id="cmdStudioHideTool" aria-label="Masquer les outils">✕</button>';
  controls.prepend(heading);
- const cropCard=$(".cmd-studio-card",controls)[1];
+ const cropCard=$$(".cmd-studio-card",controls)[1];
  const cropSetting=document.createElement("label");cropSetting.textContent="Recadrage";
  const cropSelect=document.createElement("select");cropSelect.id="cmdStudioCrop";
  cropSelect.innerHTML='<option value="cover">Remplir l’écran</option><option value="contain">Afficher toute l’image</option>';
@@ -71,7 +71,7 @@ function open(context={}){
  camera.onchange=e=>{addFiles(e.target.files);camera.value="";showTool("media")};
  const bottom=document.createElement("footer");bottom.id="cmdStudioBottomBar";bottom.innerHTML='<button type="button" id="cmdStudioStory">Ta Story</button><button type="button" id="cmdStudioNext">Suivant</button>';root.append(bottom);
  $("#cmdStudioHideTool",root).onclick=closeTool;
- $("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
+ $$("[data-cmd-tool]",toolbar).forEach(b=>b.onclick=()=>showTool(b.dataset.cmdTool));
  $("#cmdStudioNext",root).onclick=()=>showTool("publish");
  $("#cmdStudioStory",root).onclick=publishStory;
  for(const [handle,x,y] of [[textHandle,"textX","textY"],[stickerHandle,"stickerX","stickerY"]]){
