@@ -2863,6 +2863,27 @@ async function createNativeGuild(auth,input){
   await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,'Informations','category',0)`,[cat,id]);
   await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,topic,position,source_parent_id) VALUES($1,$2,'bienvenue-et-règles','text','Bienvenue sur ce serveur CMD Sphere',1,$3)`,[crypto.randomUUID(),id,cat]);
   await pool.query(`INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,'général','text',2)`,[crypto.randomUUID(),id]);
+  // Optional onboarding templates only populate newly created native servers.
+  // Existing guild channels, messages and role IDs are never changed by this path.
+  const template=String(input.template||"custom");
+  const nativeTemplates={
+    gaming:{category:"Gaming",rooms:[["discussion-jeux","text"],["partage-clips","text"],["Vocal gaming","voice"]]},
+    school:{category:"Club scolaire",rooms:[["annonces","text"],["cours-et-devoirs","text"],["Vocal du club","voice"]]},
+    study:{category:"Groupe d’étude",rooms:[["ressources","text"],["entraide","text"],["Révisions vocales","voice"]]},
+    friends:{category:"Entre amis",rooms:[["photos-et-médias","text"],["Vocal entre amis","voice"]]},
+    art:{category:"Créations",rooms:[["présente-tes-créations","text"],["conseils-et-idées","text"],["Atelier vocal","voice"]]},
+    community:{category:"Communauté",rooms:[["annonces","text"],["présentations","text"],["Salon vocal","voice"]]}
+  };
+  const preset=Object.hasOwn(nativeTemplates,template)?nativeTemplates[template]:null;
+  if(preset){
+    const newCategory=crypto.randomUUID();
+    await pool.query("INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,$3,'category',3)",[newCategory,id,preset.category]);
+    for(let index=0;index<preset.rooms.length;index++){
+      const [roomName,roomType]=preset.rooms[index];
+      await pool.query("INSERT INTO cmd_native_channels(id,guild_id,name,type,source_parent_id,position) VALUES($1,$2,$3,$4,$5,$6)",
+       [crypto.randomUUID(),id,roomName,roomType,newCategory,4+index]);
+    }
+  }
   return r.rows[0];
 }
 async function syncNativeFromDiscord(auth,sourceGuildId,preferredBot){
