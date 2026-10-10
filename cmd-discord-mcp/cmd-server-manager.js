@@ -503,15 +503,31 @@ async function action(which){
  if(which==='all-webhooks'){close();if(typeof openWebhookManager==='function')openWebhookManager();return}
  if(which==='bots'){close();if(typeof openBotsManager==='function')openBotsManager();return}
 }
-function menu(){
+async function menu(){
  document.querySelector("#csm-server-menu")?.remove();
- const guild=state()?.nativeGuild||state()?.guild||ctx?.data?.guild||{};
+ const selected=state(),native=!!selected?.nativeGuild;
+ const guild=selected?.nativeGuild||selected?.guild||ctx?.data?.guild||{};
  const gid=String(guild.id||ctx?.data?.guild?.id||"");
- const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere");
- const icon=String(guild.icon||""),banner=String(guild.server_banner||"");
- const count=Number(guild.member_count||guild.memberCount||ctx?.data?.guild?.member_count||0);
- const role=String(guild.membership_role||((ctx?.data?.guild?.id===gid)?ctx?.data?.member?.membership_role:"")||"");
- const admin=["owner","admin"].includes(role)||((ctx?.data?.guild?.id===gid)&&!!ctx?.admin);
+ let verifiedMemberRole="";
+ let verifiedGuild=null;
+ // Always re-check native membership on the server. Do not trust a cached owner flag
+ // to show destructive / owner-only actions in the mobile menu.
+ if(native&&gid){
+  try{
+   const detail=await request('/api/native/guild/'+safe(gid));
+   if(String(state()?.nativeGuild?.id||"")!==gid)return;
+   verifiedMemberRole=String(detail?.member?.membership_role||"");
+   verifiedGuild=detail?.guild||null;
+  }catch(error){
+   console.warn('[CMD Sphere] Menu : droits non vérifiés :',error?.message||error);
+  }
+ }
+ const displayGuild=verifiedGuild||guild;
+ const code=encodeURIComponent(gid),name=String(displayGuild.name||"Serveur CMD Sphere");
+ const icon=String(displayGuild.icon||""),banner=String(displayGuild.server_banner||"");
+ const count=Math.max(0,Number(displayGuild.member_count??displayGuild.memberCount??ctx?.data?.guild?.member_count??0)||0);
+ const role=native?verifiedMemberRole:String(guild.membership_role||((ctx?.data?.guild?.id===gid)?ctx?.data?.member?.membership_role:"")||"");
+ const admin=native?["owner","admin"].includes(role):["owner","admin"].includes(role)||((ctx?.data?.guild?.id===gid)&&!!ctx?.admin);
  const root=document.createElement("div");root.id="csm-server-menu";
  const img=/^(https?:\/\/|data:image\/)/i.test(icon)?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon" aria-hidden="true">🏠</span>';
  const photo=/^(https?:\/\/|data:image\/)/i.test(banner)?'<div class="csm-server-cover" style="background-image:linear-gradient(#1e1d25a0,#1e1d25ee),url('+escapeHtml(banner)+')"></div>':'';
@@ -521,12 +537,12 @@ function menu(){
  root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Menu du serveur">'+
   '<div class="csm-server-menu-handle"></div>'+photo+
   '<div class="csm-server-menu-server">'+img+'<h3>'+escapeHtml(name)+'</h3>'+
-  '<p><span class="csm-server-kind">✦ Serveur de communauté</span> · '+count+' membres</p></div>'+
+  '<p><span class="csm-server-kind">'+(displayGuild.is_public?'✦ Serveur de communauté':'🔒 Serveur privé')+'</span> · '+count+' membres</p></div>'+
   '<div class="csm-server-menu-quick">'+shortcut+'</div>'+
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
   (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
-  (gid&&!!state()?.nativeGuild?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété / supprimer'):row('leave-guild','↪','Quitter ce serveur'))+'</div>':'')+
+  (gid&&native?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété / supprimer'):role?row('leave-guild','↪','Quitter ce serveur'):'<p class="csm-server-menu-permission-note" role="status">Droits du serveur indisponibles. Actualise et réessaie.</p>')+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
  document.body.append(root);document.body.classList.add("csm-server-menu-open");
