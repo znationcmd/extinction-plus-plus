@@ -2792,7 +2792,10 @@ async function effectiveNativePermissions(userId,guildId){
  const member=await nativeMembership(userId,guildId);
  if(!member)return null;
  if(member.membership_role==="owner"||member.membership_role==="admin")return {administrator:true,manageGuild:true,manageChannels:true,manageRoles:true};
- const q=await pool.query("SELECT r.permissions FROM cmd_native_member_roles mr JOIN cmd_native_roles r ON r.id=mr.role_id AND r.guild_id=mr.guild_id WHERE mr.guild_id=$1 AND mr.user_id=$2",[String(guildId),String(userId)]);
+ const q=await pool.query(
+  "SELECT permissions FROM cmd_native_roles WHERE guild_id=$1 AND name='@everyone' "+
+  "UNION ALL SELECT r.permissions FROM cmd_native_member_roles mr JOIN cmd_native_roles r ON r.id=mr.role_id AND r.guild_id=mr.guild_id WHERE mr.guild_id=$1 AND mr.user_id=$2",
+  [String(guildId),String(userId)]);
  const aggregate={};
  for(const row of q.rows){const p=row.permissions&&typeof row.permissions==="object"?row.permissions:{};for(const [key,value] of Object.entries(p)){if(value===true)aggregate[key]=true}}
  return aggregate;
