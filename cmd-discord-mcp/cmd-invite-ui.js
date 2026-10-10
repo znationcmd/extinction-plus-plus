@@ -82,6 +82,7 @@ css.textContent=
 ".cmd-inv-status{min-height:20px;color:#d5c2e0;font-size:12px;margin:8px 0}"+
 ".cmd-inv-item.expired{opacity:.6}"+
 "@media(max-width:450px){.cmd-inv-panel{padding:18px 12px calc(18px + env(safe-area-inset-bottom))}.cmd-inv-actions{gap:5px}.cmd-inv-actions button{font-size:11px}}";
+css.textContent+="\n#cmdInvFriendPicker{padding:12px;margin:12px 0;border:1px solid #796489;border-radius:14px;background:#31243e}\n#cmdInvFriendPicker .cmd-inv-friend-head{display:flex;justify-content:space-between;align-items:center;gap:10px}\n#cmdInvFriendPicker .cmd-inv-friend-head h3{margin:0;font-size:15px}\n#cmdInvFriendPicker .cmd-inv-friend-head button{border:0;background:#493559;color:white;border-radius:50%;width:35px;height:35px}\n#cmdInvFriendPicker input{width:100%;min-height:43px;padding:10px;background:#17101c;border:1px solid #aa90bf;border-radius:9px;color:#fff;margin:10px 0}\n#cmdInvFriendList{max-height:24dvh;overflow-y:auto}\n#cmdInvFriendList .cmd-inv-friend{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #ffffff17}\n#cmdInvFriendList .cmd-inv-friend img,#cmdInvFriendList .cmd-inv-friend>span{width:42px;height:42px;flex:0 0 42px;border-radius:50%;object-fit:cover;background:#4d3b5f;display:grid;place-items:center}\n#cmdInvFriendList .cmd-inv-friend strong{flex:1;min-width:0;overflow-wrap:anywhere}\n#cmdInvFriendList .cmd-inv-friend button{border:0;background:#74518c;color:white;padding:10px;border-radius:9px;font-weight:750}\n";
 document.head.append(css);
 const mask=document.createElement("div");mask.className="cmd-inv-mask";mask.setAttribute("role","dialog");mask.setAttribute("aria-modal","true");mask.setAttribute("aria-label","Invitations du serveur CMD Sphere");
 mask.innerHTML='<div class="cmd-inv-panel"><div class="cmd-inv-handle"></div><div class="cmd-inv-head"><h2 id="cmdInvTitle">Inviter un ami</h2><button type="button" id="cmdInvClose" aria-label="Fermer">✕</button></div>'+
@@ -132,6 +133,50 @@ async function share(link){
  if(navigator.share){try{await navigator.share({title:activeName||"Invitation CMD Sphere",url:link});return}catch(e){if(e.name==="AbortError")return}}
  if(await copy(link))hint("Lien copié : partage-le avec tes amis.");else hint("Sélectionne et copie le lien ci-dessous.",true);
 }
+async function inviteFriendDirect(url){
+ mask.querySelector("#cmdInvFriendPicker")?.remove();
+ const section=document.createElement("section");section.id="cmdInvFriendPicker";
+ section.innerHTML='<div class="cmd-inv-friend-head"><h3>Inviter un ami de CMD Sphere</h3><button type="button" aria-label="Fermer la liste d’amis">✕</button></div><input id="cmdInvFriendSearch" type="search" placeholder="Rechercher un ami" autocomplete="off"><div id="cmdInvFriendList" aria-live="polite">Chargement des amis…</div>';
+ const holder=mask.querySelector(".cmd-inv-panel");holder.append(section);
+ const list=section.querySelector("#cmdInvFriendList");
+ section.querySelector("button").onclick=()=>section.remove();
+ let friends=[];
+ function show(q=""){
+  list.replaceChildren();
+  const matches=friends.filter(x=>(String(x.displayName||"")+" "+String(x.username||"")).toLowerCase().includes(q.toLowerCase())).slice(0,60);
+  if(!matches.length){list.textContent="Aucun ami correspondant.";return}
+  for(const friend of matches){
+   const row=document.createElement("div");row.className="cmd-inv-friend";
+   const photo=document.createElement(friend.avatar?"img":"span");
+   if(friend.avatar){photo.src=friend.avatar;photo.alt="";photo.loading="lazy"}else photo.textContent="👤";
+   const label=document.createElement("strong");label.textContent=friend.displayName||friend.username||"Ami";
+   const button=document.createElement("button");button.type="button";button.textContent="Inviter";
+   button.onclick=async()=>{
+    if(!friend.username)return;
+    button.disabled=true;button.textContent="Envoi…";
+    try{
+     const response=await fetch("/api/dm/start",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({username:friend.username})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok||!data.thread?.id)throw Error(data.error||"Conversation impossible");
+     const send=await fetch("/api/dm/send",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({threadId:data.thread.id,body:"Je t’invite à rejoindre "+activeName+" sur CMD Sphere : "+url})});
+     const delivered=await send.json().catch(()=>({}));
+     if(!send.ok)throw Error(delivered.error||"Invitation non envoyée");
+     hint("Invitation envoyée à "+(friend.displayName||friend.username)+".");
+     button.textContent="Envoyée ✓";
+    }catch(e){button.disabled=false;button.textContent="Réessayer";hint(e.message,true)}
+   };
+   row.append(photo,label,button);list.append(row);
+  }
+ }
+ section.querySelector("#cmdInvFriendSearch").oninput=e=>show(e.target.value.trim());
+ try{
+  const response=await fetch("/api/friends",{credentials:"same-origin",cache:"no-store"});
+  if(!response.ok)throw Error();
+  const data=await response.json();if(!section.isConnected)return;
+  friends=Array.isArray(data.friends)?data.friends:[];show();
+ }catch{list.textContent="Les amis ne sont pas disponibles. Tu peux partager le lien directement."}
+ section.querySelector("#cmdInvFriendSearch").focus({preventScroll:true});
+}
 function render(items,canManage){
  list.replaceChildren();
  if(!items.length){const p=document.createElement("p");p.className="cmd-inv-status";p.textContent=canManage?"Aucun lien actif. Crée une invitation pour ce serveur.":"Aucun lien actif. Demande une invitation à un administrateur.";list.append(p);return}
@@ -148,6 +193,7 @@ function render(items,canManage){
    for(const [label,fn] of [["↗ Partager",()=>share(item.url)],["Copier",async()=>{hint(await copy(item.url)?"Lien copié !":"Sélectionne et copie le lien.",false);input.select()}],["Code QR",()=>{const qr=article.querySelector(".cmd-inv-qr");if(qr){qr.remove();return}const wrap=document.createElement("div");wrap.className="cmd-inv-qr";let svg;try{svg=qrSvg(item.url);wrap.append(svg)}catch(e){hint("QR indisponible : "+e.message,true);return}const save=document.createElement("button");save.type="button";save.textContent="Télécharger le QR";save.style.cssText="margin-top:9px;background:#442b53;color:white;border:0;padding:10px;border-radius:9px";save.onclick=()=>qrDownload(svg,item.label);wrap.append(save);article.append(wrap)}]]){
     const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=fn;actions.append(b);
    }
+   const sendFriend=document.createElement("button");sendFriend.type="button";sendFriend.textContent="👥 Inviter un ami";sendFriend.onclick=()=>inviteFriendDirect(item.url);actions.append(sendFriend);
    article.append(actions);
   }
   if(canManage&&!item.revoked){
