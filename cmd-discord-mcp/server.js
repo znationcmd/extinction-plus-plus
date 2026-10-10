@@ -181,6 +181,7 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261010menu9"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261010rolesinvite3"></script><script defer src="/cmd-role-wizard.js?v=20261010roleswizard2"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&(body.includes('id="dockProfileMain"')||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<\/body>/i,'<script defer src="/cmd-hosting-panel.js?v=20261010layout2"></script></body>');
+    if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes('id="dockProfileMain"')||body.includes('<title>Profil · CMD Sphere</title>')))body=body.replace(/<\/body>/i,'<script defer src="/cmd-server-image.js?v=20261010photos1"></script></body>');
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
@@ -976,7 +977,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     '<p class="cmd-wizard-hint">Tu ne sais pas ? <button id="cmdWSkip">Ignorer cette question</button></p>';
    else host.innerHTML=nav+'<header class="cmd-wizard-title"><h2>Crée ton serveur</h2><p>Ajoute son image et donne-lui un nom.</p></header>'+
     '<form id="cmdWForm"><label for="cmdWFile" class="cmd-wizard-file"><span id="cmdWCamera">📷</span><img id="cmdWPreview" alt="Aperçu de l’icône" hidden></label>'+
-    '<input id="cmdWFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>'+
+    '<input id="cmdWFile" type="file" accept="image/*,.heic,.heif" hidden>'+
     '<label class="cmd-wizard-name">Nom du serveur<input name="name" maxlength="100" required id="cmdWName" placeholder="Mon serveur CMD Sphere" value="'+esc(cmdWizard.name)+'"></label>'+
     '<label class="cmd-wizard-public"><input type="checkbox" name="isPublic"> Afficher ce serveur dans Découvrir (facultatif)</label>'+
     '<p class="cmd-wizard-hint">En créant ce serveur, tu acceptes les règles de CMD Sphere.</p><p id="cmdWError" class="cmd-wizard-error" role="alert"></p>'+
@@ -991,10 +992,15 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     const image=host.querySelector('#cmdWPreview');
     if(cmdWizard.icon){image.src=cmdWizard.icon;image.hidden=false;host.querySelector('#cmdWCamera').hidden=true}
     host.querySelector('#cmdWName').oninput=e=>cmdWizard.name=e.target.value;
-    host.querySelector('#cmdWFile').onchange=e=>{
+    host.querySelector('#cmdWFile').onchange=async e=>{
      const file=e.target.files?.[0];if(!file)return;
-     if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>1500000){host.querySelector('#cmdWError').textContent='Choisis un PNG, JPEG ou WebP de moins de 1,5 Mo.';return}
-     const reader=new FileReader();reader.onload=()=>{cmdWizard.icon=String(reader.result);image.src=cmdWizard.icon;image.hidden=false;host.querySelector('#cmdWCamera').hidden=true;host.querySelector('#cmdWError').textContent=''};reader.onerror=()=>host.querySelector('#cmdWError').textContent='Image illisible';reader.readAsDataURL(file);
+     const status=host.querySelector('#cmdWError');status.textContent='Préparation de la photo…';
+     try{
+      if(typeof window.cmdSpherePrepareServerImage!=='function')throw Error('Traitement des photos indisponible. Actualise la page.');
+      const prepared=await window.cmdSpherePrepareServerImage(file);
+      cmdWizard.icon=prepared;image.src=prepared;image.hidden=false;host.querySelector('#cmdWCamera').hidden=true;
+      status.textContent='Image prête à enregistrer.';
+     }catch(error){status.textContent=error.message}
     };
     host.querySelector('#cmdWForm').onsubmit=cmdWizardSubmit;
    }
@@ -5105,6 +5111,7 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-pull-refresh.js",import.meta.url),"utf8"));return;
     }
+    if(req.method==="GET"&&url.pathname==="/cmd-server-image.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-server-image.js",import.meta.url),"utf8"));return;}
     if(req.method==="GET"&&url.pathname==="/cmd-hosting-panel.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-hosting-panel.js",import.meta.url),"utf8"));return;}
     if(req.method==="GET"&&url.pathname==="/cmd-role-wizard.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
