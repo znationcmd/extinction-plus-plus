@@ -5,7 +5,7 @@
 if(window.__cmdPremiumProfile)return;window.__cmdPremiumProfile=true;
 const $=(q,r=document)=>r.querySelector(q), $$=(q,r=document)=>[...r.querySelectorAll(q)];
 const esc=x=>String(x||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const providers=[["facebook","Facebook"],["instagram","Instagram"],["tiktok","TikTok"],["x","X"],["youtube","YouTube"],["steam","Steam"],["playstation","PlayStation"],["xbox","Xbox"],["nintendo","Nintendo"],["spotify","Spotify"],["website","Site web"]];
+const providers=[["facebook","Facebook"],["instagram","Instagram"],["tiktok","Vidéos externes"],["x","X"],["youtube","YouTube"],["steam","Steam"],["playstation","PlayStation"],["xbox","Xbox"],["nintendo","Nintendo"],["spotify","Spotify"],["website","Site web"]];
 let extras={note:"",wishlist:[],socialLinks:[]},loading=false,currentTab="principal";
 const profile=$(".page");
 if(!profile)return;
