@@ -38,6 +38,9 @@ function open(context={}){
  const preview=$(".cmd-studio-preview",root),controls=$(".cmd-studio-controls",root);
  const surface=document.createElement("div");surface.className="cmd-studio-surface";
  const videoCanvas=$("#cmdStudioCanvas",root);videoCanvas.before(surface);surface.append(videoCanvas);
+ const hint=document.createElement("button");hint.type="button";hint.id="cmdStudioEmptyHint";
+ hint.textContent="＋ Ajouter une photo ou vidéo";hint.setAttribute("aria-label","Choisir une photo ou une vidéo pour commencer");
+ hint.onclick=()=>$("#cmdStudioMedia",root)?.click();surface.append(hint);
  const textHandle=document.createElement("div");textHandle.id="cmdStudioTextHandle";textHandle.className="cmd-studio-draggable";textHandle.hidden=true;textHandle.setAttribute("aria-label","Déplacer le texte");surface.append(textHandle);
  const stickerHandle=document.createElement("div");stickerHandle.id="cmdStudioStickerHandle";stickerHandle.className="cmd-studio-draggable";stickerHandle.hidden=true;stickerHandle.setAttribute("aria-label","Déplacer le sticker");surface.append(stickerHandle);
  const toast=document.createElement("p");toast.id="cmdStudioToast";toast.setAttribute("role","status");toast.setAttribute("aria-live","polite");toast.hidden=true;preview.append(toast);
@@ -132,6 +135,7 @@ function closeTool(){
 }
 function updateDragHandles(){
  if(!root)return;
+ const hint=$("#cmdStudioEmptyHint",root);if(hint)hint.hidden=clips.length>0;
  for(const [id,value,x,y,enabled] of [["cmdStudioTextHandle",state.headline,"textX","textY",activeTool==="text"],["cmdStudioStickerHandle",state.emoji,"stickerX","stickerY",activeTool==="sticker"]]){
   const el=$("#"+id);if(!el)continue;
   el.hidden=!enabled||!String(value||"").trim();el.textContent=String(value||"").slice(0,45);
@@ -139,7 +143,11 @@ function updateDragHandles(){
  }
 }
 async function publishStory(){
- if(!root)return;const btn=$("#cmdStudioStory");btn.disabled=true;
+ if(!root)return;
+ if(!clips.length&&!String(state.headline||"").trim()&&!String(state.emoji||"").trim()){
+  showTool("media");note("Ajoute une photo, une vidéo ou du texte pour créer ta Story.");return;
+ }
+ const btn=$("#cmdStudioStory");btn.disabled=true;
  try{
   if(!recorded){
    note("Préparation de ta Story…");
