@@ -75,3 +75,25 @@ test("Custom codes reject unsafe values and revocation is scoped to owned guild"
  assert.equal(revoke.status,200);
  assert.ok(m.writes.some(x=>/WHERE guild_id=\$1 AND code=\$2/.test(x.q)&&x.p[0]===GUILD_A));
 });
+
+
+test("Invite input accepts visible names with spaces and accents, stores only URL-safe code",async()=>{
+ const {normalizeInviteCode,handleCmdNativeInvites}=await load();
+ assert.equal(normalizeInviteCode("Extinction dayz ps5"),"extinction-dayz-ps5");
+ assert.equal(normalizeInviteCode("Éxtinction    DAYZ PS5"),"extinction-dayz-ps5");
+ assert.equal(normalizeInviteCode("  Mon Serveur !  "),"mon-serveur");
+ const m=makeContext({query:async()=>({rows:[]})});
+ const req={method:"POST",body:{guildId:GUILD_A,expiry:"never",label:"Extinction",customCode:"Extinction dayz ps5"}};
+ const res=mockRes();await handleCmdNativeInvites(req,res,new URL(ROOT+"/api/native/invites"),m.ctx);
+ assert.equal(res.status,201);assert.equal(res.data.code,"extinction-dayz-ps5");
+ assert.equal(res.data.url,ROOT+"/invite/extinction-dayz-ps5");
+ const stmt=m.writes.find(x=>/INSERT INTO cmd_native_invites/.test(x.q));
+ assert.ok(stmt);assert.equal(stmt.p[0],"extinction-dayz-ps5");assert.equal(stmt.p[1],GUILD_A);
+});
+test("Invalid custom names never silently produce random codes",async()=>{
+ const {handleCmdNativeInvites}=await load();
+ const m=makeContext();const response=mockRes();
+ await handleCmdNativeInvites({method:"POST",body:{guildId:GUILD_A,expiry:"30",customCode:"!!!"}},response,new URL(ROOT+"/api/native/invites"),m.ctx);
+ assert.equal(response.status,400);
+ assert.equal(m.writes.some(x=>/INSERT INTO cmd_native_invites/.test(x.q)),false);
+});
