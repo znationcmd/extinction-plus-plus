@@ -863,6 +863,7 @@
   transform:scale(1.08);
 }
 #cmdSceneSheet #cmdSceneHero.cmd-scene-full-fit .cmd-scene-hero-landscape.cmd-scene-full-fit{
+  display:block!important;visibility:visible!important;opacity:1!important;
   position:absolute!important;inset:0!important;z-index:1!important;
   background-image:var(--cmd-scene-bg)!important;
   background-size:contain!important;background-position:center!important;
