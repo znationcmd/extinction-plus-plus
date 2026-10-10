@@ -175,3 +175,29 @@ test("Individual animal and vehicle catalogue saves every ID and serves separate
   }
  }
 });
+
+// Regression: a saved restored wallpaper cannot be silently erased by a rolling deployment.
+test("saved supplemental background ID survives a temporarily missing manifest",async()=>{
+ const {handleCmdProfileScene}=await import("../cmd-profile-scene-api.js");
+ const saved="cmd-restored-asset-unavailable-during-rollout";
+ let record={cmd_avatar_scene:{scene:saved,avatarPreset:"reference-avatar-67",top:"jacket",pet:"none"}};
+ const pool={async query(sql,args){
+  if(sql.startsWith("SELECT cmd_avatar_scene"))return {rows:[record]};
+  if(sql.startsWith("UPDATE cmd_global_profiles SET cmd_avatar_scene="))record={...record,cmd_avatar_scene:JSON.parse(args[1])};
+  return {rows:[]};
+ }};
+ const response=()=>({status:0,body:"",writeHead(code){this.status=code;return this},end(value){this.body=String(value);return this}});
+ const url=new URL("https://cmd-sphere.up.railway.app/api/profile/scene");
+ const auth={user:{id:"regression-user"}};
+ const read=response();
+ await handleCmdProfileScene({method:"GET"},read,url,{pool,auth});
+ assert.equal(read.status,200);
+ assert.equal(JSON.parse(read.body).scene.scene,saved);
+ const req={method:"POST",async *[Symbol.asyncIterator](){yield Buffer.from(JSON.stringify({scene:record.cmd_avatar_scene}))}};
+ const write=response();
+ await handleCmdProfileScene(req,write,url,{pool,auth});
+ assert.equal(write.status,200);
+ assert.equal(record.cmd_avatar_scene.scene,saved);
+ assert.equal(record.cmd_avatar_scene.top,"jacket");
+ assert.equal(record.cmd_avatar_scene.avatarPreset,"reference-avatar-67");
+});
