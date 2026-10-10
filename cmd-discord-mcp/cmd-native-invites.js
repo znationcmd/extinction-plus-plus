@@ -32,6 +32,18 @@ export async function activeInviteForGuild(pool,guildId){
  WHERE guild_id=$1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW())
  ORDER BY created_at DESC LIMIT 1`,[guildId]);return r.rows[0]?.code||null;
 }
+export async function previewNativeInvite(pool,raw){
+ const code=String(raw||"").trim();
+ if(!CODE.test(code))throw Object.assign(new Error("Invitation CMD Sphere invalide."),{status:404});
+ const r=await pool.query(`SELECT g.id,g.name,g.icon,
+ (SELECT COUNT(*)::int FROM cmd_native_members m WHERE m.guild_id=g.id) AS member_count,
+ i.expires_at FROM cmd_native_invites i
+ JOIN cmd_native_guilds g ON g.id=i.guild_id
+ WHERE i.code=$1 AND i.revoked_at IS NULL
+ AND (i.expires_at IS NULL OR i.expires_at>NOW()) LIMIT 1`,[code]);
+ if(!r.rows[0])throw Object.assign(new Error("Ce lien d’invitation est expiré ou désactivé."),{status:410});
+ return r.rows[0];
+}
 export async function joinNativeInvite(pool,auth,raw){
  const code=String(raw||"").trim();
  if(!CODE.test(code))throw Object.assign(new Error("Invitation CMD Sphere invalide."),{status:400});
