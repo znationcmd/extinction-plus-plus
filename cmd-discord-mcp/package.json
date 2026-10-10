@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test tests/*.test.cjs",
-    "postinstall": "node unpack-profile-assets.cjs"
+    "postinstall": "node unpack-profile-assets.cjs && node cmd-create-display-assets.cjs"
   },
   "engines": {
     "node": ">=20"
@@ -15,7 +15,8 @@
     "@modelcontextprotocol/sdk": "^1.20.2",
     "zod": "^3.25.76",
     "pg": "^8.13.1",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
