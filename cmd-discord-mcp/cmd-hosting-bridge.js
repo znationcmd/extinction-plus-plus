@@ -22,6 +22,9 @@ export async function initCmdHostingBridge(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_hosting_role_members(guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,role_id UUID NOT NULL REFERENCES cmd_native_roles(id) ON DELETE CASCADE,user_id TEXT NOT NULL,PRIMARY KEY(guild_id,role_id,user_id))");
 
  await pool.query("ALTER TABLE cmd_sphere_hosting_pending ADD COLUMN IF NOT EXISTS guild_id UUID");
+ // Local-only permission role, never propagated into Discord.
+ await pool.query("INSERT INTO cmd_native_roles(id,guild_id,source_role_id,name,color,permissions,position,hoist,mentionable) SELECT gen_random_uuid(),g.id,'cmd-hosting-manager','🎮 Gestionnaire CMD Hosting','#7c3aed','{\"viewChannels\":true,\"manageHostingServers\":true}'::jsonb,10,TRUE,FALSE FROM cmd_native_guilds g WHERE NOT EXISTS (SELECT 1 FROM cmd_native_roles r WHERE r.guild_id=g.id AND r.source_role_id='cmd-hosting-manager') ON CONFLICT(guild_id,source_role_id) DO NOTHING");
+ await pool.query("INSERT INTO cmd_sphere_hosting_role_access(guild_id,role_id,enabled) SELECT r.guild_id,r.id,TRUE FROM cmd_native_roles r WHERE r.source_role_id='cmd-hosting-manager' ON CONFLICT(guild_id,role_id) DO NOTHING");
 }
 
 async function hostingMemberAccess(pool,gid,uid){
