@@ -935,7 +935,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function cmdWizardStyles(){
    if(document.getElementById('cmdServerWizardCSS'))return;
    const css=document.createElement('style');css.id='cmdServerWizardCSS';
-   css.textContent='#addModal.cmd-server-wizard{z-index:20050!important;padding:0!important;align-items:stretch!important;background:#19191f!important}'+
+   css.textContent='body:has(#addModal.cmd-server-wizard.on) #cmd-sphere-tools{display:none!important}'+'#addModal.cmd-server-wizard{z-index:20050!important;padding:0!important;align-items:stretch!important;background:#19191f!important}'+
     '#addModal.cmd-server-wizard>.add-card{width:min(690px,100%)!important;max-height:100dvh!important;height:100dvh!important;border:0!important;border-radius:0!important;background:#19191f!important;overflow-y:auto!important;padding:calc(20px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom))!important}'+
     '#addModal.cmd-server-wizard>.add-card>div:first-child:not(#addBody){display:none!important}'+
     '#addModal .cmd-wizard-nav{display:flex;justify-content:space-between;align-items:center}'+
