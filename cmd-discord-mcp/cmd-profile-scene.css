@@ -821,3 +821,16 @@
  height:188px!important;min-height:188px!important;
  background-size:cover!important;background-position:center!important;
 }
+
+/* Clickable scene preview and robust iOS editor closing area */
+#cmdSceneSheet .cmd-scene-float-header{z-index:200!important;pointer-events:auto!important}
+#cmdSceneSheet .cmd-scene-float-header #cmdSceneClose{position:relative!important;z-index:201!important;flex:0 0 43px!important;touch-action:manipulation!important;pointer-events:auto!important}
+#cmdSceneSheet #cmdSceneLabel{cursor:pointer!important;pointer-events:auto!important;touch-action:manipulation!important;z-index:150!important;font-family:inherit!important;text-align:left!important}
+#cmdSceneSheet.cmd-scene-preview-expanded .cmd-scene-hero{height:calc(100dvh - 139px)!important;min-height:60dvh!important;max-height:none!important;flex:1 1 auto!important}
+#cmdSceneSheet.cmd-scene-preview-expanded .cmd-scene-tabs,
+#cmdSceneSheet.cmd-scene-preview-expanded #cmdSceneOptions{display:none!important}
+#cmdSceneSheet.cmd-scene-preview-expanded .cmd-scene-float-header{z-index:210!important}
+@media(max-width:600px){
+ #cmdSceneSheet .cmd-scene-float-header{padding-top:max(12px, env(safe-area-inset-top))!important}
+ #cmdSceneSheet #cmdSceneClose{min-width:47px!important;min-height:47px!important}
+}
