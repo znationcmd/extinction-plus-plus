@@ -2784,7 +2784,13 @@ async function requireNativeMember(auth,guildId){
   const m=await nativeMembership(auth.user.id,guildId);if(!m)throw new Error("Tu n'es pas membre de ce serveur CMD.");return m;
 }
 async function requireNativeAdmin(auth,guildId){
-  const m=await requireNativeMember(auth,guildId);if(!["owner","admin"].includes(m.membership_role))throw new Error("Permission administrateur requise.");return m;
+  const member=await requireNativeMember(auth,guildId);
+  if(["owner","admin"].includes(String(member.membership_role)))return member;
+  // An explicitly assigned Administrator role grants broad server permissions.
+  // This does NOT confer ownership: transfer/delete remain guarded by owner_user_id.
+  const permissions=await effectiveNativePermissions(String(auth.user.id),String(guildId));
+  if(!permissions?.administrator)throw new Error("Permission administrateur requise.");
+  return member;
 }
 // Compute effective local CMD Sphere permissions exclusively from owner-assigned roles.
 // The profile's display role is cosmetic and is deliberately ignored for authorization.

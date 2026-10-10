@@ -36,7 +36,7 @@ async function getContext(){
  const s=state();if(!s?.nativeGuild&&!s?.guild)throw Error('Sélectionne d’abord un serveur.');
  if(s.nativeGuild){
   const data=await request('/api/native/guild/'+safe(s.nativeGuild.id));
-  ctx={mode:'native',data,admin:['owner','admin'].includes(String(data.member?.membership_role||'')),owner:String(data.member?.membership_role)==='owner',source:data.guild?.source_discord_id||'',bot:null};
+  ctx={mode:'native',data,admin:['owner','admin'].includes(String(data.member?.membership_role||''))||data.permissions?.administrator===true,owner:String(data.member?.membership_role)==='owner',source:data.guild?.source_discord_id||'',bot:null};
  }else{
   const g=s.guild,d=s.bot?await request('/api/dashboard/structure?guildId='+safe(g.id)+'&bot='+safe(s.bot)):{channels:[],roles:[]};
   ctx={mode:'discord',data:{guild:g,channels:d.channels||[],roles:d.roles||[]},admin:!!s.bot,owner:false,source:g.id,bot:s.bot};
