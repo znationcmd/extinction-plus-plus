@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import {leaveNativeGuild,transferNativeGuildOwner,deleteNativeGuild} from "./cmd-native-guild-lifecycle.js";
 import { initCmdStarsDb,handleCmdStars } from "./cmd-stars.js";
 import { cmdBoostCount,cmdBoostLevel,requireCmdBoosts,requireCmdExtraPerk,handleCmdServerBoosts } from "./cmd-boost-levels.js";
 import { CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS,renderCmdPremiumSvg } from "./cmd-premium-art.js";
@@ -3459,8 +3460,9 @@ async function ownerAssignNativeRole(auth,input){
    await pool.query('UPDATE cmd_native_members SET profile_role_id=NULL WHERE guild_id=$1 AND user_id=$2',[gid,user]);
    return {saved:true,user:{user_id:user,role_ids:[]}};
  }
- const r=await pool.query('SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,requested]);
+ const r=await pool.query('SELECT id,name FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1',[gid,requested]);
  if(!r.rows.length)throw new Error("Le rôle n'existe pas dans ce serveur.");
+ if(r.rows[0].name==='@everyone')throw new Error('Le rôle @everyone est déjà attribué à tous les membres.');
  const roleId=String(r.rows[0].id),enabled=input.enabled!==false;
  if(enabled){
    await pool.query('INSERT INTO cmd_native_member_roles(guild_id,user_id,role_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[gid,user,roleId]);
@@ -3479,8 +3481,9 @@ async function ownerAssignNativeRoleBatch(auth,input){
  if(!Array.isArray(input.userIds)||ids.length>30||new Set(ids).size!==ids.length||ids.some(v=>typeof v!=="string"||!/^[a-z0-9-]{1,100}$/i.test(v)))throw new Error("Sélectionne au maximum 30 membres valides.");
  const own=await pool.query('SELECT 1 FROM cmd_native_guilds WHERE id=$1 AND owner_user_id=$2',[gid,String(auth.user.id)]);
  if(!own.rows.length)throw new Error("Seul le propriétaire peut attribuer des rôles.");
- const role=await pool.query("SELECT id FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[gid,requested]);
+ const role=await pool.query("SELECT id,name FROM cmd_native_roles WHERE guild_id=$1 AND (id::text=$2 OR source_role_id=$2) LIMIT 1",[gid,requested]);
  if(!role.rows.length)throw new Error("Rôle introuvable dans ce serveur.");
+ if(role.rows[0].name==="@everyone")throw new Error("Le rôle @everyone est automatique.");
  if(!ids.length)return {saved:true,count:0};
  const members=await pool.query("SELECT user_id FROM cmd_native_members WHERE guild_id=$1 AND user_id=ANY($2::text[])",[gid,ids]);
  if(members.rows.length!==ids.length)throw new Error("Certains membres ne font pas partie de ce serveur.");
@@ -4764,6 +4767,22 @@ const httpServer=createServer(async(req,res)=>{
         const out=await importOwnedDiscordGuilds(auth);
         sendJson(res,200,{imported:out.imported,skipped:out.failed,ownedCount:out.ownedCount});
       }catch(e){sendJson(res,500,{error:e.message})}return;
+    }
+    // Ownership of CMD Sphere native servers is checked on every API call.
+    if(req.method==="POST"&&url.pathname==="/api/native/leave"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await leaveNativeGuild(pool,auth,await readFormBodyJson(req)))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/transfer-ownership"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await transferNativeGuildOwner(pool,auth,await readFormBodyJson(req)))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/native/delete-guild"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await deleteNativeGuild(pool,auth,await readFormBodyJson(req)))}
+      catch(e){sendJson(res,403,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/roles/assign-batch"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
