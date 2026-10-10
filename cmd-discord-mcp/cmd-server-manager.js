@@ -519,6 +519,7 @@ function menu(){
   '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
   (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
   (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("hosting","🎮","État du serveur CMD Hosting")+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
+  (gid&&!!state()?.nativeGuild?'<div class="csm-server-menu-list">'+(role==='owner'?row('ownership','👑','Gérer la propriété / supprimer'):row('leave-guild','↪','Quitter ce serveur'))+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
  document.body.append(root);document.body.classList.add("csm-server-menu-open");
@@ -532,6 +533,8 @@ function menu(){
  root.querySelectorAll("[data-csm-quick]").forEach(button=>button.onclick=async()=>{
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
+  if(key==="ownership"){shut();await open('overview');return}
+  if(key==="leave-guild"){shut();try{await getContext();await submitGuildLifecycle('leave')}catch(e){notify(e.message,false)}return}
   if(key==="hosting"){shut();if(typeof window.cmdOpenHostingPanel==="function")window.cmdOpenHostingPanel(gid);else notify("Gestion CMD Hosting indisponible, actualise la page",false);return;}
   if(key==="boost"){shut();location.assign(gid?"/server-boosts/"+code:"/stars");return}
   if(key==="invite"){
