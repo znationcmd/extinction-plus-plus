@@ -303,8 +303,8 @@ function menu(){
  const code=encodeURIComponent(gid),name=String(guild.name||"Serveur CMD Sphere");
  const icon=String(guild.icon||""),banner=String(guild.server_banner||"");
  const count=Number(guild.member_count||guild.memberCount||ctx?.data?.guild?.member_count||0);
- const role=String(ctx?.data?.member?.membership_role||"");
- const admin=!!ctx?.admin||["owner","admin"].includes(role)||String(guild.owner_user_id||"")===String(window.__cmdAccountId||"");
+ const role=String(guild.membership_role||((ctx?.data?.guild?.id===gid)?ctx?.data?.member?.membership_role:"")||"");
+ const admin=["owner","admin"].includes(role)||((ctx?.data?.guild?.id===gid)&&!!ctx?.admin);
  const root=document.createElement("div");root.id="csm-server-menu";
  const img=/^(https?:\/\/|data:image\/)/i.test(icon)?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon" aria-hidden="true">🏠</span>';
  const photo=/^(https?:\/\/|data:image\/)/i.test(banner)?'<div class="csm-server-cover" style="background-image:linear-gradient(#1e1d25a0,#1e1d25ee),url('+escapeHtml(banner)+')"></div>':'';
@@ -316,8 +316,8 @@ function menu(){
   '<div class="csm-server-menu-server">'+img+'<h3>'+escapeHtml(name)+'</h3>'+
   '<p><span class="csm-server-kind">✦ Serveur de communauté</span> · '+count+' membres</p></div>'+
   '<div class="csm-server-menu-quick">'+shortcut+'</div>'+
-  '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+'</div>'+
-  (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+'</div>':'')+
+  '<div class="csm-server-menu-list">'+row("markread","✓","Marquer comme lu")+row("search","⌕","Chercher des salons")+row("events","◷","Événements du serveur")+'</div>'+
+  (admin?'<div class="csm-server-menu-list">'+row("create-channel","＋","Créer un salon")+row("create-category","▤","Créer une catégorie")+row("create-event","▢","Créer un événement")+'</div>':'')+
   (gid?'<div class="csm-server-menu-list"><a href="/profile?server='+code+'"><span class="csm-server-row-ico">♙</span><span class="csm-server-row-name">Modifier le profil par serveur</span><span class="csm-server-chevron">›</span></a>'+row("showchannels","☷","Montrer tous les salons")+'</div>':'')+
   '<button type="button" class="csm-server-menu-cancel" data-csm-quick="close">Fermer</button>'+
   '<p id="csmMenuStatus" role="status" aria-live="polite"></p></section>';
@@ -334,11 +334,30 @@ function menu(){
    else await open("invites");return;
   }
   if(key==="notifications"){
+   if(!gid){status.textContent="Choisis un serveur CMD Sphere.";return}
+   root.querySelector(".csm-server-menu-body").scrollTop=0;
+   const pane=document.createElement("div");pane.className="csm-server-menu-action-pane";
+   pane.innerHTML='<h3>Notifications du serveur</h3><p>Personnalise les notifications de ce serveur uniquement.</p>'+
+    '<label><input type="radio" name="csmNotifyMode" value="all"> Tous les messages</label>'+
+    '<label><input type="radio" name="csmNotifyMode" value="mentions"> Mentions uniquement</label>'+
+    '<label><input type="radio" name="csmNotifyMode" value="none"> Aucune notification</label>'+
+    '<button type="button" class="csm-server-pane-save">Enregistrer</button><button type="button" class="csm-server-pane-back">Retour</button>';
+   root.querySelector(".csm-server-menu-body").append(pane);
+   pane.querySelector(".csm-server-pane-back").onclick=()=>pane.remove();
    try{
-    if(!("Notification" in window)){status.textContent="Notifications non disponibles sur cet appareil.";return}
-    const granted=Notification.permission==="default"?await Notification.requestPermission():Notification.permission;
-    status.textContent=granted==="granted"?"Notifications du navigateur autorisées.":"Active les notifications depuis les paramètres de ton appareil.";
-   }catch(e){status.textContent="Impossible d'activer les notifications : "+e.message}
+    const r=await fetch("/api/native/notifications?guildId="+code,{credentials:"same-origin"});
+    const d=await r.json();if(!r.ok)throw Error(d.error||"Notification indisponible");
+    const value=d.mode||"mentions",radio=pane.querySelector('input[value="'+value+'"]');if(radio)radio.checked=true;
+   }catch(e){status.textContent=e.message}
+   pane.querySelector(".csm-server-pane-save").onclick=async()=>{
+    const mode=pane.querySelector('input[name="csmNotifyMode"]:checked')?.value||"mentions";
+    try{
+     const r=await fetch("/api/native/notifications",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:gid,mode})});
+     const d=await r.json();if(!r.ok)throw Error(d.error||"Enregistrement impossible");
+     status.textContent="Préférences du serveur enregistrées.";pane.remove();
+     if(mode!=="none"&&"Notification" in window&&Notification.permission==="default")await Notification.requestPermission();
+    }catch(e){status.textContent=e.message}
+   };
    return;
   }
   if(key==="search"){shut();let input=document.querySelector("#cmdChannelSearch");if(input){input.focus();input.scrollIntoView({block:"nearest"})}else await open("channels");return}
@@ -352,6 +371,43 @@ function menu(){
     document.querySelectorAll(".cmd-channel-unread,.cmd-native-unread").forEach(x=>x.remove());
     status.textContent="Tous les salons du serveur sont marqués comme lus.";
    }catch(e){status.textContent=e.message}finally{button.disabled=false}
+   return;
+  }
+  if(key==="events"||key==="create-event"){
+   if(!gid){status.textContent="Choisis un serveur CMD Sphere.";return}
+   const pane=document.createElement("div");pane.className="csm-server-menu-action-pane";
+   pane.innerHTML='<h3>'+(key==="create-event"?"Créer un événement":"Événements du serveur")+'</h3>'+
+    '<form id="csmEventForm"'+(key==="create-event"?"":' hidden')+'>'+
+    '<label>Titre<input name="title" maxlength="100" required placeholder="Nom de l’événement"></label>'+
+    '<label>Date et heure<input name="startsAt" type="datetime-local" required></label>'+
+    '<label>Description<input name="description" maxlength="800" placeholder="Informations complémentaires"></label>'+
+    '<button type="submit">Créer l’événement</button></form><div class="csm-server-event-list">Chargement…</div>'+
+    '<button type="button" class="csm-server-pane-back">Retour</button>';
+   root.querySelector(".csm-server-menu-body").append(pane);
+   pane.querySelector(".csm-server-pane-back").onclick=()=>pane.remove();
+   const refresh=async()=>{
+    const r=await fetch("/api/native/events?guildId="+code,{credentials:"same-origin"});
+    const d=await r.json();if(!r.ok)throw Error(d.error||"Événements indisponibles");
+    const holder=pane.querySelector(".csm-server-event-list");holder.replaceChildren();
+    if(!(d.events||[]).length){holder.textContent="Aucun événement programmé.";return}
+    for(const event of d.events){
+     const row=document.createElement("p");const date=new Date(event.starts_at);
+     row.textContent=(event.title||"Événement")+" · "+(Number.isNaN(date.getTime())?"Date inconnue":date.toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"}));
+     holder.append(row);
+    }
+   };
+   try{await refresh()}catch(e){status.textContent=e.message}
+   pane.querySelector("#csmEventForm").onsubmit=async(e)=>{
+    e.preventDefault();
+    const data=new FormData(e.currentTarget),date=new Date(String(data.get("startsAt")||""));
+    if(!Number.isFinite(date.getTime())){status.textContent="Choisis une date correcte.";return}
+    const b=e.currentTarget.querySelector('[type="submit"]');b.disabled=true;
+    try{
+     const resp=await fetch("/api/native/events",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:gid,title:String(data.get("title")||""),description:String(data.get("description")||""),startsAt:date.toISOString()})});
+     const out=await resp.json();if(!resp.ok)throw Error(out.error||"Création impossible");
+     status.textContent="Événement enregistré pour ce serveur.";e.currentTarget.reset();await refresh();
+    }catch(error){status.textContent=error.message}finally{b.disabled=false}
+   };
    return;
   }
   if(key==="create-channel"||key==="create-category"){
