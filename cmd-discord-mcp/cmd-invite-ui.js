@@ -79,6 +79,7 @@ css.textContent=
 ".cmd-inv-actions .danger{color:#ffd8de;background:#60323f}"+
 ".cmd-inv-qr{margin:12px auto 4px;display:grid;place-items:center;background:white;border-radius:12px;padding:15px;width:fit-content;max-width:100%}"+
 ".cmd-inv-qr svg{display:block;width:min(220px,65vw);height:auto;image-rendering:pixelated}"+
+".cmd-inv-slug-preview{grid-column:1/-1;overflow-wrap:anywhere;margin:0;color:#c5b9cf;font-size:12px}"+
 ".cmd-inv-status{min-height:20px;color:#d5c2e0;font-size:12px;margin:8px 0}"+
 ".cmd-inv-item.expired{opacity:.6}"+
 "@media(max-width:450px){.cmd-inv-panel{padding:18px 12px calc(18px + env(safe-area-inset-bottom))}.cmd-inv-actions{gap:5px}.cmd-inv-actions button{font-size:11px}}";
@@ -90,7 +91,8 @@ mask.innerHTML='<div class="cmd-inv-panel"><div class="cmd-inv-handle"></div><di
  '<form id="cmdInvCreate" class="cmd-inv-create" hidden><h3>Créer une invitation</h3>'+
  '<label class="wide">Nom de l’invitation<input name="label" maxlength="70" placeholder="Amis, équipe, événement…"></label>'+
  '<label>Expiration<select name="expiry"><option value="3">3 jours</option><option value="30" selected>30 jours</option><option value="never">Jamais</option></select></label>'+
- '<label>Lien personnalisé (facultatif)<input name="customCode" maxlength="40" pattern="[a-z0-9][a-z0-9-]{3,39}" placeholder="mon-serveur"></label>'+
+ '<label>Lien personnalisé (facultatif)<input name="customCode" maxlength="70" inputmode="text" autocapitalize="none" spellcheck="false" placeholder="Extinction dayz ps5"></label>'+
+ '<p class="cmd-inv-slug-preview" id="cmdInvSlugPreview" aria-live="polite">Les espaces et accents seront convertis automatiquement en tirets.</p>'+
  '<button type="submit">＋ Générer mon lien</button></form>'+
  '<div id="cmdInvStatus" class="cmd-inv-status" role="status" aria-live="polite"></div><div id="cmdInvList" class="cmd-inv-list"></div></div>';
 document.body.append(mask);
@@ -222,11 +224,32 @@ async function open(guild){
  try{await refresh()}catch(e){list.textContent="";hint(e.message,true)}
  return true;
 }
+function normalizeInviteCode(value){
+ return String(value??"").trim().normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
+  .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
+}
+const customCodeInput=form.elements.namedItem("customCode");
+const slugPreview=$("#cmdInvSlugPreview");
+function updateSlugPreview(){
+ const raw=String(customCodeInput.value||"").trim(),code=normalizeInviteCode(raw);
+ const valid=!raw||(code.length>=4&&code.length<=40);
+ slugPreview.textContent=raw
+  ?valid?"Le lien sera : "+location.origin+"/invite/"+code
+        :"Choisis un nom contenant de 4 à 40 lettres ou chiffres."
+  :"Les espaces et accents seront convertis automatiquement en tirets.";
+ slugPreview.style.color=valid?"#d5c2e0":"#ff9cae";
+ return valid;
+}
+customCodeInput.addEventListener("input",updateSlugPreview);
+customCodeInput.addEventListener("blur",()=>{
+ if(customCodeInput.value.trim()&&updateSlugPreview())customCodeInput.value=normalizeInviteCode(customCodeInput.value);
+});
 form.addEventListener("submit",async event=>{
  event.preventDefault();if(!activeGuild)return;
+ if(!updateSlugPreview()){customCodeInput.focus();return}
  const fd=new FormData(form),button=form.querySelector("button[type=submit]");button.disabled=true;
  try{
-  const body={guildId:activeGuild,expiry:fd.get("expiry"),customCode:String(fd.get("customCode")||"").trim().toLowerCase(),label:String(fd.get("label")||"Invitation")};
+  const body={guildId:activeGuild,expiry:fd.get("expiry"),customCode:normalizeInviteCode(fd.get("customCode")),label:String(fd.get("label")||"Invitation")};
   const result=await api("/api/native/invites","POST",body);
   form.reset();await refresh();hint("Invitation créée pour ce serveur.");
   const row=currentItems.find(x=>x.code===result.code);if(row){const el=list.firstElementChild;el?.scrollIntoView({block:"nearest",behavior:"smooth"})}
