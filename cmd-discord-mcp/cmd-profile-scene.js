@@ -589,7 +589,7 @@ async function initialize(){
   return;
  }
  // The independent profile card owns the editor, not the cover banner.
-
+ present();
  try{
   const r=await fetch("/api/profile/scene",{credentials:"same-origin",cache:"no-store"});if(!r.ok)return;
   const data=await r.json();
