@@ -48,7 +48,7 @@ function config(input){
  for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,beard:BEARDS,beardColor:BEARD_COLORS,faceShape:FACE_SHAPES,browStyle:BROW_STYLES,eyeShape:EYE_SHAPES,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,bag:BAGS,piercing:PIERCINGS,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
  // A valid saved supplemental scene must survive an older/incomplete deployment.
  // Retain its ID so that the original decoration reappears when its asset returns.
- if(typeof a.scene==="string"&&/^cmd-restored-[a-z0-9-]{1,100}$/.test(a.scene))result.scene=a.scene;
+ if(typeof a.scene==="string"&&/^(?:cmd-restored|cmd-fond)-[a-z0-9-]{1,100}$/.test(a.scene))result.scene=a.scene;
  if(!/^reference-avatar-/.test(result.avatarPreset))result.avatarPreset="reference-avatar-0";result.avatarStyle="2d";result.petStyle="2d";
  result.label=String(a.label||"").trim().slice(0,42);
  result.petName=String(a.petName||"").trim().slice(0,40);
