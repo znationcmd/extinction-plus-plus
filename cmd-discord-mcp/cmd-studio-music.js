@@ -69,10 +69,11 @@ export async function handleCmdStudioMusic(req,res,url,{auth}={}){
     const id=crypto.createHash("sha256").update(item.url).digest("hex").slice(0,32);
     const track={id,title,artist,license:license.name,licenseUrl:license.url,sourceUrl,mime:item.mime,size:Number(item.size),url:"/api/cmd-studio-music/file/"+id};
     results.set(id,{...track,remoteUrl:item.url,date:Date.now()});list.push(track);
-    if(list.length>=35)break;
+    if(list.length>=90)break;
    }
    if(results.size>350){for(const [id,x] of results)if(Date.now()-x.date>3600000)results.delete(id)}
-   const response={items:list,catalog:"Wikimedia Commons",notice:"Musique réellement enregistrée, dont la licence libre a été identifiée. Respecte les attributions.",source:"https://commons.wikimedia.org"};
+   list.sort((a,b)=>(Number(b.mime==="audio/mpeg")-Number(a.mime==="audio/mpeg"))||(Number(b.mime==="audio/wav")-Number(a.mime==="audio/wav"))||a.title.localeCompare(b.title));
+   const response={items:list.slice(0,35),catalog:"Wikimedia Commons",notice:"Musique réellement enregistrée, dont la licence libre a été identifiée. Respecte les attributions.",source:"https://commons.wikimedia.org"};
    searchCache.set(key,{response,date:Date.now()});
    if(searchCache.size>45)searchCache.delete(searchCache.keys().next().value);
    send(res,200,response);
