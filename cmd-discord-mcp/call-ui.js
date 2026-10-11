@@ -52,8 +52,9 @@ export function callPage(auth,room){
 </main>
 <div class="controls hidden" id="controls"><button id="mic">🎙️ Micro</button><button id="camera">📷 Caméra</button><button id="share">🖥️ Écran</button><button id="hang" class="red">📞 Raccrocher</button></div>
 <aside id="callChatPanel" class="chat-panel" aria-label="Messages pendant l'appel">
-  <header class="call-chat-header"><strong>💬 Messages pendant l’appel</strong><button id="callChatClose" type="button" aria-label="Fermer">×</button></header>
+  <header class="call-chat-header"><strong>💬 Messages</strong><button id="callChatAll" type="button" class="all-messages">Toutes les discussions</button><button id="callChatClose" type="button" aria-label="Fermer">×</button></header>
   <div id="callChatMessages" class="call-chat-messages"><div class="call-chat-empty">Chargement des messages…</div></div>
+  <iframe id="callChatAllFrame" class="call-chat-iframe" title="Messagerie pendant l’appel"></iframe>
   <form id="callChatForm" class="call-chat-form"><textarea id="callChatInput" rows="1" placeholder="Envoyer un message…" aria-label="Message"></textarea><button type="submit">Envoyer</button></form>
   <p class="call-chat-info">Les messages restent disponibles dans les MP ou le groupe après l’appel.</p>
 </aside>
