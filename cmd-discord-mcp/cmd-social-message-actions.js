@@ -66,6 +66,16 @@ async function showProfile(article){
      try{const r=await request('/api/friends/request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({userId:p.id})});btn.textContent=r.accepted||r.alreadyFriends?'✓ Ami':'Demande envoyée ✓'}
      catch(err){btn.disabled=false;btn.textContent='Réessayer : '+err.message}
    });actions.append(btn);
+   if(p.friendStatus!=='self'&&p.username){
+     for(const [label,video] of [['💬 Envoyer un message',false],['📞 Appeler',true]]){
+       const target=elem('button','',label);target.type='button';actions.append(target);
+       target.onclick=async()=>{target.disabled=true;try{
+         const data=await request('/api/dm/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:p.username})});
+         const id=data.thread?.id||data.id;if(!id)throw Error('Conversation indisponible');
+         location.href=video?'/call?room='+encodeURIComponent('dm:'+id):'/messages?open='+encodeURIComponent(id);
+       }catch(err){alert(err.message);target.disabled=false}};
+     }
+   }
  }catch(err){if(card.isConnected)body.replaceChildren(elem('h2','',name),elem('p','cmd-person-note',err.message))}
 }
 async function removeMessage(article,btn){
