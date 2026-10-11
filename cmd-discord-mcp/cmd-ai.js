@@ -26,22 +26,42 @@ const rate=new Map();let round=0;
 export function aiMode(){return cmdFreeProviderConfigured()?"cloudflare":String(process.env.GEMINI_API_KEY||process.env.CMD_AI_GEMINI_FREE_KEY||"").trim()?"gemini":"local"}
 export function allowRequest(id){const now=Date.now(),k=String(id||"anonymous"),v=rate.get(k)||[];const items=v.filter(n=>now-n<60000);if(items.length>=12){rate.set(k,items);return false}items.push(now);rate.set(k,items);if(rate.size>5000){for(const [key,entry] of rate){if(entry.every(t=>now-t>60000))rate.delete(key);if(rate.size<4000)break}}return true}
 function clockAnswer(s){
- if(!/(quelle heure|il est quelle heure|heure (est.il|actuelle)|donne.moi l.heure|date (aujourd.hui|du jour))/i.test(s))return null;
- const zones=[["tokyo","Asia/Tokyo"],["japon","Asia/Tokyo"],["moncton","America/Moncton"],["new york","America/New_York"],["québec","America/Toronto"],["montreal","America/Toronto"],["londres","Europe/London"],["london","Europe/London"],["los angeles","America/Los_Angeles"],["dubaï","Asia/Dubai"],["sydney","Australia/Sydney"],["paris","Europe/Paris"],["ajaccio","Europe/Paris"],["corse","Europe/Paris"]];
- const z=zones.find(([name])=>s.toLowerCase().includes(name))||["France","Europe/Paris"];
- const date=new Intl.DateTimeFormat("fr-FR",{timeZone:z[1],weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
- return "À "+z[0]+", nous sommes "+date+". (Heure locale)";
+ const msg=String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ if(!/(heure|quelle date|quel jour|date du jour|date d.aujourd.hui|what time|current time|time in|time at)/i.test(msg))return null;
+ const zones=[
+  ["hong kong","Hong Kong","Asia/Hong_Kong"],["taipei","Taipei","Asia/Taipei"],
+  ["chine","Chine","Asia/Shanghai"],["pekin","Pékin","Asia/Shanghai"],["beijing","Pékin","Asia/Shanghai"],["shanghai","Shanghai","Asia/Shanghai"],["guangzhou","Guangzhou","Asia/Shanghai"],["canton","Canton","Asia/Shanghai"],["shenzhen","Shenzhen","Asia/Shanghai"],
+  ["tokyo","Tokyo","Asia/Tokyo"],["japon","Japon","Asia/Tokyo"],["moncton","Moncton","America/Moncton"],
+  ["new york","New York","America/New_York"],["quebec","Québec","America/Toronto"],["montreal","Montréal","America/Toronto"],["toronto","Toronto","America/Toronto"],["londres","Londres","Europe/London"],["london","Londres","Europe/London"],["los angeles","Los Angeles","America/Los_Angeles"],["dubai","Dubaï","Asia/Dubai"],["sydney","Sydney","Australia/Sydney"],["moscou","Moscou","Europe/Moscow"],
+  ["paris","Paris","Europe/Paris"],["ajaccio","Ajaccio","Europe/Paris"],["bastia","Bastia","Europe/Paris"],["corse","Corse","Europe/Paris"],["france","France","Europe/Paris"]
+ ];
+ const found=zones.find(([name])=>msg.includes(name))||["france","France","Europe/Paris"];
+ const clock=new Intl.DateTimeFormat("fr-FR",{timeZone:found[2],weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
+ return "🕒 À "+found[1]+", il est "+clock+" (heure locale).";
 }
 const cookBook=[
- {match:/cr[eê]pe/i,title:"Crêpes",ingredients:"250 g de farine, 3 œufs, 500 ml de lait, 1 pincée de sel, 30 g de beurre.",steps:"1. Mélange farine et sel. 2. Ajoute les œufs puis le lait progressivement. 3. Incorpore le beurre fondu. 4. Laisse reposer 30 min. 5. Cuis dans une poêle chaude 1 min de chaque côté."},
- {match:/omelette/i,title:"Omelette",ingredients:"3 œufs, 1 noix de beurre, sel, poivre.",steps:"1. Bats les œufs et assaisonne. 2. Fais fondre le beurre à feu moyen. 3. Verse les œufs et remue doucement. 4. Replie lorsque le centre est encore légèrement crémeux."},
- {match:/g[aâ]teau.*chocolat|chocolat.*g[aâ]teau/i,title:"Gâteau au chocolat",ingredients:"200 g de chocolat, 120 g de beurre, 100 g de sucre, 3 œufs, 80 g de farine.",steps:"1. Préchauffe à 180 °C. 2. Fais fondre chocolat et beurre. 3. Ajoute sucre, œufs et farine. 4. Verse dans un moule. 5. Enfourne 20 à 25 min."},
- {match:/cookies?/i,title:"Cookies",ingredients:"120 g de beurre mou, 100 g de sucre, 1 œuf, 180 g de farine, 100 g de pépites de chocolat.",steps:"1. Préchauffe à 180 °C. 2. Mélange beurre et sucre, puis l'œuf. 3. Ajoute farine et pépites. 4. Forme des boules. 5. Enfourne 10 à 12 min."}
+ {key:"crepes",match:/crepes?/,title:"Crêpes (8 à 10)",ingredients:"250 g de farine, 3 œufs, 500 ml de lait, 1 pincée de sel, 30 g de beurre",steps:["Mélange farine et sel, puis incorpore les œufs.","Verse progressivement le lait, puis le beurre fondu.","Laisse reposer 20 minutes si possible.","Cuis une louche de pâte environ une minute par face dans une poêle chaude."]},
+ {key:"omelette",match:/omelette|oeufs?/,title:"Omelette (2 personnes)",ingredients:"4 œufs, une noix de beurre, sel et poivre",steps:["Bats les œufs avec sel et poivre.","Fais fondre le beurre dans une poêle à feu moyen.","Verse les œufs, remue délicatement et replie avant de servir."]},
+ {key:"gateau",match:/gateau.*chocolat|chocolat.*gateau|fondant/,title:"Gâteau au chocolat",ingredients:"200 g de chocolat, 120 g de beurre, 100 g de sucre, 3 œufs, 80 g de farine",steps:["Préchauffe le four à 180 °C.","Fais fondre chocolat et beurre puis ajoute le sucre.","Incorpore les œufs et la farine.","Verse dans un moule et enfourne 20 à 25 minutes."]},
+ {key:"cookies",match:/cookies?/,title:"Cookies",ingredients:"120 g de beurre, 100 g de sucre, 1 œuf, 180 g de farine, 100 g de pépites de chocolat",steps:["Préchauffe le four à 180 °C.","Mélange beurre et sucre puis ajoute l'œuf.","Incorpore farine et pépites.","Forme des boules et cuis 10 à 12 minutes."]},
+ {key:"pizza",match:/pizz/,title:"Pizza maison",ingredients:"250 g de farine, 150 ml d'eau tiède, 4 g de levure sèche, huile d'olive, sel, tomate et mozzarella",steps:["Mélange et pétris la farine, l'eau, la levure, l'huile et le sel.","Laisse lever environ 1 heure.","Étale la pâte, ajoute tomate et mozzarella.","Cuis à 240 °C pendant 10 à 15 minutes."]},
+ {key:"pates",match:/carbonara|pates?|spaghett/,title:"Pâtes carbonara (2 personnes)",ingredients:"200 g de pâtes, 100 g de guanciale ou lardons, 2 jaunes d'œufs, 50 g de pecorino, poivre",steps:["Fais cuire les pâtes dans une grande casserole d'eau salée.","Dore la viande dans une poêle.","Mélange les jaunes avec le fromage et le poivre.","Hors du feu, ajoute les pâtes, puis le mélange aux œufs et un peu d'eau de cuisson."]},
+ {key:"riz",match:/riz|risotto/,title:"Riz aux légumes (2 personnes)",ingredients:"160 g de riz, 1 carotte, 1 courgette, 1 oignon, huile d'olive, sel et épices",steps:["Fais cuire le riz selon le paquet.","Émince les légumes et fais-les revenir avec l'huile 8 à 10 minutes.","Ajoute les épices, mélange avec le riz puis sers."]},
+ {key:"poulet",match:/poulet|volaille/,title:"Poulet à la crème et aux champignons (2 personnes)",ingredients:"2 filets de poulet, 150 g de champignons, 15 cl de crème, huile, sel et poivre",steps:["Fais dorer le poulet dans une poêle 5 minutes de chaque côté.","Ajoute les champignons émincés et cuis quelques minutes.","Verse la crème et laisse mijoter jusqu'à cuisson complète du poulet.","Sers avec du riz."]},
+ {key:"salade",match:/salade|legumes?/,title:"Salade composée (2 personnes)",ingredients:"1 salade, 2 tomates, 1 concombre, 2 œufs durs, huile d'olive, citron",steps:["Lave et coupe les légumes.","Fais cuire les œufs environ 9 à 10 minutes puis refroidis-les.","Mélange les légumes, ajoute les œufs et assaisonne."]},
+ {key:"soupe",match:/soupe|potage|veloute/,title:"Soupe de légumes",ingredients:"3 carottes, 2 pommes de terre, 1 poireau, 1 oignon, 700 ml d'eau, sel",steps:["Lave et coupe les légumes.","Mets-les dans une casserole avec l'eau et du sel.","Laisse cuire 25 minutes puis mixe jusqu'à la texture voulue."]},
+ {key:"pommes",match:/pommes? de terre|patates?/,title:"Pommes de terre sautées",ingredients:"500 g de pommes de terre, 2 c. à soupe d'huile, ail, persil, sel",steps:["Coupe les pommes de terre en petits cubes.","Fais chauffer l'huile et cuis à feu moyen avec couvercle environ 15 minutes.","Découvre et dore 5 à 10 minutes en remuant, ajoute ail et persil."]},
+ {key:"tiramisu",match:/tiramisu/,title:"Tiramisu (4 portions)",ingredients:"250 g de mascarpone, 3 œufs frais, 70 g de sucre, 20 biscuits, café refroidi, cacao",steps:["Sépare les blancs et les jaunes puis mélange jaunes, sucre et mascarpone.","Monte les blancs en neige puis incorpore-les.","Trempe rapidement les biscuits dans le café et alterne avec la crème.","Réfrigère au moins 4 heures et saupoudre de cacao."]}
 ];
 function recipeAnswer(s){
- if(!/(recette|cuisiner|pr[eé]parer|comment faire|ingr[eé]dients)/i.test(s))return null;
- const found=cookBook.find(r=>r.match.test(s));
- return found?"🍳 "+found.title+"\n\nIngrédients : "+found.ingredients+"\n\nPréparation : "+found.steps+"\n\nAdapte les quantités selon le nombre de personnes.":null;
+ const m=String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+ const intent=/(recett|cuisin|prepar|quoi manger|quoi faire a manger|idee de repas|des idees de repas|repas|plat|ingredients|comment faire|faire a manger|manger ce soir|dejeuner|diner|j.ai faim|propose.moi)/i.test(m);
+ if(!intent)return null;
+ const recipe=cookBook.find(r=>r.match.test(m));
+ if(recipe)return "🍳 "+recipe.title+"\n\nIngrédients : "+recipe.ingredients+".\n\nPréparation :\n"+recipe.steps.map((v,i)=>(i+1)+". "+v).join("\n")+"\n\nBon appétit !";
+ const dessert=/(dessert|sucre|gouter)/.test(m),quick=/(rapide|facile|express|pas beaucoup de temps)/.test(m);
+ const list=dessert?[cookBook[0],cookBook[2],cookBook[3],cookBook[11]]:quick?[cookBook[1],cookBook[6],cookBook[8],cookBook[10]]:[cookBook[4],cookBook[7],cookBook[5],cookBook[9],cookBook[2]];
+ return "🍽️ Voici quelques idées "+(dessert?"de desserts":quick?"de repas rapides":"de recettes")+" :\n"+list.map((r,i)=>(i+1)+". "+r.title).join("\n")+"\n\nDis-moi laquelle te plaît et je te donnerai les ingrédients et toutes les étapes. Tu peux aussi préciser tes ingrédients, le nombre de personnes ou ton budget.";
 }
 function simple(message){
  const s=message.trim();if(!s)return "Écris-moi une question ou demande une blague !";
@@ -126,5 +146,5 @@ export async function answerCMD(message,history=[]){
  if(gen)return {reply:gen,mode:"gemini"};
  const wiki=await wikipedia(m);
  if(wiki)return {reply:wiki,mode:"knowledge"};
- return {reply:"Je peux déjà raconter des blagues, t’aider à utiliser CMD Sphere et rechercher des définitions. Pour répondre librement à toutes sortes de demandes, le propriétaire doit ajouter une clé Gemini gratuite dans les variables Railway (GEMINI_API_KEY).",mode:"local",limited:true};
+ return {reply:"Je peux déjà raconter des blagues, t’aider à utiliser CMD Sphere et rechercher des définitions. Pour des réponses plus libres, un fournisseur IA partagé doit être actif. Tu peux déjà me demander l’heure dans une ville, la météo ou des idées de recettes.",mode:"local",limited:true};
 }
