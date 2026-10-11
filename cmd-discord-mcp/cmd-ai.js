@@ -24,6 +24,13 @@ const info=[
 const rate=new Map();let round=0;
 export function aiMode(){return String(process.env.GEMINI_API_KEY||process.env.CMD_AI_GEMINI_FREE_KEY||"").trim()?"gemini":"local"}
 export function allowRequest(id){const now=Date.now(),k=String(id||"anonymous"),v=rate.get(k)||[];const items=v.filter(n=>now-n<60000);if(items.length>=12){rate.set(k,items);return false}items.push(now);rate.set(k,items);if(rate.size>5000){for(const [key,entry] of rate){if(entry.every(t=>now-t>60000))rate.delete(key);if(rate.size<4000)break}}return true}
+function clockAnswer(s){
+ if(!/(quelle heure|il est quelle heure|heure (est.il|actuelle)|donne.moi l.heure|date (aujourd.hui|du jour))/i.test(s))return null;
+ const zones=[["tokyo","Asia/Tokyo"],["japon","Asia/Tokyo"],["moncton","America/Moncton"],["new york","America/New_York"],["québec","America/Toronto"],["montreal","America/Toronto"],["londres","Europe/London"],["london","Europe/London"],["los angeles","America/Los_Angeles"],["dubaï","Asia/Dubai"],["sydney","Australia/Sydney"],["paris","Europe/Paris"],["ajaccio","Europe/Paris"],["corse","Europe/Paris"]];
+ const z=zones.find(([name])=>s.toLowerCase().includes(name))||["France","Europe/Paris"];
+ const date=new Intl.DateTimeFormat("fr-FR",{timeZone:z[1],weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
+ return "À "+z[0]+", nous sommes "+date+". (Heure locale)";
+}
 function simple(message){
  const s=message.trim();if(!s)return "Écris-moi une question ou demande une blague !";
  if(/(blague|fais.moi rire|humour|rigol|dr[oô]le|plaisanterie)/i.test(s)){round++;return jokes[round%jokes.length]}
