@@ -32,6 +32,7 @@ import { callPage } from "./call-ui.js";
 import { publicPersonCard } from "./cmd-public-profile.js";
 import { answerCMD,allowRequest,aiMode } from "./cmd-ai.js";
 import { cmdImageGenerationConfigured,cmdGenerateSharedImage } from "./cmd-ai-free-provider.js";
+import { cmdReviewAttachment,cmdAnalyzePhoto,cmdRetouchPhoto } from "./cmd-ai-media.js";
 
 const port=Number(process.env.PORT||8787);
 const baseUrl=String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"");
@@ -5127,7 +5128,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/api/cmd-ai/status"){
       if(!dashboardAuth(req)){sendJson(res,401,{error:"Connexion requise"});return}
-      sendJson(res,200,{ok:true,mode:aiMode(),free:true,features:["blagues","aide CMD Sphere","recettes","heure","météo","définitions","génération d’images (selon fournisseur)"],advancedAvailable:aiMode()!=="local",imageAvailable:cmdImageGenerationConfigured()});return;
+      sendJson(res,200,{ok:true,mode:aiMode(),free:true,features:["blagues","aide CMD Sphere","recettes","heure","météo","définitions","génération d’images (selon fournisseur)","lecture des photos","correction de fichiers texte et code","retouches photo de base"],advancedAvailable:aiMode()!=="local",imageAvailable:cmdImageGenerationConfigured()});return;
     }
     if(req.method==="POST"&&url.pathname==="/api/cmd-ai"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -5150,6 +5151,24 @@ const httpServer=createServer(async(req,res)=>{
         const generated=await cmdGenerateSharedImage(auth.user.id,body.prompt);
         sendJson(res,200,{ok:true,...generated});
       }catch(e){sendJson(res,e.status||503,{error:e.message||"Génération indisponible"})}return;
+    }
+    // The signed-in member explicitly supplies each ephemeral file/photo.
+    if(req.method==="POST"&&["/api/cmd-ai/file","/api/cmd-ai/photo","/api/cmd-ai/photo/edit"].includes(url.pathname)){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      if(!allowRequest(auth.user.id)){sendJson(res,429,{error:"Trop de demandes. Attends un moment."});return}
+      const isPhoto=url.pathname.includes("/photo"),limit=isPhoto?4200000:46000;
+      try{
+        const chunks=[];let total=0;
+        for await(const chunk of req){total+=chunk.length;if(total>limit){sendJson(res,413,{error:isPhoto?"Photo trop volumineuse (3 Mo maximum).":"Fichier texte trop volumineux."});return}chunks.push(chunk)}
+        const body=JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+        const result=url.pathname==="/api/cmd-ai/file"
+          ?await cmdReviewAttachment({filename:body.filename,content:body.content,instruction:body.instruction})
+          :url.pathname==="/api/cmd-ai/photo/edit"
+          ?await cmdRetouchPhoto({imageData:body.imageData,instruction:body.instruction})
+          :await cmdAnalyzePhoto({imageData:body.imageData,instruction:body.instruction});
+        sendJson(res,200,{ok:true,...result});
+      }catch(error){sendJson(res,error?.status||503,{error:String(error?.message||"Fichier indisponible").slice(0,400)})}
+      return;
     }
     if(req.method==="GET"&&url.pathname==="/bulk-sync.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./bulk-sync.js",import.meta.url),"utf8"));return;
