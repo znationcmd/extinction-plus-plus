@@ -46,6 +46,17 @@ async function showProfile(article){
    if(p.membershipRole==='owner')body.append(elem('div','cmd-person-note','👑 Propriétaire du serveur'));
    if(p.status)body.append(elem('div','cmd-person-note',p.status));
    if(p.bio)body.append(elem('p','cmd-person-bio',p.bio));
+   if(Number.isInteger(p.commonServerCount))body.append(elem('p','cmd-person-note',p.commonServerCount+' serveur(s) en commun'));
+   if(p.createdAt)body.append(elem('div','cmd-person-note','Membre CMD Sphere depuis le '+new Date(p.createdAt).toLocaleDateString('fr-FR')));
+   if(p.friendshipSince)body.append(elem('div','cmd-person-note','Amis depuis le '+new Date(p.friendshipSince).toLocaleDateString('fr-FR')));
+   if(Array.isArray(p.roles)&&p.roles.length){
+     const box=elem('section','cmd-person-section'),tags=elem('div','cmd-person-tags');
+     box.append(elem('h3','','Rôles'));for(const role of p.roles){const tag=elem('span','cmd-person-tag','● '+role.name);tag.style.borderLeftColor=role.color||'#8796b8';tags.append(tag)}box.append(tags);body.append(box);
+   }
+   if(Array.isArray(p.commonServers)&&p.commonServers.length){
+     const box=elem('section','cmd-person-section'),tags=elem('div','cmd-person-tags');box.append(elem('h3','','Serveurs en commun'));
+     for(const guild of p.commonServers)tags.append(elem('span','cmd-person-tag',guild.name));box.append(tags);body.append(box);
+   }
    const actions=elem('div','cmd-person-actions');body.append(actions);
    if(p.external){body.append(elem('p','cmd-person-note','Profil importé : compte CMD Sphere non identifié.'));return}
    let label={self:'C’est ton profil',friends:'✓ Déjà amis',sent:'Demande envoyée ✓',received:'Accepter la demande d’ami',none:'＋ Ajouter en ami'}[p.friendStatus]||'Ajouter en ami';
