@@ -86,7 +86,7 @@ async function wikipedia(message){
 export async function answerCMD(message,history=[]){
  const m=String(message||"").trim().slice(0,2000);
  if(!m)return {reply:"Écris un message pour discuter avec CMD IA.",mode:"local"};
- const basic=simple(m);
+ const basic=clockAnswer(m)||recipeAnswer(m)||simple(m);
  if(basic)return {reply:basic,mode:"local"};
  const gen=await gemini(m,history);
  if(gen)return {reply:gen,mode:"gemini"};
