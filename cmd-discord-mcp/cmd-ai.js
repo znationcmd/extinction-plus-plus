@@ -55,7 +55,7 @@ const cookBook=[
 ];
 function recipeAnswer(s){
  const m=String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
- const intent=/(recett|cuisin|prepar|quoi manger|quoi faire a manger|idee de repas|des idees de repas|repas|plat|ingredients|comment faire|faire a manger|manger ce soir|dejeuner|diner|j.ai faim|propose.moi)/i.test(m);
+ const intent=/(recett|cuisin|prepar|quoi manger|quoi faire a manger|idee de repas|des idees de repas|repas|plat|ingredients|comment faire|faire a manger|manger ce soir|dejeuner|diner|j.ai faim|propose|sugger|recommande|une idee de dessert|un dessert)/i.test(m);
  if(!intent)return null;
  const recipe=cookBook.find(r=>r.match.test(m));
  if(recipe)return "🍳 "+recipe.title+"\n\nIngrédients : "+recipe.ingredients+".\n\nPréparation :\n"+recipe.steps.map((v,i)=>(i+1)+". "+v).join("\n")+"\n\nBon appétit !";
