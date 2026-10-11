@@ -118,6 +118,7 @@ export async function answerCMD(message,history=[]){
  if(!m)return {reply:"Écris un message pour discuter avec CMD IA.",mode:"local"};
  const basic=clockAnswer(m)||recipeAnswer(m)||simple(m);
  if(basic)return {reply:basic,mode:"local"};
+ const weather=await weatherAnswer(m);if(weather)return {reply:weather,mode:"weather"};
  const gen=await gemini(m,history);
  if(gen)return {reply:gen,mode:"gemini"};
  const wiki=await wikipedia(m);
