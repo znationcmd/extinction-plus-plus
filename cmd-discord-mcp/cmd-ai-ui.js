@@ -23,11 +23,12 @@ function mount(){
  '.cmd-ai-form button{background:#5865f2;color:white;border:0;border-radius:12px;padding:11px 13px;font:700 15px system-ui;cursor:pointer}',
  '.cmd-ai-form button:disabled{opacity:.5;cursor:wait}',
  '.cmd-ai-note{color:#a9a8b9;padding:0 15px 10px;font-size:10px;line-height:1.35;background:#292930}',
+ ' .cmd-ai-generated-image{display:block;width:100%;height:auto;border-radius:13px;margin-top:9px;background:#18111e;object-fit:contain;max-height:460px} .cmd-ai-image-tip{font-size:12px;color:#dfd1f5;margin-top:8px}',
  '@media(max-width:760px){.cmd-ai-open{bottom:calc(88px + env(safe-area-inset-bottom,0px));right:12px;border-radius:16px;padding:10px 13px}.cmd-ai-panel{bottom:calc(145px + env(safe-area-inset-bottom,0px));right:8px;left:8px;width:auto;height:min(620px,calc(100dvh - 175px - env(safe-area-inset-bottom,0px)));border-radius:18px}.cmd-ai-form input{font-size:16px}}',
  '@media(max-height:520px){.cmd-ai-panel{top:8px;bottom:8px;height:auto}.cmd-ai-open{bottom:8px}}'
  ].join("");document.head.appendChild(st);
  const opener=document.createElement('button');opener.type='button';opener.id='cmdAiLauncher';opener.className='cmd-ai-open';opener.setAttribute('aria-label','Ouvrir CMD IA');opener.innerHTML='<span>✦</span> CMD IA';
- const root=document.createElement('section');root.className='cmd-ai-panel';root.id='cmdAiPanel';root.setAttribute('role','dialog');root.setAttribute('aria-label','Assistant gratuit CMD IA');root.innerHTML='<header class="cmd-ai-head"><div class="cmd-ai-mark">✦</div><div class="cmd-ai-head-copy"><b>CMD IA</b><small>Météo, heure, recettes et questions</small></div><button type="button" id="cmdAiClose" aria-label="Fermer">×</button></header><div class="cmd-ai-messages" id="cmdAiMessages" aria-live="polite"></div><div class="cmd-ai-chips"><button type="button" data-cmd-ai-quick="Raconte une blague !">😄 Une blague</button><button type="button" data-cmd-ai-quick="Comment synchroniser mes Discord ?">🔄 Mes Discord</button><button type="button" data-cmd-ai-quick="Comment modifier mon profil ?">👤 Mon profil</button><button type="button" data-cmd-ai-quick="Quelle est la météo à Ajaccio ?">🌤️ Météo</button><button type="button" data-cmd-ai-quick="Quelle heure est-il à Paris ?">🕓 Heure</button><button type="button" data-cmd-ai-quick="Donne-moi la recette des crêpes">🍳 Recette</button></div><form class="cmd-ai-form" id="cmdAiForm"><input id="cmdAiInput" aria-label="Message à CMD IA" maxlength="2000" placeholder="Écris ta demande..." autocomplete="off" required><button id="cmdAiSend" type="submit" aria-label="Envoyer">➤</button></form><div class="cmd-ai-note">Réponses automatiques gratuites. Les informations importantes sont à vérifier. Un modèle avancé peut être limité par les quotas du fournisseur.</div>';
+ const root=document.createElement('section');root.className='cmd-ai-panel';root.id='cmdAiPanel';root.setAttribute('role','dialog');root.setAttribute('aria-label','Assistant gratuit CMD IA');root.innerHTML='<header class="cmd-ai-head"><div class="cmd-ai-mark">✦</div><div class="cmd-ai-head-copy"><b>CMD IA</b><small>Météo, heure, recettes et questions</small></div><button type="button" id="cmdAiClose" aria-label="Fermer">×</button></header><div class="cmd-ai-messages" id="cmdAiMessages" aria-live="polite"></div><div class="cmd-ai-chips"><button type="button" data-cmd-ai-quick="Raconte une blague !">😄 Une blague</button><button type="button" data-cmd-ai-quick="Comment synchroniser mes Discord ?">🔄 Mes Discord</button><button type="button" data-cmd-ai-quick="Comment modifier mon profil ?">👤 Mon profil</button><button type="button" id="cmdAiImagePrompt">🎨 Créer une image</button><button type="button" data-cmd-ai-quick="Quelle est la météo à Ajaccio ?">🌤️ Météo</button><button type="button" data-cmd-ai-quick="Quelle heure est-il à Paris ?">🕓 Heure</button><button type="button" data-cmd-ai-quick="Donne-moi la recette des crêpes">🍳 Recette</button></div><form class="cmd-ai-form" id="cmdAiForm"><input id="cmdAiInput" aria-label="Message à CMD IA" maxlength="2000" placeholder="Écris ta demande..." autocomplete="off" required><button id="cmdAiSend" type="submit" aria-label="Envoyer">➤</button></form><div class="cmd-ai-note">Réponses automatiques gratuites. Les informations importantes sont à vérifier. Un modèle avancé peut être limité par les quotas du fournisseur.</div>';
  document.body.append(opener,root);
  const msgs=root.querySelector('#cmdAiMessages'),inp=root.querySelector('#cmdAiInput'),send=root.querySelector('#cmdAiSend');
  let history=[],busy=false;
@@ -44,16 +45,24 @@ function mount(){
   const q=String(value||'').trim().slice(0,2000);if(!q)return;
   busy=true;send.disabled=true;inp.value='';message('user',q);const wait=message('assistant','CMD IA réfléchit…');
   try{
-   const r=await fetch('/api/cmd-ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q,history:history.slice(-8)}),cache:'no-store',signal:AbortSignal.timeout(19000)});
+   const imageCommand=q.match(/^(?:g[eé]n[eè]re|cr[eé]e|dessine|fais|imagine)\s+(?:moi\s+)?(?:une\s+)?(?:image|photo|illustration)\s*(?:de|d'|avec|montrant)?\s*/i);
+   const requestImage=Boolean(imageCommand);const description=requestImage?q.slice(imageCommand[0].length).trim():q;
+   const r=await fetch(requestImage?'/api/cmd-ai/image':'/api/cmd-ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(requestImage?{prompt:description}:{message:q,history:history.slice(-8)}),cache:'no-store',signal:AbortSignal.timeout(requestImage?44000:19000)});
    const data=await r.json().catch(()=>({}));
    if(!r.ok)throw new Error(data.error||'Service indisponible');
-   const answer=String(data.reply||'Réponse indisponible.');wait.textContent=answer;
+   const answer=requestImage?'Voici ton image 🎨':String(data.reply||'Réponse indisponible.');wait.textContent=answer;
+   if(requestImage){
+    if(!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(String(data.image||'')))throw Error("Réponse image invalide");
+    const img=document.createElement('img');img.className='cmd-ai-generated-image';img.alt='Image générée par CMD IA';img.src=data.image;wait.append(img);
+    const tip=document.createElement('p');tip.className='cmd-ai-image-tip';tip.textContent='Appuie longuement sur l’image pour l’enregistrer.';wait.append(tip);
+   }
    history.push({role:'user',text:q},{role:'assistant',text:answer});history=history.slice(-8);
   }catch(e){wait.textContent='Je ne peux pas répondre pour le moment : '+e.message+'. Réessaie.'}
   finally{busy=false;send.disabled=false;msgs.scrollTop=msgs.scrollHeight;inp.focus()}
  }
  root.querySelector('#cmdAiForm').addEventListener('submit',function(e){e.preventDefault();ask(inp.value)});
  root.querySelectorAll('[data-cmd-ai-quick]').forEach(function(b){b.addEventListener('click',function(){ask(b.dataset.cmdAiQuick)})});
+ root.querySelector('#cmdAiImagePrompt').onclick=()=>{inp.value='Génère une image de ';open();inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
