@@ -4577,7 +4577,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
         const [threads,prefs,native,discord,folders,layout,friends,profile,groups]=await Promise.all([listDmThreads(auth),getDmPreferences(auth),listNativeGuilds(auth),linkedDiscordGuilds(auth),getServerFolders(auth),getServerLayout(auth),listFriends(auth),getGlobalProfile(auth),listGroupDms(auth)]);
-        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script></body>'));
+        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script><script src="/cmd-social-message-actions.js?v=20261011profile1" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/person/profile"){
