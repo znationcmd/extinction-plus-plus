@@ -43,7 +43,7 @@ export function callPage(auth,room){
 
 </style>
 </head>
-<body><header class="top"><a href="/messages" aria-label="Retour">‹</a><div><b>CMD Sphere · Appel privé</b><small id="roomTitle">Conversation sécurisée</small></div><button type="button" id="callChatToggle" class="call-chat-btn" title="Messages pendant l’appel" aria-label="Ouvrir les messages">💬<span id="callChatCount" class="call-chat-count"></span></button></header>
+<body><header class="top"><a id="callBack" href="/messages" aria-label="Retour">‹</a><div><b>CMD Sphere · Appel privé</b><small id="roomTitle">Conversation sécurisée</small></div><button type="button" id="callChatToggle" class="call-chat-btn" title="Messages pendant l’appel" aria-label="Ouvrir les messages">💬<span id="callChatCount" class="call-chat-count"></span></button></header>
 <main class="wrap"><div class="hero"><span class="dot"></span><h1 id="heading">Appel audio / vidéo</h1></div><div id="notice">Prêt à rejoindre.</div>
 <section class="join" id="join"><h2>Rejoindre la conversation</h2><p>Choisis le micro seul ou active aussi la caméra. Les autres participants du groupe peuvent rejoindre la même conférence.</p>
 <button id="joinVoice">🎙️ Appel vocal</button><button id="joinVideo">📹 Appel vidéo</button>
