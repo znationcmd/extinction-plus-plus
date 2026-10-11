@@ -30,6 +30,7 @@ import { initConnections, getConnections, saveConnection, removeConnection, conn
 import { callPage } from "./call-ui.js";
 import { publicPersonCard } from "./cmd-public-profile.js";
 import { answerCMD,allowRequest,aiMode } from "./cmd-ai.js";
+import { cmdImageGenerationConfigured,cmdGenerateSharedImage } from "./cmd-ai-free-provider.js";
 
 const port=Number(process.env.PORT||8787);
 const baseUrl=String(process.env.PUBLIC_BASE_URL||"").replace(/\/$/,"");
@@ -5102,7 +5103,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/api/cmd-ai/status"){
       if(!dashboardAuth(req)){sendJson(res,401,{error:"Connexion requise"});return}
-      sendJson(res,200,{ok:true,mode:aiMode(),free:true,features:["blagues","aide CMD Sphere","définitions"],advancedAvailable:aiMode()==="gemini"});return;
+      sendJson(res,200,{ok:true,mode:aiMode(),free:true,features:["blagues","aide CMD Sphere","recettes","heure","météo","définitions","génération d’images (selon fournisseur)"],advancedAvailable:aiMode()!=="local",imageAvailable:cmdImageGenerationConfigured()});return;
     }
     if(req.method==="POST"&&url.pathname==="/api/cmd-ai"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -5115,6 +5116,16 @@ const httpServer=createServer(async(req,res)=>{
         sendJson(res,200,result);
       }catch(e){sendJson(res,400,{error:"La demande n’a pas pu être traitée."})}
       return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/cmd-ai/image"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      if(!allowRequest(auth.user.id)){sendJson(res,429,{error:"Trop de demandes. Réessaie dans une minute."});return}
+      try{
+        let total=0;const chunks=[];for await(const chunk of req){total+=chunk.length;if(total>4096){sendJson(res,413,{error:"Description trop longue."});return}chunks.push(chunk)}
+        const body=JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+        const generated=await cmdGenerateSharedImage(auth.user.id,body.prompt);
+        sendJson(res,200,{ok:true,...generated});
+      }catch(e){sendJson(res,e.status||503,{error:e.message||"Génération indisponible"})}return;
     }
     if(req.method==="GET"&&url.pathname==="/bulk-sync.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store"});res.end(readFileSync(new URL("./bulk-sync.js",import.meta.url),"utf8"));return;
