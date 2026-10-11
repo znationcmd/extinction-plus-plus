@@ -34,9 +34,9 @@ async function showProfile(article){
  const card=overlay('Profil de '+name),banner=elem('div','cmd-person-banner'),body=elem('div','cmd-person-body');
  card.prepend(banner);card.append(body);body.append(elem('h2','',name),elem('p','cmd-person-note','Chargement du profil…'));
  const native=ctx&&(ctx.mode==='native'||ctx.mode==='combined')&&article.dataset.cmdSource==='cmd';
- if(!native||!id){body.lastElementChild.textContent='Profil du service externe : les demandes d’amis CMD Sphere ne sont disponibles que pour les comptes CMD Sphere.';return}
+ if(!id&&!username){body.lastElementChild.textContent='Profil du service externe : compte CMD Sphere non identifié.';return}
  try{
-   const {profile:p}=await request('/api/native/member-profile?guildId='+encodeURIComponent(ctx.guildId)+'&userId='+encodeURIComponent(id));
+   const {profile:p}=await request('/api/person/profile?'+new URLSearchParams({userId:id,username,guildId:native?ctx.guildId:''}));
    if(!card.isConnected)return;
    body.replaceChildren();
    if(validAvatar(p.banner)){banner.style.backgroundImage='url('+JSON.stringify(p.banner)+')'}else if(/^#[0-9a-f]{3,8}$/i.test(p.accentColor||'')){banner.style.background='linear-gradient(130deg,'+p.accentColor+',#191524)'}
