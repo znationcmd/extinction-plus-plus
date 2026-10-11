@@ -43,6 +43,7 @@ const databaseUrl=String(process.env.DATABASE_URL||"");
 const logoB64=String(process.env.CMD_DISCORD_LOGO_B64||"");
 const iconB64=String(process.env.CMD_DISCORD_ICON_B64||"");
 const cmdPwaPngCache=new Map();
+const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
 if(backendSecret.length<32)throw new Error("CMD_MCP_SECRET must be at least 32 characters");
@@ -5088,6 +5089,9 @@ const httpServer=createServer(async(req,res)=>{
     }
         if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
       sendJson(res,200,{id:"/dashboard",name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/pwa-icon-192.png?v=20261011pwa1",sizes:"192x192",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v=20261011pwa1",sizes:"512x512",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v=20261011pwa1",sizes:"512x512",type:"image/png",purpose:"maskable"},{src:"/app-icon.webp?v=5",sizes:"any",type:"image/webp",purpose:"any"}]},{"content-type":"application/manifest+json","cache-control":"no-cache"});return;
+    }
+    if(req.method==="GET"&&url.pathname==="/api/pwa/version"){
+      sendJson(res,200,{version:cmdPwaRuntimeVersion});return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-pwa-update.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
