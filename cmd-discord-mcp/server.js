@@ -4580,6 +4580,11 @@ const httpServer=createServer(async(req,res)=>{
         html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
+    if(req.method==="GET"&&url.pathname==="/api/person/profile"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId")})})}
+      catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/friends"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await listFriends(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
