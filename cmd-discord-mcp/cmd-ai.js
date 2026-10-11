@@ -31,6 +31,17 @@ function clockAnswer(s){
  const date=new Intl.DateTimeFormat("fr-FR",{timeZone:z[1],weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
  return "À "+z[0]+", nous sommes "+date+". (Heure locale)";
 }
+const cookBook=[
+ {match:/cr[eê]pe/i,title:"Crêpes",ingredients:"250 g de farine, 3 œufs, 500 ml de lait, 1 pincée de sel, 30 g de beurre.",steps:"1. Mélange farine et sel. 2. Ajoute les œufs puis le lait progressivement. 3. Incorpore le beurre fondu. 4. Laisse reposer 30 min. 5. Cuis dans une poêle chaude 1 min de chaque côté."},
+ {match:/omelette/i,title:"Omelette",ingredients:"3 œufs, 1 noix de beurre, sel, poivre.",steps:"1. Bats les œufs et assaisonne. 2. Fais fondre le beurre à feu moyen. 3. Verse les œufs et remue doucement. 4. Replie lorsque le centre est encore légèrement crémeux."},
+ {match:/g[aâ]teau.*chocolat|chocolat.*g[aâ]teau/i,title:"Gâteau au chocolat",ingredients:"200 g de chocolat, 120 g de beurre, 100 g de sucre, 3 œufs, 80 g de farine.",steps:"1. Préchauffe à 180 °C. 2. Fais fondre chocolat et beurre. 3. Ajoute sucre, œufs et farine. 4. Verse dans un moule. 5. Enfourne 20 à 25 min."},
+ {match:/cookies?/i,title:"Cookies",ingredients:"120 g de beurre mou, 100 g de sucre, 1 œuf, 180 g de farine, 100 g de pépites de chocolat.",steps:"1. Préchauffe à 180 °C. 2. Mélange beurre et sucre, puis l'œuf. 3. Ajoute farine et pépites. 4. Forme des boules. 5. Enfourne 10 à 12 min."}
+];
+function recipeAnswer(s){
+ if(!/(recette|cuisiner|pr[eé]parer|comment faire|ingr[eé]dients)/i.test(s))return null;
+ const found=cookBook.find(r=>r.match.test(s));
+ return found?"🍳 "+found.title+"\n\nIngrédients : "+found.ingredients+"\n\nPréparation : "+found.steps+"\n\nAdapte les quantités selon le nombre de personnes.":null;
+}
 function simple(message){
  const s=message.trim();if(!s)return "Écris-moi une question ou demande une blague !";
  if(/(blague|fais.moi rire|humour|rigol|dr[oô]le|plaisanterie)/i.test(s)){round++;return jokes[round%jokes.length]}
