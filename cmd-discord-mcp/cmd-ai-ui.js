@@ -28,7 +28,7 @@ function mount(){
  '@media(max-height:520px){.cmd-ai-panel{top:8px;bottom:8px;height:auto}.cmd-ai-open{bottom:8px}}'
  ].join("");document.head.appendChild(st);
  const opener=document.createElement('button');opener.type='button';opener.id='cmdAiLauncher';opener.className='cmd-ai-open';opener.setAttribute('aria-label','Ouvrir CMD IA');opener.innerHTML='<span>✦</span> CMD IA';
- const root=document.createElement('section');root.className='cmd-ai-panel';root.id='cmdAiPanel';root.setAttribute('role','dialog');root.setAttribute('aria-label','Assistant gratuit CMD IA');root.innerHTML='<header class="cmd-ai-head"><div class="cmd-ai-mark">✦</div><div class="cmd-ai-head-copy"><b>CMD IA</b><small>Météo, heure, recettes et questions</small></div><button type="button" id="cmdAiClose" aria-label="Fermer">×</button></header><div class="cmd-ai-messages" id="cmdAiMessages" aria-live="polite"></div><div class="cmd-ai-chips"><button type="button" data-cmd-ai-quick="Raconte une blague !">😄 Une blague</button><button type="button" data-cmd-ai-quick="Comment synchroniser mes Discord ?">🔄 Mes Discord</button><button type="button" data-cmd-ai-quick="Comment modifier mon profil ?">👤 Mon profil</button><button type="button" id="cmdAiImagePrompt">🎨 Créer une image</button><button type="button" data-cmd-ai-quick="Quelle est la météo à Ajaccio ?">🌤️ Météo</button><button type="button" data-cmd-ai-quick="Quelle heure est-il à Paris ?">🕓 Heure</button><button type="button" data-cmd-ai-quick="Donne-moi la recette des crêpes">🍳 Recette</button></div><form class="cmd-ai-form" id="cmdAiForm"><input id="cmdAiInput" aria-label="Message à CMD IA" maxlength="2000" placeholder="Écris ta demande..." autocomplete="off" required><button id="cmdAiSend" type="submit" aria-label="Envoyer">➤</button></form><div class="cmd-ai-note">Réponses automatiques gratuites. Les informations importantes sont à vérifier. Un modèle avancé peut être limité par les quotas du fournisseur.</div>';
+ const root=document.createElement('section');root.className='cmd-ai-panel';root.id='cmdAiPanel';root.setAttribute('role','dialog');root.setAttribute('aria-label','Assistant gratuit CMD IA');root.innerHTML='<header class="cmd-ai-head"><div class="cmd-ai-mark">✦</div><div class="cmd-ai-head-copy"><b>CMD IA</b><small>Météo, heure, recettes et questions</small></div><button type="button" id="cmdAiClose" aria-label="Fermer">×</button></header><div class="cmd-ai-messages" id="cmdAiMessages" aria-live="polite"></div><div class="cmd-ai-chips"><button type="button" data-cmd-ai-quick="Raconte une blague !">😄 Une blague</button><button type="button" data-cmd-ai-quick="Comment synchroniser mes Discord ?">🔄 Mes Discord</button><button type="button" data-cmd-ai-quick="Comment modifier mon profil ?">👤 Mon profil</button><button type="button" id="cmdAiImagePrompt">🎨 Créer une image</button><button type="button" id="cmdAiUploadDocument">📎 Fichier</button><button type="button" id="cmdAiUploadPhoto">📷 Photo</button><button type="button" data-cmd-ai-quick="Quelle est la météo à Ajaccio ?">🌤️ Météo</button><button type="button" data-cmd-ai-quick="Quelle heure est-il à Paris ?">🕓 Heure</button><button type="button" data-cmd-ai-quick="Donne-moi la recette des crêpes">🍳 Recette</button></div><input id="cmdAiDocInput" type="file" accept=".txt,.md,.json,.jsonc,.csv,.tsv,.js,.jsx,.ts,.tsx,.py,.xml,.html,.css,.yml,.yaml,.ini,.cfg,.log,.sql,.sh,.bat,.ps1,.java,.c,.cpp,.h,.cs,.go,.rs,.php,.rb,.lua" hidden><input id="cmdAiPhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden></div><form class="cmd-ai-form" id="cmdAiForm"><input id="cmdAiInput" aria-label="Message à CMD IA" maxlength="2000" placeholder="Écris ta demande..." autocomplete="off" required><button id="cmdAiSend" type="submit" aria-label="Envoyer">➤</button></form><div class="cmd-ai-note">Réponses automatiques gratuites. Les informations importantes sont à vérifier. Un modèle avancé peut être limité par les quotas du fournisseur.</div>';
  document.body.append(opener,root);
  const msgs=root.querySelector('#cmdAiMessages'),inp=root.querySelector('#cmdAiInput'),send=root.querySelector('#cmdAiSend');
  let history=[],busy=false;
@@ -63,6 +63,42 @@ function mount(){
  root.querySelector('#cmdAiForm').addEventListener('submit',function(e){e.preventDefault();ask(inp.value)});
  root.querySelectorAll('[data-cmd-ai-quick]').forEach(function(b){b.addEventListener('click',function(){ask(b.dataset.cmdAiQuick)})});
  root.querySelector('#cmdAiImagePrompt').onclick=()=>{inp.value='Génère une image de ';open();inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)};
+ async function upload(file,photo){
+  if(!file||busy)return;
+  if(file.size>(photo?3000000:44000)){message('assistant',photo?'Photo limitée à 3 Mo.':'Fichier limité à 44 Ko.');return}
+  const instruction=String(inp.value||'').trim().slice(0,800)||(photo?'Décris cette photo.':'Analyse ce fichier et indique les corrections possibles.');
+  busy=true;send.disabled=true;inp.value='';message('user',(photo?'📷 ':'📎 ')+file.name+'\n'+instruction);
+  const wait=message('assistant','CMD IA examine ton fichier…');
+  try{
+   let endpoint,body;
+   if(photo){
+    const imageData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Lecture impossible'));reader.readAsDataURL(file)});
+    endpoint=/(retouch|edit|modifi|eclair|noir|gris|flou|nettet|miroir|rotation|tourne|assombr)/i.test(instruction)?'/api/cmd-ai/photo/edit':'/api/cmd-ai/photo';
+    body={imageData,instruction};
+   }else{
+    const content=await file.text();if(content.length>16000)throw Error('16 000 caractères maximum par fichier.');
+    endpoint='/api/cmd-ai/file';body={filename:file.name,content,instruction};
+   }
+   const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),cache:'no-store',signal:AbortSignal.timeout(45000)});
+   const d=await response.json().catch(()=>({}));if(!response.ok)throw Error(d.error||'Analyse indisponible');
+   wait.textContent=String(d.reply||'Traitement terminé.');
+   if(d.edited&&d.file&&typeof d.file.text==='string'){
+    const button=document.createElement('button');button.type='button';button.textContent='⬇ Enregistrer le fichier corrigé';
+    button.style.cssText='display:block;margin-top:12px;padding:9px 11px;border:0;border-radius:10px;background:#5865f2;color:white;cursor:pointer';
+    button.onclick=()=>{const blob=new Blob([d.file.text],{type:d.file.type||'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=String(d.file.name||'corrige.txt').replace(/[\/\\]/g,'_');document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)};wait.append(button);
+   }
+   if(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(String(d.image||''))){
+    const img=document.createElement('img');img.className='cmd-ai-generated-image';img.alt='Photo retouchée';img.src=d.image;wait.append(img);
+    const link=document.createElement('a');link.href=d.image;link.download='cmd-ia-retouche.jpg';link.textContent='⬇ Enregistrer la photo';link.style.cssText='display:block;margin-top:9px;color:#c7b7ff';wait.append(link);
+   }
+  }catch(e){wait.textContent='Impossible de traiter le fichier : '+String(e.message||e)}
+  finally{busy=false;send.disabled=false;msgs.scrollTop=msgs.scrollHeight;inp.focus()}
+ }
+ root.querySelector('#cmdAiUploadDocument').onclick=()=>root.querySelector('#cmdAiDocInput').click();
+ root.querySelector('#cmdAiUploadPhoto').onclick=()=>root.querySelector('#cmdAiPhotoInput').click();
+ root.querySelector('#cmdAiDocInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';upload(f,false)});
+ root.querySelector('#cmdAiPhotoInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';upload(f,true)});
+
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
 })();
