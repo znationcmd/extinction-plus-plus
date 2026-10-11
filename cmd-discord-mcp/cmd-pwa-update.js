@@ -7,7 +7,7 @@ window.__cmdPwaUpdateStarted=true;
 const POLL_MS=15*60*1000;
 const MIN_POLL_MS=3*60*1000;
 const RELEASE="20261011pwa1";
-let registration=null,lastPoll=0,pendingReload=false,oldController=Boolean(navigator.serviceWorker.controller),hasReloaded=false;
+let registration=null,lastPoll=0,pendingReload=false,oldController=Boolean(navigator.serviceWorker.controller),hasReloaded=false,knownBuild=null;
 const path=String(location.pathname||"");
 const callPage=/^\/(?:call|voice|video)(?:\/|$)/i.test(path);
 
@@ -36,7 +36,7 @@ function refresh(manual=false){
  if(!pendingReload||hasReloaded||document.visibilityState==="hidden")return;
  if(!manual&&editingOrCalling()){hint();return}
  // Prevent reload loops when the service worker is initially installed or another tab updates.
- try{const key="cmd-pwa-sw-reload:"+RELEASE;if(sessionStorage.getItem(key)==="1")return;sessionStorage.setItem(key,"1")}catch{}
+ try{const key="cmd-pwa-sw-reload:"+RELEASE;if(Date.now()-Number(sessionStorage.getItem(key)||0)<45000)return;sessionStorage.setItem(key,String(Date.now()))}catch{}
  hasReloaded=true;
  location.reload(); // Same URL, installed app, browser session and selected route retained.
 }
@@ -51,6 +51,20 @@ function onControllerChange(){
  scheduleRefresh();
 }
 navigator.serviceWorker.addEventListener("controllerchange",onControllerChange);
+async function checkRuntimeVersion(){
+ try{
+  const response=await fetch("/api/pwa/version",{credentials:"same-origin",cache:"no-store",signal:AbortSignal.timeout(6000)});
+  if(!response.ok)return;
+  const data=await response.json();
+  if(typeof data.version!=="string"||!data.version)return;
+  if(knownBuild===null){knownBuild=data.version;return}
+  if(knownBuild!==data.version){
+   knownBuild=data.version;
+   pendingReload=true;
+   scheduleRefresh();
+  }
+ }catch{/* An offline PWA continues operating with its current version. */}
+}
 async function check(force=false){
  if(!navigator.onLine)return;
  const now=Date.now();
@@ -62,6 +76,7 @@ async function check(force=false){
    registration.waiting.postMessage({type:"CMD_PWA_SKIP_WAITING"});
   }
   await registration.update();
+  await checkRuntimeVersion();
   if(registration.waiting)registration.waiting.postMessage({type:"CMD_PWA_SKIP_WAITING"});
  }catch{/* Remain usable even offline or while a Railway deploy is in progress. */}
 }
