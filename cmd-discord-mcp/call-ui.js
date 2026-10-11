@@ -224,6 +224,21 @@ function toggleCallChat(){
 }
 $("#callChatToggle").onclick=toggleCallChat;
 $("#callChatClose").onclick=toggleCallChat;
+let allMessages=false;
+const fullMessagesFrame=$("#callChatAllFrame");
+$("#callChatAll").onclick=()=>{
+ allMessages=!allMessages;
+ $("#callChatPanel").classList.toggle("show-all",allMessages);
+ $("#callChatAll").textContent=allMessages?"Conversation de l’appel":"Toutes les discussions";
+ if(allMessages&&!fullMessagesFrame.getAttribute("src"))fullMessagesFrame.src="/messages"+(callChatType==="dm"?"?open="+encodeURIComponent(callChatRoomId):"");
+ if(!allMessages)callChatLoad(true);
+};
+$("#callBack").addEventListener("click",event=>{
+ if(!connected)return;
+ event.preventDefault();
+ if(!callChatVisible)toggleCallChat();
+ if(!allMessages)$("#callChatAll").click();
+});
 $("#callChatForm").onsubmit=async e=>{
  e.preventDefault();const field=$("#callChatInput"),body=field.value.trim();if(!body)return;field.value="";
  try{
