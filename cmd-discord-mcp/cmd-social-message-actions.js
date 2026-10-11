@@ -79,6 +79,15 @@ async function showProfile(article){
    }
  }catch(err){if(card.isConnected)body.replaceChildren(elem('h2','',name),elem('p','cmd-person-note',err.message))}
 }
+window.cmdShowUserProfile=function(username){if(username)return showProfile({dataset:{cmdAuthorName:username,cmdAuthorUser:username}})};
+document.addEventListener('click',event=>{
+ const item=event.target.closest?.('.thread .av,.thread .main b,.friendRow .av,.friendRow .main b,.result span b,#chatTitle');
+ if(!item)return;
+ const row=item.closest('[data-profile-user]'),username=row?.dataset.profileUser||item.dataset.profileUsername||item.closest('.result')?.querySelector('[data-user]')?.dataset.user;
+ if(!username)return;
+ event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+ window.cmdShowUserProfile(username);
+},true);
 async function removeMessage(article,btn){
  const ctx=context();if(!ctx||!['native','combined'].includes(ctx.mode)||article.dataset.cmdSource!=='cmd')return;
  if(!confirm('Supprimer définitivement ce message de CMD Sphere ?'))return;
