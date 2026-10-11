@@ -28,6 +28,7 @@ import { readFileSync } from "node:fs";
 import { setupNotifications,pushPublicKey,subscribePush,unsubscribePush,pollNotifications,notifyUsers } from "./notifications.js";
 import { initConnections, getConnections, saveConnection, removeConnection, connectionsPage, profileConnectionsHtml, statusConnection } from "./connections.js";
 import { callPage } from "./call-ui.js";
+import { publicPersonCard } from "./cmd-public-profile.js";
 import { answerCMD,allowRequest,aiMode } from "./cmd-ai.js";
 
 const port=Number(process.env.PORT||8787);
