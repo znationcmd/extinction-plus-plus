@@ -558,7 +558,7 @@ function renderStickerPreview(){
       landscape.style.removeProperty("background-image");
     }
   }
- }if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.vehicle!=="none"?universeArtwork("vehicle",state.vehicle,vehicles.find(v=>v[0]===state.vehicle)?.[2]):"")+(state.home!=="none"?universeArtwork("home",state.home,""):"");applyOriginalSheets()}}
+ }if(hero){let extras=hero.querySelector("#cmdStickerObjects");if(!extras){extras=document.createElement("div");extras.id="cmdStickerObjects";hero.querySelector(".cmd-scene-preview")?.append(extras)}if(extras){extras.innerHTML=(state.home!=="none"?'<div class="cmd-universe-stage-home">'+universeArtwork("home",state.home,"")+"</div>":"")+(state.vehicle!=="none"?'<div class="cmd-universe-stage-vehicle">'+universeArtwork("vehicle",state.vehicle,vehicles.find(v=>v[0]===state.vehicle)?.[2])+"</div>":"");applyOriginalSheets()}}
 }
 function installStickerStyles(){
  if(document.getElementById("cmdStickerStyle"))return;
