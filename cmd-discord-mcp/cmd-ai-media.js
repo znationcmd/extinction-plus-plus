@@ -51,3 +51,36 @@ export async function cmdAnalyzePhoto({imageData,instruction}){
  if(!reply)throw problem("Le modèle de lecture d'images ne répond pas. Réessaie plus tard ; la photo originale n'a pas été modifiée.",503);
  return {reply,edited:false};
 }
+
+/* Reliable pixel operations. Semantic object removal / background replacement
+   needs a configured image-to-image model and is NOT simulated. */
+export async function cmdRetouchPhoto({imageData,instruction}){
+ const buf=parseImageData(imageData);
+ const request=normalize(String(instruction||"")).slice(0,500);
+ if(!request)throw problem("Indique la retouche souhaitée : éclaircir, flouter, noir et blanc, miroir ou rotation.");
+ const grayscale=/noir.*blanc|gris|monochrom/.test(request);
+ const brighten=/eclair|luminosite|plus clair|illumine/.test(request);
+ const darker=/assombr|plus sombre|fonce/.test(request);
+ const blur=/flou|adouci|flouter/.test(request);
+ const sharpen=/nettet|plus net|accentue/.test(request);
+ const mirror=/miroir|symetr|retourn.*horizontal/.test(request);
+ const rotate=/tourn|rotation|pivote/.test(request);
+ const degrees=rotate?(/gauche|antihor|inverse/.test(request)?-90:90):0;
+ if(![grayscale,brighten,darker,blur,sharpen,mirror,rotate].some(Boolean)){
+  throw problem("Cette retouche créative nécessite un modèle de modification d'images qui n'est pas encore activé. Je peux déjà éclaircir, assombrir, flouter, améliorer la netteté, passer en noir et blanc, retourner ou tourner ta photo.",422);
+ }
+ let pipeline;
+ try{
+  pipeline=sharp(buf,{failOn:"error",limitInputPixels:22000000}).rotate().resize({width:1800,height:1800,fit:"inside",withoutEnlargement:true});
+  if(degrees)pipeline=pipeline.rotate(degrees);
+  if(mirror)pipeline=pipeline.flop();
+  if(grayscale)pipeline=pipeline.grayscale();
+  if(brighten)pipeline=pipeline.modulate({brightness:1.28});
+  if(darker)pipeline=pipeline.modulate({brightness:0.75});
+  if(blur)pipeline=pipeline.blur(2.4);
+  if(sharpen)pipeline=pipeline.sharpen({sigma:1.2});
+  const result=await pipeline.jpeg({quality:88,mozjpeg:true}).toBuffer();
+  if(result.length>4500000)throw Error("result too large");
+  return {edited:true,reply:"Voici ta photo retouchée. L'original n'a pas été remplacé.",image:"data:image/jpeg;base64,"+result.toString("base64")};
+ }catch{throw problem("Impossible de retoucher ce fichier photo. Vérifie son format et ses dimensions.",400)}
+}
