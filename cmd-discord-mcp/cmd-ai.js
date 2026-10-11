@@ -1,3 +1,4 @@
+import {cmdCloudflareReply,cmdFreeProviderConfigured} from "./cmd-ai-free-provider.js";
 // CMD Sphere companion — no paid provider required for the built-in mode.
 // GEMINI_API_KEY, if provided, enables optional free-tier Gemini responses.
 // This server never attempts to enable billing or use a paid API model.
@@ -22,7 +23,7 @@ const info=[
 [/\b(bot|webhook|sauvegarde|dossier)\b/i,"Les fonctions Bots, Webhooks, Sauvegarde Discord et Dossiers sont regroupées dans Paramètres → Outils CMD. Leurs droits dépendent des permissions de ton compte et de tes serveurs."]
 ];
 const rate=new Map();let round=0;
-export function aiMode(){return String(process.env.GEMINI_API_KEY||process.env.CMD_AI_GEMINI_FREE_KEY||"").trim()?"gemini":"local"}
+export function aiMode(){return cmdFreeProviderConfigured()?"cloudflare":String(process.env.GEMINI_API_KEY||process.env.CMD_AI_GEMINI_FREE_KEY||"").trim()?"gemini":"local"}
 export function allowRequest(id){const now=Date.now(),k=String(id||"anonymous"),v=rate.get(k)||[];const items=v.filter(n=>now-n<60000);if(items.length>=12){rate.set(k,items);return false}items.push(now);rate.set(k,items);if(rate.size>5000){for(const [key,entry] of rate){if(entry.every(t=>now-t>60000))rate.delete(key);if(rate.size<4000)break}}return true}
 function clockAnswer(s){
  if(!/(quelle heure|il est quelle heure|heure (est.il|actuelle)|donne.moi l.heure|date (aujourd.hui|du jour))/i.test(s))return null;
@@ -119,6 +120,8 @@ export async function answerCMD(message,history=[]){
  const basic=clockAnswer(m)||recipeAnswer(m)||simple(m);
  if(basic)return {reply:basic,mode:"local"};
  const weather=await weatherAnswer(m);if(weather)return {reply:weather,mode:"weather"};
+ const fromCloudflare=await cmdCloudflareReply(m,history);
+ if(fromCloudflare)return {reply:fromCloudflare,mode:"cloudflare"};
  const gen=await gemini(m,history);
  if(gen)return {reply:gen,mode:"gemini"};
  const wiki=await wikipedia(m);
