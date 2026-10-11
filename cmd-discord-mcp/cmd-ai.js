@@ -35,9 +35,37 @@ function clockAnswer(s){
   ["new york","New York","America/New_York"],["quebec","Québec","America/Toronto"],["montreal","Montréal","America/Toronto"],["toronto","Toronto","America/Toronto"],["londres","Londres","Europe/London"],["london","Londres","Europe/London"],["los angeles","Los Angeles","America/Los_Angeles"],["dubai","Dubaï","Asia/Dubai"],["sydney","Sydney","Australia/Sydney"],["moscou","Moscou","Europe/Moscow"],
   ["paris","Paris","Europe/Paris"],["ajaccio","Ajaccio","Europe/Paris"],["bastia","Bastia","Europe/Paris"],["corse","Corse","Europe/Paris"],["france","France","Europe/Paris"]
  ];
- const found=zones.find(([name])=>msg.includes(name))||["france","France","Europe/Paris"];
- const clock=new Intl.DateTimeFormat("fr-FR",{timeZone:found[2],weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
- return "🕒 À "+found[1]+", il est "+clock+" (heure locale).";
+
+ const extended=[
+ ["espagne","Espagne","Europe/Madrid"],["italie","Italie","Europe/Rome"],["portugal","Portugal","Europe/Lisbon"],["allemagne","Allemagne","Europe/Berlin"],["belgique","Belgique","Europe/Brussels"],["suisse","Suisse","Europe/Zurich"],["pays bas","Pays-Bas","Europe/Amsterdam"],["pologne","Pologne","Europe/Warsaw"],["grece","Grèce","Europe/Athens"],["ukraine","Ukraine","Europe/Kyiv"],["turquie","Turquie","Europe/Istanbul"],
+ ["maroc","Maroc","Africa/Casablanca"],["algerie","Algérie","Africa/Algiers"],["tunisie","Tunisie","Africa/Tunis"],["egypte","Égypte","Africa/Cairo"],["senegal","Sénégal","Africa/Dakar"],["nigeria","Nigeria","Africa/Lagos"],["afrique du sud","Afrique du Sud","Africa/Johannesburg"],
+ ["inde","Inde","Asia/Kolkata"],["pakistan","Pakistan","Asia/Karachi"],["nepal","Népal","Asia/Kathmandu"],["bangladesh","Bangladesh","Asia/Dhaka"],["thailande","Thaïlande","Asia/Bangkok"],["vietnam","Vietnam","Asia/Ho_Chi_Minh"],["singapour","Singapour","Asia/Singapore"],["malaisie","Malaisie","Asia/Kuala_Lumpur"],["indonesie","Indonésie","Asia/Jakarta"],["philippines","Philippines","Asia/Manila"],["coree","Corée du Sud","Asia/Seoul"],["arabie saoudite","Arabie saoudite","Asia/Riyadh"],["israel","Israël","Asia/Jerusalem"],["iran","Iran","Asia/Tehran"],["emirats","Émirats arabes unis","Asia/Dubai"],
+ ["mexique","Mexique","America/Mexico_City"],["bresil","Brésil (São Paulo)","America/Sao_Paulo"],["argentine","Argentine","America/Argentina/Buenos_Aires"],["chili","Chili","America/Santiago"],["colombie","Colombie","America/Bogota"],["perou","Pérou","America/Lima"],["australie","Australie (Sydney)","Australia/Sydney"],["nouvelle zelande","Nouvelle-Zélande","Pacific/Auckland"],
+ ["san francisco","San Francisco","America/Los_Angeles"],["osaka","Osaka","Asia/Tokyo"],["berlin","Berlin","Europe/Berlin"],["rome","Rome","Europe/Rome"],["madrid","Madrid","Europe/Madrid"],["lisbonne","Lisbonne","Europe/Lisbon"],["seoul","Séoul","Asia/Seoul"],["bangkok","Bangkok","Asia/Bangkok"],["toronto","Toronto","America/Toronto"],["vancouver","Vancouver","America/Vancouver"]
+ ];
+ const all=[...zones,...extended];
+ const hit=all.find(([name])=>msg.includes(name));
+ const dynamic=!hit&&typeof Intl.supportedValuesOf==="function"?Intl.supportedValuesOf("timeZone").find(zone=>{
+  const city=zone.split("/").pop().replace(/_/g," ").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  return city.length>=4&&msg.includes(city);
+ }):null;
+ const found=hit||(dynamic?[dynamic.split("/").pop().replace(/_/g," "),dynamic.split("/").pop().replace(/_/g," "),dynamic]:null);
+ if(!found&&/\b(?:a|au|aux|en|dans|at|in|de|du)\s+[a-z]/.test(msg))return null;
+ const z=found||["france","France","Europe/Paris"];
+
+ const clock=new Intl.DateTimeFormat("fr-FR",{timeZone:z[2],weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
+ return "🕒 À "+z[1]+", il est "+clock+" (heure locale).";
+}
+async function unknownClockAnswer(text){
+ if(!/(heure|what time|current time|quelle date|quel jour)/i.test(String(text)))return null;
+ const suggestion=await cmdCloudflareReply("Donne seulement le nom d'un fuseau horaire IANA valide (exemple : Asia/Tokyo) correspondant à la ville ou pays de cette question, sans autre texte : "+String(text).slice(0,180),[],{maxOutputTokens:90});
+ const zone=String(suggestion||"").match(/\b(?:Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)\/[A-Za-z_+-]+(?:\/[A-Za-z_+-]+)?\b/)?.[0];
+ if(zone){
+  try{const label=String(text).match(/(?:à|au|aux|en|in|at)\s+([^?.,!]+)/i)?.[1]?.trim()||zone.split("/").pop().replace(/_/g," ");
+   return "🕒 À "+label+", il est "+new Intl.DateTimeFormat("fr-FR",{timeZone:zone,weekday:"long",day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date())+" (heure locale).";
+  }catch{}
+ }
+ return "Je n'ai pas pu identifier le fuseau horaire avec certitude. Précise la ville et le pays.";
 }
 const cookBook=[
  {key:"crepes",match:/crepes?/,title:"Crêpes (8 à 10)",ingredients:"250 g de farine, 3 œufs, 500 ml de lait, 1 pincée de sel, 30 g de beurre",steps:["Mélange farine et sel, puis incorpore les œufs.","Verse progressivement le lait, puis le beurre fondu.","Laisse reposer 20 minutes si possible.","Cuis une louche de pâte environ une minute par face dans une poêle chaude."]},
@@ -139,6 +167,7 @@ export async function answerCMD(message,history=[]){
  if(!m)return {reply:"Écris un message pour discuter avec CMD IA.",mode:"local"};
  const basic=clockAnswer(m)||recipeAnswer(m)||simple(m);
  if(basic)return {reply:basic,mode:"local"};
+ const worldClock=await unknownClockAnswer(m);if(worldClock)return {reply:worldClock,mode:"world-clock"};
  const weather=await weatherAnswer(m);if(weather)return {reply:weather,mode:"weather"};
  const fromCloudflare=await cmdCloudflareReply(m,history);
  if(fromCloudflare)return {reply:fromCloudflare,mode:"cloudflare"};
