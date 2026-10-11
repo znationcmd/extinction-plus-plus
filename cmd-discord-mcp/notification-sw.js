@@ -1,5 +1,7 @@
 
+const CMD_SPHERE_SW_RELEASE="20261011pwa1";
 self.addEventListener("install",()=>self.skipWaiting());
+self.addEventListener("message",event=>{if(event.data?.type==="CMD_PWA_SKIP_WAITING")event.waitUntil(self.skipWaiting());});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("push",e=>{
  let data={};try{data=e.data?.json()||{}}catch{}
