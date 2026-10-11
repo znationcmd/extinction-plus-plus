@@ -332,7 +332,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   async function nativeSubmit(ev,action,gid){
     ev.preventDefault();const f=new FormData(ev.currentTarget),body={action,nativeGuildId:gid};for(const [k,v] of f)body[k]=v;
-    if(S.nativeGuild?.source_discord_id&&!confirm('Appliquer cette modification au serveur externe via le bot autorisé ?'))return;
+    if(S.nativeGuild?.source_discord_id&&!confirm('Confirmer la modification du salon CMD Sphere. Le serveur externe ne sera pas modifié. Continuer ?'))return;
     try{const out=await api('/api/native/action',{method:'POST',body:JSON.stringify(body)});toast(out.warning||'Modification CMD Sphere enregistrée',!out.warning);await selectNative(S.nativeGuild)}catch(e){toast(e.message,false)}
   }
   async function selectNative(g,railEl){
