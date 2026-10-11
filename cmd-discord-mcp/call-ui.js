@@ -38,6 +38,7 @@ export function callPage(auth,room){
 .call-chat-form textarea{background:#3c3741;color:#fff;border:0;border-radius:14px;min-height:48px;max-height:190px;resize:none;padding:12px;flex:1;min-width:0;font:inherit;outline:none}
 .call-chat-form button{background:#6755df;color:white;border:0;border-radius:11px;padding:12px;font-weight:900;cursor:pointer}
 .call-chat-info{margin:0;padding:0 14px 9px;background:#1d1a21;color:#a9a2af;font-size:11px}
+.call-chat-header .all-messages{font:700 12px system-ui;background:#6755df;color:#fff;white-space:nowrap;padding:10px;border-radius:10px}.call-chat-iframe{display:none;width:100%;height:100%;border:0;flex:1;min-height:0;background:#17121f}.chat-panel.show-all #callChatMessages,.chat-panel.show-all #callChatForm,.chat-panel.show-all .call-chat-info{display:none}.chat-panel.show-all .call-chat-iframe{display:block}@media(max-width:650px){.chat-panel{top:8%;max-height:92dvh}.call-chat-header strong{font-size:14px}}
 @media(min-width:980px){body.call-chat-open .wrap{margin-right:min(415px,33vw)}body.call-chat-open .controls{right:min(415px,33vw)}}
 @media(max-width:650px){.top{padding:calc(12px + env(safe-area-inset-top)) 12px 10px}.call-chat-btn{flex-shrink:0}.chat-panel{width:100%;top:15%;bottom:0;border-radius:23px 23px 0 0;transform:translateY(110%);border-top:1px solid #ffffff25}.chat-panel.visible{transform:translateY(0)}}
 
