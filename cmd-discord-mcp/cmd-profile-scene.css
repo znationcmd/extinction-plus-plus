@@ -1014,3 +1014,61 @@ body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-e
 /* Visible, accessible empty companion choice and correct image ratio */
 #cmdSceneSheet .cmd-catalogue-none-icon{display:grid!important;place-items:center!important;width:100%!important;min-height:84px!important;color:#cbbbd9!important;font-size:38px!important;line-height:1!important}
 #cmdSceneSheet .cmd-scene-card-art img,#cmdSceneSheet .cmd-imported-avatar-art{image-rendering:auto!important;object-fit:contain!important;max-width:100%!important}
+
+/* CMD_UNIVERSE_GROUND_ALIGNED_20261011 */
+/* Keep the saved profile and the editor grounded, without moving the original profile banner. */
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdStickerObjects{
+ position:absolute!important;inset:auto 0 1.5% 0!important;width:100%!important;max-width:100%!important;
+ height:36%!important;z-index:28!important;display:block!important;pointer-events:none!important;
+ overflow:visible!important;background:transparent!important;
+}
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-home,
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-vehicle{
+ position:absolute!important;bottom:0!important;display:flex!important;align-items:flex-end!important;
+ justify-content:center!important;min-width:0!important;margin:0!important;padding:0!important;
+ height:100%!important;max-height:100%!important;overflow:visible!important;background:none!important;
+}
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-home{left:2%!important;width:20%!important;z-index:1!important}
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-vehicle{left:20%!important;width:24%!important;z-index:2!important}
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-home > *,
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-vehicle > *,
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-home img,
+#cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-vehicle img{
+ display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
+ object-fit:contain!important;object-position:center bottom!important;position:relative!important;
+ inset:auto!important;transform:none!important;filter:none!important;mix-blend-mode:normal!important;
+}
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPet{
+ position:absolute!important;left:auto!important;right:2%!important;bottom:1.5%!important;
+ width:22%!important;height:34%!important;z-index:34!important;transform:none!important;
+ display:flex!important;justify-content:center!important;align-items:flex-end!important;
+}
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPet[hidden]{display:none!important}
+#cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPerson{
+ position:absolute!important;left:50%!important;right:auto!important;bottom:1.5%!important;top:auto!important;
+ height:86%!important;width:40%!important;max-width:42%!important;z-index:32!important;
+ transform:translateX(-50%)!important;pointer-events:none!important;
+}
+#cmdSceneSheet #cmdSceneHero #cmdAvatarLiveOverlay{left:50%!important;right:auto!important;bottom:1.5%!important;top:auto!important;transform:translateX(-50%)!important;z-index:33!important;max-height:86%!important;}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-home{
+ left:2%!important;top:auto!important;bottom:2%!important;width:22%!important;height:43%!important;z-index:1!important;pointer-events:none!important;
+}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-vehicle{
+ left:23%!important;top:auto!important;bottom:2%!important;width:24%!important;height:30%!important;z-index:2!important;pointer-events:none!important;
+}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-pet{
+ left:auto!important;right:3%!important;top:auto!important;bottom:2%!important;
+ width:20%!important;height:33%!important;z-index:4!important;font-size:clamp(24px,5vw,56px)!important;
+}
+#cmdSceneWrap.cmd-scene-active #cmdSceneBackdrop .cmd-scene-person{
+ z-index:3!important;left:50%!important;transform:translateX(-50%)!important;
+}
+#cmdSceneBackdrop .cmd-scene-home > *,#cmdSceneBackdrop .cmd-scene-vehicle > *,
+#cmdSceneBackdrop .cmd-scene-home img,#cmdSceneBackdrop .cmd-scene-vehicle img,
+#cmdSceneBackdrop .cmd-scene-pet img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center bottom!important;filter:none!important}
+@media(max-width:600px){
+ #cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-home{width:22%!important;left:1%!important}
+ #cmdSceneSheet #cmdSceneHero #cmdStickerObjects .cmd-universe-stage-vehicle{width:24%!important;left:23%!important}
+ #cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPerson{width:46%!important;max-width:46%!important}
+ #cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPet{width:21%!important;right:1%!important}
+}
