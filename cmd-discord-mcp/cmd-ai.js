@@ -66,6 +66,36 @@ async function gemini(message,history){
    return result||null;
  }catch{return null}
 }
+const weatherCities=[
+ ["tavaco",41.98,8.90],["porticcio",41.89,8.80],["ajaccio",41.93,8.74],["bastia",42.70,9.45],
+ ["corse",41.93,8.74],["moncton",46.09,-64.78],["paris",48.86,2.35],["marseille",43.30,5.37],
+ ["lyon",45.76,4.83],["nice",43.70,7.27],["toulouse",43.60,1.44],["bordeaux",44.84,-0.58],
+ ["lille",50.63,3.06],["nantes",47.22,-1.55],["montpellier",43.61,3.88],["strasbourg",48.58,7.75],
+ ["londres",51.51,-0.13],["london",51.51,-0.13],["berlin",52.52,13.41],["tokyo",35.68,139.69]
+];
+const weatherCache=new Map();
+async function weatherAnswer(s){
+ if(!/(m[eé]t[eé]o|quel temps|temp[eé]rature|va.t.il pleuvoir)/i.test(s))return null;
+ const city=weatherCities.find(c=>s.toLowerCase().includes(c[0]));
+ if(!city)return "Pour quelle ville souhaites-tu la météo ? Je peux déjà consulter Ajaccio, Bastia, Paris, Moncton et d'autres grandes villes.";
+ const key=city[0],old=weatherCache.get(key);
+ if(old&&Date.now()-old.at<45*60*1000)return old.text;
+ try{
+  const url="https://api.met.no/weatherapi/locationforecast/2.0/compact?lat="+city[1].toFixed(2)+"&lon="+city[2].toFixed(2);
+  const res=await fetch(url,{headers:{"User-Agent":"CMD-Sphere/1.0 https://cmd-sphere.up.railway.app","Accept":"application/json"},signal:AbortSignal.timeout(9000)});
+  if(!res.ok)throw Error("service météo HTTP "+res.status);
+  const body=await res.json(),first=body.properties?.timeseries?.[0];
+  if(!first)throw Error("prévision indisponible");
+  const detail=first.data?.instant?.details||{},symbol=first.data?.next_1_hours?.summary?.symbol_code||"",precip=first.data?.next_1_hours?.details?.precipitation_amount;
+  const meanings={clearsky:"ciel dégagé",fair:"beau temps",partlycloudy:"ciel partiellement nuageux",cloudy:"nuageux",rain:"pluie",lightrain:"pluie faible",heavyrain:"fortes pluies",snow:"neige",fog:"brouillard"};
+  const current=Object.entries(meanings).find(([code])=>symbol.startsWith(code))?.[1]||"conditions variables";
+  const celsius=Number(detail.air_temperature),wind=Number(detail.wind_speed);
+  const reply="🌤️ Météo à "+city[0]+" : "+current+".\nTempérature : "+(Number.isFinite(celsius)?celsius.toFixed(1)+" °C":"indisponible")+
+   (Number.isFinite(wind)?"\nVent : "+(wind*3.6).toFixed(0)+" km/h":"")+(Number.isFinite(precip)?"\nPrécipitations sur l’heure : "+precip+" mm":"")+
+   "\n\nSource : MET Norway (données CC BY 4.0), https://api.met.no/ — Prévision actualisée selon le fournisseur.";
+  weatherCache.set(key,{at:Date.now(),text:reply});return reply;
+ }catch{return "La météo de "+city[0]+" est momentanément indisponible. Réessaie plus tard."}
+}
 async function wikipedia(message){
  const match=message.trim().match(/^(?:qui est|qu['’]est.ce que|c['’]est quoi|que signifie|parle.moi de|explique.moi|définis|definition de|définition de)\s+(.+?)[?.!]*$/i);
  if(!match)return null;
