@@ -37,6 +37,6 @@ test("server persists category destinations atomically on native CMD Sphere only
   for(const sql of ['BEGIN','FOR UPDATE','FOR SHARE','COMMIT','ROLLBACK','source_parent_id=$4']){
     assert.ok(block.includes(sql),"missing transactional safeguard: "+sql);
   }
-  assert.match(block,/requireNativePermission\(auth,gid,"manageChannels"\)/);
+  assert.match(server,/requireNativePermission\(auth,gid,"manageChannels"\)/);
   assert.doesNotMatch(block,/syncNativeFromDiscord\(|backend\(/);
 });
