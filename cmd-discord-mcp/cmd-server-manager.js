@@ -663,14 +663,21 @@ function openChannelReorderMode(mode){
  const updateLabels=()=>{if(mode==='category')return;for(const row of rows()){const parent=row.closest('.csm-sort-bucket')?.dataset.sortParent||'';row.title='Catégorie : '+(categoryNames.get(parent)||'Sans catégorie')}};
  let drag=null,saving=false,raf=0;
  const stop=()=>{if(!drag)return;clearTimeout(drag.timer);if(raf)cancelAnimationFrame(raf);raf=0;drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null;};
+ // Category identity is chosen from fixed heading boundaries instead of row
+ // hit testing. Rows move during a drag, and hit testing those rows can make
+ // the selected category jump between siblings (especially during auto-scroll).
  const nearestBucket=y=>{
-  const all=buckets();
-  const viewport=scroller.getBoundingClientRect();const hitX=Math.max(viewport.left+18,Math.min(viewport.right-18,drag?.clientX||viewport.left+25));
-  const hit=document.elementFromPoint(hitX,Math.min(window.innerHeight-1,Math.max(0,y)))?.closest('.csm-sort-bucket');
-  if(hit&&all.includes(hit))return hit;
-  let best=all[0],distance=Infinity;
-  for(const group of all){const r=group.getBoundingClientRect();const d=y<r.top?r.top-y:y>r.bottom?y-r.bottom:0;if(d<distance){best=group;distance=d}}
-  return best;
+  const all=buckets();if(!all.length)return null;
+  const view=scroller.getBoundingClientRect();
+  const cy=Math.max(view.top+2,Math.min(view.bottom-2,y));
+  let chosen=all[0];
+  for(const bucket of all){
+   const heading=bucket.querySelector('.csm-sort-bucket-title');
+   const r=(heading||bucket).getBoundingClientRect();
+   if(cy>=r.top+r.height*.42)chosen=bucket;
+   else break;
+  }
+  return chosen;
  };
  let highlightedBucket=null;
  const preview=()=>{
@@ -691,7 +698,7 @@ function openChannelReorderMode(mode){
   updateLabels();
   if(destination&&mode!=='category'){
    const destName=categoryNames.get(destination.dataset.sortParent||'')||'Sans catégorie';
-   status.textContent='Catégorie cible : '+destName+' — relâche le doigt pour enregistrer.';
+   status.textContent='Déplacer dans « '+destName+' » : relâche pour enregistrer.';
   }
  };
  const autoscroll=()=>{
@@ -735,10 +742,33 @@ function openChannelReorderMode(mode){
   saving=true;status.textContent='Enregistrement de la nouvelle position et catégorie…';
   try{
    await request('/api/native/action',{nativeGuildId:id(),action:'reorder_channels',mode,channelIds:after.map(x=>x.id),placements:after});
-   await getContext();status.textContent='✓ Nouvel ordre et catégorie enregistrés.';
   }catch(err){
-   restore(before);updateLabels();
-   status.textContent='Modification non enregistrée : '+err.message;
+   restore(before);updateLabels();saving=false;
+   status.textContent='Modification non enregistrée : '+err.message;return;
+  }
+  try{
+   await getContext();
+   const saved=ctx.data.channels||[];
+   const actual=saved.filter(c=>allowed.includes(String(c.type))).slice().sort(sort).map(c=>String(c.id));
+   const expected=after.map(x=>String(x.id));
+   if(actual.length!==expected.length||actual.some((v,i)=>v!==expected[i]))throw Error('Le serveur ne confirme pas encore le nouvel ordre.');
+   if(mode!=='category'){
+    const aliases=new Map();
+    for(const c of (ctx.data.channels||[]).filter(c=>c.type==='category')){
+     const canonical=String(c.source_channel_id||c.id);
+     aliases.set(String(c.id),canonical);aliases.set(canonical,canonical);
+    }
+    const byId=new Map(saved.map(c=>[String(c.id),c]));
+    for(const entry of after){
+     const ch=byId.get(String(entry.id));
+     const parent=aliases.get(String(ch?.source_parent_id||ch?.parentId||''))||'';
+     const expectedParent=aliases.get(String(entry.parentId||''))||'';
+     if(!ch||parent!==expectedParent)throw Error('Le serveur ne confirme pas le changement de catégorie.');
+    }
+   }
+   status.textContent='✓ Ordre et catégorie confirmés après lecture du serveur.';
+  }catch(err){
+   status.textContent='Commande acceptée, mais vérification incomplète : '+err.message+' Ouvre à nouveau Réorganiser pour contrôler.';
   }finally{saving=false}
  };
  const close=()=>{if(saving)return;stop();
