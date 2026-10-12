@@ -473,3 +473,46 @@ body.csm-channel-context-open{overflow:hidden!important}
   #serverSettingsModal.csm-open,html body .sphere-app .server-rail{height:100vh!important;max-height:100vh!important}
  }
 }
+
+/* Discord-style CMD Sphere server shortcuts — 4 equal tappable actions, iPhone-safe */
+#csm-server-menu .csm-server-menu-quick{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ column-gap:clamp(6px,2vw,16px)!important;row-gap:6px!important;
+ padding:8px 2px 22px!important;max-width:100%!important
+}
+#csm-server-menu .csm-server-menu-quick button{
+ box-sizing:border-box!important;min-width:0!important;width:100%!important;
+ border:0!important;padding:0!important;background:transparent!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ justify-content:flex-start!important;gap:10px!important;
+ color:#c3bfc9!important;min-height:105px!important;
+ touch-action:manipulation!important
+}
+#csm-server-menu .csm-server-menu-quick button b{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:min(100%,76px)!important;height:76px!important;min-width:0!important;
+ border-radius:20px!important;background:#3b3942!important;color:#fff!important;
+ transition:background .15s,transform .15s!important
+}
+#csm-server-menu .csm-server-menu-quick button[data-csm-quick="boost"] b{color:#ec66e8!important}
+#csm-server-menu .csm-server-menu-quick button b svg{
+ width:37px!important;height:37px!important;overflow:visible!important;display:block!important
+}
+#csm-server-menu .csm-server-menu-quick button small{
+ display:block!important;font:500 clamp(11px,2.9vw,16px)/1.2 system-ui!important;
+ white-space:normal!important;text-align:center!important;overflow-wrap:anywhere!important;
+ color:#c7c2cb!important
+}
+#csm-server-menu .csm-server-menu-quick button:active b{background:#534b60!important;transform:scale(.96)}
+#csm-server-menu .csm-server-menu-quick button:focus-visible{outline:2px solid #c2a3fd!important;outline-offset:3px!important;border-radius:12px}
+#csm-server-menu .csm-server-menu-body{box-sizing:border-box!important;overflow-y:auto!important;
+ overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;
+ scroll-padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important;
+ padding-bottom:calc(95px + env(safe-area-inset-bottom,0px))!important}
+@media(max-width:430px){
+ #csm-server-menu .csm-server-menu-quick button b{
+   height:clamp(49px,15.5vw,65px)!important;width:clamp(49px,15.5vw,65px)!important;border-radius:17px!important
+ }
+ #csm-server-menu .csm-server-menu-quick button b svg{width:33px!important;height:33px!important}
+ #csm-server-menu .csm-server-menu-quick button{min-height:91px!important}
+}
