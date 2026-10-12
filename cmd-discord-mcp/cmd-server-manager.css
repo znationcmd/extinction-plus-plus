@@ -516,3 +516,47 @@ body.csm-channel-context-open{overflow:hidden!important}
  #csm-server-menu .csm-server-menu-quick button b svg{width:33px!important;height:33px!important}
  #csm-server-menu .csm-server-menu-quick button{min-height:91px!important}
 }
+
+/* CMD Sphere 2026-10-12 — Discord-style functional overview */
+.csm-discord-overview{display:flex;flex-direction:column;gap:22px}
+.csm-discord-group{display:flex;flex-direction:column;gap:12px}
+.csm-discord-group h2{font:600 17px/1.3 system-ui;margin:0;color:#b8b5c0}
+.csm-discord-group p{font:400 14px/1.55 system-ui;color:#a7a4b0;margin:0 0 4px}
+.csm-discord-group>.csm-field{margin:0}
+.csm-discord-group>.csm-field input,
+.csm-discord-group>textarea{width:100%;box-sizing:border-box;background:#151419!important;color:#f7f6fc!important;
+ border:1px solid #44414d!important;border-radius:12px!important;font:500 16px/1.5 system-ui!important;
+ padding:16px!important;outline-offset:2px}
+.csm-discord-group>textarea{min-height:150px;resize:vertical}
+.csm-discord-panel{background:#29282f;border-radius:14px;overflow:hidden}
+.csm-discord-toggle{display:flex;flex-direction:row!important;align-items:center;justify-content:space-between;gap:12px;
+ padding:16px!important;margin:0!important;border-bottom:1px solid #ffffff18;cursor:pointer}
+.csm-discord-toggle:last-child{border-bottom:0}
+.csm-discord-toggle>span{flex:1;display:flex;flex-direction:column;gap:5px}
+.csm-discord-toggle strong{font:500 16px/1.4 system-ui;color:#f4f2f7}
+.csm-discord-toggle small{font:400 13px/1.4 system-ui;color:#a7a4b0}
+.csm-discord-toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;
+ width:52px!important;height:30px!important;min-width:52px!important;max-width:52px!important;
+ background:#4a4650!important;border:1px solid #67606f!important;border-radius:22px!important;
+ margin:0!important;cursor:pointer;transition:background .12s}
+.csm-discord-toggle input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .12s}
+.csm-discord-toggle input[type=checkbox]:checked{background:#685ff3!important;border-color:#685ff3!important}
+.csm-discord-toggle input[type=checkbox]:checked::after{transform:translateX(22px)}
+.csm-discord-radio{display:flex;flex-direction:column}
+.csm-discord-radio>label{display:flex;align-items:center;justify-content:space-between;gap:15px;
+ padding:18px 16px;margin:0;border-bottom:1px solid #ffffff18;font:500 16px system-ui;color:#f6f5fa;cursor:pointer}
+.csm-discord-radio>label:last-child{border-bottom:0}
+.csm-discord-radio input[type=radio]{accent-color:#685ff3!important;width:23px!important;height:23px!important;max-width:23px!important;flex:none}
+.csm-discord-overview .csm-icon-picker{display:flex;gap:16px;align-items:center;margin:0;padding:15px 0}
+.csm-discord-overview .csm-icon-preview{height:86px;min-width:86px;width:86px;flex:none;overflow:hidden;border-radius:25px}
+.csm-discord-overview .csm-icon-preview img{width:100%;height:100%;object-fit:contain}
+.csm-discord-overview .csm-icon-picker b{font-size:15px}
+.csm-discord-overview .csm-icon-picker p{font-size:12px;margin:5px 0 12px}
+.csm-discord-overview .csm-discord-save{width:100%!important;min-height:52px!important;margin:4px 0 28px!important}
+@media(max-width:760px){
+ #serverSettingsModal.csm-open .csm-discord-overview{gap:30px}
+ #serverSettingsModal.csm-open .csm-discord-group{gap:12px}
+ #serverSettingsModal.csm-open .csm-discord-group>h2{font-size:16px}
+ #serverSettingsModal.csm-open .csm-discord-overview .csm-icon-picker{flex-wrap:wrap}
+ #serverSettingsModal.csm-open .csm-discord-overview .csm-discord-save{margin-bottom:calc(95px + env(safe-area-inset-bottom,0px))!important}
+}
