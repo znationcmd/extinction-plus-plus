@@ -1,0 +1,60 @@
+/* CMDPad++ Device Adaptive v2: PHONE / TABLET / DESKTOP.
+ * Loaded last, after compact-ui, to remove conflicting fixed-height rules. */
+:root{--cmd-safe-bottom:env(safe-area-inset-bottom,0px);--cmd-safe-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+html{width:100%;max-width:100%;overflow-x:hidden}
+body{max-width:100%;overflow-x:hidden}
+.app{width:100%;max-width:100%;min-height:0;overflow:hidden}
+.menubar,.toolbar,.tabs,.docbar{touch-action:pan-x;overscroll-behavior-x:contain}
+.menubar{position:relative;z-index:700!important;scrollbar-width:thin!important}
+.menu>.dropdown{position:fixed!important;z-index:2000!important;max-height:min(78dvh,680px)!important;overflow:auto!important;overscroll-behavior:contain}
+.toolbar{flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;max-height:47px!important;min-height:43px!important;height:47px!important;scrollbar-width:thin!important}
+.tabs{flex-shrink:0;scrollbar-width:thin!important}
+.workspace{min-height:0!important}
+.editor-shell{min-height:90px!important}
+.editor{min-width:0!important;width:100%!important;overscroll-behavior:contain}
+#cmdpadDeviceBar{display:none}
+#cmdpadDeviceDrawer{display:none}
+.cmd-device-button{border:1px solid #aab8c9;border-radius:7px;background:#e8eff9;color:#142640;font:600 12px/1.25 system-ui,Arial,sans-serif;padding:9px 12px;min-height:42px;cursor:pointer;white-space:nowrap}
+.cmd-device-button:focus-visible{outline:2px solid #267ef4;outline-offset:1px}
+#cmdpadDeviceDrawer{background:#fff;border:1px solid #c5d3e1;box-shadow:0 -12px 32px #0003}
+body[data-cmd-device="tablet"] .workspace{grid-template-columns:minmax(0,1fr)!important}
+body[data-cmd-device="tablet"] .side{display:none!important}
+body[data-cmd-device="tablet"] .menubar>.menu>button{min-height:40px;padding:7px 12px;font-size:13px}
+body[data-cmd-device="tablet"] .toolbtn{min-height:38px;font-size:13px}
+body[data-cmd-device="tablet"] .toolbar{height:50px!important;max-height:50px!important;min-height:50px!important}
+@media(max-width:760px), (pointer:coarse) and (max-width:920px){
+ body[data-cmd-device="phone"],body[data-cmd-device="tablet"]{margin:0!important;position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}
+ body[data-cmd-device="phone"] .app{height:100dvh!important;max-height:100dvh!important;display:flex!important;flex-direction:column!important}
+ body[data-cmd-device="phone"] .titlebar{padding-left:max(6px,env(safe-area-inset-left))!important;padding-right:max(6px,env(safe-area-inset-right))!important;flex-shrink:0!important;min-height:40px!important}
+ body[data-cmd-device="phone"] .menubar{flex:0 0 40px!important;height:40px!important;max-height:40px!important;min-height:40px!important;white-space:nowrap!important;display:flex!important;overflow-x:auto!important;overflow-y:hidden!important}
+ body[data-cmd-device="phone"] .menubar .menu>button{font-size:13px!important;padding:8px 11px!important;min-height:39px!important}
+ body[data-cmd-device="phone"] .menu .dropdown{min-width:min(275px,calc(100vw - 14px))!important;max-width:calc(100vw - 14px)!important;max-height:calc(100dvh - 112px - env(safe-area-inset-bottom))!important;overflow:auto!important;left:7px!important;top:calc(72px + env(safe-area-inset-top))!important}
+ body[data-cmd-device="phone"] .toolbar{height:0!important;min-height:0!important;max-height:0!important;padding:0!important;border:0!important;overflow:hidden!important;flex:0 0 0!important}
+ body[data-cmd-device="phone"] .toolbar.cmd-device-expanded{height:auto!important;min-height:44px!important;max-height:140px!important;padding:4px!important;overflow-x:auto!important;overflow-y:auto!important;flex:0 0 auto!important}
+ body[data-cmd-device="phone"] .workspace,body[data-cmd-device="tablet"] .workspace{grid-template-columns:minmax(0,1fr)!important;position:relative!important;min-height:0!important;flex:1 1 auto!important}
+ body[data-cmd-device="phone"] .side{display:none!important}
+ body[data-cmd-device="phone"] .main{height:100%!important;min-height:0!important;max-width:100%!important}
+ body[data-cmd-device="phone"] .tabs{height:39px!important;min-height:39px!important;max-height:39px!important}
+ body[data-cmd-device="phone"] .tab{height:37px!important;min-height:37px!important;min-width:100px!important;max-width:180px!important;font-size:12px!important}
+ body[data-cmd-device="phone"] .docbar{padding:5px!important;gap:5px!important;min-height:42px!important;max-height:48px!important;flex:0 0 auto!important}
+ body[data-cmd-device="phone"] .docbar label{font-size:10px!important}
+ body[data-cmd-device="phone"] .docbar input{min-width:120px!important;width:170px!important;flex:0 0 170px!important}
+ body[data-cmd-device="phone"] .docbar select{max-width:165px!important;flex:0 0 auto!important}
+ body[data-cmd-device="phone"] .validators{display:none!important}
+ body[data-cmd-device="phone"] .editor-shell{flex:1 1 auto!important;min-height:110px!important;overflow:hidden!important}
+ body[data-cmd-device="phone"] .lines{width:38px!important;flex:0 0 38px!important;padding-right:5px!important;font-size:12px!important}
+ body[data-cmd-device="phone"] .editor{font-size:14px!important;padding:7px 8px 30px!important;line-height:1.5!important;min-height:100px!important;-webkit-overflow-scrolling:touch}
+ body[data-cmd-device="phone"] .findgrid{display:none!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;max-height:170px!important;overflow-y:auto!important;flex:0 0 auto!important}
+ body[data-cmd-device="phone"].cmd-search-visible .findgrid{display:grid!important}
+ body[data-cmd-device="phone"] .result{max-height:56px!important;flex:0 0 auto!important;font-size:11px!important}
+ body[data-cmd-device="phone"] .status{height:22px!important;min-height:22px!important;flex:0 0 22px!important;overflow-x:auto!important;font-size:10px!important}
+ body[data-cmd-device="phone"] #cmdpadFnPanel{display:none!important}
+ body[data-cmd-device="phone"] .workspace.fn-show #cmdpadFnPanel{display:flex!important;max-width:88vw!important;width:88vw!important;z-index:75!important}
+ body[data-cmd-device="phone"] #cmdpadDeviceBar{display:flex!important;flex:0 0 calc(53px + env(safe-area-inset-bottom))!important;min-height:calc(53px + env(safe-area-inset-bottom))!important;position:relative;z-index:800!important;gap:5px;padding:5px 5px calc(5px + env(safe-area-inset-bottom));background:#f2f4f9;border-top:1px solid #aab8c9;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:flex-start}
+ body[data-cmd-device="phone"] #cmdpadDeviceBar .cmd-device-button{flex:0 0 auto;min-height:41px!important;padding:9px 11px!important}
+ body[data-cmd-device="phone"] #cmdpadDeviceDrawer.cmd-show{display:block!important;position:fixed;z-index:2100;bottom:calc(54px + env(safe-area-inset-bottom));left:6px;right:6px;border-radius:9px;padding:9px;max-height:min(52dvh,390px);overflow:auto}
+ body[data-cmd-device="phone"] #cmdpadDeviceDrawer button{width:100%;text-align:left;display:block;padding:11px;margin:4px 0;border:1px solid #c4d0df;border-radius:5px;background:#f8fbff}
+ body[data-cmd-device="phone"] #cmdpadSymbolPreview{max-height:110px!important}
+}
+@media(min-width:761px){body[data-cmd-device="desktop"] .workspace{grid-template-columns:var(--cmd-sidebar-left) minmax(0,1fr) var(--cmd-sidebar-right)!important}}
