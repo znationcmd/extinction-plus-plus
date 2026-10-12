@@ -88,8 +88,21 @@ export async function handleCmdStudioMusic(req,res,url,{auth}={}){
    sendAudio(res,req,track,saved.bytes);return true;
   }
   try{
-   const remote=await fetch(track.remoteUrl,{headers:{"User-Agent":"CMDSphereStudio/1.0 (CC-licensed music preview)","Accept":"audio/*"},redirect:"error",signal:AbortSignal.timeout(REQUEST_TIMEOUT)});
+   const reqRange=String(req.headers?.range||"");
+   const cleanRange=/^bytes=(\d+)-(\d*)$/.test(reqRange)?reqRange:"";
+   const remoteHeaders={"User-Agent":"CMDSphereStudio/1.0 (CC-licensed music preview)","Accept":"audio/*"};
+   if(cleanRange)remoteHeaders.Range=cleanRange;
+   const remote=await fetch(track.remoteUrl,{headers:remoteHeaders,redirect:"error",signal:AbortSignal.timeout(REQUEST_TIMEOUT)});
    if(!remote.ok)throw Error("Audio indisponible");
+   if(cleanRange&&remote.status===206){
+    const span=String(remote.headers.get("content-range")||""),length=Number(remote.headers.get("content-length"));
+    if(!/^bytes \d+-\d+\/\d+$/.test(span)||!Number.isSafeInteger(length)||length<=0||length>LIMIT)throw Error("Plage audio invalide");
+    const type=track.mime==="application/ogg"?"audio/ogg":track.mime;
+    res.writeHead(206,{"content-type":type,"content-range":span,"content-length":length,"accept-ranges":"bytes","cache-control":"private, max-age=600","x-content-type-options":"nosniff"});
+    let count=0;
+    for await(const chunk of remote.body){count+=chunk.length;if(count>length)throw Error("Réponse audio trop longue");res.write(chunk)}
+    res.end();return true;
+   }
    if(Number(remote.headers.get("content-length")||0)>LIMIT)throw Error("Morceau trop volumineux");
    const pieces=[];let size=0;
    for await(const part of remote.body){size+=part.length;if(size>LIMIT)throw Error("Morceau trop volumineux");pieces.push(part)}
@@ -98,7 +111,7 @@ export async function handleCmdStudioMusic(req,res,url,{auth}={}){
    if(fileCache.size>5)fileCache.delete(fileCache.keys().next().value);
    if(bytes.length<5*1024*1024)fileCache.set(hit[1],{bytes,time:Date.now()});
    sendAudio(res,req,track,bytes);
-  }catch(error){console.warn("[CMD studio music file]",error.message);send(res,502,{error:"Impossible de charger ce morceau actuellement. Essaie un autre titre."})}
+  }catch(error){console.warn("[CMD studio music file]",error.message);if(res.headersSent)res.destroy();else send(res,502,{error:"Impossible de charger ce morceau actuellement. Essaie un autre titre."})}
   return true;
  }
  send(res,404,{error:"Musique introuvable."});return true;

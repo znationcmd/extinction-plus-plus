@@ -13,6 +13,23 @@ let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recorde
 let studioScope="",studioProfileGuild="",activeTool="";
 let formatChosen=false,autoRatioDone=false;
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
+const studioBadMusic=new Set();
+let studioMusicSelection=0;
+function studioPlayableMime(track){
+ if(!track||studioBadMusic.has(track.id))return false;
+ const type=String(track.mime||"").toLowerCase();
+ const apple=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+ if(apple&&type!=="audio/mpeg")return false;
+ return !!type&&!!document.createElement("audio").canPlayType(type);
+}
+function studioWithTimeout(work,ms,message){
+ let timer;
+ return Promise.race([work,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(message)),ms)})]).finally(()=>clearTimeout(timer));
+}
+function studioMusicFailed(track){
+ if(track?.id)studioBadMusic.add(track.id);
+ note("Musique illisible ici. Essaie une autre piste MP3 ou importe un fichier MP3/M4A.");
+}
 const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"contain",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 let noticeTimer=0;
@@ -110,7 +127,7 @@ function open(context={}){
  $$("[data-cmd-extract-seconds]",root).forEach(button=>button.onclick=()=>{const length=Number(button.dataset.cmdExtractSeconds);state.duration=length;recorded=null;$("#cmdStudioDuration").value=length;$("#cmdStudioDurLabel").textContent=length+" s";$$("[data-cmd-extract-seconds]",root).forEach(b=>b.classList.toggle("selected",b===button));syncTrim();render(0);note("Extrait réglé sur "+length+" secondes.")});
  $("#cmdStudioMusicStart").oninput=e=>{state.musicStart=Number(e.target.value)||0;$("#cmdStudioMusicStartLabel").textContent=clock(state.musicStart);if(audition&&selectedTrack?.id===auditionId){try{audition.currentTime=state.musicStart}catch{}}if(previewAudio){try{previewAudio.currentTime=state.musicStart}catch{}}};
  $("#cmdStudioMedia").onchange=e=>{addFiles(e.target.files);e.target.value=""};
- $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&f.type.startsWith("audio/")){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;selectedTrack=null;state.musicStart=0;refreshSelectedMusic();note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
+ $("#cmdStudioAudioFile").onchange=e=>{const f=e.target.files?.[0];if(f&&f.size<=150*1024*1024&&(f.type.startsWith("audio/")||/\.(mp3|m4a|aac|wav)$/i.test(f.name))){musicFile=f;state.music="file";$("#cmdStudioMusic").value="file";$("#cmdStudioMusicName").textContent=f.name;selectedTrack=null;state.musicStart=0;refreshSelectedMusic();note("Musique chargée : "+f.name)}else if(f)note("Fichier audio invalide ou supérieur à 150 Mo");e.target.value=""};
  $$(".cmd-studio-choices button",root).forEach(b=>b.onclick=()=>choose(b));
  const ids={Headline:"headline",Subtitle:"subtitle",Emoji:"emoji",Title:"title",Effect:"effect",Transition:"transition",Filter:"filter",Duration:"duration",Music:"music",Volume:"volume",Server:"guildId"};
  for(const [id,key] of Object.entries(ids)){
@@ -435,7 +452,7 @@ function togglePreview(){
    previewAudio=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;
    previewAudio.onloadedmetadata=()=>{try{previewAudio.currentTime=Math.min((state.musicStart||0)+previewCursor,Math.max(0,(previewAudio.duration||0)-.2))}catch{}};
    previewAudio.onended=()=>{if(playing){try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2));void previewAudio.play().catch(()=>{})}catch{}}};
-   previewAudio.onerror=()=>note("Ce morceau ne peut pas être lu sur cet appareil. Essaie un MP3 ou un M4A/AAC.");
+   previewAudio.onerror=()=>{if(selectedTrack&&state.music==="library")studioMusicFailed(selectedTrack);else note("Audio illisible ici. Essaie un MP3/M4A.")};
    previewAudio.play().catch(e=>note("Musique non lisible ici : "+(e.name==="NotAllowedError"?"touche de nouveau Lecture pour autoriser le son.":"choisis un MP3 ou M4A/AAC compatible.")));
  }
  else if(state.music!=="none"&&state.music!=="library"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
@@ -447,16 +464,17 @@ function studioRecordingType(){
  return ["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp8,opus","video/webm;codecs=vp9,opus","video/webm"].find(m=>{try{return MediaRecorder.isTypeSupported(m)}catch{return false}})||"";
 }
 async function studioDecodedAudio(audio){
- const link=state.music==="library"?selectedTrack?.url:state.music==="file"&&musicFile?URL.createObjectURL(musicFile):"";
- if(!link)return null;
- try{
-  const res=await fetch(link,{credentials:"same-origin",cache:"no-store"});
-  if(!res.ok)throw Error("Musique indisponible ("+res.status+").");
-  const bytes=await res.arrayBuffer();
-  if(bytes.byteLength>150*1024*1024||!bytes.byteLength)throw Error("Fichier audio invalide ou trop gros.");
-  try{return await audio.decodeAudioData(bytes)}
-  catch{throw Error("Format audio non compatible avec ce navigateur. Utilise un MP3 ou M4A/AAC.")}
- }finally{if(link.startsWith("blob:"))URL.revokeObjectURL(link)}
+ if(state.music==="library"&&studioBadMusic.has(selectedTrack?.id))throw Error("Musique incompatible. Choisis une autre piste MP3.");
+ let bytes;
+ if(state.music==="file"&&musicFile)bytes=await musicFile.arrayBuffer();
+ else if(state.music==="library"&&selectedTrack){
+  const result=await fetch(selectedTrack.url,{credentials:"same-origin",cache:"no-store",signal:AbortSignal.timeout(18000)});
+  if(!result.ok)throw Error("Musique indisponible ("+result.status+").");
+  bytes=await result.arrayBuffer();
+ }else return null;
+ if(!bytes.byteLength||bytes.byteLength>24*1024*1024)throw Error("Utilise un MP3/M4A valide de moins de 24 Mo.");
+ try{return await studioWithTimeout(audio.decodeAudioData(bytes),14000,"Décodage musical trop long.")}
+ catch(e){throw Error("Le navigateur ne peut pas intégrer ce son. Essaie un autre MP3/M4A.")}
 }
 function studioRawVideoFallback(){
  if(clips.length!==1||!clips[0].video||state.music!=="none"||state.headline.trim()||state.subtitle.trim()||state.emoji.trim()||state.effect!=="none"||state.filter!=="natural")return null;
@@ -485,14 +503,13 @@ async function searchMusic(value){
   const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query),{credentials:"same-origin",cache:"no-store"});
   const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
   if(ticket!==musicSearchId)return;
-  const audio=document.createElement("audio");
-  musicResults=(Array.isArray(result.items)?result.items:[]).filter(track=>!track.mime||!!audio.canPlayType(track.mime));
+  musicResults=(Array.isArray(result.items)?result.items:[]).filter(studioPlayableMime);
   renderMusicSearch();
  }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
 }
 function renderMusicSearch(){
  const container=$("#cmdStudioMusicResults");container.replaceChildren();
- if(!musicResults.length){container.textContent="Aucun morceau avec une licence utilisable pour cette recherche. Essaie « piano », « classique », « instrumental » ou un autre style.";return}
+ if(!musicResults.length){container.textContent="Aucun MP3 compatible disponible pour cette recherche. Essaie « piano » ou importe un MP3/M4A autorisé.";return}
  for(const track of musicResults){
   const row=document.createElement("article");row.className="cmd-music-row";
   const play=document.createElement("button");play.type="button";play.className="cmd-music-play";play.textContent="▶";play.setAttribute("aria-label","Écouter "+track.title);play.onclick=()=>toggleAudition(track,play);
@@ -501,7 +518,7 @@ function renderMusicSearch(){
   const artist=document.createElement("small");artist.textContent=track.artist+" · "+track.license;
   const link=document.createElement("a");link.href=track.sourceUrl;link.rel="noopener noreferrer";link.target="_blank";link.textContent="Licence et crédits ↗";
   info.append(name,artist,link);
-  const add=document.createElement("button");add.type="button";add.className="cmd-music-add";add.textContent="＋ Ajouter";add.onclick=()=>useTrack(track);
+  const add=document.createElement("button");add.type="button";add.className="cmd-music-add";add.textContent="＋ Ajouter";add.disabled=studioBadMusic.has(track.id);add.onclick=()=>{void useTrack(track,add)};
   if(selectedTrack?.id===track.id){add.textContent="✓ Choisi";row.classList.add("chosen")}
   row.append(play,info,add);container.append(row);
  }
@@ -511,15 +528,29 @@ function toggleAudition(track,button){
  stop();stopAudition();auditionId=track.id;audition=new Audio(track.url);audition.preload="auto";audition.volume=state.volume/100;
  button.textContent="⏸";
  audition.onloadedmetadata=()=>{musicLength=Number.isFinite(audition.duration)?audition.duration:0;if(selectedTrack?.id===track.id)syncTrim();try{audition.currentTime=Math.min(state.musicStart||0,Math.max(0,musicLength-.2))}catch{}};
- audition.onerror=()=>{stopAudition();note("Musique non lisible sur cet appareil. Choisis un autre morceau ou importe ton MP3.")};
+ audition.onerror=()=>{stopAudition();studioMusicFailed(track);renderMusicSearch()};
  audition.onended=()=>stopAudition();
  audition.play().catch(e=>{stopAudition();note("L'écoute a échoué : "+e.message)});
 }
-function useTrack(track){
- selectedTrack={id:track.id,title:track.title,artist:track.artist,license:track.license,licenseUrl:track.licenseUrl,sourceUrl:track.sourceUrl,url:track.url,mime:track.mime};
- state.music="library";state.musicStart=0;$("#cmdStudioMusic").value="library";musicLength=0;
- stopAudition();renderMusicSearch();refreshSelectedMusic();
- note("🎵 Musique choisie : "+selectedTrack.title+". Appuie sur « Prévisualiser » pour écouter le montage.");
+async function useTrack(track,button){
+ if(!studioPlayableMime(track)){studioMusicFailed(track);return}
+ const turn=++studioMusicSelection;
+ if(button){button.disabled=true;button.textContent="Vérification…"}
+ const player=new Audio(track.url);player.preload="auto";player.volume=Math.max(.1,state.volume/100);
+ try{
+  await studioWithTimeout(player.play(),14000,"Morceau indisponible");
+  if(turn!==studioMusicSelection)return;
+  player.pause();
+  selectedTrack={id:track.id,title:track.title,artist:track.artist,license:track.license,licenseUrl:track.licenseUrl,sourceUrl:track.sourceUrl,url:track.url,mime:track.mime};
+  state.music="library";state.musicStart=0;$("#cmdStudioMusic").value="library";musicLength=0;
+  stopAudition();renderMusicSearch();refreshSelectedMusic();note("Musique vérifiée et ajoutée : "+track.title+".");
+ }catch(e){
+  if(e?.name==="NotAllowedError")note("Appuie de nouveau sur Ajouter pour autoriser le son.");
+  else studioMusicFailed(track);
+ }finally{
+  player.pause();player.removeAttribute("src");
+  if(button?.isConnected){button.disabled=studioBadMusic.has(track.id);button.textContent=studioBadMusic.has(track.id)?"Indisponible":"＋ Ajouter"}
+ }
 }
 function syncTrim(){
  const slider=$("#cmdStudioMusicStart");if(!slider)return;
@@ -600,7 +631,7 @@ async function exportVideo(options={}){
    // Start resume inside the user's click, before loading any audio over network.
    const ready=audio.resume();
    const decoded=(state.music==="library"||state.music==="file")?await studioDecodedAudio(audio):null;
-   await ready;
+   await studioWithTimeout(ready,7000,"Le moteur audio Safari ne démarre pas. Réessaie en touchant Publier.");
    const dest=audio.createMediaStreamDestination();
    if(decoded){
     source=audio.createBufferSource();source.buffer=decoded;source.loop=true;
@@ -624,18 +655,20 @@ async function exportVideo(options={}){
   });
   videoRecorder=rec;
   if(source)source.start(0,Math.min(state.musicStart||0,Math.max(0,source.buffer.duration-.05)));
-  const began=performance.now();
+  const began=performance.now();let lastProgress=-1;
   await new Promise((resolve,reject)=>{
    function frame(){try{
     const time=Math.min(state.duration,(performance.now()-began)/1000);
     render(time);
+    const second=Math.floor(time);
+    if(lastProgress!==second){lastProgress=second;if(typeof options.onProgress==="function")options.onProgress(second,Math.ceil(state.duration))}
     if(time>=state.duration||rec.state==="inactive"){resolve();return}
     requestAnimationFrame(frame)
    }catch(e){reject(e)}}
    requestAnimationFrame(frame);
   });
   if(rec.state!=="inactive")rec.stop();
-  await completed;
+  await studioWithTimeout(completed,12000,"Finalisation vidéo trop longue pour ce navigateur.");
   const type=String(rec.mimeType||mime).includes("mp4")?"video/mp4":"video/webm";
   const blob=new Blob(parts,{type});
   if(blob.size<1024)throw Error("L’encodeur a produit une vidéo vide.");
@@ -895,9 +928,12 @@ async function publishToFeed(){
  if(studioProfileGuild){note("Cette création appartient à un serveur privé et ne peut pas être publiée dans le fil public.");return}
  const b=document.getElementById("cmdStudioPostFeed");if(!b||b.disabled)return;
  if(!clips.length&&!state.headline.trim()){note("Ajoute au moins une vidéo ou une image.");return}
- b.disabled=true;const old=b.textContent;b.textContent="Préparation…";
+ b.disabled=true;const old=b.textContent;b.textContent="⏳ 0:00 / "+clock(state.duration);
  try{
-  if(!recorded){const ok=await exportVideo({download:false});if(!ok||!recorded)throw Error("La vidéo n'a pas pu être exportée sur cet appareil.")}
+  if(!recorded){
+   const ok=await exportVideo({download:false,onProgress:(sec,total)=>{if(b.isConnected)b.textContent="⏳ "+clock(sec)+" / "+clock(total)}});
+   if(!ok||!recorded)throw Error("Export impossible avec cette musique. Réessaie avec un MP3 ou sans musique.");
+  }
   if(!recorded.type.startsWith("video/"))throw Error("Pour publier dans le fil, exporte une vidéo.");
   if(recorded.size>60*1024*1024)throw Error("La vidéo dépasse 60 Mo.");
   b.textContent="Publication…";
