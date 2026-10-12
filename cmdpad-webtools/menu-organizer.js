@@ -17,6 +17,7 @@ move('Tableaux',[['#cmdTableOpen','Outils']]);
 move('Formats',[['#catalogAll','Outils'],['#catalogCurrent','Outils']]);
 move('Langages +',[['#cmdpadLangChoose','Langage'],['#cmdpadLangAuto','Langage']]);
 // Language A-Z: user requested the compact alphabetical submenu, with native language buttons preserved.
+let customGroup=null;
 const langMenu=get('Langage'),languageDrop=dropdown('Langage');const groups=window.CMDPAD_LANGUAGES||[];
 const entries=groups.flatMap(([category,raw])=>raw.split(';').map(entry=>{const [name,extensions]=entry.trim().split('|');return {category,name,extensions:(extensions||'').split(',').map(x=>x.trim()).filter(Boolean)}})).filter(v=>v.name);
 const collator=new Intl.Collator('fr',{sensitivity:'base',numeric:true});
@@ -43,6 +44,9 @@ for(const [letter,languages] of [...byLetter.entries()].sort((a,b)=>collator.com
  for(const entry of languages){const b=d.createElement('button');b.type='button';b.dataset.cmdLang=entry.name;b.setAttribute('role','menuitemradio');b.setAttribute('aria-checked','false');b.title='Extensions : '+entry.extensions.map(x=>'.'+x).join(', ')+' | '+entry.category;b.textContent=entry.name;b.onclick=e=>{e.stopPropagation();selectLang(entry);langMenu.classList.remove('open')};details.append(b)}
  existing.append(details);
 }
+customGroup=d.createElement('details');customGroup.className='cmd-lang-letter cmd-custom-language';const customSummary=d.createElement('summary');customSummary.textContent='Langages personnalisés ›';customGroup.append(customSummary);existing.append(customGroup);
+function renderCustom(item){if(!customGroup)return;const b=d.createElement('button');b.type='button';b.dataset.cmdLang=item.name;b.textContent=item.name;b.title='Extensions : '+(item.extensions||[]).map(x=>'.'+x).join(', ');b.onclick=e=>{e.stopPropagation();selectLang(item);langMenu.classList.remove('open')};(customGroup.querySelector('.cmd-lang-flyout')||customGroup).append(b)}
+try{const old=JSON.parse(localStorage.getItem('cmdpad-custom-languages')||'[]');if(Array.isArray(old))for(const item of old.slice(0,5000)){if(item?.name&&Array.isArray(item.extensions))renderCustom(item)}}catch{}
 const custom=d.createElement('button');custom.type='button';custom.textContent='Définir un langage personnalisé…';custom.onclick=e=>{e.stopPropagation();editCustom()};existing.append(custom);
 languageDrop.prepend(existing);languageDrop.append(native);
 const search=d.createElement('input');search.type='search';search.placeholder='Rechercher un langage…';search.className='cmd-language-filter';search.setAttribute('aria-label','Recherche de langue par nom ou extension');languageDrop.prepend(search);
@@ -54,7 +58,7 @@ group.hidden=!!value&&!visible;if(value&&visible)group.open=true;if(!value)group
 function editCustom(){const label=prompt('Nom du langage personnalisé :');if(!label)return;const text=prompt('Extensions séparées par des virgules, sans point :','custom')||'';
 const item={name:label.trim(),category:'Personnalisé',extensions:text.split(',').map(x=>x.trim().replace(/^\./,'')).filter(x=>/^[a-z0-9_-]+$/i.test(x))};
 if(!item.name)return;try{const saved=JSON.parse(localStorage.getItem('cmdpad-custom-languages')||'[]');saved.push(item);localStorage.setItem('cmdpad-custom-languages',JSON.stringify(saved))}catch{}
-selectLang(item);status('Langage personnalisé «'+item.name+'» enregistré sur cet appareil (association d’extensions uniquement, pas de coloration personnalisée).')}
+if(customGroup){const b=d.createElement('button');b.type='button';b.dataset.cmdLang=item.name;b.textContent=item.name;b.title='Extensions : '+item.extensions.map(x=>'.'+x).join(', ');b.onclick=e=>{e.stopPropagation();selectLang(item);langMenu.classList.remove('open')};(customGroup.querySelector('.cmd-lang-flyout')||customGroup).append(b)}selectLang(item);status('Langage personnalisé «'+item.name+'» enregistré sur cet appareil (association d’extensions uniquement, pas de coloration personnalisée).')}
 const macro=get('Macro'),macroDrop=dropdown('Macro');
 if(macro&&macroDrop){
 for(const disabled of macroDrop.querySelectorAll('button[disabled]'))disabled.remove();
