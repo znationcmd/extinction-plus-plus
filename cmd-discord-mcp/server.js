@@ -44,6 +44,7 @@ const databaseUrl=String(process.env.DATABASE_URL||"");
 const logoB64=String(process.env.CMD_DISCORD_LOGO_B64||"");
 const iconB64=String(process.env.CMD_DISCORD_ICON_B64||"");
 const cmdPwaPngCache=new Map();
+const cmdPwaSourceB64=logoB64||iconB64;
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
@@ -196,7 +197,7 @@ function html(res,body,status=200,headers={}){
     }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'">';
-    body=body.replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v=20261011pwa1"></script></body>');
+    body=body.replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
   }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
@@ -5150,7 +5151,7 @@ const httpServer=createServer(async(req,res)=>{
       return;
     }
         if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
-      sendJson(res,200,{id:"/dashboard",name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/pwa-icon-192.png?v="+cmdPwaRuntimeVersion,sizes:"192x192",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"maskable"},{src:"/app-icon.webp?v=5",sizes:"any",type:"image/webp",purpose:"any"}]},{"content-type":"application/manifest+json","cache-control":"no-cache"});return;
+      sendJson(res,200,{id:"/dashboard",name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/pwa-icon-192.png?v="+cmdPwaRuntimeVersion,sizes:"192x192",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"maskable"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"any"}]},{"content-type":"application/manifest+json","cache-control":"no-cache"});return;
     }
     if(req.method==="GET"&&url.pathname==="/api/pwa/version"){
       sendJson(res,200,{version:cmdPwaRuntimeVersion});return;
@@ -5160,17 +5161,17 @@ const httpServer=createServer(async(req,res)=>{
       res.end(readFileSync(new URL("./cmd-pwa-update.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&/^\/pwa-icon-(192|512)\.png$/.test(url.pathname)){
-      if(!iconB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
+      if(!cmdPwaSourceB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
       const size=Number(url.pathname.includes("-512.")?512:192);
       try{
-        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,sharp(Buffer.from(iconB64,"base64"),{failOn:"error"}).resize(size,size,{fit:"contain",background:"#140826",kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer());
+        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,sharp(Buffer.from(cmdPwaSourceB64,"base64"),{failOn:"error"}).resize(size,size,{fit:"contain",background:"#140826",kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer());
         const data=await cmdPwaPngCache.get(size);
         res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600,must-revalidate","x-content-type-options":"nosniff"});res.end(data);
       }catch(error){cmdPwaPngCache.delete(size);res.writeHead(500).end("CMD Sphere icon conversion unavailable");}
       return;
     }
     if(req.method==="GET"&&url.pathname==="/favicon.ico"){
-      const input=iconB64||logoB64;
+      const input=cmdPwaSourceB64;
       if(!input){res.writeHead(404,{"content-type":"text/plain"}).end("CMD Sphere icon not configured");return}
       try{
         const png=await sharp(Buffer.from(input,"base64"),{failOn:"error"}).resize(48,48,{fit:"contain",background:"#140826"}).png().toBuffer();
@@ -5186,7 +5187,8 @@ const httpServer=createServer(async(req,res)=>{
       if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
     }
     if(req.method==="GET"&&url.pathname==="/app-icon.png"){
-      if(!iconB64){res.writeHead(404).end("icon missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(iconB64,"base64"));return;
+      if(!cmdPwaSourceB64){res.writeHead(404).end("icon missing");return}
+      try{const png=await sharp(Buffer.from(cmdPwaSourceB64,"base64")).resize(192,192,{fit:"contain",background:"#140826"}).png().toBuffer();res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600"});res.end(png)}catch{res.writeHead(500).end("Icon conversion error")}return;
     }
     if(req.method==="GET"&&url.pathname==="/brand-logo.png"){
       if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
