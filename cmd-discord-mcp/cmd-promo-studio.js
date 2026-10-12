@@ -280,7 +280,7 @@ function addFiles(files){
   if(f.size>150*1024*1024){note(f.name+" dépasse 150 Mo.");continue}
   if(clips.length>=12){note("Maximum 12 photos ou vidéos par création.");break}
   const url=URL.createObjectURL(f),video=f.type.startsWith("video/"),element=document.createElement(video?"video":"img");
-  element.src=url;if(video){element.muted=true;element.loop=true;element.playsInline=true;element.preload="metadata"}else element.decoding="async";
+  if(video){element.muted=true;element.loop=true;element.playsInline=true;element.preload="metadata"}else element.decoding="async";
   clips.push({file:f,url,element,video});
   const first=clips.length===1&&clips[0]?.element===element;
   const onReady=()=>{
@@ -296,6 +296,7 @@ function addFiles(files){
    render(0);
   };
   if(video)element.onloadedmetadata=onReady;else element.onload=onReady;
+  element.src=url;
   count++;
  }
  if(count)note(count+" fichier(s) ajouté(s). Image entière par défaut : Format → Recadrage permet de zoomer.");
