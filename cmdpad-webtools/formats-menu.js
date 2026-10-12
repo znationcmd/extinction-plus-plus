@@ -78,6 +78,7 @@ if(!existing){
  if(was)return;menu.classList.add('open');const r=button.getBoundingClientRect();dropdown.style.left=Math.max(4,Math.min(r.left,innerWidth-270))+'px';dropdown.style.top=(r.bottom+1)+'px';});
 }
 const drop=menu.querySelector(':scope>.dropdown');
+drop.addEventListener('click',e=>e.stopPropagation());
 const title=d.createElement('strong');title.className='cmd-format-caption';title.textContent='Tous les formats · '+map.size+' extensions';drop.append(title);
 const current=d.createElement('div');current.className='cmd-format-current';current.textContent='Détection automatique prête';drop.append(current);
 const search=d.createElement('input');search.type='search';search.className='cmd-format-search';search.placeholder='Rechercher .json, PDF, image, vidéo…';drop.append(search);
