@@ -71,6 +71,7 @@ const native=new Map(oldButtons.map(b=>[b.dataset.cmd,b]));
 for(const [key,label] of [['new','Nouvel onglet'],['close','Fermer l’onglet actif'],['readonly','Lecture seule'],['panel','Liste des fonctions'],['saveas','Enregistrer sous…']]){
  const b=native.get(key);if(b){b.textContent=label;control.append(b)}
 }
+for(const b of oldButtons){if(!control.contains(b)){if(b.dataset.cmd)control.append(b);else{const label=b.textContent.trim();if(![...control.querySelectorAll('button')].some(x=>x.textContent.trim()===label))control.append(b)}}}
 menuButton(control,'Dupliquer le document actif',()=>{if(!working())return;capture();const doc=core[currentIndex()];if(!doc)return;const clone={...doc,id:Date.now()+Math.random(),name:doc.name.replace(/(\.[^.]+)?$/,'-copie$1'),dirty:true};core.splice(currentIndex()+1,0,clone);if(typeof loadDoc==='function')loadDoc(currentIndex()+1);persist();schedule();menu.classList.remove('open')});
 menuButton(control,'Renommer le document actif',()=>{if(!working())return;const doc=core[currentIndex()];if(!doc)return;const name=prompt('Nouveau nom du document :',doc.name);if(!name?.trim())return;filename.value=name.trim();filename.dispatchEvent(new Event('input',{bubbles:true}));persist();schedule();menu.classList.remove('open')});
 menuButton(control,'Fermer tous les autres',()=>{if(!working()||core.length<2)return;capture();const idx=currentIndex(),keep=core[idx],removed=core.filter((x,i)=>i!==idx),dirty=removed.filter(x=>x.dirty);
