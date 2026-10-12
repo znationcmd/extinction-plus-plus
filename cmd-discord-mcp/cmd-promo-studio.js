@@ -44,7 +44,7 @@ function open(context={}){
  '<div class="cmd-studio-card"><h3>4. Animations et filtres</h3><label>Effet<select id="cmdStudioEffect"><option value="zoom">Zoom dynamique</option><option value="pan">Mouvement caméra</option><option value="pulse">Pulsation</option><option value="slide">Glissement</option><option value="none">Aucun</option></select></label><label>Transition<select id="cmdStudioTransition"><option value="fade">Fondu</option><option value="slide">Glissé</option><option value="cut">Coupe directe</option></select></label><label>Filtre<select id="cmdStudioFilter"><option value="natural">Naturel</option><option value="vivid">Vif</option><option value="warm">Chaud</option><option value="retro">Rétro</option><option value="mono">Noir et blanc</option></select></label><label>Durée : <output id="cmdStudioDurLabel">12 s</output><input id="cmdStudioDuration" type="range" min="5" max="60" step="1" value="30"></label></div>'+
  '<div class="cmd-studio-card cmd-studio-music"><h3>5. 🎵 Ajouter un son</h3><button type="button" id="cmdStudioOpenMusic" class="cmd-studio-add-sound">🎵 Parcourir les vraies musiques　⌕</button><div id="cmdStudioSelectedSong" class="cmd-studio-selected-song" aria-live="polite">Aucun morceau choisi dans la bibliothèque.</div><label>Choix de la musique<select id="cmdStudioMusic"><option value="library">🎧 Musique de la bibliothèque</option><option value="file">Ma musique (fichier personnel)</option><option value="none">Sans musique</option></select></label><label class="cmd-studio-upload">♪ Importer mon son<input type="file" id="cmdStudioAudioFile" accept="audio/*"></label><small id="cmdStudioMusicName">Choisis un vrai morceau et écoute son aperçu.</small><div class="cmd-studio-extract-length" role="group" aria-label="Durée de la vidéo avec musique"><span>Longueur de l’extrait</span><button type="button" data-cmd-extract-seconds="30">30 secondes</button><button type="button" data-cmd-extract-seconds="60">1 minute</button></div><label>✂️ Début de l’extrait : <output id="cmdStudioMusicStartLabel">0:00</output><input id="cmdStudioMusicStart" type="range" min="0" max="240" step="1" value="0"></label><label>Volume : <output id="cmdStudioVolumeLabel">40 %</output><input id="cmdStudioVolume" type="range" min="0" max="100" step="5" value="40"></label><small>Les morceaux libres indiquent leur artiste et licence. Les chansons commerciales de TikTok ne sont pas accessibles sans contrat de licence.</small></div>'+
  '<div class="cmd-studio-card"><h3>6. Publicité de serveur</h3><label>Titre de publication<input id="cmdStudioTitle" maxlength="100"></label><label>Mon serveur<select id="cmdStudioServer"><option value="">Choisir mon serveur…</option></select></label><small>Pour publier dans CMD Sphere, tu dois être propriétaire ou administrateur de ton serveur.</small></div>'+
- '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div><section id="cmdStudioMusicSheet" class="cmd-studio-music-sheet" hidden role="dialog" aria-modal="true" aria-label="Choisir une musique"><div class="cmd-studio-music-panel"><header><b>🎵 Ajouter un son</b><button type="button" id="cmdStudioCloseMusic" aria-label="Fermer">✕</button></header><label class="cmd-studio-search">⌕ <input type="search" id="cmdStudioMusicQuery" placeholder="Rechercher une musique, un style…" autocomplete="off"></label><div class="cmd-studio-music-genres" id="cmdStudioMusicGenres"><button type="button" data-search-music="instrumental">Instrumental</button><button type="button" data-search-music="rock music">Rock</button><button type="button" data-search-music="pop music">Pop</button><button type="button" data-search-music="electronic music">Électro</button><button type="button" data-search-music="piano">Piano</button><button type="button" data-search-music="jazz">Jazz</button><button type="button" data-search-music="classical music">Classique</button><button type="button" data-search-music="hip hop music">Hip-hop</button></div><div id="cmdStudioMusicResults" class="cmd-studio-music-results"><p>Recherche des titres accessibles…</p></div><div class="cmd-studio-music-foot"><small>Catalogue : Wikimedia Commons · morceaux à licence libre identifiée. Écoute un titre avant de l’ajouter. Les obligations de crédit restent applicables.</small><button type="button" id="cmdStudioMusicDone">Terminer</button></div></div></section>';
+ '<div class="cmd-studio-actions"><button type="button" id="cmdStudioSaveDraft">💾 Brouillon</button><button type="button" id="cmdStudioLoadDraft">📂 Reprendre</button><button type="button" id="cmdStudioPng">🖼️ Image PNG</button><button type="button" id="cmdStudioExport" class="primary">🎬 Exporter avec musique</button><button type="button" id="cmdStudioPublish" class="primary" disabled>🚀 Publier sur CMD Sphere</button><div id="cmdStudioPublication"></div><p id="cmdStudioNotice" role="status" aria-live="polite"></p></div></div></div><section id="cmdStudioMusicSheet" class="cmd-studio-music-sheet" hidden role="dialog" aria-modal="true" aria-label="Choisir une musique"><div class="cmd-studio-music-panel"><header><b>🎵 Ajouter un son</b><button type="button" id="cmdStudioCloseMusic" aria-label="Fermer">✕</button></header><label class="cmd-studio-search">⌕ <input type="search" id="cmdStudioMusicQuery" placeholder="Rechercher une musique, un style…" autocomplete="off"></label><div class="cmd-studio-music-genres" id="cmdStudioMusicGenres"><button type="button" data-search-music="instrumental">Instrumental</button><button type="button" data-search-music="rock music">Rock</button><button type="button" data-search-music="pop music">Pop</button><button type="button" data-search-music="electronic music">Électro</button><button type="button" data-search-music="piano">Piano</button><button type="button" data-search-music="jazz">Jazz</button><button type="button" data-search-music="classical music">Classique</button><button type="button" data-search-music="hip hop music">Hip-hop</button></div><div id="cmdStudioMusicResults" class="cmd-studio-music-results"><p>Recherche des titres accessibles…</p></div><div class="cmd-studio-music-foot"><small>Wikimedia Commons (licences identifiées) · <a href="https://www.youtube.com/audiolibrary" target="_blank" rel="noopener noreferrer" style="color:#dcb5ff">Bibliothèque audio YouTube ↗</a> · télécharge une piste MP3 dont les droits autorisent la publication sur CMD Sphere, puis « Importer mon son ».</small><button type="button" id="cmdStudioMusicDone">Terminer</button></div></div></section>';
  // One clean video preview, right-side tools, and two main actions.
  const preview=$(".cmd-studio-preview",root),controls=$(".cmd-studio-controls",root);
  const surface=document.createElement("div");surface.className="cmd-studio-surface";
@@ -419,10 +419,32 @@ function togglePreview(){
    previewAudio=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));previewAudio.volume=state.volume/100;
    previewAudio.onloadedmetadata=()=>{try{previewAudio.currentTime=Math.min((state.musicStart||0)+previewCursor,Math.max(0,(previewAudio.duration||0)-.2))}catch{}};
    previewAudio.onended=()=>{if(playing){try{previewAudio.currentTime=Math.min(state.musicStart||0,Math.max(0,(previewAudio.duration||0)-.2));void previewAudio.play().catch(()=>{})}catch{}}};
-   previewAudio.play().catch(e=>note("Aperçu musical indisponible : "+e.message));
+   previewAudio.onerror=()=>note("Ce morceau ne peut pas être lu sur cet appareil. Essaie un MP3 ou un M4A/AAC.");
+   previewAudio.play().catch(e=>note("Musique non lisible ici : "+(e.name==="NotAllowedError"?"touche de nouveau Lecture pour autoriser le son.":"choisis un MP3 ou M4A/AAC compatible.")));
  }
  else if(state.music!=="none"&&state.music!=="library"&&state.volume){try{previewCtx=new (window.AudioContext||window.webkitAudioContext)();void previewCtx.resume();synthMusic(previewCtx,previewCtx.destination,state.duration)}catch(error){console.warn("[CMD studio audio]",error)}}
  playFrame();
+}
+/* Device-aware audio/video support for Safari, Android and desktop. */
+function studioRecordingType(){
+ if(typeof MediaRecorder==="undefined")return "";
+ return ["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp8,opus","video/webm;codecs=vp9,opus","video/webm"].find(m=>{try{return MediaRecorder.isTypeSupported(m)}catch{return false}})||"";
+}
+async function studioDecodedAudio(audio){
+ const link=state.music==="library"?selectedTrack?.url:state.music==="file"&&musicFile?URL.createObjectURL(musicFile):"";
+ if(!link)return null;
+ try{
+  const res=await fetch(link,{credentials:"same-origin",cache:"no-store"});
+  if(!res.ok)throw Error("Musique indisponible ("+res.status+").");
+  const bytes=await res.arrayBuffer();
+  if(bytes.byteLength>150*1024*1024||!bytes.byteLength)throw Error("Fichier audio invalide ou trop gros.");
+  try{return await audio.decodeAudioData(bytes)}
+  catch{throw Error("Format audio non compatible avec ce navigateur. Utilise un MP3 ou M4A/AAC.")}
+ }finally{if(link.startsWith("blob:"))URL.revokeObjectURL(link)}
+}
+function studioRawVideoFallback(){
+ if(clips.length!==1||!clips[0].video||state.music!=="none"||state.headline.trim()||state.subtitle.trim()||state.emoji.trim()||state.effect!=="none"||state.filter!=="natural")return null;
+ const file=clips[0].file;return file.size<=60*1024*1024&&["video/mp4","video/webm"].includes(file.type)?file:null;
 }
 function clock(seconds){
  const t=Math.max(0,Math.floor(Number(seconds)||0));return Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
@@ -448,7 +470,7 @@ async function searchMusic(value){
   const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
   if(ticket!==musicSearchId)return;
   const audio=document.createElement("audio");
-  musicResults=(Array.isArray(result.items)?result.items:[]).filter(track=>!track.mime||audio.canPlayType(track.mime)!=="");
+  musicResults=(Array.isArray(result.items)?result.items:[]).filter(track=>!track.mime||!!audio.canPlayType(track.mime));
   renderMusicSearch();
  }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
 }
@@ -539,43 +561,84 @@ async function exportGif(options={}){
  finally{btn.disabled=false}
 }
 async function exportVideo(options={}){
- if($("#cmdStudioExport").disabled)return;stop();note("Préparation de la vidéo et de la musique…");
- if(!canvas.captureStream||!window.MediaRecorder){note("L’export vidéo n’est pas pris en charge par ce navigateur. Tu peux enregistrer l’affiche PNG.");return}
- const type=["video/mp4;codecs=avc1.42E01E,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(x=>MediaRecorder.isTypeSupported(x));
- if(!type){note("Export vidéo indisponible sur ce navigateur. Utilise l’export PNG ou un navigateur compatible.");return}
- const exportButton=$("#cmdStudioExport");exportButton.disabled=true;$("#cmdStudioPublish").disabled=true;
- let soundtrack=null,source=null,audio=null,dest=null,stream=null;
+ const button=$("#cmdStudioExport"),pub=$("#cmdStudioPublish");
+ if(button?.disabled)return false;
+ stop();recorded=null;note("Préparation de la vidéo pour ton appareil…");
+ const mime=studioRecordingType();
+ if(!canvas.captureStream||!mime){
+  const raw=studioRawVideoFallback();
+  if(raw){recorded=raw;if(options.download!==false)await saveOnDevice(raw,raw.name);note("Vidéo d’origine disponible.");return true}
+  note("L’encodage vidéo n’est pas pris en charge dans ce navigateur. Actualise Safari, Chrome, Edge ou Firefox.");return false;
+ }
+ button.disabled=true;if(pub)pub.disabled=true;
+ let audio=null,source=null,stream=null,rec=null;
  try{
-  render(0);stream=canvas.captureStream(24);audio=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();dest=audio.createMediaStreamDestination();
-  if((state.music==="file"&&musicFile)||(state.music==="library"&&selectedTrack)){
-    soundtrack=new Audio(state.music==="library"?selectedTrack.url:URL.createObjectURL(musicFile));soundtrack.preload="auto";soundtrack.volume=1;
-    await new Promise((resolve,reject)=>{if(soundtrack.readyState>=1)return resolve();soundtrack.onloadedmetadata=resolve;soundtrack.onerror=()=>reject(Error("Le morceau n’est plus disponible."));setTimeout(()=>reject(Error("Délai de chargement audio dépassé.")),12000)});
-    soundtrack.currentTime=Math.min(state.musicStart||0,Math.max(0,(soundtrack.duration||0)-.2));
-    soundtrack.onended=()=>{if(videoRecorder?.state==="recording"){try{soundtrack.currentTime=Math.min(state.musicStart||0,Math.max(0,(soundtrack.duration||0)-.2));void soundtrack.play().catch(()=>{})}catch{}}};
-    source=audio.createMediaElementSource(soundtrack);const volume=audio.createGain();volume.gain.value=state.volume/100;source.connect(volume);volume.connect(dest);
-  }else synthMusic(audio,dest,state.duration);
-  const combined=new MediaStream([...stream.getVideoTracks(),...dest.stream.getAudioTracks()]);
-  const parts=[],rec=new MediaRecorder(combined,{mimeType:type,videoBitsPerSecond:2700000});
-  videoRecorder=rec;
-  const result=new Promise((resolve,reject)=>{rec.ondataavailable=e=>{if(e.data?.size)parts.push(e.data)};rec.onerror=e=>reject(e.error||Error("Enregistrement interrompu"));rec.onstop=()=>resolve(new Blob(parts,{type:type.startsWith("video/mp4")?"video/mp4":"video/webm"}))});
-  rec.start(500);if(soundtrack)await soundtrack.play();
-  let begin=performance.now();
-  await new Promise(resolve=>{
-   const frame=()=>{
-    const t=Math.min(state.duration,(performance.now()-begin)/1000);render(t);
-    if(t>=state.duration||rec.state==="inactive"){resolve();return}
-    requestAnimationFrame(frame);
-   };requestAnimationFrame(frame);
+  render(0);stream=canvas.captureStream(24);
+  const tracks=[...stream.getVideoTracks()];
+  if(!tracks.length)throw Error("Capture vidéo impossible.");
+  const needsAudio=state.volume>0&&((state.music==="file"&&musicFile)||(state.music==="library"&&selectedTrack)||["electro","epic","chill"].includes(state.music));
+  if(needsAudio){
+   const API=window.AudioContext||window.webkitAudioContext;
+   if(!API)throw Error("Le mixage audio n’est pas disponible sur cet appareil.");
+   audio=new API();
+   // Start resume inside the user's click, before loading any audio over network.
+   const ready=audio.resume();
+   const decoded=(state.music==="library"||state.music==="file")?await studioDecodedAudio(audio):null;
+   await ready;
+   const dest=audio.createMediaStreamDestination();
+   if(decoded){
+    source=audio.createBufferSource();source.buffer=decoded;source.loop=true;
+    source.loopStart=Math.min(state.musicStart||0,Math.max(0,decoded.duration-.15));source.loopEnd=decoded.duration;
+    const volume=audio.createGain();volume.gain.value=state.volume/100;
+    source.connect(volume);volume.connect(dest);
+   }else synthMusic(audio,dest,state.duration);
+   tracks.push(...dest.stream.getAudioTracks());
+  }
+  const combined=new MediaStream(tracks),parts=[];
+  let error=null;
+  for(const format of [mime,mime.split(";")[0],""]){
+   try{const candidate=new MediaRecorder(combined,format?{mimeType:format,videoBitsPerSecond:2500000}:{videoBitsPerSecond:2500000});candidate.start(600);rec=candidate;break}
+   catch(e){error=e}
+  }
+  if(!rec)throw Error("Format d’enregistrement non accepté : "+(error?.message||"inconnu"));
+  const completed=new Promise((resolve,reject)=>{
+   rec.ondataavailable=e=>{if(e.data?.size)parts.push(e.data)};
+   rec.onerror=e=>reject(e.error||Error("Enregistrement interrompu"));
+   rec.onstop=resolve;
   });
-  if(rec.state!=="inactive")rec.stop();const blob=await result;
-  if(!blob.size)throw Error("Le navigateur a créé une vidéo vide.");
+  videoRecorder=rec;
+  if(source)source.start(0,Math.min(state.musicStart||0,Math.max(0,source.buffer.duration-.05)));
+  const began=performance.now();
+  await new Promise((resolve,reject)=>{
+   function frame(){try{
+    const time=Math.min(state.duration,(performance.now()-began)/1000);
+    render(time);
+    if(time>=state.duration||rec.state==="inactive"){resolve();return}
+    requestAnimationFrame(frame)
+   }catch(e){reject(e)}}
+   requestAnimationFrame(frame);
+  });
+  if(rec.state!=="inactive")rec.stop();
+  await completed;
+  const type=String(rec.mimeType||mime).includes("mp4")?"video/mp4":"video/webm";
+  const blob=new Blob(parts,{type});
+  if(blob.size<1024)throw Error("L’encodeur a produit une vidéo vide.");
+  if(blob.size>60*1024*1024)throw Error("Vidéo de plus de 60 Mo : réduis sa durée.");
   recorded=blob;
-  if(recordedUrl)URL.revokeObjectURL(recordedUrl);recordedUrl=URL.createObjectURL(blob);
-  $("#cmdStudioPublish").disabled=blob.size>60*1024*1024;
-  if(options.download!==false)blobDownload(blob,"CMD-Sphere-Video."+(blob.type==="video/mp4"?"mp4":"webm"));
-  note("Vidéo prête sur ton appareil ("+(blob.size/1048576).toFixed(1)+" Mo).");return true;
- }catch(e){console.error("[CMD Studio export]",e);note("Export impossible : "+(e.message||e)+". Essaie le format image PNG.");return false}
- finally{soundtrack?.pause();if(soundtrack?.src?.startsWith("blob:"))URL.revokeObjectURL(soundtrack.src);stream?.getTracks().forEach(t=>t.stop());try{await audio?.close()}catch{};exportButton.disabled=false;videoRecorder=null}
+  if(recordedUrl)URL.revokeObjectURL(recordedUrl);
+  recordedUrl=URL.createObjectURL(blob);
+  if(pub)pub.disabled=false;
+  if(options.download!==false)await saveOnDevice(blob,"CMD-Sphere-Video."+(type==="video/mp4"?"mp4":"webm"));
+  note("Vidéo prête ("+(blob.size/1048576).toFixed(1)+" Mo).");
+  return true;
+ }catch(error){console.error("[CMD Studio export]",error);note("Export impossible : "+(error?.message||error)+". Essaye un MP3 ou un export sans musique.");return false}
+ finally{
+  if(rec?.state==="recording")try{rec.stop()}catch{}
+  try{source?.stop()}catch{}
+  stream?.getTracks().forEach(t=>t.stop());
+  try{await audio?.close()}catch{}
+  button.disabled=false;videoRecorder=null;
+ }
 }
 async function loadServers(){
  try{
