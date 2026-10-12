@@ -325,7 +325,7 @@ function render(){
  box.querySelector('#csm-identity')?.addEventListener('submit',saveIdentity);
  if(currentTab==='channels'){
   box.querySelector('#csm-open-create')?.addEventListener('click',()=>revealChannelCreate('text'));
-  box.querySelector('#csm-reorder-open')?.addEventListener('click',openChannelReorderChooser);
+  box.querySelector('#csm-reorder-open')?.setAttribute('aria-haspopup','dialog');
  }
  const createForm=box.querySelector('#csm-create-channel');
  if(createForm){
@@ -605,6 +605,17 @@ function revealChannelCreate(kind='text'){
  if(select){select.value=kind;select.dispatchEvent(new Event('change',{bubbles:true}))}
  form.scrollIntoView({block:'center',behavior:'smooth'});form.querySelector('[name="name"]')?.focus({preventScroll:true});
 }
+
+// One delegated capture listener survives every mobile modal rerender.
+document.addEventListener('click',function cmdReorderTap(e){
+ const button=e.target?.closest?.('#csm-reorder-open');
+ if(!button||!button.isConnected||!button.closest('#serverSettingsModal'))return;
+ e.preventDefault();e.stopImmediatePropagation();
+ try{openChannelReorderChooser()}catch(error){
+   console.error('[CMD Sphere] Ouverture Réorganiser :',error);
+   notify('Impossible d’ouvrir Réorganiser : '+(error?.message||'erreur inconnue'),false);
+ }
+},true);
 
 // Local CMD Sphere drag-and-drop. Native channel/category ordering is never sent to Discord.
 function openChannelReorderChooser(){
