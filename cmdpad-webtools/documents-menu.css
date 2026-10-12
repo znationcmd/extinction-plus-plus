@@ -1,0 +1,16 @@
+/* Documents menu: Notepad++ style flyouts and opened file list. */
+.cmd-docs-group{position:relative}
+.cmd-docs-trigger{display:block!important;width:100%!important;text-align:left!important;background:transparent!important;padding:8px 11px!important}
+.cmd-docs-group.expanded>.cmd-docs-trigger,.cmd-docs-trigger:hover{background:#dceaff!important}
+.cmd-docs-fly{display:none;position:fixed;z-index:999999;width:260px;max-width:95vw;overflow:auto;background:#fff;color:#172339;box-shadow:0 5px 18px #0004;border:1px solid #a8b7c9;padding:5px;box-sizing:border-box}
+.cmd-docs-group.expanded>.cmd-docs-fly{display:block}
+.cmd-docs-fly>button,.cmd-docs-recent>button{display:block!important;width:100%!important;min-width:0!important;text-align:left!important;background:#fff!important;color:#172339!important;white-space:normal!important;overflow-wrap:anywhere;padding:7px 9px!important}
+.cmd-docs-fly>button:hover,.cmd-docs-recent>button:hover{background:#e0eeff!important}
+.cmd-docs-sep{font-weight:600;padding:8px;border-top:1px solid #ddd;font-size:11px;color:#51657c}
+.cmd-docs-recent{max-height:45vh;overflow-y:auto;scrollbar-width:thin}
+.cmd-docs-recent>button.active{background:#e4f1ff!important;font-weight:650}
+.cmd-docs-dialog{width:min(800px,94vw);max-height:85vh;overflow:auto;padding:18px;background:white;color:#17273e;border:1px solid #abbdd0;border-radius:7px}
+.cmd-docs-results{max-height:55vh;overflow:auto}
+.cmd-docs-row{display:flex;align-items:center;gap:5px;padding:6px 0;border-bottom:1px solid #e4e8f0;flex-wrap:wrap}
+.cmd-docs-row>span{flex:1;min-width:140px;word-break:break-word}
+.cmd-docs-row>button,.cmd-docs-dialog>button{padding:6px;border:1px solid #bac7d8;border-radius:4px;background:#edf5ff;color:#17273e}
