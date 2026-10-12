@@ -325,7 +325,15 @@ function render(){
  box.querySelector('#csm-identity')?.addEventListener('submit',saveIdentity);
  if(currentTab==='channels'){
   box.querySelector('#csm-open-create')?.addEventListener('click',()=>revealChannelCreate('text'));
-  box.querySelector('#csm-reorder-open')?.setAttribute('aria-haspopup','dialog');
+  const reorderButton=box.querySelector('#csm-reorder-open');
+  if(reorderButton){
+   reorderButton.setAttribute('aria-haspopup','dialog');
+   reorderButton.addEventListener('click',e=>{
+    e.preventDefault();e.stopPropagation();
+    try{openChannelReorderChooser()}
+    catch(error){console.error('[CMD Sphere] Réorganiser :',error);notify('Impossible d’ouvrir Réorganiser : '+(error?.message||'erreur inconnue'),false)}
+   });
+  }
  }
  const createForm=box.querySelector('#csm-create-channel');
  if(createForm){
@@ -606,17 +614,7 @@ function revealChannelCreate(kind='text'){
  form.scrollIntoView({block:'center',behavior:'smooth'});form.querySelector('[name="name"]')?.focus({preventScroll:true});
 }
 
-// One delegated capture listener survives every mobile modal rerender.
-document.addEventListener('click',function cmdReorderTap(e){
- const button=e.target?.closest?.('#csm-reorder-open');
- if(!button||!button.isConnected||!button.closest('#serverSettingsModal'))return;
- e.preventDefault();e.stopImmediatePropagation();
- try{openChannelReorderChooser()}catch(error){
-   console.error('[CMD Sphere] Ouverture Réorganiser :',error);
-   notify('Impossible d’ouvrir Réorganiser : '+(error?.message||'erreur inconnue'),false);
- }
-},true);
-
+// Réorganiser is bound directly to its current button on every modal render.
 // Local CMD Sphere drag-and-drop. Native channel/category ordering is never sent to Discord.
 function openChannelReorderChooser(){
  if(!isNative()||!canEditChannels()){notify('Réorganiser nécessite la permission Gérer les salons sur CMD Sphere.',false);return}
