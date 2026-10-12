@@ -3,7 +3,6 @@
 'use strict';
 const d=document,root=d.documentElement,bar=d.querySelector('.menubar'),toolbar=d.querySelector('.toolbar'),workspace=d.querySelector('.workspace'),app=d.querySelector('.app');
 if(!bar||!toolbar||!workspace||!app||window.CMDPAD_DEVICE_ADAPTER)return;
-const menuButtons=[...bar.querySelectorAll(':scope>.menu>button')];
 const menuRoot=button=>button.closest('.menubar>.menu');
 let mode='';
 function classify(){
@@ -40,11 +39,11 @@ const mobileBar=d.createElement('nav');mobileBar.id='cmdpadMobileBar';mobileBar.
 function quick(text,action){const b=d.createElement('button');b.type='button';b.textContent=text;b.onclick=e=>{e.preventDefault();try{action(e,b)}catch(err){const st=d.getElementById('status');if(st)st.textContent=String(err.message||err)}};mobileBar.append(b);return b}
 const byAction=action=>[...d.querySelectorAll('.menubar .dropdown>button[data-action]')].find(b=>b.dataset.action===action);
 quick('📂 Ouvrir',()=>{const input=d.getElementById('openInput');if(input)input.click();else byAction('open')?.click()});
-quick('💾 Enregistrer',()=>byAction('save')?.click()||d.getElementById('saveBtn')?.click());
+quick('💾 Enregistrer',()=>(byAction('save')||d.getElementById('saveBtn'))?.click());
 quick('🔎 Chercher',()=>{const f=d.getElementById('find');if(f){f.focus();f.scrollIntoView({block:'nearest',behavior:'instant'})}else byAction('findfocus')?.click()});
 quick('☰ Fichiers',(_,b)=>{const on=workspace.classList.toggle('cmd-mobile-side');b.classList.toggle('cmdpad-active',on);const side=d.getElementById('sidePane');if(side)side.style.display=on?'flex':''});
-quick('↶ Annuler',()=>byAction('undo')?.click()||d.getElementById('undoBtn')?.click());
-quick('↷ Rétablir',()=>byAction('redo')?.click()||d.getElementById('redoBtn')?.click());
+quick('↶ Annuler',()=>(byAction('undo')||d.getElementById('undoBtn'))?.click());
+quick('↷ Rétablir',()=>(byAction('redo')||d.getElementById('redoBtn'))?.click());
 quick('☷ Outils',(_,b)=>{const off=toolbar.style.display==='none';toolbar.style.setProperty('display',off?'flex':'none','important');b.classList.toggle('cmdpad-active',!off)});
 app.insertBefore(mobileBar,workspace);
 let scheduled=0;const schedule=()=>{cancelAnimationFrame(scheduled);scheduled=requestAnimationFrame(update)};
