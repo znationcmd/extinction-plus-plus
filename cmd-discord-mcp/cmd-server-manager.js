@@ -780,7 +780,9 @@ function openChannelReorderMode(mode){
   if(drag)stop();
   const row=grip.closest('.csm-sort-row');if(!row)return;
   drag={row,pointer:e.pointerId,x:e.clientX,clientX:e.clientX,startY:e.clientY,y:e.clientY,started:false,before:snapshot(),timer:setTimeout(start,e.pointerType==='mouse'?0:240)};
-  try{grip.setPointerCapture(e.pointerId)}catch{}
+  // Capture on the stationary overlay: the row and grip can change DOM parents
+  // while dragging between categories, which otherwise drops pointer capture on iOS.
+  try{page.setPointerCapture(e.pointerId)}catch{}
  },{signal:controller.signal});
  document.addEventListener('pointermove',onMove,{passive:false,signal:controller.signal});
  document.addEventListener('pointerup',onUp,{signal:controller.signal});
