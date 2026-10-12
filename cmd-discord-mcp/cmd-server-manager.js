@@ -711,8 +711,14 @@ async function menu(){
  const root=document.createElement("div");root.id="csm-server-menu";
  const img=/^(https?:\/\/|data:image\/)/i.test(icon)?'<img class="csm-server-menu-icon" src="'+escapeHtml(icon)+'" alt="">':'<span class="csm-server-menu-icon" aria-hidden="true">🏠</span>';
  const photo=/^(https?:\/\/|data:image\/)/i.test(banner)?'<div class="csm-server-cover" style="background-image:linear-gradient(#1e1d25a0,#1e1d25ee),url('+escapeHtml(banner)+')"></div>':'';
- const shortcut=[["boost","◈","Boost"],["invite","♙＋","Inviter"],["notifications","♧","Notifications"],["overview","⚙","Paramètres"]]
- .map(([key,ico,label])=>'<button type="button" data-csm-quick="'+key+'"><b>'+ico+'</b><small>'+label+'</small></button>').join("");
+ const shortcutIcons={
+  boost:'<svg aria-hidden="true" viewBox="0 0 40 40" fill="none"><path d="M20 3 32 15v14L20 37 8 29V15L20 3Z" stroke="currentColor" stroke-width="4"/><path d="m20 11 6 6v10l-6 4-6-4V17l6-6Z" stroke="currentColor" stroke-width="2.7"/></svg>',
+  invite:'<svg aria-hidden="true" viewBox="0 0 40 40" fill="none"><circle cx="16" cy="12" r="6" fill="currentColor"/><path d="M4 30c0-8 4-12 12-12s11 3 11 11" fill="currentColor"/><circle cx="29" cy="15" r="5" fill="currentColor"/><path d="M31 24v13M24.5 30.5h13" stroke="currentColor" stroke-width="3.7" stroke-linecap="round"/></svg>',
+  notifications:'<svg aria-hidden="true" viewBox="0 0 40 40" fill="currentColor"><path d="M20 5c-7 0-11 5-11 12v7l-4 6h30l-4-6v-7c0-7-4-12-11-12Z"/><path d="M15 33c.4 3 2 4.5 5 4.5s4.6-1.5 5-4.5Z"/></svg>',
+  settings:'<svg aria-hidden="true" viewBox="0 0 40 40" fill="currentColor"><path d="m16 2 8 0 1.3 5.4 4.1 2.4 5.3-1.4 4 7-4.1 4 0 4.7 4.1 4-4 7-5.3-1.4-4.1 2.4L24 41h-8l-1.3-5.4-4.1-2.4-5.3 1.4-4-7 4.1-4v-4.7l-4.1-4 4-7 5.3 1.4 4.1-2.4L16 2Z" transform="translate(1 0) scale(.95)"/><circle cx="20" cy="20" r="7" fill="#3b3942"/></svg>'
+ };
+ const shortcut=[["boost","Boost"],["invite","Inviter"],["notifications","Notifications"],["settings","Paramètres"]]
+ .map(([key,label])=>'<button type="button" data-csm-quick="'+key+'" aria-label="'+label+'"><b>'+shortcutIcons[key]+'</b><small>'+label+'</small></button>').join("");
  const row=(key,ico,label,extra="")=>'<button type="button" data-csm-quick="'+key+'"><span class="csm-server-row-ico">'+ico+'</span><span class="csm-server-row-name">'+label+'</span>'+extra+'<span class="csm-server-chevron">›</span></button>';
  root.innerHTML='<div class="csm-server-menu-shade"></div><section class="csm-server-menu-body" role="dialog" aria-modal="true" aria-label="Menu du serveur">'+
   '<div class="csm-server-menu-handle"></div>'+photo+
@@ -737,6 +743,7 @@ async function menu(){
   const key=button.dataset.csmQuick;
   if(key==="close"){shut();return}
   if(key==="ownership"){shut();await open("overview");return}
+  if(key==="settings"){shut();await open("home");return}
   if(key==="delete-guild"){shut();try{await getContext();await submitGuildLifecycle("delete")}catch(e){notify(e.message,false)}return}
   if(key==="leave-guild"){shut();try{await getContext();await submitGuildLifecycle("leave")}catch(e){notify(e.message,false)}return}
   if(key==="hosting"){shut();if(typeof window.cmdOpenHostingPanel==="function")window.cmdOpenHostingPanel(gid);else notify("Gestion CMD Hosting indisponible, actualise la page",false);return;}
