@@ -395,3 +395,81 @@ body.csm-crop-open{overflow:hidden!important}
  background:#44354e;color:white;font:700 16px system-ui}
 #csm-channel-context .csm-channel-context-status{font:13px system-ui;color:#d7c5ef;padding:0 8px}
 body.csm-channel-context-open{overflow:hidden!important}
+
+/* CMD Sphere 2026-10-12 — final iPhone scroll reachability */
+@media(max-width:850px){
+ html body .sphere-app .server-rail{
+  position:fixed!important;top:0!important;bottom:0!important;
+  display:flex!important;flex-direction:column!important;
+  height:100dvh!important;max-height:100dvh!important;min-height:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+  padding-bottom:calc(185px + env(safe-area-inset-bottom,0px))!important;
+ }
+ html body .sphere-app .server-rail #railGuilds{
+  flex:0 0 auto!important;min-height:min-content!important;overflow:visible!important;
+ }
+ html body .sphere-app .cmd-server-channels{
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;scroll-padding-bottom:160px!important;
+  padding-bottom:calc(225px + env(safe-area-inset-bottom,0px))!important;
+ }
+ #serverSettingsModal.csm-open{
+  position:fixed!important;inset:0!important;height:100dvh!important;
+  max-height:100dvh!important;overflow:hidden!important;
+ }
+ #serverSettingsModal.csm-open>.add-card,
+ #serverSettingsModal.csm-open #serverSettingsBody,
+ #serverSettingsModal.csm-open .csm-root{
+  display:flex!important;flex-direction:column!important;
+  min-height:0!important;max-height:100%!important;height:100%!important;
+  overflow:hidden!important;
+ }
+ #serverSettingsModal.csm-open .csm-header{
+  flex:0 0 auto!important;min-height:64px!important;
+  padding-top:max(12px,env(safe-area-inset-top,0px))!important;
+ }
+ #serverSettingsModal.csm-open .csm-columns{
+  display:flex!important;flex-direction:column!important;
+  flex:1 1 auto!important;height:auto!important;max-height:none!important;
+  min-height:0!important;overflow:hidden!important;
+ }
+ #serverSettingsModal.csm-open .csm-mobile-index .csm-nav,
+ #serverSettingsModal.csm-open .csm-mobile-detail .csm-main{
+  flex:1 1 auto!important;display:block!important;min-height:0!important;
+  height:auto!important;max-height:none!important;overflow-y:auto!important;
+  overflow-x:hidden!important;overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))!important;
+  padding-bottom:calc(180px + env(safe-area-inset-bottom,0px))!important;
+ }
+ #serverSettingsModal.csm-open .csm-mobile-index .csm-main,
+ #serverSettingsModal.csm-open .csm-mobile-detail .csm-nav{display:none!important}
+ #serverSettingsModal.csm-open .csm-mobile-detail .csm-form:last-child{
+  margin-bottom:calc(70px + env(safe-area-inset-bottom,0px))!important;
+ }
+ #csm-channel-context .csm-channel-context-sheet{
+  max-height:calc(100dvh - 25px)!important;
+  overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+  padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important;
+  overscroll-behavior:contain!important;
+ }
+ .csm-crop-screen{
+  max-height:100dvh!important;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;
+  align-items:center!important;
+ }
+ .csm-crop-card{
+  max-height:calc(100dvh - 25px - env(safe-area-inset-bottom,0px))!important;
+  min-height:0!important;overflow-y:auto!important;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))!important;
+  -webkit-overflow-scrolling:touch!important;
+ }
+}
+@supports not (height:100dvh){
+ @media(max-width:850px){
+  #serverSettingsModal.csm-open,html body .sphere-app .server-rail{height:100vh!important;max-height:100vh!important}
+ }
+}
