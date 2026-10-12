@@ -8,10 +8,13 @@ const safe=v=>encodeURIComponent(String(v||''));
 const notify=(msg,ok=true)=>{try{if(typeof toast==='function')toast(msg,ok);else alert(msg)}catch{alert(msg)}};
 let ctx=null,currentTab='home',newIcon=null,editing=null,opening=false,hostingRoleData=null,nativeMemberCache=null;
 const config=[
-  ['PARAMÈTRES',['overview|ⓘ|Vue d’ensemble','channels|☰|Salons et catégories','roles|🛡️|Rôles','invites|🔗|Invitations']],
-  ['COMMUNAUTÉ',['members|👥|Membres','appearance|🎨|Personnalisation','integrations|🧩|Intégrations']],
-  ['MODÉRATION',['security|🔒|Permissions et sécurité','automod|⚔️|AutoMod','audit|📋|Journal d’audit']]
+ ['Paramètres',['overview|ⓘ|Vue d’ensemble','channels|☰|Salons','integrations|▣|Intégrations','tag|◇|Tag du serveur','template|◉|Modèle de serveur']],
+ ['Expression',['emoji|☻|Émoji','stickers|▧|Autocollants']],
+ ['Personnes',['members|♟|Membres','roles|♙|Rôles','invites|♧|Invitations']],
+ ['Modération',['moderation|⚒|Modération','automod|◈|AutoMod','audit|▤|Logs du serveur','bans|⚑|Bannissements','security|⬡|Sécurité']],
+ ['Communauté',['community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
+const settingTitle=tab=>{for(const [,items] of config)for(const item of items){const [id,,label]=item.split('|');if(id===tab)return label}return 'Paramètres du serveur'};
 async function request(path,body){
  const res=await fetch(path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
  let json={};try{json=await res.json()}catch{}
@@ -50,7 +53,7 @@ function overview(){
  const g=ctx.data.guild;
  if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Le nom et l’icône de ce serveur externe sont gérés sur la plateforme liée. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
  return intro('Vue d’ensemble','Nom, image et paramètres du serveur CMD Sphere.')+
- '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Format rond, image entière visible</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
+ '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Déplace la photo ou pince avec deux doigts pour zoomer avant d’enregistrer.</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
  field('Nom du serveur','name',g.name,'required maxlength="100" '+(ctx.owner?'':'disabled'))+
  '<label class="csm-field">Description<textarea name="description" maxlength="1000" '+(ctx.owner?'':'disabled')+'>'+escapeHtml(g.server_description||'')+'</textarea></label>'+
  '<label class="csm-field">Notifications par défaut<select name="defaultNotifications" '+(ctx.owner?'':'disabled')+'><option value="mentions" '+(g.default_notifications==='all'?'':'selected')+'>Mentions uniquement</option><option value="all" '+(g.default_notifications==='all'?'selected':'')+'>Tous les messages</option></select></label>'+
@@ -93,6 +96,15 @@ function roles(){
  return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier et attribuer</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
+ if(currentTab==='tag')return intro('Tag du serveur','Personnalise l’identité du serveur sur CMD Sphere.')+(isNative()?'<a class="csm-btn primary" href="/profile?server='+safe(id())+'">Ouvrir le profil du serveur</a>':info('Option disponible uniquement pour les serveurs CMD Sphere.'));
+ if(currentTab==='template')return intro('Modèle de serveur','Crée un nouveau serveur à partir d’un modèle.')+info('Utilise le bouton Créer un serveur et choisis ton modèle. Un modèle ne modifie pas le serveur existant.');
+ if(currentTab==='emoji')return intro('Émoji','Gère les émojis du serveur.')+info('Ouvre un salon du serveur puis le sélecteur Émoji pour accéder aux émojis disponibles. Les paramètres spécifiques seront ajoutés dans cette rubrique.');
+ if(currentTab==='stickers')return intro('Autocollants','Autocollants du serveur CMD Sphere.')+info('Ouvre le sélecteur de stickers dans un salon pour voir les autocollants disponibles.');
+ if(currentTab==='moderation')return intro('Modération','Gestion des personnes et accès du serveur.')+btn('Gérer les membres','members','primary')+btn('Gérer les rôles','roles')+btn('Paramètres de sécurité','security');
+ if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
+ if(currentTab==='community')return intro('Paramètres de communauté','Choisis les informations publiques et le message de bienvenue.')+btn('Modifier le serveur','overview','primary');
+ if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques de la communauté.')+info('Les statistiques ne sont pas encore disponibles dans cette rubrique. Les membres se trouvent dans Personnes → Membres.');
+
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations du service connecté sont générées depuis la plateforme liée.'))+toDiscord();
  if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+(isNative()?'<a class="csm-btn primary" href="/apps/directory">＋ Inviter un bot CMD Sphere</a><a class="csm-btn" href="/developers">CMD Sphere Développeur</a>':'')+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks externes','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div>'+(isNative()?'<section id="csm-installed-cmd-apps" aria-live="polite">'+info('Chargement des bots CMD Sphere installés…')+'</section>':'')+'<section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
  if(currentTab==='appearance')return intro('Personnalisation','Icône, description et identité du serveur.')+btn('Modifier la vue d’ensemble','overview','primary')+(isNative()?'<a class="csm-btn" href="/profile?server='+safe(id())+'">Profil du serveur ↗</a>':'')+toDiscord();
@@ -278,7 +290,7 @@ function render(){
  if(!ctx)return;
  const modal=$('#serverSettingsModal'),box=$('#serverSettingsBody');if(!modal||!box)return;
  const guild=ctx.data.guild;
- box.innerHTML='<div class="csm-root '+(currentTab==='home'?'csm-mobile-index':'csm-mobile-detail')+'"><header class="csm-header"><button type="button" id="csm-back" aria-label="Retour aux paramètres">‹</button><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong class="csm-guild-title">'+escapeHtml(guild.name||'Serveur')+'</strong><strong class="csm-mobile-title">'+(currentTab==='home'?'Paramètres du serveur':escapeHtml(({overview:'Vue d’ensemble',channels:'Salons et catégories',roles:'Rôles',members:'Membres',invites:'Invitations',integrations:'Intégrations',security:'Sécurité',appearance:'Personnalisation',automod:'AutoMod',audit:'Logs du serveur'})[currentTab]||'Paramètres'))+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='home'||currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
+ box.innerHTML='<div class="csm-root '+(currentTab==='home'?'csm-mobile-index':'csm-mobile-detail')+'"><header class="csm-header"><button type="button" id="csm-back" aria-label="Retour aux paramètres">‹</button><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong class="csm-guild-title">'+escapeHtml(guild.name||'Serveur')+'</strong><strong class="csm-mobile-title">'+(currentTab==='home'?'Paramètres du serveur':escapeHtml(settingTitle(currentTab)))+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='home'||currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
  modal.classList.add('on','csm-open');
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
