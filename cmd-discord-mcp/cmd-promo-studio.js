@@ -289,7 +289,7 @@ function addFiles(files){
     if(w>0&&h>0){
      state.format=w/h>1.25?"16:9":w/h<.8?"9:16":"1:1";
      autoRatioDone=true;
-     $("[data-studio-format]",root).forEach(b=>b.classList.toggle("selected",b.dataset.studioFormat===state.format));
+     $$("[data-studio-format]",root).forEach(b=>b.classList.toggle("selected",b.dataset.studioFormat===state.format));
      resize();
     }
    }
