@@ -374,3 +374,24 @@ body.csm-crop-open{overflow:hidden!important}
 .csm-crop-preview{width:min(300px,75vw);height:min(300px,75vw);max-width:100%;align-self:center;touch-action:none;cursor:grab;
  border:3px solid #9e84ee;border-radius:50%;background:#262131;box-sizing:border-box;display:block}
 .csm-crop-card input[type=range]{width:100%;accent-color:#9c84ee;min-height:30px}
+
+/* CMD Sphere — Discord-like long-press menu for channels and categories. */
+#csm-channel-context{position:fixed;inset:0;z-index:24000;display:flex;align-items:flex-end;justify-content:center}
+#csm-channel-context .csm-channel-context-shade{position:absolute;inset:0;background:#07060bbb}
+#csm-channel-context .csm-channel-context-sheet{position:relative;box-sizing:border-box;width:min(640px,100%);max-height:92dvh;overflow-y:auto;
+ background:#211c2b;color:#f9f7fc;padding:11px 17px calc(22px + env(safe-area-inset-bottom,0px));border-radius:28px 28px 0 0;
+ box-shadow:0 25px 90px #000b;-webkit-overflow-scrolling:touch}
+#csm-channel-context .csm-channel-context-handle{width:42px;height:5px;margin:2px auto 20px;background:#777080;border-radius:10px}
+#csm-channel-context h3{font:750 19px/1.4 system-ui;margin:0 4px 22px;overflow-wrap:anywhere}
+#csm-channel-context .csm-channel-context-group{border-radius:17px;overflow:hidden;background:#33283b;margin:0 0 16px}
+#csm-channel-context .csm-channel-context-group button{min-height:65px;border:0;border-bottom:1px solid #ffffff13;
+ width:100%;display:flex;align-items:center;text-align:left;gap:17px;background:transparent;color:#f8f4fc;
+ padding:14px 16px;font:600 16px system-ui;cursor:pointer}
+#csm-channel-context .csm-channel-context-group button:last-child{border-bottom:0}
+#csm-channel-context .csm-channel-context-icon{font-size:23px;flex:0 0 29px}
+#csm-channel-context .csm-channel-context-arrow{margin-left:auto;color:#beb3c8;font-size:26px}
+#csm-channel-context button:focus-visible{outline:2px solid #ab8ef4;outline-offset:-2px}
+#csm-channel-context .csm-channel-context-dismiss{width:100%;min-height:51px;border:0;border-radius:13px;
+ background:#44354e;color:white;font:700 16px system-ui}
+#csm-channel-context .csm-channel-context-status{font:13px system-ui;color:#d7c5ef;padding:0 8px}
+body.csm-channel-context-open{overflow:hidden!important}
