@@ -1,0 +1,53 @@
+/* CMDPad++ adaptive interface — last-loaded responsive overrides, never removes existing features */
+:root{--cmd-safe-bottom:env(safe-area-inset-bottom,0px);--cmd-safe-top:env(safe-area-inset-top,0px)}
+html,body{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+.app{max-width:100vw!important;min-width:0!important}
+.menubar{display:flex!important;max-width:100vw!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap;scrollbar-width:thin;-webkit-overflow-scrolling:touch;flex-shrink:0!important}
+.menubar>.menu{flex:0 0 auto!important}
+.menubar>.menu>.dropdown{position:fixed!important;z-index:2147482000!important;max-height:min(70dvh,660px)!important;overflow-y:auto!important;overscroll-behavior:contain;touch-action:pan-y;background:#fff;color:#17243a}
+.menubar>.menu>.dropdown button,.menubar>.menu>.dropdown summary{touch-action:manipulation}
+.cmd-mobile .toolbar,.cmd-tablet .toolbar{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;min-height:48px!important;height:48px!important;max-height:48px!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;align-items:center!important}
+.cmd-mobile .toolbar .toolbtn,.cmd-tablet .toolbar .toolbtn,.cmd-mobile .toolbar .file-import,.cmd-tablet .toolbar .file-import{height:42px!important;min-height:42px!important;min-width:42px!important;padding:0 10px!important;font-size:13px!important;flex:0 0 auto!important;touch-action:manipulation}
+.cmd-mobile .menubar,.cmd-tablet .menubar{height:44px!important;min-height:44px!important;max-height:44px!important}
+.cmd-mobile .menubar>.menu>button,.cmd-tablet .menubar>.menu>button{min-height:43px!important;padding:8px 12px!important;font-size:14px!important;touch-action:manipulation}
+.cmd-mobile .menubar>.menu>.dropdown button,.cmd-tablet .menubar>.menu>.dropdown button{min-height:42px!important;font-size:13px!important;line-height:1.3!important}
+.cmd-mobile .workspace,.cmd-tablet .workspace{position:relative!important;grid-template-columns:minmax(0,1fr)!important;min-height:0!important;max-width:100vw!important}
+.cmd-mobile .workspace .main,.cmd-tablet .workspace .main{width:100%!important;min-width:0!important;min-height:0!important;overflow:hidden!important}
+.cmd-mobile .workspace .side,.cmd-tablet .workspace .side{display:none!important}
+.cmd-mobile .workspace.cmd-mobile-side .side,.cmd-tablet .workspace.cmd-mobile-side .side{display:flex!important;position:absolute!important;top:0!important;left:0!important;bottom:0!important;z-index:100!important;width:min(80vw,310px)!important;max-width:min(80vw,310px)!important;box-shadow:5px 0 24px #0005!important;overflow:auto!important;background:#fff}
+.cmd-mobile .workspace #cmdpadFnPanel,.cmd-tablet .workspace #cmdpadFnPanel{display:none!important}
+.cmd-mobile .workspace.fn-show #cmdpadFnPanel,.cmd-tablet .workspace.fn-show #cmdpadFnPanel{display:flex!important;position:absolute!important;top:0!important;right:0!important;bottom:0!important;width:min(84vw,330px)!important;z-index:95!important;background:#fff;box-shadow:-6px 0 28px #0003}
+.cmd-mobile .tabs,.cmd-tablet .tabs{min-height:37px!important;height:37px!important;max-width:100vw!important;overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch}
+.cmd-mobile .tab,.cmd-tablet .tab{min-width:100px!important;max-width:55vw!important;min-height:36px!important;height:36px!important;padding:3px 8px!important}
+.cmd-mobile .docbar,.cmd-tablet .docbar{flex-wrap:wrap!important;align-items:center!important;min-height:0!important;height:auto!important;max-height:130px!important;overflow-x:hidden!important;overflow-y:auto!important;gap:5px!important;padding:6px!important}
+.cmd-mobile .docbar label,.cmd-tablet .docbar label{font-size:12px!important}
+.cmd-mobile .docbar input,.cmd-mobile .docbar select,.cmd-tablet .docbar input,.cmd-tablet .docbar select{font-size:16px!important;height:38px!important;min-width:0!important;max-width:100%!important}
+.cmd-mobile .docbar #fileName,.cmd-tablet .docbar #fileName{flex:1 1 45%!important;width:auto!important}
+.cmd-mobile .docbar #type,.cmd-tablet .docbar #type{flex:1 1 49%!important;width:auto!important}
+.cmd-mobile .editor-shell,.cmd-tablet .editor-shell{flex:1 1 auto!important;min-height:80px!important;max-width:100%!important;overflow:hidden!important}
+.cmd-mobile .editor,.cmd-tablet .editor{min-width:0!important;width:100%!important;max-width:100%!important;min-height:0!important;padding:10px 12px 34px!important;font-size:16px!important;line-height:1.55!important;overflow:auto!important;overflow-wrap:normal!important;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.cmd-mobile .lines,.cmd-tablet .lines{width:40px!important;flex:0 0 40px!important;font-size:12px!important;padding-right:6px!important}
+.cmd-mobile .findgrid,.cmd-tablet .findgrid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:4px!important;max-height:120px!important;overflow:auto!important;padding:5px!important}
+.cmd-mobile .findgrid .findactions,.cmd-tablet .findgrid .findactions{grid-column:1!important}
+.cmd-mobile .findgrid input,.cmd-tablet .findgrid input{width:100%!important;min-width:0!important;font-size:16px!important;height:35px!important}
+.cmd-mobile .status,.cmd-tablet .status{height:auto!important;min-height:26px!important;max-height:42px!important;max-width:100vw!important;overflow-x:auto!important;overflow-y:hidden!important;padding-bottom:var(--cmd-safe-bottom)!important}
+.cmd-mobile .status span,.cmd-tablet .status span{font-size:11px!important;white-space:nowrap!important}
+.cmd-mobile .cmd-formats-menu .dropdown,.cmd-mobile .cmd-language-tree,.cmd-tablet .cmd-formats-menu .dropdown{max-width:calc(100vw - 12px)!important}
+.cmd-mobile .cmd-format-flyout,.cmd-mobile .cmd-lang-flyout,.cmd-mobile .cmd-edit-flyout,.cmd-mobile .cmd-view-flyout,.cmd-mobile .cmd-docs-fly,.cmd-mobile .cmd-ext-fly{max-width:calc(100vw - 12px)!important}
+.cmd-mobile #cmdpadMobileBar,.cmd-tablet #cmdpadMobileBar{display:flex!important;flex:0 0 auto!important;height:46px!important;padding:3px 5px!important;gap:5px!important;align-items:center!important;overflow-x:auto!important;background:#edf3fb;border-bottom:1px solid #c6d4e6}
+#cmdpadMobileBar{display:none}
+#cmdpadMobileBar button{flex:0 0 auto;min-height:39px;min-width:48px;padding:7px 11px;border-radius:5px;border:1px solid #a8bed7;background:#fff;color:#1b3552;font:600 13px system-ui,sans-serif;touch-action:manipulation}
+#cmdpadMobileBar button:active{background:#c9e5ff}
+.cmd-mobile #cmdpadMobileBar .cmdpad-active{background:#d8eaff;border-color:#3576bd}
+@media(max-width:460px){
+ .cmd-mobile .titlebar{max-width:100vw!important;overflow:hidden!important}
+ .cmd-mobile .docbar{max-height:117px!important}
+ .cmd-mobile .docbar .validators{display:none!important}
+ .cmd-mobile .docbar label{display:none!important}
+ .cmd-mobile .editor-shell{min-height:70px!important}
+ .cmd-mobile .menubar>.menu>button{padding:7px 10px!important}
+}
+@media(orientation:landscape) and (max-height:530px){
+ .cmd-mobile .docbar,.cmd-tablet .docbar{max-height:80px!important}
+ .cmd-mobile .findgrid,.cmd-tablet .findgrid{max-height:65px!important}
+}
