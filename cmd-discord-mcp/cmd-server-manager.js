@@ -493,22 +493,43 @@ async function prepareServerIcon(file){
    const screen=document.createElement('div');screen.className='csm-crop-screen';screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-label',"Zoomer et recadrer la photo");
    screen.innerHTML='<section class="csm-crop-card"><header><button type="button" data-crop-cancel aria-label="Annuler">✕</button><strong>Modifier la photo</strong><button type="button" data-crop-accept>Appliquer</button></header><p>Déplace l’image avec ton doigt et ajuste le zoom.</p><canvas class="csm-crop-preview" width="300" height="300" aria-label="Aperçu du recadrage rond"></canvas><label for="csmCropZoom">Zoom</label><input id="csmCropZoom" type="range" min="1" max="4" value="1" step="0.01"><button type="button" data-crop-reset>Recentrer l’image</button></section>';
    document.body.append(screen);document.body.classList.add('csm-crop-open');
-   const preview=screen.querySelector('canvas'),context=preview.getContext('2d'),zoomInput=screen.querySelector('input'),base=Math.min(300/iw,300/ih);
+      const preview=screen.querySelector('canvas'),context=preview.getContext('2d'),zoomInput=screen.querySelector('input'),base=Math.max(300/iw,300/ih);
    if(!context){screen.remove();document.body.classList.remove('csm-crop-open');reject(Error('Éditeur indisponible'));return}
-   let zoom=1,dx=0,dy=0,dragging=null;
+   let zoom=1,dx=0,dy=0;
+   const touches=new Map();let gesture=null;
    const draw=(c,size)=>{const z=size/300,sw=iw*base*zoom*z,sh=ih*base*zoom*z;c.fillStyle='#24202d';c.fillRect(0,0,size,size);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(photo,(size-sw)/2+dx*z,(size-sh)/2+dy*z,sw,sh)};
-   const clamp=()=>{const w=iw*base*zoom,h=ih*base*zoom;dx=Math.min(Math.max(dx,-Math.max(0,(w-300)/2)),Math.max(0,(w-300)/2));dy=Math.min(Math.max(dy,-Math.max(0,(h-300)/2)),Math.max(0,(h-300)/2))};
+   const clamp=()=>{const w=iw*base*zoom,h=ih*base*zoom;const mx=Math.max(0,(w-300)/2),my=Math.max(0,(h-300)/2);dx=Math.max(-mx,Math.min(mx,dx));dy=Math.max(-my,Math.min(my,dy))};
    const redraw=()=>{clamp();draw(context,300)};
    const cleanup=()=>{screen.remove();document.body.classList.remove('csm-crop-open');document.removeEventListener('keydown',escapeHandler)};
    const cancel=()=>{cleanup();reject(Error('Recadrage annulé'))};
    const escapeHandler=e=>{if(e.key==='Escape')cancel()};
    document.addEventListener('keydown',escapeHandler);
+   const point=e=>{const b=preview.getBoundingClientRect();const scale=300/b.width;return{x:(e.clientX-b.left)*scale,y:(e.clientY-b.top)*scale}};
+   const pinch=()=>{const a=[...touches.values()];if(a.length<2)return null;return {x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2,d:Math.max(2,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y))}};
+   const resetGesture=()=>{const p=pinch();gesture=p?{...p,zoom,dx,dy}:null};
    screen.querySelector('[data-crop-cancel]').onclick=cancel;
-   screen.querySelector('[data-crop-reset]').onclick=()=>{dx=0;dy=0;zoom=1;zoomInput.value='1';redraw()};
-   zoomInput.oninput=()=>{zoom=Number(zoomInput.value);redraw()};
-   preview.addEventListener('pointerdown',e=>{dragging={id:e.pointerId,x:e.clientX,y:e.clientY};preview.setPointerCapture(e.pointerId)});
-   preview.addEventListener('pointermove',e=>{if(!dragging||dragging.id!==e.pointerId)return;dx+=e.clientX-dragging.x;dy+=e.clientY-dragging.y;dragging.x=e.clientX;dragging.y=e.clientY;redraw()});
-   preview.addEventListener('pointerup',()=>dragging=null);preview.addEventListener('pointercancel',()=>dragging=null);
+   screen.querySelector('[data-crop-reset]').onclick=()=>{dx=0;dy=0;zoom=1;zoomInput.value='1';resetGesture();redraw()};
+   zoomInput.oninput=()=>{zoom=Number(zoomInput.value);redraw();resetGesture()};
+   preview.addEventListener('pointerdown',e=>{e.preventDefault();touches.set(e.pointerId,point(e));try{preview.setPointerCapture(e.pointerId)}catch{}resetGesture()});
+   preview.addEventListener('pointermove',e=>{
+    if(!touches.has(e.pointerId))return;e.preventDefault();
+    const old=touches.get(e.pointerId),now=point(e);touches.set(e.pointerId,now);
+    if(touches.size===1){dx+=now.x-old.x;dy+=now.y-old.y}
+    else{
+     if(!gesture)resetGesture();
+     const current=pinch();
+     if(current&&gesture){const ratio=current.d/gesture.d;zoom=Math.max(1,Math.min(4,gesture.zoom*ratio));
+       const factor=zoom/gesture.zoom;
+       dx=current.x-150-(gesture.x-150-gesture.dx)*factor;
+       dy=current.y-150-(gesture.y-150-gesture.dy)*factor;
+       zoomInput.value=String(zoom);
+     }
+    }
+    redraw();
+   },{passive:false});
+   const release=e=>{touches.delete(e.pointerId);resetGesture()};
+   preview.addEventListener('pointerup',release);preview.addEventListener('pointercancel',release);
+   preview.addEventListener('lostpointercapture',release);
    screen.querySelector('[data-crop-accept]').onclick=()=>{
     try{const out=document.createElement('canvas');out.width=512;out.height=512;const cc=out.getContext('2d');if(!cc)throw Error('Conversion impossible');clamp();draw(cc,512);
      let result=out.toDataURL('image/jpeg',0.89);if(result.length>2400000)result=out.toDataURL('image/jpeg',0.72);
