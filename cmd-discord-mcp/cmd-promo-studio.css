@@ -477,3 +477,6 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
  #cmdPromoStudio #cmdStudioActionDock{padding-top:5px!important;padding-bottom:calc(5px + env(safe-area-inset-bottom,0px))!important}
  #cmdPromoStudio #cmdStudioActionDock>button{height:43px!important;min-height:43px!important}
 }
+
+/* Free mobile-native effects — no remote processing or subscription. */
+#cmdPromoStudio .cmd-effect-option:focus-visible{outline:3px solid #d6a9ff;outline-offset:2px}
