@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s);
 const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safe=v=>encodeURIComponent(String(v||''));
 const notify=(msg,ok=true)=>{try{if(typeof toast==='function')toast(msg,ok);else alert(msg)}catch{alert(msg)}};
-let ctx=null,currentTab='overview',newIcon=null,editing=null,opening=false,hostingRoleData=null,nativeMemberCache=null;
+let ctx=null,currentTab='home',newIcon=null,editing=null,opening=false,hostingRoleData=null,nativeMemberCache=null;
 const config=[
   ['PARAMÈTRES',['overview|ⓘ|Vue d’ensemble','channels|☰|Salons et catégories','roles|🛡️|Rôles','invites|🔗|Invitations']],
   ['COMMUNAUTÉ',['members|👥|Membres','appearance|🎨|Personnalisation','integrations|🧩|Intégrations']],
@@ -43,7 +43,8 @@ async function getContext(){
  }
 }
 function nav(){
- return '<nav class="csm-nav" aria-label="Menu paramètres du serveur">'+config.map(([group,links])=>'<div class="csm-nav-group"><h3>'+group+'</h3>'+links.map(s=>{const [tab,ico,label]=s.split('|');return '<button type="button" data-csm-tab="'+tab+'" class="'+(currentTab===tab?'chosen':'')+'"><span>'+ico+'</span>'+label+'</button>'}).join('')+'</div>').join('')+'</nav>';
+ const guild=ctx?.data?.guild||{};
+ return '<nav class="csm-nav" aria-label="Menu paramètres du serveur"><div class="csm-mobile-identity"><div class="csm-mobile-guild-icon">'+gicon()+'</div><strong>'+escapeHtml(guild.name||'Serveur')+'</strong></div>'+config.map(([group,links])=>'<div class="csm-nav-group"><h3>'+group+'</h3>'+links.map(s=>{const [tab,ico,label]=s.split('|');return '<button type="button" data-csm-tab="'+tab+'" class="'+(currentTab===tab?'chosen':'')+'"><span>'+ico+'</span>'+label+'</button>'}).join('')+'</div>').join('')+'</nav>';
 }
 function overview(){
  const g=ctx.data.guild;
@@ -277,9 +278,10 @@ function render(){
  if(!ctx)return;
  const modal=$('#serverSettingsModal'),box=$('#serverSettingsBody');if(!modal||!box)return;
  const guild=ctx.data.guild;
- box.innerHTML='<div class="csm-root"><header class="csm-header"><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong>'+escapeHtml(guild.name||'Serveur')+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
+ box.innerHTML='<div class="csm-root '+(currentTab==='home'?'csm-mobile-index':'csm-mobile-detail')+'"><header class="csm-header"><button type="button" id="csm-back" aria-label="Retour aux paramètres">‹</button><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong class="csm-guild-title">'+escapeHtml(guild.name||'Serveur')+'</strong><strong class="csm-mobile-title">'+(currentTab==='home'?'Paramètres du serveur':escapeHtml(({overview:'Vue d’ensemble',channels:'Salons et catégories',roles:'Rôles',members:'Membres',invites:'Invitations',integrations:'Intégrations',security:'Sécurité',appearance:'Personnalisation',automod:'AutoMod',audit:'Logs du serveur'})[currentTab]||'Paramètres'))+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='home'||currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
  modal.classList.add('on','csm-open');
  box.querySelector('#csm-close')?.addEventListener('click',close);
+ box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
  box.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  box.querySelector('#csm-identity')?.addEventListener('submit',saveIdentity);
@@ -375,7 +377,7 @@ async function loadWebhooks(){
  }catch(err){if(box.isConnected&&ctx===context)box.innerHTML=info('Webhooks inaccessibles : '+err.message)}
 }
 
-async function open(tab='overview'){
+async function open(tab='home'){
  if(opening)return;
  opening=true;currentTab=tab;editing=null;newIcon=null;nativeMemberCache=null;
  try{
@@ -458,18 +460,18 @@ async function createChannel(e){
 }
 function editChannel(chId){
  const ch=(ctx.data.channels||[]).find(x=>String(x.id)===String(chId));if(!ch)return;
- editing={type:'channel',id:ch.id};
+ currentTab='channels';editing={type:'channel',id:ch.id};
  const cats=(ctx.data.channels||[]).filter(x=>x.type==='category'&&String(x.id)!==String(ch.id));
  const parent=ch.source_parent_id||ch.parentId||'';
  const panel=$('#csm-channel-editor');
- panel.innerHTML='<form id="csm-channel-form" class="csm-form csm-sub"><h3>Modifier le salon : '+escapeHtml(ch.name)+'</h3>'+field('Nom','name',ch.name,'required maxlength="100"')+
- '<label class="csm-field">Type<select name="type">'+options(ch.type,types)+'</select></label>'+
- '<label class="csm-field">Catégorie<select name="parentId">'+options(parent,[['','Aucune'],...cats.map(x=>[x.source_channel_id||x.id,x.name])])+'</select></label>'+
- '<label class="csm-field">Sujet<textarea name="topic" maxlength="1024">'+escapeHtml(ch.topic||'')+'</textarea></label>'+
+ panel.innerHTML='<form id="csm-channel-form" class="csm-form csm-sub"><h3>'+(ch.type==='category'?'Modifier la catégorie : ':'Modifier le salon : ')+escapeHtml(ch.name)+'</h3><p class="csm-lead">Vue d’ensemble · Renommer, organiser et enregistrer</p>'+field('Nom','name',ch.name,'required maxlength="100"')+
+ '<label class="csm-field">Type<select name="type" '+(ch.type==='category'?'disabled':'')+'>'+options(ch.type,types)+'</select></label>'+
+ (ch.type==='category'?'':'<label class="csm-field">Catégorie<select name="parentId">'+options(parent,[['','Aucune'],...cats.map(x=>[x.source_channel_id||x.id,x.name])])+'</select></label>')+
+ (ch.type==='category'?'':'<label class="csm-field">Sujet<textarea name="topic" maxlength="1024">'+escapeHtml(ch.topic||'')+'</textarea></label>')+
  '<div class="csm-actions"><button type="submit" class="csm-btn primary">Enregistrer</button>'+btn('Supprimer','delete-channel','danger')+btn('Annuler','cancel-channel')+'</div></form>';
  panel.querySelector('form').addEventListener('submit',async e=>{
   e.preventDefault();const d=new FormData(e.currentTarget);
-  try{await mutate('update_channel',{channelId:ch.id,name:String(d.get('name')||''),type:String(d.get('type')||'text'),parentId:String(d.get('parentId')||''),topic:String(d.get('topic')||'')})}catch(e){notify(e.message,false)}
+  try{await mutate('update_channel',{channelId:ch.id,name:String(d.get('name')||'').trim(),type:ch.type==='category'?'category':String(d.get('type')||'text'),parentId:ch.type==='category'?'':String(d.get('parentId')||''),topic:ch.type==='category'?'':String(d.get('topic')||'')})}catch(e){notify(e.message,false)}
  });
  panel.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
