@@ -373,3 +373,52 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
 @media (prefers-reduced-motion:reduce){
  #cmdPromoStudio *,#cmdPromoStudio *::before,#cmdPromoStudio *::after{scroll-behavior:auto!important;transition-duration:.01ms!important}
 }
+
+/* CMD Studio Oct 12 v4: avoid phone footer overlap and preserve image */
+#cmdPromoStudio{min-width:0!important;overflow:hidden!important}
+#cmdPromoStudio #cmdStudioBottomBar{
+ position:relative!important;display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(76px,92px) minmax(76px,92px)!important;
+ grid-template-rows:minmax(50px,auto)!important;
+ gap:8px!important;align-items:stretch!important;justify-content:stretch!important;
+ min-width:0!important;max-width:100vw!important;width:100%!important;
+ padding:9px max(10px,env(safe-area-inset-right,0px)) calc(9px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px))!important;
+ background:#080808!important;
+}
+#cmdPromoStudio #cmdStudioBottomBar>button{
+ display:flex!important;flex:none!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;max-width:none!important;min-width:0!important;
+ min-height:50px!important;margin:0!important;padding:7px 6px!important;
+ color:#151515!important;background:#f8f8f9!important;border-radius:18px!important;
+ font:800 12px/1.15 system-ui,-apple-system,sans-serif!important;
+ letter-spacing:0!important;white-space:normal!important;word-break:normal!important;
+ overflow-wrap:normal!important;writing-mode:horizontal-tb!important;overflow:hidden!important;
+}
+#cmdPromoStudio #cmdStudioBottomBar #cmdStudioLocalSave{
+ width:100%!important;max-width:none!important;flex:none!important;
+ min-height:50px!important;color:white!important;background:#a83cd4!important;
+ font-size:15px!important;
+}
+#cmdPromoStudio #cmdStudioBottomBar #cmdStudioPostFeed{font-size:12px!important;word-break:keep-all!important}
+#cmdPromoStudio .cmd-studio-playbar{
+ width:100%!important;min-width:0!important;max-width:100%!important;
+ gap:6px!important;display:flex!important;flex-wrap:nowrap!important;justify-content:center!important;
+ overflow:hidden!important;
+}
+#cmdPromoStudio .cmd-studio-playbar #cmdStudioPlay{
+ min-width:0!important;max-width:72%!important;white-space:nowrap!important;
+ text-overflow:ellipsis!important;overflow:hidden!important;font-size:12px!important;
+}
+#cmdPromoStudio .cmd-studio-playbar #cmdStudioClock{flex:0 0 auto!important;white-space:nowrap!important;font-size:12px!important}
+#cmdPromoStudio .cmd-studio-surface{min-width:0!important;max-height:100%!important}
+#cmdPromoStudio #cmdStudioCanvas{max-width:100%!important;max-height:100%!important}
+@media(max-width:390px){
+ #cmdPromoStudio #cmdStudioBottomBar{grid-template-columns:minmax(0,1fr) 72px 72px!important;gap:5px!important;padding-left:7px!important;padding-right:7px!important}
+ #cmdPromoStudio #cmdStudioBottomBar>button:not(#cmdStudioLocalSave){font-size:11px!important;padding:5px 2px!important}
+ #cmdPromoStudio #cmdStudioBottomBar #cmdStudioLocalSave{font-size:13px!important}
+}
+@media(min-width:600px){
+ #cmdPromoStudio #cmdStudioBottomBar{display:flex!important;justify-content:center!important;gap:14px!important}
+ #cmdPromoStudio #cmdStudioBottomBar>button{width:auto!important;flex:1 1 125px!important;max-width:290px!important}
+ #cmdPromoStudio #cmdStudioBottomBar #cmdStudioLocalSave{max-width:400px!important;flex:2 1 200px!important}
+}

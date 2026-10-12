@@ -12,7 +12,7 @@ const FILTER_CSS={natural:"none",vivid:"saturate(1.6) contrast(1.12)",warm:"sepi
 let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recordedUrl="",raf=0,playStart=0,playing=false,videoRecorder=null,audioCtx=null,previewCtx=null,previewAudio=null,mountTimer=null;
 let studioScope="",studioProfileGuild="",activeTool="";
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
-const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
+const state={mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"contain",textX:.5,textY:.67,stickerX:.5,stickerY:.43};
 const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 let noticeTimer=0;
 const note=t=>{
@@ -29,7 +29,7 @@ function open(context={}){
  const nextScope=user+":"+guild;
  if(studioScope&&studioScope!==nextScope){
   stop();clips.forEach(item=>URL.revokeObjectURL(item.url));clips=[];musicFile=null;selectedTrack=null;recorded=null;
-  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"cover",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
+  Object.assign(state,{mode:"story",theme:"minimal",format:"9:16",effect:"none",transition:"fade",filter:"natural",duration:30,music:"none",musicStart:0,volume:40,headline:"",subtitle:"",emoji:"",title:"Ma vidéo",guildId:"",crop:"contain",textX:.5,textY:.67,stickerX:.5,stickerY:.43});
   if(root){root.remove();root=null;canvas=null;ctx=null}
  }
  studioScope=nextScope;studioProfileGuild=guild;
@@ -75,7 +75,7 @@ function open(context={}){
  const cropSetting=document.createElement("label");cropSetting.textContent="Recadrage";
  const cropSelect=document.createElement("select");cropSelect.id="cmdStudioCrop";
  cropSelect.innerHTML='<option value="cover">Remplir l’écran</option><option value="contain">Afficher toute l’image</option>';
- cropSelect.value=state.crop||"cover";cropSetting.append(cropSelect);cropCard.append(cropSetting);
+ cropSelect.value=state.crop||"contain";cropSetting.append(cropSelect);cropCard.append(cropSetting);
  cropSelect.onchange=()=>{state.crop=cropSelect.value;recorded=null;render(previewCursor)};
  installEffectsGallery(controls);
  const camera=document.createElement("input");camera.type="file";camera.id="cmdStudioCameraCapture";
@@ -283,7 +283,7 @@ function addFiles(files){
   if(video)element.onloadedmetadata=()=>render(0);else element.onload=()=>render(0);
   count++;
  }
- if(count)note(count+" fichier(s) ajouté(s). Tu peux les réorganiser.");
+ if(count)note(count+" fichier(s) ajouté(s). Image entière par défaut : Format → Recadrage permet de zoomer.");
  drawFiles();render(0);
 }
 function drawFiles(){
@@ -567,7 +567,7 @@ async function exportVideo(options={}){
  const mime=studioRecordingType();
  if(!canvas.captureStream||!mime){
   const raw=studioRawVideoFallback();
-  if(raw){recorded=raw;if(options.download!==false)await saveOnDevice(raw,raw.name);note("Vidéo d’origine disponible.");return true}
+  if(raw){recorded=raw;if(pub)pub.disabled=false;if(options.download!==false)await saveOnDevice(raw,raw.name);note("Vidéo d’origine disponible.");return true}
   note("L’encodage vidéo n’est pas pris en charge dans ce navigateur. Actualise Safari, Chrome, Edge ou Firefox.");return false;
  }
  button.disabled=true;if(pub)pub.disabled=true;
