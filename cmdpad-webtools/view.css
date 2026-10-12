@@ -1,0 +1,17 @@
+/* CMDPad++ View menu grouped like Notepad++ */
+.cmd-view-separator{height:1px;background:#d7dbe4;margin:4px 2px}
+.cmd-view-submenu{position:relative}
+.cmd-view-submenu>.cmd-view-subtitle{font-weight:500}
+.cmd-view-submenu.active>.cmd-view-subtitle{background:#dcecff}
+.cmd-view-flyout{display:none;position:fixed!important;z-index:2500!important;width:240px;min-width:200px;max-height:75vh;overflow:auto;box-sizing:border-box;padding:4px;border:1px solid #9daac0;border-radius:3px;box-shadow:0 7px 24px #0003;background:#fff}
+.cmd-view-submenu.active .cmd-view-flyout{display:block}
+.cmd-view-flyout>button{display:block;width:100%;white-space:normal;text-align:left}
+.cmd-view-flyout button[aria-checked="true"]:before,.dropdown>button[aria-checked="true"]:before{content:"✓";padding-right:5px}
+.cmd-view-symbol-dialog,.cmd-view-summary{width:min(710px,93vw);max-height:80vh;overflow:auto;background:#fff;color:#18263e;border:1px solid #abb8c8;border-radius:8px;padding:16px}
+.cmd-view-symbols{white-space:pre;max-height:55vh;overflow:auto;border:1px solid #dee3ea;background:#f5f7fa;padding:12px;font:12px/1.6 Consolas,monospace}
+body.cmd-view-distraction .toolbar,body.cmd-view-distraction .side,body.cmd-view-distraction #cmdpadFnPanel,body.cmd-view-distraction .docbar,body.cmd-view-distraction .findgrid,body.cmd-view-distraction .status,body.cmd-view-distraction .minimap{display:none!important}
+body.cmd-view-distraction .workspace{grid-template-columns:minmax(0,1fr)!important}
+.workspace.cmd-view-hide-fn{grid-template-columns:var(--cmd-sidebar-left,190px) minmax(0,1fr)!important}
+.workspace.cmd-view-hide-folder:not(.cmd-view-hide-fn){grid-template-columns:minmax(0,1fr) var(--cmd-sidebar-right,210px)!important}
+.workspace.cmd-view-hide-folder.cmd-view-hide-fn{grid-template-columns:minmax(0,1fr)!important}
+@media(max-width:950px){.workspace.cmd-view-hide-fn,.workspace.cmd-view-hide-folder{grid-template-columns:minmax(0,1fr)!important}.cmd-view-flyout{width:min(240px,75vw)}}
