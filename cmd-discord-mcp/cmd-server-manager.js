@@ -631,38 +631,63 @@ function openChannelReorderChooser(){
 function openChannelReorderMode(mode){
  if(!isNative()||!canEditChannels()||!['category','text','voice'].includes(mode))return;
  const src=ctx.data.channels||[],allowed=mode==='category'?['category']:mode==='voice'?['voice']:['text','announcement','forum'];
- const items=src.filter(c=>allowed.includes(String(c.type))).slice().sort((a,b)=>Number(a.position||0)-Number(b.position||0)||String(a.name||'').localeCompare(String(b.name||''),'fr'));
- const catNames=new Map(src.filter(c=>c.type==='category').flatMap(c=>[[String(c.id),c.name],[String(c.source_channel_id||c.id),c.name]]));
+ const sort=(a,b)=>Number(a.position||0)-Number(b.position||0)||String(a.name||'').localeCompare(String(b.name||''),'fr');
+ const items=src.filter(c=>allowed.includes(String(c.type))).slice().sort(sort);
+ const cats=src.filter(c=>c.type==='category').slice().sort(sort);
+ const catById=new Map();
+ for(const c of cats){const key=String(c.source_channel_id||c.id);catById.set(key,key);catById.set(String(c.id),key)}
+ const groupOf=c=>catById.get(String(c.source_parent_id||c.parentId||''))||'';
  const label=mode==='category'?'Catégories':mode==='text'?'Salons textuels':'Salons vocaux';
  document.querySelector('#csm-reorder-screen')?.remove();
  const page=document.createElement('div');page.id='csm-reorder-screen';
- page.innerHTML='<header><button type="button" data-sort-close aria-label="Retour">‹</button><strong>'+label+'</strong><button type="button" data-sort-done>Terminé</button></header>'+
- '<p class="csm-reorder-instructions">Maintiens la poignée ☰ et déplace avec ton doigt. Le nouvel ordre est enregistré au relâchement.</p>'+
- '<div class="csm-reorder-scroll"><div class="csm-reorder-list" role="list">'+items.map(item=>{
-  const parent=catNames.get(String(item.source_parent_id||item.parentId||''))||'Sans catégorie';
-  return '<div class="csm-sort-row" role="listitem" data-sort-id="'+escapeHtml(item.id)+'"><span class="csm-sort-symbol">'+(mode==='category'?'▦':mode==='voice'?'◖))':'#')+'</span><div class="csm-sort-title"><strong>'+escapeHtml(item.name)+'</strong>'+(mode==='category'?'':'<small>'+escapeHtml(parent)+'</small>')+'</div><button type="button" class="csm-sort-grip" aria-label="Déplacer '+escapeHtml(item.name)+'">☰</button></div>';
- }).join('')+'</div></div><p class="csm-reorder-status" role="status" aria-live="polite">'+(items.length<2?'Deux éléments minimum sont nécessaires.':'Maintiens puis fais glisser un élément.')+'</p>';
+ const rowHtml=c=>'<div class="csm-sort-row" role="listitem" data-sort-id="'+escapeHtml(String(c.id))+'"><span class="csm-sort-symbol">'+(mode==='category'?'▦':mode==='voice'?'◖))':'#')+'</span><div class="csm-sort-title"><strong>'+escapeHtml(c.name)+'</strong></div><button type="button" class="csm-sort-grip" aria-label="Déplacer '+escapeHtml(c.name)+'">⠿</button></div>';
+ const groups=[{id:'',name:'Sans catégorie'},...cats.map(c=>({id:String(c.source_channel_id||c.id),name:String(c.name) }))];
+ const content=mode==='category'?items.map(rowHtml).join(''):groups.map(g=>{
+   const children=items.filter(c=>groupOf(c)===g.id);
+   return '<section class="csm-sort-bucket" data-sort-parent="'+escapeHtml(g.id)+'"><h3 class="csm-sort-bucket-title">'+escapeHtml(g.name)+'</h3>'+
+    '<div class="csm-sort-rows" role="group" aria-label="'+escapeHtml(g.name)+'">'+children.map(rowHtml).join('')+'</div></section>';
+ }).join('');
+ page.innerHTML='<header><button type="button" data-sort-close aria-label="Retour">‹</button><strong>Salons</strong><button type="button" data-sort-done>Terminé</button></header>'+
+ '<p class="csm-reorder-instructions">'+(mode==='category'?'Maintiens la poignée et monte ou descends les catégories.':'Maintiens la poignée puis glisse le salon dans la catégorie de ton choix. Monte ou descends pour faire défiler.')+'</p>'+
+ '<div class="csm-reorder-scroll"><div class="csm-reorder-list '+(mode==='category'?'csm-sort-categories':'csm-sort-with-categories')+'" role="list">'+content+'</div></div>'+
+ '<p class="csm-reorder-status" role="status" aria-live="polite">'+(items.length?'Déplace un élément avec son icône ⠿.':'Aucun élément de ce type à réorganiser.')+'</p>';
  document.body.append(page);document.body.classList.add('csm-reordering');
  const list=page.querySelector('.csm-reorder-list'),scroller=page.querySelector('.csm-reorder-scroll'),status=page.querySelector('.csm-reorder-status');
- const ids=()=>[...list.children].map(row=>row.dataset.sortId);
  const controller=new AbortController();
+ const rows=()=>[...list.querySelectorAll('.csm-sort-row[data-sort-id]')];
+ const buckets=()=>[...list.querySelectorAll('.csm-sort-bucket')];
+ const snapshot=()=>rows().map(row=>({id:row.dataset.sortId,parentId:mode==='category'?null:(row.closest('.csm-sort-bucket')?.dataset.sortParent||null)}));
+ const place=(row,at)=>{if(!row)return;const target=mode==='category'?list:(buckets().find(b=>b.dataset.sortParent===(at.parentId||''))?.querySelector('.csm-sort-rows'));if(target)target.append(row)};
+ const restore=before=>{const table=new Map(rows().map(row=>[row.dataset.sortId,row]));for(const p of before)place(table.get(p.id),p)};
+ const categoryNames=new Map(groups.map(g=>[g.id,g.name]));
+ const updateLabels=()=>{if(mode==='category')return;for(const row of rows()){const parent=row.closest('.csm-sort-bucket')?.dataset.sortParent||'';row.title='Catégorie : '+(categoryNames.get(parent)||'Sans catégorie')}};
  let drag=null,saving=false,raf=0;
- const endAnimation=()=>{if(raf)cancelAnimationFrame(raf);raf=0};
- const stop=()=>{if(!drag)return;clearTimeout(drag.timer);endAnimation();drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null};
+ const stop=()=>{if(!drag)return;clearTimeout(drag.timer);if(raf)cancelAnimationFrame(raf);raf=0;drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null};
+ const nearestBucket=y=>{
+  const all=buckets();
+  const hit=document.elementFromPoint(drag?.clientX||scroller.getBoundingClientRect().left+25,y)?.closest('.csm-sort-bucket');
+  if(hit&&all.includes(hit))return hit;
+  let best=all[0],distance=Infinity;
+  for(const group of all){const r=group.getBoundingClientRect();const d=y<r.top?r.top-y:y>r.bottom?y-r.bottom:0;if(d<distance){best=group;distance=d}}
+  return best;
+ };
  const preview=()=>{
   if(!drag?.started)return;
   drag.ghost.style.top=(drag.y-drag.offset)+'px';
-  const others=[...list.children].filter(row=>row!==drag.row);
+  const target=mode==='category'?list:nearestBucket(drag.y)?.querySelector('.csm-sort-rows');
+  if(!target)return;
+  const others=[...target.children].filter(row=>row!==drag.row);
   let next=null;
   for(const row of others){const r=row.getBoundingClientRect();if(drag.y<r.top+r.height/2){next=row;break}}
-  if(drag.row.nextElementSibling!==next)list.insertBefore(drag.row,next);
+  if(drag.row.parentElement!==target||drag.row.nextElementSibling!==next)target.insertBefore(drag.row,next);
+  updateLabels();
  };
  const autoscroll=()=>{
   raf=0;if(!drag?.started)return;
-  const r=scroller.getBoundingClientRect(),edge=65;let speed=0;
-  if(drag.y<r.top+edge)speed=-Math.min(22,(r.top+edge-drag.y)*.35);
-  else if(drag.y>r.bottom-edge)speed=Math.min(22,(drag.y-(r.bottom-edge))*.35);
-  if(speed)scroller.scrollTop+=speed;
+  const rect=scroller.getBoundingClientRect(),edge=90;let amount=0;
+  if(drag.y<rect.top+edge)amount=-Math.min(24,(rect.top+edge-drag.y)*.38);
+  else if(drag.y>rect.bottom-edge)amount=Math.min(24,(drag.y-(rect.bottom-edge))*.38);
+  if(amount)scroller.scrollTop+=amount;
   preview();raf=requestAnimationFrame(autoscroll);
  };
  const start=()=>{
@@ -670,41 +695,44 @@ function openChannelReorderMode(mode){
   drag.started=true;const r=drag.row.getBoundingClientRect();drag.offset=r.height/2;
   drag.ghost=drag.row.cloneNode(true);drag.ghost.classList.add('csm-sort-ghost');
   drag.ghost.style.width=r.width+'px';drag.ghost.style.left=r.left+'px';document.body.append(drag.ghost);
-  drag.row.classList.add('csm-sort-dragging');status.textContent='Relâche pour enregistrer le nouvel ordre.';
+  drag.row.classList.add('csm-sort-dragging');
+  status.textContent='Glisse dans une autre catégorie puis relâche pour enregistrer.';
   preview();raf=requestAnimationFrame(autoscroll);
  };
  const onMove=e=>{
   if(!drag||drag.pointer!==e.pointerId)return;
-  drag.y=e.clientY;
+  drag.y=e.clientY;drag.clientX=e.clientX;
   if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.startY)>14){stop();return}
   if(drag.started){e.preventDefault();preview()}
  };
- const onCancel=e=>{if(drag&&e.pointerId===drag.pointer)stop()};
+ const onCancel=e=>{if(drag&&drag.pointer===e.pointerId){const before=drag.before;stop();restore(before);updateLabels()}};
  const onUp=async e=>{
   if(!drag||e.pointerId!==drag.pointer)return;
   const before=drag.before,started=drag.started;stop();if(!started)return;
-  const after=ids();if(after.join('|')===before.join('|')){status.textContent='Ordre inchangé.';return}
-  saving=true;status.textContent='Enregistrement en cours…';
+  const after=snapshot();
+  if(JSON.stringify(after)===JSON.stringify(before)){status.textContent='Aucun changement.';return}
+  saving=true;status.textContent='Enregistrement de la nouvelle position et catégorie…';
   try{
-   await request('/api/native/action',{nativeGuildId:id(),action:'reorder_channels',mode,channelIds:after});
-   await getContext();status.textContent='✓ Ordre enregistré.';
+   await request('/api/native/action',{nativeGuildId:id(),action:'reorder_channels',mode,channelIds:after.map(x=>x.id),placements:after});
+   await getContext();status.textContent='✓ Nouvel ordre et catégorie enregistrés.';
   }catch(err){
-   const rows=new Map([...list.children].map(row=>[row.dataset.sortId,row]));before.forEach(key=>{if(rows.has(key))list.append(rows.get(key))});
+   restore(before);updateLabels();
    status.textContent='Modification non enregistrée : '+err.message;
   }finally{saving=false}
  };
  const close=()=>{if(saving)return;stop();controller.abort();page.remove();document.body.classList.remove('csm-reordering');void getContext().then(()=>{if(currentTab==='channels')render()}).catch(e=>notify(e.message,false))};
  page.querySelector('[data-sort-close]').onclick=close;page.querySelector('[data-sort-done]').onclick=close;
  page.addEventListener('pointerdown',e=>{
-  const grip=e.target.closest('.csm-sort-grip');if(!grip||saving||items.length<2)return;
+  const grip=e.target.closest('.csm-sort-grip');if(!grip||saving||!items.length)return;
   if(drag)stop();
-  const row=grip.closest('.csm-sort-row');
-  drag={row,pointer:e.pointerId,x:e.clientX,startY:e.clientY,y:e.clientY,started:false,before:ids(),timer:setTimeout(start,e.pointerType==='mouse'?0:230)};
+  const row=grip.closest('.csm-sort-row');if(!row)return;
+  drag={row,pointer:e.pointerId,x:e.clientX,clientX:e.clientX,startY:e.clientY,y:e.clientY,started:false,before:snapshot(),timer:setTimeout(start,e.pointerType==='mouse'?0:240)};
   try{grip.setPointerCapture(e.pointerId)}catch{}
  },{signal:controller.signal});
  document.addEventListener('pointermove',onMove,{passive:false,signal:controller.signal});
  document.addEventListener('pointerup',onUp,{signal:controller.signal});
  document.addEventListener('pointercancel',onCancel,{signal:controller.signal});
+ updateLabels();
 }
 
 async function createChannel(e){
