@@ -7,6 +7,11 @@ function rep(a,b,label){
   else console.log("[patch] anchor missing: "+label);
 }
 
+
+// CMD Sphere — 2026-10-12 iOS refresh: version the updated server settings
+// assets so an installed PWA cannot keep the pre-fix JS/CSS from its old cache.
+rep('/cmd-server-manager.css?v=20261010menu9','/cmd-server-manager.css?v=20261012iphone-nav3','Mobile settings CSS cache refresh');
+rep('/cmd-server-manager.js?v=20261010iconfix1','/cmd-server-manager.js?v=20261012iphone-nav3','Mobile settings JS cache refresh');
 // Compact persistent session (Safari/iPhone friendly).
 rep(`function sessionPayload(authData){
   return signPayload({typ:"dashboard_session",exp:Date.now()+10*365*24*3600*1000,user:authData.user,guildIds:authData.guildIds||[],guilds:authData.guilds||[]});
