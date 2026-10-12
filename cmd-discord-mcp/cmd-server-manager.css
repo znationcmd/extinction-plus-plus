@@ -628,3 +628,56 @@ body.csm-channel-context-open{overflow:hidden!important}
  text-align:center;background:#24222b;font-size:13px;color:#d6c7f3;min-height:36px}
 body.csm-reordering{overflow:hidden!important}
 @supports not (height:100dvh){#csm-reorder-screen{height:100vh}}
+
+/* CMD Sphere – Cross-category tactile reorganisation of salons (12 Oct 2026). */
+#csm-reorder-screen .csm-sort-with-categories{
+ display:flex;flex-direction:column;gap:20px;min-height:0;
+ padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))
+}
+#csm-reorder-screen .csm-sort-bucket{
+ display:flex;flex-direction:column;gap:5px;
+ padding:0 0 10px;min-height:85px;min-width:0;
+ border:1px solid transparent;border-radius:12px
+}
+#csm-reorder-screen .csm-sort-bucket-title{
+ display:flex;align-items:center;min-height:47px;margin:0;
+ padding:9px 12px;color:#aaa8b1;background:#24232b;
+ font-weight:750;font-size:15px;letter-spacing:.025em;
+ overflow-wrap:anywhere;border-radius:8px
+}
+#csm-reorder-screen .csm-sort-rows{
+ display:flex;flex-direction:column;gap:7px;min-height:64px;
+ border-radius:10px;box-sizing:border-box;
+ padding:5px 0;transition:background .12s ease
+}
+#csm-reorder-screen .csm-sort-rows:empty::after{
+ content:"Déposer un salon dans cette catégorie";
+ display:flex;align-items:center;justify-content:center;
+ min-height:62px;padding:5px 12px;border-radius:9px;
+ border:1px dashed #585467;color:#aaa6b6;font-size:12px;text-align:center
+}
+#csm-reorder-screen .csm-sort-row{
+ flex:0 0 auto;touch-action:pan-y;user-select:none;-webkit-user-select:none
+}
+#csm-reorder-screen .csm-sort-row .csm-sort-grip{
+ touch-action:none!important;-webkit-user-select:none!important;
+ user-select:none!important;-webkit-touch-callout:none!important
+}
+#csm-reorder-screen .csm-sort-rows .csm-sort-row{
+ background:#282731;border:1px solid #393742
+}
+#csm-reorder-screen .csm-sort-bucket .csm-sort-symbol{font-size:29px;color:#898796}
+#csm-reorder-screen .csm-reorder-scroll{
+ padding-bottom:calc(190px + env(safe-area-inset-bottom,0px))!important;
+ scroll-padding-bottom:calc(160px + env(safe-area-inset-bottom,0px))!important;
+ overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important
+}
+#csm-reorder-screen .csm-reorder-status{
+ position:relative;z-index:1;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))!important
+}
+#csm-reorder-screen .csm-sort-categories>.csm-sort-row{margin-bottom:7px}
+@media(max-width:600px){
+ #csm-reorder-screen .csm-sort-bucket-title{font-size:14px}
+ #csm-reorder-screen .csm-sort-rows .csm-sort-row{padding-left:9px;gap:8px}
+ #csm-reorder-screen .csm-sort-row .csm-sort-grip{min-width:52px;min-height:54px}
+}
