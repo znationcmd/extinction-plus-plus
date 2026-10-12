@@ -407,33 +407,44 @@ async function mutate(action,payload){
 }
 async function prepareServerIcon(file){
  if(!file)throw Error('Choisis une photo.');
- const name=String(file.name||'');
- if(!(/^(image\/)/i.test(file.type)||/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(name)))
-  throw Error('Sélectionne une photo de ta galerie (JPEG, PNG, WebP ou HEIC compatible avec ton iPhone).');
- if(file.size>30*1024*1024)throw Error('Photo trop volumineuse (maximum 30 Mo avant compression).');
- const objectUrl=URL.createObjectURL(file);
+ const filename=String(file.name||'');
+ if(!(/^image\//i.test(file.type)||/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(filename)))throw Error('Choisis une image JPEG, PNG, WebP ou HEIC compatible.');
+ if(file.size>30*1024*1024)throw Error('Photo trop volumineuse (30 Mo maximum).');
+ const blobUrl=URL.createObjectURL(file);
  try{
-  const photo=await new Promise((resolve,reject)=>{
-   const image=new Image();
-   image.onload=()=>resolve(image);
-   image.onerror=()=>reject(Error('Ce format photo ne peut pas être ouvert. Sur iPhone, exporte la photo en JPEG puis réessaie.'));
-   image.src=objectUrl;
-  });
+  const photo=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Image incompatible. Sur iPhone, exporte-la en JPEG.'));img.src=blobUrl});
   const iw=photo.naturalWidth,ih=photo.naturalHeight;
-  if(!iw||!ih)throw Error('Impossible de lire la taille de cette photo.');
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
-  const ctx=canvas.getContext('2d');
-  if(!ctx)throw Error('Conversion photo non disponible sur cet appareil.');
-  ctx.fillStyle='#20182e';ctx.fillRect(0,0,512,512);
-  // Keep the complete image visible in the square; never stretch/crop a player's logo.
-  const scale=Math.min(512/iw,512/ih),w=Math.max(1,Math.round(iw*scale)),h=Math.max(1,Math.round(ih*scale));
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  ctx.drawImage(photo,Math.round((512-w)/2),Math.round((512-h)/2),w,h);
-  let data=canvas.toDataURL('image/jpeg',0.88);
-  if(data.length>2400000)data=canvas.toDataURL('image/jpeg',0.7);
-  if(!/^data:image\/jpeg;base64,/.test(data)||data.length>2700000)throw Error('Impossible de compresser cette photo. Essaie une autre image.');
-  return data;
- }finally{URL.revokeObjectURL(objectUrl)}
+  if(!iw||!ih)throw Error('Image illisible.');
+  return await new Promise((resolve,reject)=>{
+   const screen=document.createElement('div');screen.className='csm-crop-screen';screen.setAttribute('role','dialog');screen.setAttribute('aria-modal','true');screen.setAttribute('aria-label',"Zoomer et recadrer la photo");
+   screen.innerHTML='<section class="csm-crop-card"><header><button type="button" data-crop-cancel aria-label="Annuler">✕</button><strong>Modifier la photo</strong><button type="button" data-crop-accept>Appliquer</button></header><p>Déplace l’image avec ton doigt et ajuste le zoom.</p><canvas class="csm-crop-preview" width="300" height="300" aria-label="Aperçu du recadrage rond"></canvas><label for="csmCropZoom">Zoom</label><input id="csmCropZoom" type="range" min="1" max="4" value="1" step="0.01"><button type="button" data-crop-reset>Recentrer l’image</button></section>';
+   document.body.append(screen);document.body.classList.add('csm-crop-open');
+   const preview=screen.querySelector('canvas'),context=preview.getContext('2d'),zoomInput=screen.querySelector('input'),base=Math.min(300/iw,300/ih);
+   if(!context){screen.remove();document.body.classList.remove('csm-crop-open');reject(Error('Éditeur indisponible'));return}
+   let zoom=1,dx=0,dy=0,dragging=null;
+   const draw=(c,size)=>{const z=size/300,sw=iw*base*zoom*z,sh=ih*base*zoom*z;c.fillStyle='#24202d';c.fillRect(0,0,size,size);c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(photo,(size-sw)/2+dx*z,(size-sh)/2+dy*z,sw,sh)};
+   const clamp=()=>{const w=iw*base*zoom,h=ih*base*zoom;dx=Math.min(Math.max(dx,-Math.max(0,(w-300)/2)),Math.max(0,(w-300)/2));dy=Math.min(Math.max(dy,-Math.max(0,(h-300)/2)),Math.max(0,(h-300)/2))};
+   const redraw=()=>{clamp();draw(context,300)};
+   const cleanup=()=>{screen.remove();document.body.classList.remove('csm-crop-open');document.removeEventListener('keydown',escapeHandler)};
+   const cancel=()=>{cleanup();reject(Error('Recadrage annulé'))};
+   const escapeHandler=e=>{if(e.key==='Escape')cancel()};
+   document.addEventListener('keydown',escapeHandler);
+   screen.querySelector('[data-crop-cancel]').onclick=cancel;
+   screen.querySelector('[data-crop-reset]').onclick=()=>{dx=0;dy=0;zoom=1;zoomInput.value='1';redraw()};
+   zoomInput.oninput=()=>{zoom=Number(zoomInput.value);redraw()};
+   preview.addEventListener('pointerdown',e=>{dragging={id:e.pointerId,x:e.clientX,y:e.clientY};preview.setPointerCapture(e.pointerId)});
+   preview.addEventListener('pointermove',e=>{if(!dragging||dragging.id!==e.pointerId)return;dx+=e.clientX-dragging.x;dy+=e.clientY-dragging.y;dragging.x=e.clientX;dragging.y=e.clientY;redraw()});
+   preview.addEventListener('pointerup',()=>dragging=null);preview.addEventListener('pointercancel',()=>dragging=null);
+   screen.querySelector('[data-crop-accept]').onclick=()=>{
+    try{const out=document.createElement('canvas');out.width=512;out.height=512;const cc=out.getContext('2d');if(!cc)throw Error('Conversion impossible');clamp();draw(cc,512);
+     let result=out.toDataURL('image/jpeg',0.89);if(result.length>2400000)result=out.toDataURL('image/jpeg',0.72);
+     if(!/^data:image\/jpeg;base64,/.test(result)||result.length>2700000)throw Error('Photo trop volumineuse après recadrage');
+     cleanup();resolve(result);
+    }catch(err){const p=screen.querySelector('p');if(p)p.textContent=err.message||'Erreur de recadrage'}
+   };
+   redraw();
+  });
+ }finally{URL.revokeObjectURL(blobUrl)}
 }
 window.cmdPrepareServerIcon=prepareServerIcon;
 async function readIcon(e){
