@@ -1,0 +1,60 @@
+/* CMDPad++ document editors: local image retouching and CSV/TSV table editing. No upload, no overwrite without user action. */
+(function(){
+'use strict';
+if(window.CMDPAD_EDITORS_READY)return;
+const d=document,bar=d.querySelector('.toolbar'),area=d.getElementById('area'),fileName=d.getElementById('fileName'),menuBar=d.querySelector('.menubar');if(!bar||!area||!menuBar)return;
+const dialog=d.createElement('dialog');dialog.style.cssText='width:min(1050px,97vw);height:min(88vh,850px);padding:12px 16px;overflow:auto;border-radius:9px;border:1px solid #a8b2c0;background:white;color:#15243d';
+dialog.innerHTML='<header style="display:flex;gap:8px;align-items:center"><strong id="cmdEditorTitle" style="flex:1">Éditeur de documents</strong><button id="cmdEditorClose" type="button">✕ Fermer</button></header><div id="cmdEditorContent"></div>';d.body.append(dialog);
+const title=d.getElementById('cmdEditorTitle'),container=d.getElementById('cmdEditorContent');d.getElementById('cmdEditorClose').onclick=()=>dialog.close();
+const button=(label,fn,at=container)=>{const b=d.createElement('button');b.type='button';b.textContent=label;b.style.cssText='padding:8px 11px;margin:3px;border:1px solid #a0adc4;background:#ecf3ff;color:#152b49;border-radius:5px;cursor:pointer';b.onclick=fn;at.append(b);return b};
+const para=(text,at=container)=>{const p=d.createElement('p');p.textContent=text;at.append(p);return p};
+const show=s=>{title.textContent=s;container.replaceChildren();if(!dialog.open)dialog.showModal()};
+function saveBlob(blob,name){const url=URL.createObjectURL(blob),a=d.createElement('a');a.href=url;a.download=name;d.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+const imgDialog=()=>{
+show('CMDPad++ — Retouche d’image');para('Chargement local uniquement : JPEG, PNG, WebP, GIF (première image), BMP et les autres formats lisibles par ton navigateur. Le fichier d’origine reste inchangé.');
+const chooser=d.createElement('input');chooser.type='file';chooser.accept='image/*,.heic,.heif';container.append(chooser);
+const actions=d.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:3px;margin:8px 0';container.append(actions);
+const hint=para('Choisis une image à retoucher.');const canvas=d.createElement('canvas');canvas.style.cssText='display:block;max-width:100%;height:auto;margin:10px auto;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/24px 24px;border:1px solid #aaa';container.append(canvas);
+const ctx=canvas.getContext('2d',{willReadFrequently:true});let loaded=false,filename='image',undo=[];
+function snapshot(){if(!loaded)return;try{undo.push(canvas.toDataURL('image/png'));if(undo.length>6)undo.shift()}catch{}}
+async function restore(data){const im=new Image();await new Promise((ok,fail)=>{im.onload=ok;im.onerror=fail;im.src=data});canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;ctx.drawImage(im,0,0)}
+function ensure(){if(!loaded){hint.textContent='Ouvre d’abord une image.';return false}return true}
+chooser.onchange=async()=>{const f=chooser.files?.[0];if(!f)return;try{if(f.size>30*1024*1024)throw Error('Image supérieure à 30 Mo');const bmp=await createImageBitmap(f);if(bmp.width*bmp.height>24000000)throw Error('Image trop grande pour un traitement local sûr (24 MP maximum)');filename=f.name.replace(/\.[^.]+$/,'');canvas.width=bmp.width;canvas.height=bmp.height;ctx.drawImage(bmp,0,0);bmp.close?.();loaded=true;undo=[];hint.textContent=f.name+' — '+canvas.width+' × '+canvas.height+' px'}catch(e){hint.textContent='Erreur : '+e.message}};
+const operate=(fn)=>{if(!ensure())return;snapshot();fn();hint.textContent=filename+' — '+canvas.width+' × '+canvas.height+' px'};
+function transform(angle=0,flip=false){operate(()=>{const temp=d.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;temp.getContext('2d').drawImage(canvas,0,0);const sideways=Math.abs(angle)%180===90;if(sideways){canvas.width=temp.height;canvas.height=temp.width}ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(angle*Math.PI/180);if(flip)ctx.scale(-1,1);ctx.drawImage(temp,-temp.width/2,-temp.height/2);ctx.restore()})}
+button('↶ Annuler',async()=>{if(!undo.length)return;await restore(undo.pop());hint.textContent='Modification annulée'},actions);
+button('↻ Tourner 90°',()=>transform(90),actions);button('↺ Tourner -90°',()=>transform(-90),actions);button('⇆ Retourner',()=>transform(0,true),actions);
+button('◐ Gris',()=>operate(()=>{const temp=d.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;temp.getContext('2d').drawImage(canvas,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.filter='grayscale(100%)';ctx.drawImage(temp,0,0);ctx.filter='none'}),actions);
+button('☀ Luminosité',()=>{const value=prompt('Luminosité en % (50 à 180) :','115');if(value===null)return;const num=Number(value);if(!Number.isFinite(num)||num<50||num>180)return hint.textContent='Valeur incorrecte';operate(()=>{const temp=d.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;temp.getContext('2d').drawImage(canvas,0,0);ctx.filter='brightness('+num+'%)';ctx.drawImage(temp,0,0);ctx.filter='none'})},actions);
+button('◉ Contraste',()=>{const value=prompt('Contraste en % (50 à 180) :','115');if(value===null)return;const num=Number(value);if(!Number.isFinite(num)||num<50||num>180)return hint.textContent='Valeur incorrecte';operate(()=>{const temp=d.createElement('canvas');temp.width=canvas.width;temp.height=canvas.height;temp.getContext('2d').drawImage(canvas,0,0);ctx.filter='contrast('+num+'%)';ctx.drawImage(temp,0,0);ctx.filter='none'})},actions);
+button('⤢ Redimensionner',()=>{if(!ensure())return;const w=Number(prompt('Nouvelle largeur en pixels :',String(canvas.width)));if(!Number.isInteger(w)||w<1||w>10000)return;const h=Math.max(1,Math.round(canvas.height*w/canvas.width));if(w*h>24000000)return hint.textContent='Taille trop importante';operate(()=>{const t=d.createElement('canvas');t.width=canvas.width;t.height=canvas.height;t.getContext('2d').drawImage(canvas,0,0);canvas.width=w;canvas.height=h;ctx.drawImage(t,0,0,w,h)})},actions);
+button('✂ Rogner',()=>{if(!ensure())return;const raw=prompt('Rectangle de recadrage : x,y,largeur,hauteur', '0,0,'+canvas.width+','+canvas.height);if(!raw)return;const [x,y,w,h]=raw.split(',').map(Number);if(![x,y,w,h].every(Number.isInteger)||x<0||y<0||w<1||h<1||x+w>canvas.width||y+h>canvas.height)return hint.textContent='Rectangle invalide';operate(()=>{const data=ctx.getImageData(x,y,w,h);canvas.width=w;canvas.height=h;ctx.putImageData(data,0,0)})},actions);
+button('✎ Ajouter du texte',()=>{if(!ensure())return;const text=prompt('Texte à ajouter sur l’image :');if(!text)return;operate(()=>{ctx.font=Math.max(18,Math.round(canvas.width/35))+'px sans-serif';ctx.fillStyle='#ffffff';ctx.strokeStyle='#000000';ctx.lineWidth=3;ctx.strokeText(text,15,Math.max(45,canvas.height/10));ctx.fillText(text,15,Math.max(45,canvas.height/10))})},actions);
+button('💾 Export PNG',()=>{if(ensure())canvas.toBlob(b=>b&&saveBlob(b,filename+'-modifie.png'),'image/png')},actions);
+button('💾 Export JPEG',()=>{if(ensure())canvas.toBlob(b=>b&&saveBlob(b,filename+'-modifie.jpg'),'image/jpeg',0.92)},actions);
+button('💾 Export WebP',()=>{if(ensure())canvas.toBlob(b=>b&&saveBlob(b,filename+'-modifie.webp'),'image/webp',0.92)},actions);
+};
+function parseDelimited(raw,delim){const rows=[];let row=[],cell='',quoted=false;for(let i=0;i<raw.length;i++){const c=raw[i];if(c==='"'){if(quoted&&raw[i+1]==='"'){cell+='"';i++}else quoted=!quoted}else if(c===delim&&!quoted){row.push(cell);cell=''}else if((c==='\r'||c==='\n')&&!quoted){row.push(cell);rows.push(row);row=[];cell='';if(c==='\r'&&raw[i+1]==='\n')i++}else cell+=c}if(quoted)throw Error('Champ entre guillemets non terminé');if(cell||row.length)row.push(cell);if(row.length)rows.push(row);return rows}
+function stringifyTable(rows,delim){return rows.map(row=>row.map(x=>{x=String(x);return /["\r\n]/.test(x)||x.includes(delim)?'"'+x.replace(/"/g,'""')+'"':x}).join(delim)).join('\r\n')}
+const tableDialog=()=>{
+show('CMDPad++ — Tableur CSV / TSV');para('Éditeur de cellules pour fichiers CSV ou TSV (jusqu’à 200 lignes × 30 colonnes). Aucun fichier Excel binaire n’est converti silencieusement.');
+const picker=d.createElement('input');picker.type='file';picker.accept='.csv,.tsv,text/csv,text/tab-separated-values';container.append(picker);
+const controls=d.createElement('div');container.append(controls);const hint=para('Charge un fichier CSV/TSV ou utilise le document texte ouvert.');
+const pane=d.createElement('div');pane.style.cssText='overflow:auto;max-height:60vh;border:1px solid #ddd';container.append(pane);let rows=[],delim=',',src='';let cols=0;
+function draw(){pane.replaceChildren();const table=d.createElement('table');table.style.cssText='border-collapse:collapse;min-width:100%';for(let i=0;i<rows.length;i++){const tr=d.createElement('tr');for(let j=0;j<cols;j++){const td=d.createElement('td');td.style.cssText='padding:2px;border:1px solid #ddd';const cell=d.createElement('input');cell.value=rows[i][j]||'';cell.style.cssText='min-width:100px;max-width:220px;padding:6px;border:0';cell.oninput=()=>rows[i][j]=cell.value;td.append(cell);tr.append(td)}table.append(tr)}pane.append(table);hint.textContent=rows.length+' lignes × '+cols+' colonnes — '+(delim==='\t'?'TSV':'CSV')}
+function ingest(text,name){try{delim=name.toLowerCase().endsWith('.tsv')?'\t':',';const r=parseDelimited(text,delim);if(r.length>200)throw Error('Plus de 200 lignes; aucune troncature effectuée');cols=Math.max(1,...r.map(x=>x.length));if(cols>30)throw Error('Plus de 30 colonnes');rows=r;src=name;draw()}catch(e){hint.textContent='Erreur : '+e.message}}
+picker.onchange=async()=>{const file=picker.files?.[0];if(!file)return;if(file.size>1024*1024){hint.textContent='Limite 1 Mo';return}ingest(await file.text(),file.name)};
+button('Charger le document actif',()=>ingest(editor.value,d.getElementById('fileName')?.value||'texte.csv'),controls);
+button('+ Ligne',()=>{if(!rows.length)rows=[['']];if(rows.length>=200)return hint.textContent='Limite 200 lignes';rows.push(Array(cols).fill(''));draw()},controls);
+button('+ Colonne',()=>{if(cols>=30)return hint.textContent='Limite 30 colonnes';cols++;for(const r of rows)r.push('');draw()},controls);
+button('Exporter CSV',()=>saveBlob(new Blob([stringifyTable(rows,',')],{type:'text/csv;charset=utf-8'}),(src||'tableau').replace(/\.[^.]+$/,'')+'.csv'),controls);
+button('Exporter TSV',()=>saveBlob(new Blob([stringifyTable(rows,'\t')],{type:'text/tab-separated-values;charset=utf-8'}),(src||'tableau').replace(/\.[^.]+$/,'')+'.tsv'),controls);
+button('Appliquer au texte actif',()=>{if(!rows.length)return;if(!confirm('Remplacer le texte actif par ce tableau ?'))return;editor.value=stringifyTable(rows,delim);editor.dispatchEvent(new Event('input',{bubbles:true}));dialog.close()},controls);
+};
+const actions=d.createElement('span');actions.style.cssText='display:inline-flex;gap:3px;flex-shrink:0';bar.insertBefore(actions,bar.querySelector('.actions'));
+for(const [label,tip,fn] of [['🖼 Retouche','Retoucher les images localement',imgDialog],['📊 Tableau','Éditer CSV/TSV comme un tableau',tableDialog]]){const e=d.createElement('button');e.className='toolbtn';e.textContent=label;e.title=tip;e.onclick=fn;actions.append(e)}
+const menu=d.createElement('div');menu.className='menu';menu.innerHTML='<button>Éditeurs</button><div class="dropdown"><button data-edit="image">Retouche d’image</button><button data-edit="table">Tableur CSV / TSV</button></div>';menuBar.append(menu);
+menu.firstElementChild.onclick=e=>{e.stopPropagation();menu.classList.toggle('open');const r=e.target.getBoundingClientRect(),dd=menu.querySelector('.dropdown');dd.style.left=Math.max(4,Math.min(innerWidth-220,r.left))+'px';dd.style.top=r.bottom+'px'};
+menu.querySelector('[data-edit="image"]').onclick=imgDialog;menu.querySelector('[data-edit="table"]').onclick=tableDialog;
+window.CMDPAD_EDITORS_READY=true;
+})();
