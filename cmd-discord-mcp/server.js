@@ -3747,10 +3747,13 @@ async function updateNativeServerIdentity(auth,input){
   const description=safeText(input.description||"",1000);
   const image=input.iconDataUrl?safeImageData(input.iconDataUrl,2800000,"Icône"):null;
   if(image&&/^data:image\/gif/i.test(image))await requireCmdBoosts(pool,guildId,2);
-  const notifications=input.defaultNotifications==="all"?"all":"mentions";
+  const notifications=["all","mentions"].includes(String(input.defaultNotifications))?String(input.defaultNotifications):null;
+  const isPublic=input.isPublic===undefined?null:Boolean(input.isPublic);
+  const welcomeMessage=input.welcomeMessage===undefined?null:Boolean(input.welcomeMessage);
+  const showBoostBar=input.showBoostBar===undefined?null:Boolean(input.showBoostBar);
   const r=await pool.query(
-    "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=$4,icon=COALESCE($5,icon),default_notifications=$6,welcome_message=$7,updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,source_discord_id",
-    [guildId,name,description,Boolean(input.isPublic),image,notifications,Boolean(input.welcomeMessage)]
+    "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=COALESCE($4::boolean,is_public),icon=COALESCE($5,icon),default_notifications=COALESCE($6::text,default_notifications),welcome_message=COALESCE($7::boolean,welcome_message),show_boost_bar=COALESCE($8::boolean,show_boost_bar),updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,show_boost_bar,source_discord_id",
+    [guildId,name,description,isPublic,image,notifications,welcomeMessage,showBoostBar]
   );
   if(!r.rows[0])throw new Error("Serveur CMD Sphere introuvable.");
   return {server:r.rows[0],synced:false};
