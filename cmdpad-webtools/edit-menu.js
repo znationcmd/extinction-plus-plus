@@ -52,10 +52,10 @@ add('Exporter copie Mac ancien CR',()=>exportEOL('\r','CR'),newline);
 const direct=(label,fn,before)=>{
  const b=d.createElement('button');b.type='button';b.textContent=label;
  b.onclick=e=>{e.preventDefault();e.stopPropagation();menu.classList.remove('open');Promise.resolve().then(fn).catch(err=>info('Édition : '+String(err.message||err)))};
- drop.insertBefore(b,before||clip);return b;
+ drop.insertBefore(b,before||clip.parentElement);return b;
 };
 const firstClip=[...clip.querySelectorAll('button')];
-for(const b of firstClip.filter(b=>['Couper','Copier'].includes(b.textContent.trim())))drop.insertBefore(b,clip);
+for(const b of firstClip.filter(b=>['Couper','Copier'].includes(b.textContent.trim())))drop.insertBefore(b,clip.parentElement);
 direct('Coller   Ctrl+V',async()=>{
  try{const text=await navigator.clipboard.readText(),{s,e}=selection();apply(s,e,text)}
  catch{info('Collage non autorisé par le navigateur : utilise Ctrl+V dans le document')}
@@ -107,7 +107,7 @@ add('Copier le nom de fichier',async()=>{await navigator.clipboard.writeText(d.g
 const pasteGroup=sub('Collage spécial');
 add('Coller en supprimant les fins de ligne',async()=>{const v=(await navigator.clipboard.readText()).replace(/\r\n?|\n/g,' ');const {s,e}=selection();apply(s,e,v)},pasteGroup);
 add('Coller en JSON (chaîne avec échappements)',async()=>{const v=JSON.stringify(await navigator.clipboard.readText());const {s,e}=selection();apply(s,e,v)},pasteGroup);
-add('Coller sans indentation initiale',async()=>{const lines=(await navigator.clipboard.readText()).split(/\r?\n/);const lengths=lines.filter(x=>x.trim()).map(x=>x.match(/^[ \t]*/)[0].length);const min=Math.min(...lengths,0);const v=lines.map(x=>x.slice(min)).join('\n'),{s,e}=selection();apply(s,e,v)},pasteGroup);
+add('Coller sans indentation initiale',async()=>{const lines=(await navigator.clipboard.readText()).split(/\r?\n/);const lengths=lines.filter(x=>x.trim()).map(x=>x.match(/^[ \t]*/)[0].length);const min=lengths.length?Math.min(...lengths):0;const v=lines.map(x=>x.slice(min)).join('\n'),{s,e}=selection();apply(s,e,v)},pasteGroup);
 const auto=sub('Autocomplétion');
 add('Compléter le mot à partir du fichier   Ctrl+Espace',()=>{
  const source=a.value,start=a.selectionStart,match=source.slice(0,start).match(/[\p{L}_][\p{L}\p{N}_]*$/u);
