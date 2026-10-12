@@ -72,5 +72,11 @@ async function processImage(directory,filename,destDirectory,type){
  const counts=report.files.reduce((a,x)=>(a[x.kind]=(a[x.kind]||0)+1,a),{});
  console.info("[CMD Sphere display assets] Non-destructive enhanced catalogue",JSON.stringify(counts),"errors",report.errors.length);
  if(!report.files.length)throw Error("No original image assets were found: refusing to deploy an empty catalogue");
- if(report.errors.length)throw Error("Some display images could not be generated: "+report.errors.slice(0,5).map(x=>x.name).join(", "));
+ if(report.errors.length){
+  // Never fail the *entire CMD Sphere deployment* because a handful of optional
+  // enhanced thumbnails failed. Original v1/v3 assets remain untouched and
+  // every failure is explicitly recorded in the quality report for repair.
+  console.warn("[CMD Sphere display assets] Enhanced variants unavailable; originals retained:",
+    report.errors.slice(0,20).map(x=>x.name+": "+x.error).join("; "));
+ }
 })().catch(error=>{console.error("[CMD Sphere display assets]",error);process.exitCode=1;});
