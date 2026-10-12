@@ -3699,6 +3699,32 @@ async function applyNativeLocalAction(auth,input){
     let parent=row.rows[0].source_parent_id;
     if("parentId" in input)parent=input.parentId?await nativeSourceId(gid,"channel",input.parentId):null;
     await pool.query('UPDATE cmd_native_channels SET name=$3,type=$4,topic=$5,position=$6,source_parent_id=$7 WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),["text","voice","announcement","forum","category"].includes(String(input.type))?String(input.type):row.rows[0].type,safeText(input.topic??row.rows[0].topic,1024)||null,Number(input.position??row.rows[0].position??0),parent]);
+  }else if(action==="reorder_channels"){
+    // Native CMD Sphere only. Existing channel IDs, parents and permission overwrites are preserved.
+    // The request must include every item of the selected kind (stale/partial lists are rejected).
+    const mode=String(input.mode||"");
+    if(!["category","text","voice"].includes(mode))throw new Error("Mode de réorganisation inconnu.");
+    const order=Array.isArray(input.channelIds)?input.channelIds.map(String):[];
+    if(order.length>1000||new Set(order).size!==order.length)throw new Error("Ordre invalide ou éléments répétés.");
+    const dbTypes=mode==="category"?["category"]:mode==="voice"?["voice"]:["text","announcement","forum"];
+    const client=await pool.connect();
+    try{
+      await client.query("BEGIN");
+      const {rows}=await client.query(
+        "SELECT id::text AS id,source_channel_id,type FROM cmd_native_channels WHERE guild_id=$1 AND type=ANY($2::text[]) ORDER BY position,name,id FOR UPDATE",
+        [gid,dbTypes]
+      );
+      const indexed=new Map();
+      for(const row of rows){indexed.set(String(row.id),String(row.id));if(row.source_channel_id)indexed.set(String(row.source_channel_id),String(row.id))}
+      const normalized=order.map(value=>indexed.get(value));
+      if(normalized.some(value=>!value)||normalized.length!==rows.length||new Set(normalized).size!==rows.length)throw new Error("La liste des salons a changé. Actualise avant de réorganiser.");
+      for(let i=0;i<normalized.length;i++)await client.query(
+        "UPDATE cmd_native_channels SET position=$3 WHERE guild_id=$1 AND id=$2::uuid",
+        [gid,normalized[i],i*10]
+      );
+      await client.query("COMMIT");
+    }catch(error){try{await client.query("ROLLBACK")}catch{}throw error}
+    finally{client.release()}
   }else if(action==="delete_channel"){
     const id=String(input.channelId||"");const row=await pool.query('SELECT * FROM cmd_native_channels WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2) LIMIT 1',[gid,id]);if(!row.rows[0])throw new Error("Salon introuvable.");
     const parentKey=String(row.rows[0].source_channel_id||row.rows[0].id);
