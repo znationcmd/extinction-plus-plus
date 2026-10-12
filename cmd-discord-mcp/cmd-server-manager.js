@@ -317,7 +317,16 @@ function render(){
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
  box.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  box.querySelector('#csm-identity')?.addEventListener('submit',saveIdentity);
- box.querySelector('#csm-create-channel')?.addEventListener('submit',createChannel);
+ const createForm=box.querySelector('#csm-create-channel');
+ if(createForm){
+  createForm.addEventListener('submit',createChannel);
+  const kind=createForm.querySelector('[name="type"]'),parent=createForm.querySelector('[name="parentId"]');
+  if(kind&&parent){
+   const group=parent.closest('label');
+   const sync=()=>{const category=kind.value==='category';if(group)group.hidden=category;parent.disabled=category;if(category)parent.value=''};
+   kind.addEventListener('change',sync);sync();
+  }
+ }
  box.querySelector('#csm-icon-input')?.addEventListener('change',readIcon);
  box.querySelectorAll('[data-csm-edit-channel]').forEach(e=>e.addEventListener('click',()=>editChannel(e.dataset.csmEditChannel)));
  box.querySelectorAll('[data-csm-edit-role]').forEach(e=>e.addEventListener('click',()=>editRole(e.dataset.csmEditRole)));
@@ -582,7 +591,9 @@ async function saveIdentity(e){
 }
 async function createChannel(e){
  e.preventDefault();const fd=new FormData(e.currentTarget),type=String(fd.get('type')||'text');
- try{await mutate(type==='category'?'create_category':'create_channel',{name:String(fd.get('name')||'').trim(),type,parentId:String(fd.get('parentId')||''),topic:''})}catch(e){notify(e.message,false)}
+ const name=String(fd.get('name')||'').trim(),parentId=type==='category'?'':String(fd.get('parentId')||'');
+ if(!name){notify('Indique le nom du salon ou de la catégorie.',false);return}
+ try{await mutate(type==='category'?'create_category':'create_channel',{name,type,parentId,topic:''})}catch(e){notify(e.message,false)}
 }
 function editChannel(chId){
  const ch=(ctx.data.channels||[]).find(x=>String(x.id)===String(chId));if(!ch)return;
@@ -850,10 +861,12 @@ async function menu(){
    return;
   }
   if(key==="create-channel"||key==="create-category"){
-   shut();if(!admin){await open("channels");return}
-   await open("channels");
-   const form=document.querySelector(key==="create-channel"?"#csm-create-channel":"#csm-create-category");
-   if(form){form.scrollIntoView({block:"center",behavior:"smooth"});form.querySelector("input")?.focus()}
+   shut();await open("channels");
+   const form=document.querySelector("#csm-create-channel");
+   if(!form){notify('Création indisponible : vérifie tes permissions pour gérer les salons.',false);return}
+   const type=form.querySelector('[name="type"]');
+   if(type){type.value=key==="create-category"?"category":"text";type.dispatchEvent(new Event('change',{bubbles:true}))}
+   form.scrollIntoView({block:"center",behavior:"smooth"});form.querySelector('[name="name"]')?.focus({preventScroll:true});
    return;
   }
   shut();await open(key);
