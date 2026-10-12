@@ -1,0 +1,15 @@
+/* Menus Notepad++ pour CMDPad++, hiérarchie alphabétique. */
+.menubar .menu.open>.dropdown{max-height:78vh;overflow:auto;scrollbar-width:thin}
+.cmd-language-tree{min-width:245px}
+.cmd-language-current{margin:4px 8px;padding:5px 0;color:#4b5871;font-size:11px;border-bottom:1px solid #ddd}
+.cmd-language-filter{width:calc(100% - 14px);box-sizing:border-box;margin:5px 7px;padding:8px;background:#fff;color:#222;border:1px solid #9eacc2;border-radius:4px}
+.cmd-lang-letter{border-bottom:1px solid #e1e6ee;max-width:360px}
+.cmd-lang-letter summary{display:block;list-style:none;cursor:pointer;padding:7px 11px;font-size:12px;font-weight:650;color:#1e2a42;background:#f8fbff}
+.cmd-lang-letter summary:hover{background:#e0eeff}
+.cmd-lang-letter summary::-webkit-details-marker{display:none}
+.cmd-lang-letter button{padding-left:25px!important;font-size:12px!important;white-space:normal!important}
+.cmd-lang-letter button[aria-checked="true"]{background:#c9e5ff!important;font-weight:700}
+.cmd-lang-letter button[hidden]{display:none!important}
+.cmd-lang-letter[hidden]{display:none!important}
+.cmd-plugins-dialog{background:#fff;color:#1a263b;border:1px solid #aab9ce;border-radius:8px;padding:18px;width:min(500px,90vw);max-height:85vh;overflow:auto}
+@media(max-width:650px){.cmd-language-tree{min-width:200px}.menubar .menu.open>.dropdown{max-height:67vh;min-width:min(260px,90vw)}}
