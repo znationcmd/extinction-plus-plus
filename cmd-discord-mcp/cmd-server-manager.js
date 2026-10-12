@@ -662,7 +662,7 @@ function openChannelReorderMode(mode){
  const categoryNames=new Map(groups.map(g=>[g.id,g.name]));
  const updateLabels=()=>{if(mode==='category')return;for(const row of rows()){const parent=row.closest('.csm-sort-bucket')?.dataset.sortParent||'';row.title='Catégorie : '+(categoryNames.get(parent)||'Sans catégorie')}};
  let drag=null,saving=false,raf=0;
- const stop=()=>{if(!drag)return;clearTimeout(drag.timer);if(raf)cancelAnimationFrame(raf);raf=0;drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null};
+ const stop=()=>{if(!drag)return;clearTimeout(drag.timer);if(raf)cancelAnimationFrame(raf);raf=0;drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null;};
  const nearestBucket=y=>{
   const all=buckets();
   const hit=document.elementFromPoint(drag?.clientX||scroller.getBoundingClientRect().left+25,y)?.closest('.csm-sort-bucket');
@@ -671,16 +671,27 @@ function openChannelReorderMode(mode){
   for(const group of all){const r=group.getBoundingClientRect();const d=y<r.top?r.top-y:y>r.bottom?y-r.bottom:0;if(d<distance){best=group;distance=d}}
   return best;
  };
+ let highlightedBucket=null;
  const preview=()=>{
   if(!drag?.started)return;
   drag.ghost.style.top=(drag.y-drag.offset)+'px';
-  const target=mode==='category'?list:nearestBucket(drag.y)?.querySelector('.csm-sort-rows');
+  const destination=mode==='category'?null:nearestBucket(drag.y);
+  const target=mode==='category'?list:destination?.querySelector('.csm-sort-rows');
+  if(highlightedBucket!==destination){
+   if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background=''}
+   highlightedBucket=destination;
+   if(destination){destination.style.borderColor='#9784ef';destination.style.background='#42334e66'}
+  }
   if(!target)return;
   const others=[...target.children].filter(row=>row!==drag.row);
   let next=null;
   for(const row of others){const r=row.getBoundingClientRect();if(drag.y<r.top+r.height/2){next=row;break}}
   if(drag.row.parentElement!==target||drag.row.nextElementSibling!==next)target.insertBefore(drag.row,next);
   updateLabels();
+  if(destination&&mode!=='category'){
+   const destName=categoryNames.get(destination.dataset.sortParent||'')||'Sans catégorie';
+   status.textContent='Destination : '+destName+' — relâche pour enregistrer.';
+  }
  };
  const autoscroll=()=>{
   raf=0;if(!drag?.started)return;
@@ -696,19 +707,27 @@ function openChannelReorderMode(mode){
   drag.ghost=drag.row.cloneNode(true);drag.ghost.classList.add('csm-sort-ghost');
   drag.ghost.style.width=r.width+'px';drag.ghost.style.left=r.left+'px';document.body.append(drag.ghost);
   drag.row.classList.add('csm-sort-dragging');
-  status.textContent='Glisse dans une autre catégorie puis relâche pour enregistrer.';
+  status.textContent=mode==='category'?'Glisse vers le haut ou le bas pour réorganiser les catégories.':'Glisse le salon dans la catégorie souhaitée, puis relâche pour enregistrer.';
   preview();raf=requestAnimationFrame(autoscroll);
  };
  const onMove=e=>{
   if(!drag||drag.pointer!==e.pointerId)return;
   drag.y=e.clientY;drag.clientX=e.clientX;
-  if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.startY)>14){stop();return}
+  // Dedicated grip uses touch-action:none; immediate movement must begin the drag,
+  // not cancel it. This is how Discord's reorder handle behaves on iPhone.
+  if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.startY)>8){
+   clearTimeout(drag.timer);start();
+  }
   if(drag.started){e.preventDefault();preview()}
  };
- const onCancel=e=>{if(drag&&drag.pointer===e.pointerId){const before=drag.before;stop();restore(before);updateLabels()}};
+ const onCancel=e=>{if(drag&&drag.pointer===e.pointerId){const before=drag.before;stop();
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  restore(before);updateLabels()}};
  const onUp=async e=>{
   if(!drag||e.pointerId!==drag.pointer)return;
-  const before=drag.before,started=drag.started;stop();if(!started)return;
+  const before=drag.before,started=drag.started;stop();
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  if(!started)return;
   const after=snapshot();
   if(JSON.stringify(after)===JSON.stringify(before)){status.textContent='Aucun changement.';return}
   saving=true;status.textContent='Enregistrement de la nouvelle position et catégorie…';
@@ -720,7 +739,9 @@ function openChannelReorderMode(mode){
    status.textContent='Modification non enregistrée : '+err.message;
   }finally{saving=false}
  };
- const close=()=>{if(saving)return;stop();controller.abort();page.remove();document.body.classList.remove('csm-reordering');void getContext().then(()=>{if(currentTab==='channels')render()}).catch(e=>notify(e.message,false))};
+ const close=()=>{if(saving)return;stop();
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  controller.abort();page.remove();document.body.classList.remove('csm-reordering');void getContext().then(()=>{if(currentTab==='channels')render()}).catch(e=>notify(e.message,false))};
  page.querySelector('[data-sort-close]').onclick=close;page.querySelector('[data-sort-done]').onclick=close;
  page.addEventListener('pointerdown',e=>{
   const grip=e.target.closest('.csm-sort-grip');if(!grip||saving||!items.length)return;
