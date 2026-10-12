@@ -1,0 +1,45 @@
+/* CMDPad++: interface sans outils coupés, desktop/tablette/mobile. Ajouts uniquement. */
+:root{--cmd-sidebar-left:clamp(145px,15vw,205px);--cmd-sidebar-right:clamp(165px,18vw,230px)}
+.menubar{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;white-space:nowrap;touch-action:pan-x;overscroll-behavior-x:contain}
+.menubar::-webkit-scrollbar,.toolbar::-webkit-scrollbar,.tabs::-webkit-scrollbar{display:block!important;height:6px}
+.menubar::-webkit-scrollbar-thumb,.toolbar::-webkit-scrollbar-thumb,.tabs::-webkit-scrollbar-thumb{background:#aeb6c5;border-radius:6px}
+.toolbar{height:auto!important;min-height:40px!important;max-height:none!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;align-content:flex-start!important;gap:4px!important;overflow:visible!important;padding:5px 7px!important;box-sizing:border-box!important}
+.toolbar>.divider{flex:0 0 1px!important}
+.toolbar .toolbtn,.toolbar .file-import,.toolbar>span,.toolbar>div{flex-shrink:0!important}
+.toolbar .toolbtn{min-height:29px!important}
+.toolbar.cmd-toolbar-folded{max-height:80px!important;overflow-y:auto!important;scrollbar-width:thin!important;padding-right:44px!important}
+#cmdpadToolbarExpand{position:sticky!important;top:0!important;right:0!important;z-index:30!important;margin-left:auto!important;border:1px solid #95a2ba!important;background:#e9f2ff!important;color:#18263d!important;font-weight:650!important;padding:0 10px!important;box-shadow:0 1px 3px #0002}
+#cmdpadToolbarExpand:hover{background:#d3e8ff!important}
+.workspace{min-width:0!important;grid-template-columns:var(--cmd-sidebar-left) minmax(0,1fr) var(--cmd-sidebar-right)!important}
+.workspace .main{min-width:0!important;max-width:100%!important}
+#cmdpadFnPanel{min-width:0!important;width:auto!important;max-width:100%!important}
+#cmdpadFnPanel .fnhead{min-width:0!important}
+#cmdpadFnPanel .fnhead span{white-space:normal!important;overflow-wrap:anywhere!important}
+#cmdpadFnPanel input{box-sizing:border-box!important;width:calc(100% - 14px)!important;max-width:calc(100% - 14px)!important}
+#cmdpadFnList{overflow:auto!important}
+.tabs{overflow-x:auto!important;scrollbar-width:thin!important;min-width:0!important;max-width:100%!important}
+.tab{flex-shrink:0!important}
+.docbar{min-width:0!important;overflow-x:auto!important;scrollbar-width:thin!important}
+.findgrid{min-width:0!important}
+.workspace.cmd-hide{grid-template-columns:var(--cmd-sidebar-left) minmax(0,1fr)!important}
+.workspace.cmd-hide #cmdpadFnPanel{display:none!important}
+body.dark #cmdpadToolbarExpand{background:#263449!important;border-color:#607593!important;color:white!important}
+@media (max-width:1000px){
+ :root{--cmd-sidebar-left:155px;--cmd-sidebar-right:180px}
+ .toolbar{max-height:160px!important;overflow-y:auto!important;scrollbar-width:thin!important}
+ .toolbar:not(.cmd-toolbar-folded){max-height:260px!important}
+ .workspace{grid-template-columns:minmax(0,1fr)!important;position:relative!important}
+ .workspace .side{display:none!important}
+ #cmdpadFnPanel{display:none!important}
+ .workspace.fn-show #cmdpadFnPanel{display:flex!important;position:absolute!important;top:0!important;right:0!important;bottom:0!important;width:min(290px,85vw)!important;max-width:min(290px,85vw)!important;z-index:60!important;box-shadow:-7px 0 28px #0004!important}
+ .workspace.fn-hidden #cmdpadFnPanel{display:none!important}
+ .workspace.cmd-hide{grid-template-columns:minmax(0,1fr)!important}
+}
+@media (max-width:600px){
+ .toolbar{max-height:120px!important}
+ .toolbar:not(.cmd-toolbar-folded){max-height:220px!important}
+ .toolbar .toolbtn{font-size:12px!important;padding:0 5px!important}
+ .menubar{height:34px!important}
+ .findgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+ .editor{font-size:13px!important}
+}
