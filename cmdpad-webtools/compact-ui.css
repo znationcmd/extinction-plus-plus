@@ -1,0 +1,14 @@
+/* CMDPad++ desktop compact toolbar. Unique controls stay usable. */
+.toolbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;align-content:center!important;min-height:40px!important;max-height:44px!important;height:44px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;gap:3px!important;padding:4px 6px!important}
+.toolbar .toolbtn{flex:0 0 auto!important}
+.toolbar.cmd-toolbar-folded{max-height:44px!important;overflow-x:auto!important;overflow-y:hidden!important;padding-right:6px!important}
+#cmdpadToolbarExpand,#cmdExtra,#cmdpadWebFiles,#treeFile{display:none!important}
+.cmd-encoding-menu-row{display:flex;flex-direction:column;gap:4px;padding:9px 11px;border-top:1px solid #ddd;min-width:180px}
+.cmd-encoding-menu-row select{width:100%;max-width:100%!important;min-width:0!important;box-sizing:border-box}
+.menubar>.menu>.dropdown .cmd-lang-letter{position:relative}
+.cmd-lang-letter .cmd-lang-flyout{display:none;position:fixed;z-index:9999;box-sizing:border-box;width:245px;overflow:auto;box-shadow:0 4px 16px #0003;border:1px solid #b1c0d3;background:#fff;color:#17253a;border-radius:3px;padding:4px 0;scrollbar-width:thin}
+.cmd-lang-letter.cmd-flyout-open .cmd-lang-flyout{display:block}
+.cmd-lang-letter.cmd-flyout-open>summary{background:#d6eaff}
+.cmd-lang-flyout button{width:100%!important;display:block!important;box-sizing:border-box;text-align:left!important;padding:7px 10px!important;color:inherit!important;background:transparent!important;border:0!important;white-space:normal!important}
+.cmd-lang-flyout button:hover{background:#dcecff!important}
+@media(max-width:950px){.toolbar{height:43px!important;min-height:43px!important;max-height:43px!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important}.toolbar:not(.cmd-toolbar-folded){max-height:43px!important}}
