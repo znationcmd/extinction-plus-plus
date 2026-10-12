@@ -137,6 +137,19 @@ window.CMDPAD_onFileInspected=async function(payload){
 };
 window.CMDPAD_autoDetectFile=async file=>magic(new Uint8Array(await file.slice(0,32).arrayBuffer()));
 window.CMDPAD_detectAuto=identify;
+/* Keep the original editor validator/formatter in sync with AUTO when a supported text syntax is recognized. */
+try{
+ const legacy=typeof detectedType==='function'?detectedType:null;
+ if(legacy){
+  const recognized=new Set([...select.options].map(o=>o.value));
+  detectedType=function(){
+   const native=legacy();
+   if(select.value!=='AUTO')return native;
+   const match=identify(),candidate=match.engine;
+   return candidate&&recognized.has(candidate)?candidate:native;
+  };
+ }
+}catch(e){console.warn('Auto parser integration:',e)}
 window.CMDPAD_AUTO_DETECT_READY=true;
 schedule();
 })();
