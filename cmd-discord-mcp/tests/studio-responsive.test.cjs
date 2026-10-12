@@ -28,6 +28,6 @@ test("Viewer centers desktop video, preserves touch layout and keyboard control"
  assert.doesNotThrow(()=>new (require("node:vm").Script)(ui));
 });
 test("PWA version forces Studio script and stylesheet to refresh together",()=>{
- assert.equal((server.match(/\/cmd-promo-studio\.js\?v=20261012-studio-mobile-layout-v4/g)||[]).length,2);
- assert.equal((server.match(/\/cmd-promo-studio\.css\?v=20261012-studio-mobile-layout-v4/g)||[]).length,2);
+ assert.equal((server.match(/\/cmd-promo-studio\.js\?v=20261012-studio-dock-v5/g)||[]).length,2);
+ assert.equal((server.match(/\/cmd-promo-studio\.css\?v=20261012-studio-dock-v5/g)||[]).length,2);
 });

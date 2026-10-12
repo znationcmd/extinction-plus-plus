@@ -422,3 +422,58 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
  #cmdPromoStudio #cmdStudioBottomBar>button{width:auto!important;flex:1 1 125px!important;max-width:290px!important}
  #cmdPromoStudio #cmdStudioBottomBar #cmdStudioLocalSave{max-width:400px!important;flex:2 1 200px!important}
 }
+
+
+/* CMD Sphere Studio v5: isolated dock with no old full-width save rules. */
+#cmdPromoStudio #cmdStudioActionDock{
+ position:relative!important;z-index:40!important;flex:0 0 auto!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) 84px 84px!important;
+ gap:8px!important;align-items:stretch!important;
+ width:100%!important;min-width:0!important;max-width:100vw!important;
+ background:#070707!important;
+ padding:8px max(9px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(9px,env(safe-area-inset-left,0px))!important;
+}
+#cmdPromoStudio #cmdStudioActionDock>button,#cmdPromoStudio #cmdStudioActionDock #cmdStudioLocalSave{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ flex:none!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ box-sizing:border-box!important;min-height:54px!important;height:54px!important;margin:0!important;
+ padding:5px 4px!important;border-radius:15px!important;border:0!important;
+ color:#151515!important;background:#f6f6f7!important;
+ font:800 12px/1.14 system-ui,-apple-system,sans-serif!important;
+ text-align:center!important;white-space:normal!important;word-break:normal!important;
+ overflow-wrap:normal!important;writing-mode:horizontal-tb!important;
+}
+#cmdPromoStudio #cmdStudioActionDock #cmdStudioLocalSave{background:#aa43d6!important;color:#fff!important;font-size:15px!important}
+#cmdPromoStudio .cmd-studio-surface{width:auto!important;max-width:100%!important;max-height:100%!important;flex:0 1 auto!important}
+#cmdPromoStudio #cmdStudioCanvas{max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+@media(max-width:390px){
+ #cmdPromoStudio #cmdStudioActionDock{grid-template-columns:minmax(0,1fr) 71px 71px!important;gap:5px!important;padding-left:6px!important;padding-right:6px!important}
+ #cmdPromoStudio #cmdStudioActionDock>button{font-size:11px!important}
+}
+@media(min-width:600px){
+ #cmdPromoStudio #cmdStudioActionDock{display:flex!important;justify-content:center!important;gap:12px!important}
+ #cmdPromoStudio #cmdStudioActionDock #cmdStudioLocalSave{width:min(44vw,370px)!important;flex:0 1 370px!important}
+ #cmdPromoStudio #cmdStudioActionDock>button:not(#cmdStudioLocalSave){width:110px!important;flex:0 0 110px!important}
+}
+@media(orientation:landscape) and (max-height:519px){
+ #cmdPromoStudio .cmd-studio-header{flex:0 0 38px!important;min-height:38px!important}
+ #cmdPromoStudio .cmd-studio-preview{padding:0 10px 43px!important;align-items:center!important;justify-content:center!important}
+ #cmdPromoStudio .cmd-studio-surface{width:auto!important;height:calc(100% - 57px)!important;max-height:calc(100% - 57px)!important;max-width:100%!important}
+ #cmdPromoStudio #cmdStudioCanvas{width:100%!important;height:100%!important}
+ #cmdPromoStudio #cmdStudioToolRail{
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  position:absolute!important;top:auto!important;bottom:0!important;left:8px!important;right:8px!important;
+  width:calc(100% - 16px)!important;height:40px!important;max-height:40px!important;
+  overflow-x:auto!important;overflow-y:hidden!important;gap:6px!important;align-items:center!important;justify-content:flex-start!important;
+  padding:2px!important;background:#18181e!important;border-radius:12px!important;
+ }
+ #cmdPromoStudio #cmdStudioToolRail button{
+  display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;
+  flex:0 0 68px!important;min-width:68px!important;width:68px!important;
+  min-height:35px!important;height:35px!important;gap:3px!important;padding:2px!important;
+ }
+ #cmdPromoStudio #cmdStudioToolRail button span{font-size:17px!important}
+ #cmdPromoStudio #cmdStudioToolRail button small{font-size:10px!important}
+ #cmdPromoStudio #cmdStudioActionDock{padding-top:5px!important;padding-bottom:calc(5px + env(safe-area-inset-bottom,0px))!important}
+ #cmdPromoStudio #cmdStudioActionDock>button{height:43px!important;min-height:43px!important}
+}
