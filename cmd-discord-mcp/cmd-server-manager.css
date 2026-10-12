@@ -298,3 +298,79 @@ body.csm-server-menu-open{overflow:hidden!important}
  .csm-crop-dialog{border-radius:22px 22px 0 0;width:100%;max-height:94dvh;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
  .csm-native-context{padding:0}
 }
+
+/* CMD Sphere 2026-10-12 — safe iPhone server rail scrolling. Overrides
+   native-layout's overflow:visible without clipping individual round icons. */
+html body .sphere-app nav.server-rail,
+html body .sphere-app .server-rail,
+html body .sphere-app.cmd-native-selected .server-rail {
+ position:fixed!important;top:0!important;bottom:0!important;
+ height:100dvh!important;max-height:100dvh!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ overscroll-behavior-y:contain!important;
+ -webkit-overflow-scrolling:touch!important;
+ touch-action:pan-y!important;
+ box-sizing:border-box!important;
+ padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;
+ scrollbar-width:none;
+}
+html body .sphere-app .server-rail::-webkit-scrollbar{display:none!important}
+html body .sphere-app .server-rail > *{flex-shrink:0!important}
+html body .sphere-app .server-rail .rail-server,
+html body .sphere-app .server-rail .rail-home,
+html body .sphere-app .server-rail .rail-plus,
+html body .sphere-app .server-rail .rail-messages{flex:0 0 auto!important}
+html body .sphere-app .server-rail .rail-folder{flex-shrink:0!important}
+@supports not (height:100dvh){
+ html body .sphere-app .server-rail{height:100vh!important;max-height:100vh!important}
+}
+/* Mobile Discord-like settings: first a scrollable section list,
+   then each detail screen with a back arrow. */
+.csm-mobile-title,.csm-mobile-identity,#csm-back{display:none}
+@media(max-width:760px){
+ #serverSettingsModal.csm-open{height:100dvh!important}
+ #serverSettingsModal.csm-open>.add-card{height:100dvh!important;max-height:100dvh!important}
+ .csm-root{height:100dvh;max-height:100dvh;min-height:0}
+ .csm-header{padding:calc(12px + env(safe-area-inset-top,0px)) 18px 12px!important;min-height:66px!important;gap:11px}
+ .csm-header-icon,.csm-header-label small,.csm-guild-title{display:none!important}
+ .csm-header-label{align-items:center;text-align:center}
+ .csm-mobile-title{display:block;font-size:17px;white-space:normal}
+ #csm-back{display:flex;align-items:center;justify-content:center;width:36px;height:40px;font-size:32px;border:0;background:transparent;color:#fff;cursor:pointer}
+ .csm-mobile-index #csm-back{visibility:hidden}
+ .csm-columns{min-height:0;flex:1;overflow:hidden}
+ .csm-mobile-index .csm-main{display:none!important}
+ .csm-mobile-index .csm-nav{display:block!important;white-space:normal!important;overflow-y:auto!important;overflow-x:hidden!important;
+    min-height:0!important;flex:1!important;padding:17px 16px calc(90px + env(safe-area-inset-bottom,0px))!important;
+    width:100%!important;background:#1b1b20!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain}
+ .csm-mobile-identity{display:flex!important;flex-direction:column;align-items:center;gap:12px;margin:3px 0 34px;font-size:20px;text-align:center;overflow-wrap:anywhere}
+ .csm-mobile-guild-icon{width:78px;height:78px;border-radius:22px;overflow:hidden;display:grid;place-items:center;background:#32303d;font-size:36px}
+ .csm-mobile-guild-icon img{width:100%;height:100%;object-fit:contain}
+ .csm-nav-group{display:block!important;margin:0 0 28px!important;white-space:normal!important}
+ .csm-nav-group h3{display:block!important;font-size:15px;letter-spacing:0;color:#a5a4ae;padding:0 4px;margin:0 0 10px}
+ .csm-nav-group button{width:100%!important;min-height:61px!important;display:flex!important;align-items:center!important;
+    font-size:17px!important;padding:13px 15px!important;border-radius:0!important;
+    border-bottom:1px solid #ffffff13!important;background:#28282f!important;white-space:normal!important}
+ .csm-nav-group button:first-of-type{border-radius:16px 16px 0 0!important}
+ .csm-nav-group button:last-child{border-radius:0 0 16px 16px!important;border-bottom:0!important}
+ .csm-nav-group button span{font-size:23px!important;width:31px;flex:none}
+ .csm-nav-group button::after{content:'›';margin-left:auto;font-size:30px;line-height:1;color:#aaa6b6;font-weight:300}
+ .csm-nav-group button.chosen{background:#494058!important}
+ .csm-mobile-detail .csm-nav{display:none!important}
+ .csm-mobile-detail .csm-main{width:100%!important;display:block!important;flex:1!important;min-height:0!important;
+    overflow-y:auto!important;padding:21px 16px calc(100px + env(safe-area-inset-bottom,0px))!important;
+    -webkit-overflow-scrolling:touch!important}
+ #serverSettingsBody{height:100%;min-height:0}
+}
+/* Discord-inspired draggable photo recropper, no third-party API. */
+body.csm-crop-open{overflow:hidden!important}
+.csm-crop-screen{position:fixed;inset:0;z-index:25000;background:#101019ec;display:flex;align-items:center;justify-content:center;padding:16px}
+.csm-crop-card{width:min(440px,100%);max-height:94dvh;overflow-y:auto;box-sizing:border-box;background:#28252f;color:white;
+  border:1px solid #ffffff20;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:16px;
+  -webkit-overflow-scrolling:touch}
+.csm-crop-card header{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.csm-crop-card header button,.csm-crop-card>[data-crop-reset]{border:0;border-radius:10px;background:#47414f;color:white;padding:11px;font-weight:700}
+.csm-crop-card header [data-crop-accept]{background:#7462ca}
+.csm-crop-card p{font-size:13px;color:#cbc5d6;line-height:1.4;margin:0}
+.csm-crop-preview{width:min(300px,75vw);height:min(300px,75vw);max-width:100%;align-self:center;touch-action:none;cursor:grab;
+ border:3px solid #9e84ee;border-radius:50%;background:#262131;box-sizing:border-box;display:block}
+.csm-crop-card input[type=range]{width:100%;accent-color:#9c84ee;min-height:30px}
