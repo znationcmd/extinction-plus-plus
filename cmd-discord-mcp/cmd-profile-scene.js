@@ -445,7 +445,7 @@ void loadSupplementalScenes();
 function picker(label,key,opts,visual){
  return '<section class="cmd-scene-catalog-group"><h3>'+label+'</h3><div class="cmd-scene-card-carousel">'+opts.map(([value,name,icon])=>{
    const visualMarkup=visual==="clothing"?sheetArt(["jeans","dark","shorts","skirt","cargo","baggy","wide","joggers","formal"].includes(value)?"bottom":["coat","jacket","suit"].includes(value)?"coat":"top",opts.findIndex(x=>x[0]===value)):visual==="pet"?petArt(value):visual==="person"?'<span class="cmd-real-portrait-loader">3D</span>':(key==="vehicle"||key==="home")&&value!=="none"?universeArtwork(key,value,icon):visual==="scene"?'<div class="cmd-scene-landscape cmd-hd-scene-thumb">'+(sceneReferenceIndex(value)>=0?'<img class="cmd-scene-thumb-image" loading="lazy" decoding="async" src="'+escape(sceneTiles[sceneReferenceIndex(value)].replace("/cmd-restored-fonds/","/cmd-restored-fonds/thumb_"))+'" alt="'+escape(name)+'">':'<span class="cmd-scene-choice-symbol">'+(icon||'✦')+'</span>')+'</div>':'<span class="cmd-scene-choice-symbol">'+(icon||"✦")+'</span>';
-   return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup.replaceAll('/universe/v2/','/universe/v2/thumbs/')+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
+   return '<button type="button" class="cmd-scene-catalog-card '+(state[key]===value?"selected":"")+'" data-scene-choice="'+key+'" data-value="'+escape(value)+'" aria-pressed="'+(state[key]===value)+'"><div class="cmd-scene-card-art">'+visualMarkup.replace(/src="(\/universe\/v2\/[^"]+)"/g,(_,src)=>'src="'+src.replace('/universe/v2/','/universe/v2/thumbs/')+'" srcset="'+src.replace('/universe/v2/','/universe/v2/thumbs/')+' 1x, '+src+' 2x"')+'</div><span class="cmd-scene-card-title">'+escape(name)+'</span></button>';
   }).join("")+'</div></section>';
 }
 function swatches(label,key,values){return '<div class="cmd-scene-fieldset"><strong>'+label+'</strong><div class="cmd-scene-swatches">'+values.map(c=>'<button type="button" aria-label="'+c+'" data-scene-color="'+key+'" data-value="'+c+'" class="'+(state[key]===c?"selected":"")+'" style="background:'+c+'"></button>').join("")+'</div></div>'}
@@ -483,7 +483,7 @@ function applyScreenshotCatalogue(){
 }
 function importedAvatarArt(i,eager=false){
  const src=importedAvatarTiles[i];
- return src?'<img class="cmd-imported-avatar-art" src="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+'" alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
+ return src?'<img class="cmd-imported-avatar-art" src="'+(eager?src:src.replace('/avatars/v4/','/avatars/v4/thumbs/'))+'" srcset="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+' 1x, '+src+' 2x" alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
 }
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Silhouette complète · 2D</small></button>').join("")}
 function avatarEditor(){return '<h2>Choisis ton avatar</h2><p class="cmd-scene-section-intro">68 silhouettes complètes avec leur tenue et leurs accessoires.</p><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards()+'</div>'}
@@ -596,12 +596,13 @@ async function compressPhoto(file,preserveTransparency=false){
  const bitmap=await createImageBitmap(file).catch(()=>null);
  const image=bitmap||await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(Error("Image impossible à ouvrir"));i.src=URL.createObjectURL(file)});
  const w=image.width,h=image.height;if(!w||!h)throw Error("Image vide.");
- const ratio=preserveTransparency?Math.min(1,800/w,1000/h):Math.min(1,1400/w,900/h);
+ const ratio=preserveTransparency?Math.min(1,2048/w,3072/h):Math.min(1,3840/w,2160/h);
  const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));
- canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+ const ctx=canvas.getContext("2d");ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.drawImage(image,0,0,canvas.width,canvas.height);
  if(image.close)image.close();else if(image.src?.startsWith("blob:"))URL.revokeObjectURL(image.src);
- let data=canvas.toDataURL("image/webp",preserveTransparency?.76:.8);
- if(!data.startsWith("data:image/webp"))data=canvas.toDataURL(preserveTransparency?"image/png":"image/jpeg",.78);
+ let quality=.94;let data=canvas.toDataURL("image/webp",quality);
+ while(data.length>2.75*1024*1024&&quality>.78){quality-=.04;data=canvas.toDataURL("image/webp",quality);}
+ if(!data.startsWith("data:image/webp"))data=canvas.toDataURL(preserveTransparency?"image/png":"image/jpeg",.94);
  if(data.length>2.75*1024*1024)throw Error("Image encore trop lourde. Choisis une photo plus petite.");
  return data;
 }
