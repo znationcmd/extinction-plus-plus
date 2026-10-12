@@ -21,7 +21,7 @@ const langs=[
 ];
 function encodeUTF16(text,bigendian){const out=new Uint8Array(text.length*2);for(let i=0;i<text.length;i++){const val=text.charCodeAt(i);out[i*2+(bigendian?1:0)]=val&255;out[i*2+(bigendian?0:1)]=val>>>8}return out}
 function detectEncoding(bytes){if(bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF)return 'utf-8';if(bytes[0]===0xFF&&bytes[1]===0xFE)return 'utf-16le';if(bytes[0]===0xFE&&bytes[1]===0xFF)return 'utf-16be';try{new TextDecoder('utf-8',{fatal:true}).decode(bytes);return 'utf-8'}catch{return 'windows-1252 (hypothèse)'}}
-window.CMDPAD_decodeFile=async file=>{const bytes=new Uint8Array(await file.arrayBuffer());const detected=detectEncoding(bytes).replace(' (hypothèse)','');const text=new TextDecoder(detected,{fatal:false}).decode(bytes);return{text,encoding:detected}};
+if(!window.CMDPAD_decodeFile) window.CMDPAD_decodeFile=async file=>{const bytes=new Uint8Array(await file.arrayBuffer());const detected=detectEncoding(bytes).replace(' (hypothèse)','');const text=new TextDecoder(detected,{fatal:false}).decode(bytes);return{text,encoding:detected}};
 let hashFile=null,hashLabel='Texte de l’éditeur';
 const dialog=d.createElement('dialog');dialog.style.cssText='width:min(870px,96vw);max-height:90vh;padding:16px;border:1px solid #8a9bb4;border-radius:9px;background:white;color:#19273b;overflow:auto';
 dialog.innerHTML='<div style="display:flex;align-items:center;gap:8px"><strong id="advancedTitle" style="flex:1">CMDPad++ — Outils avancés</strong><button type="button" id="advancedClose">✕</button></div><div id="advancedContent"></div>';
