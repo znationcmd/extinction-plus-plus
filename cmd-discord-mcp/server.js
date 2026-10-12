@@ -195,7 +195,7 @@ function html(res,body,status=200,headers={}){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
     }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
-    const pwaIcons='<link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v=20261011pwa1"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v=20261011pwa1">';
+    const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'">';
     body=body.replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v=20261011pwa1"></script></body>');
   }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
@@ -5150,7 +5150,7 @@ const httpServer=createServer(async(req,res)=>{
       return;
     }
         if(req.method==="GET"&&url.pathname==="/manifest.webmanifest"){
-      sendJson(res,200,{id:"/dashboard",name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/pwa-icon-192.png?v=20261011pwa1",sizes:"192x192",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v=20261011pwa1",sizes:"512x512",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v=20261011pwa1",sizes:"512x512",type:"image/png",purpose:"maskable"},{src:"/app-icon.webp?v=5",sizes:"any",type:"image/webp",purpose:"any"}]},{"content-type":"application/manifest+json","cache-control":"no-cache"});return;
+      sendJson(res,200,{id:"/dashboard",name:"CMD Sphere",short_name:"CMD Sphere",description:"Communautés CMD",start_url:"/dashboard",scope:"/",display:"standalone",orientation:"any",background_color:"#070910",theme_color:"#12051f",icons:[{src:"/pwa-icon-192.png?v="+cmdPwaRuntimeVersion,sizes:"192x192",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"any"},{src:"/pwa-icon-512.png?v="+cmdPwaRuntimeVersion,sizes:"512x512",type:"image/png",purpose:"maskable"},{src:"/app-icon.webp?v=5",sizes:"any",type:"image/webp",purpose:"any"}]},{"content-type":"application/manifest+json","cache-control":"no-cache"});return;
     }
     if(req.method==="GET"&&url.pathname==="/api/pwa/version"){
       sendJson(res,200,{version:cmdPwaRuntimeVersion});return;
@@ -5167,6 +5167,16 @@ const httpServer=createServer(async(req,res)=>{
         const data=await cmdPwaPngCache.get(size);
         res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600,must-revalidate","x-content-type-options":"nosniff"});res.end(data);
       }catch(error){cmdPwaPngCache.delete(size);res.writeHead(500).end("CMD Sphere icon conversion unavailable");}
+      return;
+    }
+    if(req.method==="GET"&&url.pathname==="/favicon.ico"){
+      const input=iconB64||logoB64;
+      if(!input){res.writeHead(404,{"content-type":"text/plain"}).end("CMD Sphere icon not configured");return}
+      try{
+        const png=await sharp(Buffer.from(input,"base64"),{failOn:"error"}).resize(48,48,{fit:"contain",background:"#140826"}).png().toBuffer();
+        const ico=Buffer.alloc(22);ico.writeUInt16LE(1,2);ico.writeUInt16LE(1,4);ico[6]=48;ico[7]=48;ico.writeUInt16LE(1,10);ico.writeUInt16LE(32,12);ico.writeUInt32LE(png.length,14);ico.writeUInt32LE(22,18);
+        res.writeHead(200,{"content-type":"image/x-icon","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"});res.end(Buffer.concat([ico,png]));
+      }catch(error){res.writeHead(500).end("CMD Sphere ICO generation error")}
       return;
     }
     if(req.method==="GET"&&url.pathname==="/app-icon.webp"){
