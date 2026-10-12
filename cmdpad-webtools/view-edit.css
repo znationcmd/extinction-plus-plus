@@ -1,0 +1,16 @@
+/* CMDPad++ : sous-menus Affichage et Édition avec survol PC et appui tactile */
+.menu .cmd-view-group,.menu .cmd-edit-group{display:block;border-bottom:1px solid #edf0f5}
+.menu .cmd-view-group>summary,.menu .cmd-edit-group>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;font-size:12px;min-width:195px;color:#202b3a}
+.menu .cmd-view-group>summary::-webkit-details-marker,.menu .cmd-edit-group>summary::-webkit-details-marker{display:none}
+.menu .cmd-view-group>summary:hover,.menu .cmd-edit-group>summary:hover,.menu .cmd-view-open>summary,.menu .cmd-edit-open>summary{background:#dcecff}
+.menu .cmd-view-flyout,.menu .cmd-edit-flyout{display:none;position:fixed;z-index:999999;background:#fff;border:1px solid #a7b6ce;border-radius:4px;box-shadow:0 6px 18px #0003;min-width:250px;max-width:min(370px,95vw);overflow:auto;padding:5px}
+.menu .cmd-view-open>.cmd-view-flyout,.menu .cmd-edit-open>.cmd-edit-flyout{display:block}
+.menu .cmd-view-flyout button,.menu .cmd-edit-flyout button{color:#17243a!important;background:white!important;text-align:left!important;display:block!important;padding:8px 11px!important;white-space:normal!important;max-width:100%!important;width:100%!important}
+.menu .cmd-view-flyout button:hover,.menu .cmd-edit-flyout button:hover{background:#e0efff!important}
+#cmdpadSymbolPreview{background:#f7f9fd;border:1px solid #ccd5e5;color:#1b2a42;min-height:65px;max-height:180px;overflow:auto;margin:3px;flex:0 0 auto;font:12px/1.5 Consolas,monospace}
+#cmdpadSymbolPreview[hidden]{display:none}
+.cmd-symbol-heading{position:sticky;top:0;background:#e6ecf7;padding:5px 9px;display:flex;justify-content:space-between;align-items:center;font:12px sans-serif}
+.cmd-symbol-heading button{border:1px solid #acc1dc;border-radius:3px;background:#fff}
+#cmdpadSymbolText{white-space:pre;tab-size:4;padding:7px;margin:0;font:12px/1.5 Consolas,monospace}
+.cmd-view-dialog{background:white;color:#15243c;border:1px solid #a3b3c7;padding:20px;border-radius:7px;max-width:min(95vw,500px)}
+@media(max-width:650px){.menu .cmd-view-flyout,.menu .cmd-edit-flyout{max-width:95vw;min-width:180px}}
