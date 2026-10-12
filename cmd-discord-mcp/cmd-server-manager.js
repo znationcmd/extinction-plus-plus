@@ -387,6 +387,68 @@ async function open(tab='home'){
  }catch(e){notify('Paramètres du serveur : '+e.message,false);close()}finally{opening=false}
 }
 function close(){$('#serverSettingsModal')?.classList.remove('on','csm-open')}
+async function openChannelContext(target){
+ const channelRow=target.closest('[data-native-channel]');
+ const group=target.closest('.cmd-server-section');
+ const categoryId=group?.querySelector('[data-csm-channel-settings]')?.dataset.csmChannelSettings;
+ const channelId=String(channelRow?.dataset.nativeChannel||categoryId||'');
+ if(!channelId)return;
+ try{await getContext()}catch(e){notify('Menu du salon : '+e.message,false);return}
+ const ch=(ctx.data.channels||[]).find(x=>String(x.id)===channelId);
+ if(!ch)return;
+ document.getElementById('csm-channel-context')?.remove();
+ const category=ch.type==='category',native=isNative(),editable=canEditChannels();
+ const sheet=document.createElement('div');sheet.id='csm-channel-context';
+ const title=escapeHtml((category?'Catégorie : ':'# ')+String(ch.name||'Salon'));
+ const button=(action,icon,label)=>'<button type="button" data-csm-channel-action="'+action+'"><span class="csm-channel-context-icon">'+icon+'</span><span>'+label+'</span><span class="csm-channel-context-arrow">›</span></button>';
+ sheet.innerHTML='<div class="csm-channel-context-shade"></div><section class="csm-channel-context-sheet" role="dialog" aria-modal="true" aria-label="Options de salon et catégorie">'+
+   '<div class="csm-channel-context-handle"></div><h3>'+title+'</h3><div class="csm-channel-context-group">'+
+   button('copy-link','🔗','Copier le lien')+button('copy-id','▣',category?'Copier l’identifiant de catégorie':'Copier l’identifiant du salon')+'</div>'+
+   (editable?'<div class="csm-channel-context-group">'+button('edit','⚙',category?'Modifier la catégorie':'Modifier le salon')+
+    button('duplicate','▤',category?'Dupliquer la catégorie':'Dupliquer le salon')+
+    (category?button('create-in','＋','Créer un salon dans la catégorie'):'')+'</div>':'')+
+   '<button class="csm-channel-context-dismiss" type="button" data-csm-channel-action="close">Fermer</button>'+
+   '<p class="csm-channel-context-status" role="status" aria-live="polite"></p></section>';
+ document.body.append(sheet);document.body.classList.add('csm-channel-context-open');
+ const quit=()=>{sheet.remove();document.body.classList.remove('csm-channel-context-open')};
+ sheet.querySelector('.csm-channel-context-shade').onclick=quit;
+ sheet.querySelectorAll('[data-csm-channel-action]').forEach(el=>el.onclick=async()=>{
+  const action=el.dataset.csmChannelAction,status=sheet.querySelector('.csm-channel-context-status');
+  if(action==='close'){quit();return}
+  if(action==='copy-link'||action==='copy-id'){
+   const link=category?new URL('/native/'+encodeURIComponent(id()),location.origin).href:
+      new URL('/native/'+encodeURIComponent(id())+'?channel='+encodeURIComponent(channelId),location.origin).href;
+   const value=action==='copy-id'?channelId:link;
+   try{await navigator.clipboard.writeText(value);status.textContent='Copié.'}catch{prompt('Copier',value)}return;
+  }
+  if(!editable)return;
+  if(action==='edit'||action==='create-in'){
+   const selectedId=channelId;quit();await open('channels');
+   if(action==='edit'){editChannel(selectedId)}
+   else{const form=$('#csm-create-channel');const select=form?.querySelector('[name="parentId"]');if(select){select.value=String(ch.source_channel_id||ch.id);form.querySelector('[name="name"]')?.focus();form.scrollIntoView({block:'nearest'})}}
+   return;
+  }
+  if(action==='duplicate'){
+   if(!confirm('Dupliquer '+(category?'cette catégorie':'ce salon')+' dans CMD Sphere ?'))return;
+   el.disabled=true;
+   try{await mutate(category?'create_category':'create_channel',{name:String(ch.name||'Salon')+' copie',type:category?'category':ch.type,
+      parentId:category?'':String(ch.source_parent_id||ch.parentId||''),topic:category?'':String(ch.topic||'')});quit()}
+   catch(e){status.textContent=e.message;el.disabled=false}
+  }
+ });
+}
+let csmLongPress=null,csmLongPressFiredUntil=0;
+document.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'||!e.target.closest('.cmd-channel-row[data-native-channel],.cmd-category-toggle'))return;
+ const target=e.target.closest('.cmd-channel-row[data-native-channel],.cmd-category-toggle');
+ csmLongPress={target,x:e.clientX,y:e.clientY,timer:setTimeout(()=>{
+  csmLongPress=null;csmLongPressFiredUntil=Date.now()+1200;void openChannelContext(target)
+ },550)};
+},{passive:true});
+document.addEventListener('pointermove',e=>{if(csmLongPress&&(Math.abs(e.clientX-csmLongPress.x)>12||Math.abs(e.clientY-csmLongPress.y)>12)){clearTimeout(csmLongPress.timer);csmLongPress=null}},{passive:true});
+for(const event of ['pointerup','pointercancel','scroll'])document.addEventListener(event,()=>{if(csmLongPress){clearTimeout(csmLongPress.timer);csmLongPress=null}},{passive:true,capture:true});
+document.addEventListener('click',e=>{if(Date.now()<csmLongPressFiredUntil&&e.target.closest('.cmd-channel-row[data-native-channel],.cmd-category-toggle')){e.preventDefault();e.stopImmediatePropagation()}},true);
+
 async function update(){
  nativeMemberCache=null;await getContext();render();
  try{const st=state();if(st?.nativeGuild&&typeof selectNative==='function')await selectNative(st.nativeGuild)}catch{}
@@ -849,11 +911,12 @@ document.addEventListener('click',e=>{
  if(e.target.closest('#serverSettingsModal .csm-open-outside'))close();
 });
 document.addEventListener('contextmenu',e=>{
- const target=e.target.closest('.cmd-channel-row[data-native-channel]');
+ const target=e.target.closest('.cmd-channel-row[data-native-channel],.cmd-category-toggle');
  if(!target)return;
  e.preventDefault();
- open('channels').then(()=>editChannel(target.dataset.nativeChannel));
-});
+ e.stopImmediatePropagation();
+ void openChannelContext(target);
+},true);
 const observer=new MutationObserver(()=>install());
 function boot(){install();observer.observe(document.body,{childList:true,subtree:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
