@@ -681,3 +681,84 @@ body.csm-reordering{overflow:hidden!important}
  #csm-reorder-screen .csm-sort-rows .csm-sort-row{padding-left:9px;gap:8px}
  #csm-reorder-screen .csm-sort-row .csm-sort-grip{min-width:52px;min-height:54px}
 }
+
+/* 2026-10-12 CMD Sphere: Discord-like category/text/voice drag list */
+#csm-reorder-screen{background:#1e1f22!important;color:#f2f3f5!important}
+#csm-reorder-screen>header{
+ position:sticky!important;top:0!important;z-index:2!important;
+ background:#1e1f22!important;border-bottom:1px solid #323338!important;
+ padding-top:max(12px,env(safe-area-inset-top,0px))!important
+}
+#csm-reorder-screen .csm-reorder-scroll{
+ background:#1e1f22!important;min-height:0!important;flex:1 1 auto!important;
+ padding:8px 18px calc(190px + env(safe-area-inset-bottom,0px))!important;
+ -webkit-overflow-scrolling:touch!important;
+ overscroll-behavior-y:contain!important;scroll-padding-block:80px 160px!important
+}
+#csm-reorder-screen .csm-reorder-list{gap:12px!important;background:transparent!important}
+#csm-reorder-screen .csm-sort-with-categories{gap:23px!important}
+#csm-reorder-screen .csm-sort-bucket{
+ background:transparent!important;border:1px solid transparent!important;
+ border-radius:10px!important;min-height:95px!important;
+ padding:5px 0 15px!important;scroll-margin:90px 0!important;
+ transition:background-color .16s,border-color .16s!important
+}
+#csm-reorder-screen .csm-sort-bucket-title{
+ position:relative!important;min-height:54px!important;
+ background:transparent!important;color:#aeb0b7!important;font-size:15px!important;
+ padding:11px 6px!important;letter-spacing:.02em!important;
+ border-radius:0!important;font-weight:750!important
+}
+#csm-reorder-screen .csm-sort-rows{
+ gap:0!important;min-height:58px!important;padding:0!important;background:transparent!important
+}
+#csm-reorder-screen .csm-sort-row,
+#csm-reorder-screen .csm-sort-rows .csm-sort-row{
+ display:flex!important;align-items:center!important;
+ min-height:85px!important;margin:0!important;
+ padding:7px 0!important;border:0!important;border-radius:0!important;
+ background:#1e1f22!important;gap:12px!important;
+ overflow:visible!important
+}
+#csm-reorder-screen .csm-sort-row .csm-sort-title{
+ flex:1 1 auto!important;min-width:0!important
+}
+#csm-reorder-screen .csm-sort-row .csm-sort-title strong{
+ font-size:clamp(16px,4vw,20px)!important;line-height:1.35!important;
+ overflow-wrap:anywhere!important;font-weight:650!important
+}
+#csm-reorder-screen .csm-sort-row .csm-sort-symbol{
+ color:#a9abb1!important;flex:0 0 32px!important;text-align:left!important;font-size:25px!important
+}
+#csm-reorder-screen .csm-sort-grip{
+ width:60px!important;min-width:60px!important;min-height:66px!important;
+ padding:8px!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ background:transparent!important;border:0!important;border-radius:8px!important;
+ color:#a9a9b2!important;font-size:30px!important;
+ -webkit-user-select:none!important;user-select:none!important;
+ touch-action:none!important;-webkit-touch-callout:none!important;
+ flex:0 0 60px!important;cursor:grab!important
+}
+#csm-reorder-screen .csm-sort-grip:active{color:#f2f1fb!important}
+#csm-reorder-screen .csm-sort-row.csm-sort-dragging{opacity:.2!important;background:#35313f!important}
+#csm-reorder-screen .csm-sort-bucket.csm-sort-target{
+ background:#57476c38!important;border-color:#aa8df5!important
+}
+#csm-reorder-screen .csm-sort-bucket.csm-sort-target>.csm-sort-bucket-title{
+ color:#e2d4ff!important;background:#4b375d44!important
+}
+#csm-reorder-screen .csm-sort-rows:empty::after{
+ border:2px dashed #8f7fc3!important;color:#d4c6ee!important;
+ margin:8px 0!important;background:#392d454d!important;
+ min-height:75px!important
+}
+#csm-reorder-screen .csm-sort-categories>.csm-sort-row{min-height:94px!important}
+#csm-reorder-screen .csm-sort-ghost{
+ background:#534660!important;border:1px solid #a393d9!important;
+ border-radius:12px!important;z-index:31000!important;pointer-events:none!important
+}
+@media(max-width:420px){
+ #csm-reorder-screen .csm-reorder-scroll{padding-inline:11px!important}
+ #csm-reorder-screen .csm-sort-grip{width:52px!important;min-width:52px!important;flex-basis:52px!important}
+ #csm-reorder-screen .csm-sort-row .csm-sort-title strong{font-size:16px!important}
+}
