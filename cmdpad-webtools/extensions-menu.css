@@ -1,0 +1,9 @@
+.cmd-ext-group{position:relative}
+.cmd-ext-trigger{width:100%!important;text-align:left!important;display:block!important;padding:8px 11px!important;background:transparent!important}
+.cmd-ext-group.expanded>.cmd-ext-trigger,.cmd-ext-trigger:hover{background:#dcecff!important}
+.cmd-ext-fly{display:none;position:fixed;z-index:999999;width:265px;overflow:auto;box-shadow:0 5px 18px #0004;border:1px solid #adbdce;background:#fff;color:#15263e;padding:5px;box-sizing:border-box}
+.cmd-ext-group.expanded>.cmd-ext-fly{display:block}
+.cmd-ext-fly>button{width:100%!important;display:block!important;text-align:left!important;padding:8px 10px!important;white-space:normal!important;background:#fff!important;color:#15263e!important}
+.cmd-ext-fly>button:hover{background:#e3efff!important}
+.cmd-ext-dialog{width:min(730px,94vw);max-height:85vh;overflow:auto;background:#fff;color:#15253c;border:1px solid #a9b9c9;border-radius:8px;padding:16px}
+.cmd-ext-dialog>button{display:inline-block;padding:8px 12px;background:#eef4ff;color:#17263d;border:1px solid #adc0d5;border-radius:4px}
