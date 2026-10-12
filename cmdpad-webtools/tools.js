@@ -9,7 +9,7 @@ const panelFiles=new Map(),handles=new Map(),undoMap=new Map();let pendingReport
 const $status=(s,bad=false)=>{const e=el('status');if(e){e.textContent=s;e.style.color=bad?'#b42330':'#16733c'}};
 const list=(window.CMDPAD_FORMATS||[]).flatMap(([group,rows])=>rows.split(';').map(row=>{const [ext,label,tech]=row.trim().split('=');return {group,ext,label,tech}}).filter(x=>x.ext));
 const formats=new Map(list.map(x=>[x.ext,x]));
-const textKinds=new Set('txt rtf tex csv tsv sql srt vtt ass svg html htm css js ts jsx tsx py java c cpp h cs go rs swift bat cmd sh cue json jsonc xml yaml yml ini cfg conf log env toml php lua ps1 md markdown scss less rb dart kt kts properties'.split(' '));
+const textKinds=new Set('txt rtf tex csv tsv sql srt vtt ass svg html htm xhtml css js ts jsx tsx py java c cpp h cs go rs swift bat cmd sh bash cue json jsonc xml yaml yml ini cfg conf log env toml php lua ps1 md markdown scss sass less rb dart kt kts properties asm pl yara yar pem pub'.split(' '));
 const imageKinds=new Set('jpg jpeg png gif webp heic heif bmp tiff tif svgz ico cur'.split(' '));
 const audioKinds=new Set('mp3 wav flac m4a wma ogg opus aac aif aiff mid midi amr ape'.split(' '));
 const videoKinds=new Set('mp4 mkv mov avi wmv flv webm m2ts mts vob ogv 3gp'.split(' '));
