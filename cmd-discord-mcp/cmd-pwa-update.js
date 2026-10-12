@@ -7,7 +7,7 @@ window.__cmdPwaUpdateStarted=true;
 const POLL_MS=15*60*1000;
 const MIN_POLL_MS=3*60*1000;
 const RELEASE="20261011pwa1";
-let registration=null,lastPoll=0,pendingReload=false,oldController=Boolean(navigator.serviceWorker.controller),hasReloaded=false,knownBuild=null;
+let registration=null,lastPoll=0,pendingReload=false,oldController=Boolean(navigator.serviceWorker.controller),hasReloaded=false,knownBuild=(()=>{try{return localStorage.getItem("cmd-pwa-runtime-build")}catch{return null}})();
 const path=String(location.pathname||"");
 const callPage=/^\/(?:call|voice|video)(?:\/|$)/i.test(path);
 
@@ -57,9 +57,10 @@ async function checkRuntimeVersion(){
   if(!response.ok)return;
   const data=await response.json();
   if(typeof data.version!=="string"||!data.version)return;
-  if(knownBuild===null){knownBuild=data.version;return}
+  if(knownBuild===null){knownBuild=data.version;try{localStorage.setItem("cmd-pwa-runtime-build",data.version)}catch{};return}
   if(knownBuild!==data.version){
    knownBuild=data.version;
+   try{localStorage.setItem("cmd-pwa-runtime-build",data.version)}catch{}
    pendingReload=true;
    scheduleRefresh();
   }
