@@ -1,5 +1,6 @@
 /* CMD Sphere Promo Studio: publish a server video, not a Discord API operation. */
 import crypto from "node:crypto";
+import {rankStudioFeed} from "./cmd-studio-recommendations.js";
 const MAX_MEDIA=60*1024*1024;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MIME=new Set(["video/webm","video/mp4","image/png","image/jpeg","image/webp","image/gif"]);
@@ -27,6 +28,9 @@ export async function initCmdPromos(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_studio_follows(follower_id TEXT NOT NULL, followed_id TEXT NOT NULL, PRIMARY KEY(follower_id,followed_id))");
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_studio_comments(id UUID PRIMARY KEY, video_id UUID NOT NULL REFERENCES cmd_sphere_profile_videos(id) ON DELETE CASCADE, user_id TEXT NOT NULL, author_name VARCHAR(100) NOT NULL, body VARCHAR(300) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_studio_comments_video_idx ON cmd_sphere_studio_comments(video_id,created_at DESC)");
+ await pool.query("CREATE TABLE IF NOT EXISTS cmd_sphere_studio_watch(video_id UUID NOT NULL REFERENCES cmd_sphere_profile_videos(id) ON DELETE CASCADE,user_id TEXT NOT NULL,watched_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,completed BOOLEAN NOT NULL DEFAULT FALSE,skipped BOOLEAN NOT NULL DEFAULT FALSE,not_interested BOOLEAN NOT NULL DEFAULT FALSE,shares INTEGER NOT NULL DEFAULT 0,last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(video_id,user_id))");
+ await pool.query("CREATE INDEX IF NOT EXISTS cmd_sphere_studio_watch_user_idx ON cmd_sphere_studio_watch(user_id,last_seen DESC)");
+
 
 }
 export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
@@ -62,7 +66,7 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
    if(!auth?.user?.id){send(res,401,{error:"Connecte-toi à CMD Sphere"});return true}
    const user=String(auth.user.id),scoped=txt(url.searchParams.get("server"),64),scope=/^(?:[0-9]{8,24}|[0-9a-f-]{36})$/i.test(scoped)?scoped:"";
 
-   // Studio feed: public personal videos only. Videos scoped to a private server never enter this feed.
+   // Only public personal videos enter Studio. User feedback is private.
    if(req.method==="GET"&&path==="/api/cmd-profile-videos/feed"){
      const requestedMode=url.searchParams.get("mode");
      const mode=["following","creator"].includes(requestedMode)?requestedMode:"all";
@@ -72,27 +76,64 @@ export async function handleCmdPromos(req,res,url,{pool,auth,baseUrl}){
      const offset=Math.min(500,Math.max(0,parseInt(url.searchParams.get("offset")||"0",10)||0));
      const focus=txt(url.searchParams.get("video"),50);
      if(focus&&!UUID.test(focus)){send(res,400,{error:"Vidéo incorrecte"});return true}
-     const q=await pool.query(
+     const excludedRaw=String(url.searchParams.get("exclude")||"").split(",").filter(Boolean);
+     const excluded=[...new Set(excludedRaw)].slice(0,180);
+     if(excluded.some(id=>!UUID.test(id))){send(res,400,{error:"Pagination incorrecte"});return true}
+     const candidates=await pool.query(
        "SELECT p.id,p.user_id,p.title,p.format,p.created_at,COALESCE(a.name,'Créateur CMD Sphere') AS author_name,"+
        "(SELECT COUNT(*)::int FROM cmd_sphere_studio_likes l WHERE l.video_id=p.id) AS likes,"+
        "(SELECT COUNT(*)::int FROM cmd_sphere_studio_comments c WHERE c.video_id=p.id) AS comments,"+
        "EXISTS(SELECT 1 FROM cmd_sphere_studio_likes l WHERE l.video_id=p.id AND l.user_id=$2) AS liked,"+
-       "EXISTS(SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.followed_id=p.user_id AND f.follower_id=$2) AS following "+
-       "FROM cmd_sphere_profile_videos p LEFT JOIN cmd_sphere_studio_authors a ON a.user_id=p.user_id "+
-       "WHERE p.profile_guild='' AND p.format LIKE 'video/%' "+
-       "AND ($1='all' OR ($1='creator' AND p.user_id=$6) OR ($1='following' AND EXISTS (SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.follower_id=$2 AND f.followed_id=p.user_id))) "+
-       "AND ($5::uuid IS NULL OR p.id=$5) ORDER BY p.created_at DESC LIMIT $3 OFFSET $4",
-       [mode,user,12,offset,focus||null,creator]
+       "EXISTS(SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.followed_id=p.user_id AND f.follower_id=$2) AS following,"+
+       "COALESCE((SELECT w.watched_seconds FROM cmd_sphere_studio_watch w WHERE w.video_id=p.id AND w.user_id=$2),0) AS watched_seconds,"+
+       "(SELECT COUNT(*)::int FROM cmd_sphere_studio_watch w WHERE w.video_id=p.id) AS views,"+
+       "(SELECT COUNT(*)::int FROM cmd_sphere_studio_watch w WHERE w.video_id=p.id AND w.completed) AS completions "+
+       "FROM (SELECT id,user_id,title,format,created_at FROM cmd_sphere_profile_videos WHERE profile_guild='' AND format LIKE 'video/%' ORDER BY created_at DESC LIMIT 500) p "+
+       "LEFT JOIN cmd_sphere_studio_authors a ON a.user_id=p.user_id "+
+       "WHERE ($1='all' OR ($1='creator' AND p.user_id=$3) OR ($1='following' AND EXISTS (SELECT 1 FROM cmd_sphere_studio_follows f WHERE f.follower_id=$2 AND f.followed_id=p.user_id))) "+
+       "AND ($4::uuid IS NULL OR p.id=$4) "+
+       "AND NOT EXISTS(SELECT 1 FROM cmd_sphere_studio_watch w WHERE w.video_id=p.id AND w.user_id=$2 AND w.not_interested) "+
+       "ORDER BY p.created_at DESC",[mode,user,creator,focus||null]
      );
-     send(res,200,{items:q.rows.map(v=>({...v,mediaUrl:"/api/cmd-profile-videos/media/"+v.id,own:v.user_id===user})),nextOffset:offset+q.rows.length,hasMore:q.rows.length===12});return true;
+     let ordered=candidates.rows;
+     if(mode==="all"&&!focus&&ordered.length>1){
+       const [watched,liked,hidden]=await Promise.all([
+         pool.query("SELECT p.title,p.user_id,CASE WHEN w.completed THEN 2 ELSE 1 END AS weight FROM cmd_sphere_studio_watch w JOIN cmd_sphere_profile_videos p ON p.id=w.video_id WHERE w.user_id=$1 AND p.profile_guild='' AND (w.completed OR w.watched_seconds>=4) AND NOT w.not_interested ORDER BY w.last_seen DESC LIMIT 70",[user]),
+         pool.query("SELECT p.title,p.user_id,3 AS weight FROM cmd_sphere_studio_likes l JOIN cmd_sphere_profile_videos p ON p.id=l.video_id WHERE l.user_id=$1 AND p.profile_guild='' ORDER BY p.created_at DESC LIMIT 50",[user]),
+         pool.query("SELECT p.title,4 AS weight FROM cmd_sphere_studio_watch w JOIN cmd_sphere_profile_videos p ON p.id=w.video_id WHERE w.user_id=$1 AND w.not_interested ORDER BY w.last_seen DESC LIMIT 40",[user])
+       ]);
+       ordered=rankStudioFeed(ordered,{positive:[...watched.rows,...liked.rows],negative:hidden.rows});
+     }
+     const visible=excluded.length?ordered.filter(v=>!excluded.includes(String(v.id))):ordered.slice(offset);
+     const page=visible.slice(0,12);
+     send(res,200,{items:page.map(v=>({...v,why:v.why|| (v.following?"Tu suis ce créateur":"Vidéo récente sur CMD Sphere"),mediaUrl:"/api/cmd-profile-videos/media/"+v.id,own:v.user_id===user})),nextOffset:offset+page.length,hasMore:visible.length>12&&!focus});
+     return true;
    }
-   const action=/^\/api\/cmd-profile-videos\/([0-9a-f-]{36})\/(like|follow|comments)$/i.exec(path);
+   const action=/^\/api\/cmd-profile-videos\/([0-9a-f-]{36})\/(like|follow|comments|signal)$/i.exec(path);
    if(action){
      const id=action[1],what=action[2];
      if(!UUID.test(id)){send(res,400,{error:"Vidéo incorrecte"});return true}
      const item=await pool.query("SELECT user_id FROM cmd_sphere_profile_videos WHERE id=$1 AND profile_guild='' AND format LIKE 'video/%' LIMIT 1",[id]);
      if(!item.rows.length){send(res,404,{error:"Vidéo introuvable"});return true}
      const author=item.rows[0].user_id;
+     if(what==="signal"&&req.method==="POST"){
+       const chunks=[];let length=0;
+       for await(const part of req){length+=part.length;if(length>1024){req.resume();send(res,413,{error:"Signal trop long"});return true}chunks.push(part)}
+       let body;try{body=JSON.parse(Buffer.concat(chunks).toString("utf8"))}catch{send(res,400,{error:"Signal incorrect"});return true}
+       const kind=String(body.event||"");
+       if(!["watch","complete","skip","share","not_interested"].includes(kind)){send(res,400,{error:"Événement inconnu"});return true}
+       const seconds=Math.min(600,Math.max(0,Number(body.seconds)||0));
+       if(!Number.isFinite(seconds)){send(res,400,{error:"Durée incorrecte"});return true}
+       await pool.query(
+         "INSERT INTO cmd_sphere_studio_watch(video_id,user_id,watched_seconds,completed,skipped,not_interested,shares) VALUES($1,$2,$3,$4,$5,$6,$7) "+
+         "ON CONFLICT(video_id,user_id) DO UPDATE SET watched_seconds=GREATEST(cmd_sphere_studio_watch.watched_seconds,EXCLUDED.watched_seconds),"+
+         "completed=cmd_sphere_studio_watch.completed OR EXCLUDED.completed,skipped=cmd_sphere_studio_watch.skipped OR EXCLUDED.skipped,"+
+         "not_interested=cmd_sphere_studio_watch.not_interested OR EXCLUDED.not_interested,"+
+         "shares=LEAST(1000,cmd_sphere_studio_watch.shares+EXCLUDED.shares),last_seen=NOW()",
+         [id,user,seconds,kind==="complete",kind==="skip",kind==="not_interested",kind==="share"?1:0]
+       );
+       send(res,200,{ok:true});return true;
+     }
      if(what==="like"&&req.method==="POST"){
        const added=await pool.query("INSERT INTO cmd_sphere_studio_likes(video_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING RETURNING video_id",[id,user]);
        if(!added.rowCount)await pool.query("DELETE FROM cmd_sphere_studio_likes WHERE video_id=$1 AND user_id=$2",[id,user]);
