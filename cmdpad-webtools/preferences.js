@@ -13,7 +13,7 @@ if(p.theme!=='auto'){d.body.classList.toggle('dark',p.theme==='dark')}
 else if(themeQuery){d.body.classList.toggle('dark',themeQuery.matches)}
 area.style.fontFamily=p.font;area.style.fontSize=p.size+'px';area.style.whiteSpace=p.wrap?'pre-wrap':'pre';area.wrap=p.wrap?'soft':'off';area.style.overflowX=p.wrap?'hidden':'auto';area.style.tabSize=String(p.tabs);
 const lines=d.getElementById('lines');if(lines){lines.style.display=p.lineNumbers?'':'none';lines.style.fontFamily=p.font;lines.style.fontSize=p.size+'px'}
-const sidebar=d.getElementById('sidePane');if(sidebar)sidebar.style.display=p.showSidebar?'':'none';
+const sidebar=d.getElementById('sidePane'),workspace=d.querySelector('.workspace');if(sidebar)sidebar.style.display=p.showSidebar?'':'none';if(workspace){if(p.showSidebar)workspace.style.removeProperty('grid-template-columns');else workspace.style.setProperty('grid-template-columns',window.innerWidth<=1000?'minmax(0,1fr)':'minmax(0,1fr) var(--cmd-sidebar-right)','important')}
 const status=d.getElementById('status');if(status)status.textContent='Paramètres appliqués — '+(p.theme==='auto'?'Thème système':p.theme)+' · '+p.size+' px · Tab '+p.tabs;
 save()
 }
@@ -47,6 +47,6 @@ const wrapItem=drop.querySelector('button[data-action="wrap"]');if(wrapItem){wra
 // Apply tab width to insertion, not only its visual representation.
 area.addEventListener('keydown',e=>{if(e.key!=='Tab'||e.ctrlKey||e.altKey||e.metaKey||e.shiftKey)return;if(area.readOnly)return;
 e.preventDefault();e.stopImmediatePropagation();const start=area.selectionStart,end=area.selectionEnd;area.setRangeText(' '.repeat(p.tabs),start,end,'end');area.dispatchEvent(new Event('input',{bubbles:true}))},true);
-themeQuery?.addEventListener?.('change',()=>{if(p.theme==='auto')apply()});
+themeQuery?.addEventListener?.('change',()=>{if(p.theme==='auto')apply()});window.addEventListener('resize',()=>{if(!p.showSidebar)apply()});
 apply();window.CMDPAD_PREFERENCES_READY=true;
 })();
