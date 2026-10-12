@@ -480,3 +480,8 @@ body.cmd-studio-active #cmdPromoLaunch{display:none}
 
 /* Free mobile-native effects — no remote processing or subscription. */
 #cmdPromoStudio .cmd-effect-option:focus-visible{outline:3px solid #d6a9ff;outline-offset:2px}
+
+/* Free and license-aware music catalogs */
+#cmdStudioMusicSheet .cmd-music-provider{display:flex;flex:none;align-items:center;gap:12px;padding:6px 14px 10px;color:#d8bdeb;font-size:12px;font-weight:800}
+#cmdStudioMusicSheet #cmdStudioMusicProvider{flex:1;min-width:0;min-height:40px;background:#23162c;border:1px solid #79508e;border-radius:11px;color:white;padding:8px 10px;font-size:14px}
+#cmdStudioMusicSheet .cmd-music-add:disabled{opacity:.52;cursor:not-allowed}

@@ -14,6 +14,6 @@ test("landscape rail is horizontal and first media can update aspect",()=>{
  assert.doesNotThrow(()=>new vm.Script(js));
 });
 test("Studio stylesheet/script cache bust",()=>{
- assert.equal((sv.match(/\/cmd-promo-studio\.js\?v=20261012-studio-free-fx-v8/g)||[]).length,2);
- assert.equal((sv.match(/\/cmd-promo-studio\.css\?v=20261012-studio-free-fx-v8/g)||[]).length,2);
+ assert.equal((sv.match(/\/cmd-promo-studio\.js\?v=20261012-studio-free-catalog-v9/g)||[]).length,2);
+ assert.equal((sv.match(/\/cmd-promo-studio\.css\?v=20261012-studio-free-catalog-v9/g)||[]).length,2);
 });

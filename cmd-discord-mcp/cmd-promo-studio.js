@@ -13,6 +13,19 @@ let root=null,canvas=null,ctx=null,clips=[],musicFile=null,recorded=null,recorde
 let studioScope="",studioProfileGuild="",activeTool="";
 let formatChosen=false,autoRatioDone=false;
 let selectedTrack=null,musicResults=[],musicSearchId=0,musicSearchTimer=null,audition=null,auditionId="",musicLength=0,previewCursor=0;
+let musicProvider="wikimedia";
+function installMusicProviders(){
+ const search=$("#cmdStudioMusicQuery");if(!search||$("#cmdStudioMusicProvider"))return;
+ const label=document.createElement("label");label.className="cmd-music-provider";label.textContent="Catalogue";
+ const select=document.createElement("select");select.id="cmdStudioMusicProvider";
+ for(const [value,title] of [["wikimedia","Wikimedia"],["openverse","Openverse"],["ccmixter","ccMixter"],["audius","Audius · découvrir"],["jamendo","Jamendo · licence requise"]]){
+  const option=document.createElement("option");option.value=value;option.textContent=title;select.append(option);
+ }
+ select.value=musicProvider;
+ select.onchange=()=>{musicProvider=select.value;searchMusic(search.value||"instrumental")};
+ label.append(select);search.closest(".cmd-studio-search")?.after(label);
+}
+
 const studioBadMusic=new Set();
 let studioMusicSelection=0;
 function studioPlayableMime(track){
@@ -530,6 +543,7 @@ function stopAudition(){
 function openMusicSheet(){
  if(!root)return;
  const panel=$("#cmdStudioMusicSheet");panel.hidden=false;
+ installMusicProviders();
  $("#cmdStudioMusicQuery").value=$("#cmdStudioMusicQuery").value||"instrumental";
  if(!musicResults.length)searchMusic($("#cmdStudioMusicQuery").value);
 }
@@ -540,10 +554,11 @@ async function searchMusic(value){
  const ticket=++musicSearchId;stopAudition();
  const container=$("#cmdStudioMusicResults");container.textContent="Recherche des morceaux…";
  try{
-  const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query),{credentials:"same-origin",cache:"no-store"});
+  const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query)+"&source="+encodeURIComponent(musicProvider),{credentials:"same-origin",cache:"no-store"});
   const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
   if(ticket!==musicSearchId)return;
-  musicResults=(Array.isArray(result.items)?result.items:[]).filter(studioPlayableMime);
+  musicResults=(Array.isArray(result.items)?result.items:[]).filter(x=>x.canUseInVideo===false||studioPlayableMime(x));
+  if(!musicResults.length&&result.notice)note(result.notice);
   renderMusicSearch();
  }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
 }
@@ -552,13 +567,13 @@ function renderMusicSearch(){
  if(!musicResults.length){container.textContent="Aucun MP3 compatible disponible pour cette recherche. Essaie « piano » ou importe un MP3/M4A autorisé.";return}
  for(const track of musicResults){
   const row=document.createElement("article");row.className="cmd-music-row";
-  const play=document.createElement("button");play.type="button";play.className="cmd-music-play";play.textContent="▶";play.setAttribute("aria-label","Écouter "+track.title);play.onclick=()=>toggleAudition(track,play);
+  const play=document.createElement("button");play.type="button";play.className="cmd-music-play";play.textContent="▶";play.setAttribute("aria-label","Écouter "+track.title);play.onclick=()=>{if(track.canUseInVideo===false){window.open(track.sourceUrl,"_blank","noopener,noreferrer");return}toggleAudition(track,play)};
   const info=document.createElement("div");info.className="cmd-music-meta";
   const name=document.createElement("strong");name.textContent=track.title;
   const artist=document.createElement("small");artist.textContent=track.artist+" · "+track.license;
   const link=document.createElement("a");link.href=track.sourceUrl;link.rel="noopener noreferrer";link.target="_blank";link.textContent="Licence et crédits ↗";
   info.append(name,artist,link);
-  const add=document.createElement("button");add.type="button";add.className="cmd-music-add";add.textContent="＋ Ajouter";add.disabled=studioBadMusic.has(track.id);add.onclick=()=>{void useTrack(track,add)};
+  const add=document.createElement("button");add.type="button";add.className="cmd-music-add";add.textContent=track.canUseInVideo===false?"Droits requis":"＋ Ajouter";add.disabled=track.canUseInVideo===false||studioBadMusic.has(track.id);add.onclick=()=>{if(track.canUseInVideo!==false)void useTrack(track,add)};
   if(selectedTrack?.id===track.id){add.textContent="✓ Choisi";row.classList.add("chosen")}
   row.append(play,info,add);container.append(row);
  }
