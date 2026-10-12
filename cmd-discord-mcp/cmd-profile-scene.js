@@ -530,12 +530,12 @@ function drawAvatarSticker(s){
 function renderStickerPreview(){
  const host=$("#cmdScenePreviewPerson"),hero=$("#cmdSceneHero");if(!host||!hero)return;
  // The legacy 3D/canvas layers can cover the avatar on mobile Safari.
- // Draw the exact same preview as a direct hero child with its own stacking context.
+ // Render the avatar only in the direct hero overlay; keep the empty host for layout.
  const chosen=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||"");
  const idx=chosen?Number(chosen[1]):-1;
  const imported=idx>=0&&idx<importedAvatarCount?importedAvatarTiles[idx]:null;
  const previewArt=imported?'<img class="cmd-live-avatar-image" src="'+imported+'" alt="Avatar '+(idx+1)+'">':drawAvatarSticker(state);
- host.innerHTML='<div class="cmd-sticker-avatar-live" role="img" aria-label="Avatar 2D">'+previewArt+'</div>';
+ host.innerHTML="";
  let live=hero.querySelector("#cmdAvatarLiveOverlay");
  if(!live){live=document.createElement("div");live.id="cmdAvatarLiveOverlay";live.setAttribute("role","img");live.setAttribute("aria-label","Aperçu du personnage CMD Sphere");hero.append(live)}
  live.innerHTML=previewArt;
