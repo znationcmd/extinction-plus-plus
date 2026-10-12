@@ -14,3 +14,12 @@
 #cmdpadSymbolText{white-space:pre;tab-size:4;padding:7px;margin:0;font:12px/1.5 Consolas,monospace}
 .cmd-view-dialog{background:white;color:#15243c;border:1px solid #a3b3c7;padding:20px;border-radius:7px;max-width:min(95vw,500px)}
 @media(max-width:650px){.menu .cmd-view-flyout,.menu .cmd-edit-flyout{max-width:95vw;min-width:180px}}
+
+/* Édition : sous-menus dynamiques ajoutés après le menu natif. */
+.menu .cmd-view-submenu{display:block;position:relative}
+.menu .cmd-view-subtitle{display:block!important;width:100%!important;text-align:left!important;padding:8px 10px!important;border:0;background:white;color:#17243a;cursor:pointer}
+.menu .cmd-view-submenu.active>.cmd-view-subtitle,.menu .cmd-view-subtitle:hover{background:#deeeff!important}
+.menu .cmd-view-submenu>.cmd-view-flyout{display:none;position:fixed;z-index:999999;width:265px;min-width:210px;overflow:auto;border:1px solid #a5b6cb;box-shadow:0 7px 22px #0003;background:#fff;padding:5px;box-sizing:border-box}
+.menu .cmd-view-submenu.active>.cmd-view-flyout{display:block}
+.menu .cmd-view-submenu>.cmd-view-flyout>button{display:block!important;width:100%!important;text-align:left!important;padding:8px 10px!important;white-space:normal!important;background:white!important;color:#17243a!important;border:0!important}
+.menu .cmd-view-submenu>.cmd-view-flyout>button:hover{background:#e0eeff!important}
