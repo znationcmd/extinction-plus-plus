@@ -3700,28 +3700,53 @@ async function applyNativeLocalAction(auth,input){
     if("parentId" in input)parent=input.parentId?await nativeSourceId(gid,"channel",input.parentId):null;
     await pool.query('UPDATE cmd_native_channels SET name=$3,type=$4,topic=$5,position=$6,source_parent_id=$7 WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),["text","voice","announcement","forum","category"].includes(String(input.type))?String(input.type):row.rows[0].type,safeText(input.topic??row.rows[0].topic,1024)||null,Number(input.position??row.rows[0].position??0),parent]);
   }else if(action==="reorder_channels"){
-    // Native CMD Sphere only. Existing channel IDs, parents and permission overwrites are preserved.
-    // The request must include every item of the selected kind (stale/partial lists are rejected).
+    // Native CMD Sphere only. Move categories or move text/voice rooms between
+    // categories, preserving channel IDs, existing permissions and other channel types.
+    // Reject stale/incomplete lists. Each move is committed atomically.
     const mode=String(input.mode||"");
     if(!["category","text","voice"].includes(mode))throw new Error("Mode de réorganisation inconnu.");
     const order=Array.isArray(input.channelIds)?input.channelIds.map(String):[];
     if(order.length>1000||new Set(order).size!==order.length)throw new Error("Ordre invalide ou éléments répétés.");
+    const placements=Array.isArray(input.placements)?input.placements:null;
+    if(placements&&(placements.length!==order.length||placements.some((p,i)=>!p||typeof p!=="object"||String(p.id)!==order[i]||!("parentId" in p))))throw new Error("Destination de réorganisation invalide.");
     const dbTypes=mode==="category"?["category"]:mode==="voice"?["voice"]:["text","announcement","forum"];
     const client=await pool.connect();
     try{
       await client.query("BEGIN");
       const {rows}=await client.query(
-        "SELECT id::text AS id,source_channel_id,type FROM cmd_native_channels WHERE guild_id=$1 AND type=ANY($2::text[]) ORDER BY position,name,id FOR UPDATE",
+        "SELECT id::text AS id,source_channel_id,type,source_parent_id FROM cmd_native_channels WHERE guild_id=$1 AND type=ANY($2::text[]) ORDER BY position,name,id FOR UPDATE",
         [gid,dbTypes]
       );
       const indexed=new Map();
       for(const row of rows){indexed.set(String(row.id),String(row.id));if(row.source_channel_id)indexed.set(String(row.source_channel_id),String(row.id))}
       const normalized=order.map(value=>indexed.get(value));
       if(normalized.some(value=>!value)||normalized.length!==rows.length||new Set(normalized).size!==rows.length)throw new Error("La liste des salons a changé. Actualise avant de réorganiser.");
-      for(let i=0;i<normalized.length;i++)await client.query(
-        "UPDATE cmd_native_channels SET position=$3 WHERE guild_id=$1 AND id=$2::uuid",
-        [gid,normalized[i],i*10]
-      );
+      let categories=null;
+      if(mode!=="category"&&placements){
+        const result=await client.query(
+          "SELECT id::text AS id,source_channel_id FROM cmd_native_channels WHERE guild_id=$1 AND type='category' FOR SHARE",
+          [gid]
+        );
+        categories=new Map();
+        for(const row of result.rows){
+          const sourceId=String(row.source_channel_id||row.id);
+          categories.set(String(row.id),sourceId);categories.set(sourceId,sourceId);
+        }
+      }
+      for(let i=0;i<normalized.length;i++){
+        if(mode==="category"||!placements){
+          await client.query("UPDATE cmd_native_channels SET position=$3 WHERE guild_id=$1 AND id=$2::uuid",[gid,normalized[i],i*10]);
+        }else{
+          const value=placements[i].parentId;
+          if(value!==null&&typeof value!=="string")throw new Error("Catégorie de destination incorrecte.");
+          const parent=value===null||value===""?null:categories.get(value);
+          if(value!==null&&value!==""&&!parent)throw new Error("La catégorie cible n'existe plus sur ce serveur.");
+          await client.query(
+            "UPDATE cmd_native_channels SET position=$3,source_parent_id=$4 WHERE guild_id=$1 AND id=$2::uuid",
+            [gid,normalized[i],i*10,parent]
+          );
+        }
+      }
       await client.query("COMMIT");
     }catch(error){try{await client.query("ROLLBACK")}catch{}throw error}
     finally{client.release()}
