@@ -129,12 +129,13 @@ function update(){
  const name=fileName.value,ext=ends(name),f=groupFor(ext);
  const found=currentId()&&local.get(currentId()),stored=found&&found.name===name?found:null;
  currentInspection=stored||{name,ext,format:f,signature:null,confidence:'Extension uniquement',infoText:'.'+(ext||'?')+' · '+f.name+' · Identification par extension'};
- const description=stored?stored.infoText:((ext?'.'+ext:'Sans extension')+' · '+f.name+' · Détection par extension');
+ const lang=window.CMDPAD_detectLanguage?.(name);
+ const languageName=lang?.name||'';const description=(stored?stored.infoText:((ext?'.'+ext:'Sans extension')+' · '+f.name+' · Détection par extension'))+(languageName?' · Langage : '+languageName:'');
  infoBadge.textContent='📄 '+(ext?'.'+ext.toUpperCase():'inconnu')+' ▾';
  infoBadge.title=description;
  current.textContent=description;
  if(type.value==='AUTO'){
-  const status=d.getElementById('fileTypeStatus');if(status){status.textContent=ext?ext.toUpperCase():'TXT';status.title=description}
+  const status=d.getElementById('fileTypeStatus');if(status){status.textContent=languageName|| (ext?ext.toUpperCase():'TXT');status.title=description}
  }
 }
 window.CMDPAD_onFileInspected=async ({file,doc,content})=>{
@@ -150,6 +151,7 @@ detect.onclick=async()=>{
  };input.click();
 };
 fileName.addEventListener('input',update);type.addEventListener('change',update);
+ area.addEventListener('input',()=>queueMicrotask(update));
 d.addEventListener('click',e=>{if(e.target.closest?.('#tabs,#cmdpadOpenList,#cmdpadWebFiles'))queueMicrotask(update)},true);
 d.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Tab')queueMicrotask(update)},true);
 new MutationObserver(()=>{if(fileName.value!==currentInspection?.name)update()}).observe(d.getElementById('tabs')||bar,{subtree:true,childList:true});
