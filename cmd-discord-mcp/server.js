@@ -366,7 +366,13 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       const ungrouped=chs.filter(x=>!x.source_parent_id||!parentIds.has(String(x.source_parent_id))).map(x=>nativeChannelListItem(g.id,x)).join('');
       const adminTools=admin?'<details id="cmdServerAdmin" class="cmd-native-tools"><summary>⚙ Gestion du serveur (catégories et salons)</summary>'+create+'<h3>Rôles du serveur</h3>'+(d.roles||[]).map(r=>'<p>'+esc(r.name)+'</p>').join('')+'</details>':'';
       const activeBoosts=Number(d.guild.boost_count||0),cmdTier=Number(d.guild.boost_level||0);
-      qs('#workspace').innerHTML='<div class="cmd-server-panel">'+heading+'<nav id="cmdServerChannels" class="cmd-server-channels" aria-label="Salons du serveur"><a class="cmd-server-quick" href="#cmdChannelSearch" id="cmdSearchShortcut">⌕ Chercher des salons</a>'+categories+ungrouped+(!categories&&!ungrouped?'<p class="cmd-channel-search-empty">Aucun salon synchronisé.</p>':'')+adminTools+'</nav></div>';
+      const availableBoosts=Math.max(0,activeBoosts-Number(d.guild.boost_allocated||0));
+      const nextBoostTarget=availableBoosts<2?2:availableBoosts<5?5:availableBoosts<7?7:availableBoosts;
+      const boostPercent=nextBoostTarget?Math.round(Math.min(100,availableBoosts/nextBoostTarget*100)):100;
+      const progressBoost= d.guild.show_boost_bar===false?'':'<a class="cmd-sphere-boost-progress" href="/server-boosts/'+encodeURIComponent(String(g.id))+'" aria-label="Voir les boosts et avantages du serveur">'+
+       '<span>💎 Niveau '+cmdTier+' · '+activeBoosts+' boost(s)</span><span class="cmd-sphere-boost-track"><span style="width:'+boostPercent+'%"></span></span>'+
+       '<small>'+(availableBoosts>=7?'Niveau maximal atteint':availableBoosts+' / '+nextBoostTarget+' boosts pour le prochain niveau')+'</small></a>';
+      qs('#workspace').innerHTML='<div class="cmd-server-panel">'+heading+progressBoost+'<nav id="cmdServerChannels" class="cmd-server-channels" aria-label="Salons du serveur"><a class="cmd-server-quick" href="#cmdChannelSearch" id="cmdSearchShortcut">⌕ Chercher des salons</a>'+categories+ungrouped+(!categories&&!ungrouped?'<p class="cmd-channel-search-empty">Aucun salon synchronisé.</p>':'')+adminTools+'</nav></div>';
       if(admin){qs('#nativeCatForm').onsubmit=e=>nativeSubmit(e,'create_category',g.id);qs('#nativeChForm').onsubmit=e=>nativeSubmit(e,'create_channel',g.id)}
       qs('.cmd-server-refresh')?.addEventListener('click',()=>refreshEverything());
       qs('#cmdInviteCopy')?.addEventListener('click',()=>copyInvite(d.inviteUrl));
