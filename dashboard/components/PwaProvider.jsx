@@ -104,7 +104,7 @@ export default function PwaProvider({children}){
     window.addEventListener('offline',disconnected);
     standalone.addEventListener('change',checkInstalled);
 
-    let interval;
+    let interval,onForeground,onVisible;
     if('serviceWorker' in navigator&&window.isSecureContext){
       navigator.serviceWorker.addEventListener('controllerchange',controllerChange);
       getRegistration().then(registration=>{
@@ -118,7 +118,42 @@ export default function PwaProvider({children}){
         });
         return registration.update();
       }).catch(()=>{});
-      interval=null;
+      const liveKey='cmd-extinction-live-build';
+      let pendingVersion=null,lastCheck=0,busyChecking=false;
+      const isTyping=()=>{
+        const a=document.activeElement;
+        return !!(a?.matches?.('input,textarea,select,[contenteditable]')&&document.hasFocus());
+      };
+      const applyLiveBuild=()=>{
+        if(!pendingVersion||document.hidden||isTyping())return;
+        const lastReload=Number(sessionStorage.getItem('extinction-last-auto-update')||0);
+        if(Date.now()-lastReload<30000)return;
+        sessionStorage.setItem('extinction-last-auto-update',String(Date.now()));
+        const next=new URL(window.location.href);
+        next.searchParams.set('_pwa_version',pendingVersion);
+        window.location.replace(next.pathname+next.search+next.hash);
+      };
+      const checkLiveBuild=async()=>{
+        if(document.hidden||busyChecking)return;
+        if(Date.now()-lastCheck<20000){applyLiveBuild();return;}
+        lastCheck=Date.now();busyChecking=true;
+        try{
+          const res=await fetch('/api/pwa-build?_t='+Date.now(),{cache:'no-store'});
+          if(!res.ok)return;
+          const data=await res.json();if(!data.version)return;
+          const old=localStorage.getItem(liveKey);
+          if(old&&old!==data.version)pendingVersion=data.version;
+          localStorage.setItem(liveKey,data.version);
+          applyLiveBuild();
+        }catch{}finally{busyChecking=false}
+      };
+      onForeground=()=>{lastCheck=0;checkLiveBuild()};
+      onVisible=()=>{if(!document.hidden)onForeground()};
+      window.addEventListener('focus',onForeground);
+      document.addEventListener('visibilitychange',onVisible);
+      interval=setInterval(()=>{if(!document.hidden)checkLiveBuild()},300000);
+      checkLiveBuild();
+
     }
 
     return()=>{
@@ -129,6 +164,8 @@ export default function PwaProvider({children}){
       standalone.removeEventListener('change',checkInstalled);
       navigator.serviceWorker?.removeEventListener?.('controllerchange',controllerChange);
       if(interval)clearInterval(interval);
+      if(onForeground)window.removeEventListener('focus',onForeground);
+      if(onVisible)document.removeEventListener('visibilitychange',onVisible);
     };
   },[]);
 
