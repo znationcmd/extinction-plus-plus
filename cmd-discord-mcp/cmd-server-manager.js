@@ -51,15 +51,35 @@ function nav(){
 }
 function overview(){
  const g=ctx.data.guild;
- if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Le nom et l’icône de ce serveur externe sont gérés sur la plateforme liée. Les salons et les rôles accessibles au bot peuvent être modifiés dans les rubriques ci-contre.')+toDiscord();
- return intro('Vue d’ensemble','Nom, image et paramètres du serveur CMD Sphere.')+
- '<form id="csm-identity" class="csm-form"><div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Déplace la photo ou pince avec deux doigts pour zoomer avant d’enregistrer.</p><label for="csm-icon-input" class="csm-btn">Changer l’icône</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden '+(ctx.owner?'':'disabled')+'></div></div>'+
- field('Nom du serveur','name',g.name,'required maxlength="100" '+(ctx.owner?'':'disabled'))+
- '<label class="csm-field">Description<textarea name="description" maxlength="1000" '+(ctx.owner?'':'disabled')+'>'+escapeHtml(g.server_description||'')+'</textarea></label>'+
- '<label class="csm-field">Notifications par défaut<select name="defaultNotifications" '+(ctx.owner?'':'disabled')+'><option value="mentions" '+(g.default_notifications==='all'?'':'selected')+'>Mentions uniquement</option><option value="all" '+(g.default_notifications==='all'?'selected':'')+'>Tous les messages</option></select></label>'+
- '<label class="csm-check"><input name="isPublic" type="checkbox" '+(g.is_public?'checked':'')+' '+(ctx.owner?'':'disabled')+'>Serveur visible dans Découvrir</label>'+
- '<label class="csm-check"><input name="welcomeMessage" type="checkbox" '+(g.welcome_message===false?'':'checked')+' '+(ctx.owner?'':'disabled')+'>Activer le message de bienvenue</label>'+
- (ctx.owner?'<button type="submit" class="csm-btn primary">Enregistrer les modifications</button>':info('Seul le propriétaire peut modifier l’identité du serveur.'))+'</form>'+info(note())+(isNative()?(ctx.owner?'<section class="csm-server-lifecycle"><h3>Propriété du serveur</h3><p>Tu disposes de tous les droits sur ce serveur. Tu peux attribuer des rôles à ton propre compte, transférer la propriété ou supprimer uniquement ce serveur CMD Sphere.</p><div class="csm-actions">'+btn('Transférer la propriété','transfer-guild')+btn('Supprimer ce serveur','delete-guild','danger')+'</div><div id="csm-transfer-ui" aria-live="polite"></div></section>':'<section class="csm-server-lifecycle"><h3>Quitter le serveur</h3><p>Tu peux quitter ce serveur sans supprimer les messages ni les comptes des autres membres.</p>'+btn('Quitter ce serveur','leave-guild','danger')+'</section>'):'');
+ if(!isNative())return intro('Vue d’ensemble','Paramètres généraux du serveur externe.')+info('Les réglages du serveur lié sont contrôlés par la plateforme externe. La modification des salons et rôles dans CMD Sphere ne modifie pas Discord.')+toDiscord();
+ const disabled=ctx.owner?'':' disabled',enabled=!!ctx.owner;
+ const checkbox=(name,label,checked,description='')=>'<label class="csm-discord-toggle"><span><strong>'+escapeHtml(label)+'</strong>'+(description?'<small>'+escapeHtml(description)+'</small>':'')+'</span><input type="checkbox" name="'+name+'" '+(checked?'checked':'')+disabled+'></label>';
+ const notifications=(g.default_notifications==='all')?'all':'mentions';
+ return '<form id="csm-identity" class="csm-form csm-discord-overview">'+
+  '<section class="csm-discord-group">'+
+   '<h2>Nom du serveur</h2>'+field('','name',g.name,'required maxlength="100"'+disabled)+
+   '<div class="csm-icon-picker"><div class="csm-icon-preview">'+gicon()+'</div><div><b>Icône du serveur</b><p>Choisis une photo, pince avec deux doigts pour zoomer, déplace-la et valide son cadrage.</p>'+
+   '<label for="csm-icon-input" class="csm-btn">Changer la photo</label><input id="csm-icon-input" type="file" accept="image/*,.heic,.heif" hidden'+disabled+'></div></div>'+
+  '</section>'+
+  '<section class="csm-discord-group"><h2>Paramètres des messages système</h2>'+
+   '<p>Configure le message de bienvenue destiné aux nouveaux membres de ce serveur CMD Sphere.</p>'+
+   '<div class="csm-discord-panel">'+checkbox('welcomeMessage',"Envoyer un message de bienvenue lorsqu’un membre rejoint ce serveur",g.welcome_message!==false)+'</div></section>'+
+  '<section class="csm-discord-group"><h2>Paramètres des notifications par défaut</h2>'+
+   '<p>Détermine les notifications que reçoivent les membres qui n’ont pas personnalisé les leurs.</p>'+
+   '<div class="csm-discord-panel csm-discord-radio">'+
+    '<label><span>Tous les messages</span><input type="radio" name="defaultNotifications" value="all" '+(notifications==='all'?'checked':'')+disabled+'></label>'+
+    '<label><span>@mentions seulement</span><input type="radio" name="defaultNotifications" value="mentions" '+(notifications==='mentions'?'checked':'')+disabled+'></label>'+
+   '</div></section>'+
+  '<section class="csm-discord-group"><h2>Barre de progression de boost</h2>'+
+   '<p>Affiche la progression des boosts dans la liste des salons de ce serveur.</p>'+
+   '<div class="csm-discord-panel">'+checkbox('showBoostBar','Afficher la barre de progression de boost',g.show_boost_bar!==false)+'</div></section>'+
+  '<section class="csm-discord-group"><h2>Description du serveur</h2>'+
+   '<textarea name="description" maxlength="1000" placeholder="Présente ce serveur à ta communauté."'+disabled+'>'+escapeHtml(g.server_description||'')+'</textarea>'+
+   '<p>Cette description peut apparaître sur le profil et les invitations du serveur.</p></section>'+
+  '<section class="csm-discord-group"><h2>Visibilité du serveur</h2>'+
+   '<div class="csm-discord-panel">'+checkbox('isPublic','Serveur visible dans Découvrir',g.is_public)+'</div></section>'+
+  (enabled?'<button type="submit" class="csm-btn primary csm-discord-save">Enregistrer les modifications</button>':info('Seul le propriétaire peut modifier les paramètres généraux de ce serveur.'))+
+ '</form>'+info(note())+(isNative()?(enabled?'<section class="csm-server-lifecycle"><h3>Propriété du serveur</h3><p>Les opérations de transfert et suppression ne concernent que ce serveur CMD Sphere.</p><div class="csm-actions">'+btn('Transférer la propriété','transfer-guild')+btn('Supprimer ce serveur','delete-guild','danger')+'</div><div id="csm-transfer-ui" aria-live="polite"></div></section>':'<section class="csm-server-lifecycle"><h3>Quitter le serveur</h3><p>Quitter le serveur ne supprime pas les messages des autres membres.</p>'+btn('Quitter ce serveur','leave-guild','danger')+'</section>'):'');
 }
 function options(chosen,arr){return arr.map(([value,label])=>'<option value="'+escapeHtml(value)+'" '+(String(value)===String(chosen)?'selected':'')+'>'+escapeHtml(label)+'</option>').join('')}
 const types=[['text','# Texte'],['voice','🔊 Vocal'],['announcement','📢 Annonces'],['forum','🗂️ Forum'],['category','📁 Catégorie']];
@@ -556,7 +576,7 @@ async function saveIdentity(e){
  e.preventDefault();if(!isNative()||!ctx.owner)return;
  const f=e.currentTarget,fd=new FormData(f);
  try{
-  const result=await request('/api/native/server-identity',{guildId:id(),name:String(fd.get('name')||'').trim(),description:String(fd.get('description')||''),iconDataUrl:newIcon||undefined,isPublic:fd.has('isPublic'),welcomeMessage:fd.has('welcomeMessage'),defaultNotifications:fd.get('defaultNotifications')});
+  const result=await request('/api/native/server-identity',{guildId:id(),name:String(fd.get('name')||'').trim(),description:String(fd.get('description')||''),iconDataUrl:newIcon||undefined,isPublic:fd.has('isPublic'),welcomeMessage:fd.has('welcomeMessage'),defaultNotifications:fd.get('defaultNotifications'),showBoostBar:fd.has('showBoostBar')});
   notify('Identité du serveur CMD Sphere enregistrée.');newIcon=null;await update();
  }catch(e){notify(e.message,false)}
 }
