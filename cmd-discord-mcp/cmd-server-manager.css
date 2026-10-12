@@ -568,3 +568,63 @@ body.csm-channel-context-open{overflow:hidden!important}
 .cmd-sphere-boost-progress>small{font:400 11px system-ui;color:#b4a8cf}
 .cmd-sphere-boost-track{display:block;width:100%;height:7px;border-radius:7px;overflow:hidden;background:#403955}
 .cmd-sphere-boost-track>span{display:block;height:100%;min-width:0;max-width:100%;border-radius:7px;background:linear-gradient(90deg,#9b67ec,#d26edc)}
+
+/* CMD Sphere 2026-10-12 — Discord mobile touch channel reordering */
+#csm-create-channel[hidden]{display:none!important}
+.csm-discord-channels{position:relative;min-height:0;padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+.csm-discord-channels-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px}
+.csm-discord-channels-head h2{margin:0;font-size:20px;font-weight:750}
+.csm-discord-channels-head button{font-size:15px;border:0;background:transparent;color:#d1c7f8;padding:12px 5px;cursor:pointer;min-height:44px}
+.csm-discord-channels-list{display:flex;flex-direction:column;gap:9px;min-height:0;padding-bottom:14px}
+.csm-discord-category{margin:16px 0 22px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.csm-discord-category>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:15px;color:#a4a3ae}
+.csm-discord-category>header strong{overflow-wrap:anywhere}
+.csm-discord-category>header button{flex:none;color:#b8b5c0;background:transparent;border:0;font-weight:650;min-height:44px;padding:8px}
+.csm-discord-channels-list .csm-line{min-height:60px;background:transparent;border:0;gap:12px;border-radius:10px;padding:10px 4px}
+.csm-discord-channels-list .csm-line strong{font-size:15px}
+.csm-discord-create-fab{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));display:block;margin:24px auto 0;
+ border:0;border-radius:14px;background:#5865f2;color:white;font-weight:750;font-size:18px;padding:15px 28px;
+ box-shadow:0 8px 24px #0007;z-index:2;cursor:pointer;min-height:56px}
+.csm-discord-channels-caption{margin-top:20px;color:#aaa4b5;font-size:12px;line-height:1.5}
+#csm-reorder-chooser,#csm-reorder-screen{position:fixed;inset:0;z-index:30000;color:#f6f5fa;box-sizing:border-box}
+#csm-reorder-chooser{display:flex;align-items:flex-end;justify-content:center}
+#csm-reorder-chooser .csm-reorder-dim{position:absolute;inset:0;background:#000b}
+#csm-reorder-chooser .csm-reorder-choices{position:relative;width:min(640px,100%);background:#26252d;border-radius:25px 25px 0 0;
+ padding:12px 20px calc(32px + env(safe-area-inset-bottom,0px));max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#csm-reorder-chooser .csm-reorder-handle{display:block;margin:0 auto 20px;width:44px;height:5px;background:#47464f;border-radius:99px}
+#csm-reorder-chooser h2{text-align:center;font-size:22px;margin:0 0 24px}
+#csm-reorder-chooser .csm-reorder-types{display:flex;flex-direction:column;background:#35343e;border-radius:18px;overflow:hidden}
+#csm-reorder-chooser .csm-reorder-types button{display:flex;align-items:center;gap:22px;text-align:left;background:transparent;
+ min-height:76px;padding:14px 20px;color:#f6f5fa;border:0;border-bottom:1px solid #ffffff1b;font-weight:600;font-size:18px;cursor:pointer}
+#csm-reorder-chooser .csm-reorder-types button:last-child{border-bottom:0}
+#csm-reorder-chooser .csm-reorder-types button span{font-size:28px;min-width:38px;text-align:center;font-weight:750}
+#csm-reorder-chooser .csm-reorder-types button b{margin-left:auto;color:#b9b6c1;font-size:28px;font-weight:400}
+#csm-reorder-screen{background:#1d1c24;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+#csm-reorder-screen>header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;
+ padding:max(18px,env(safe-area-inset-top,0px)) 20px 14px;min-height:72px;
+ border-bottom:1px solid #ffffff16;background:#1b1b21}
+#csm-reorder-screen>header strong{font-size:19px;text-align:center}
+#csm-reorder-screen>header button{color:white;background:transparent;border:0;min-width:46px;min-height:44px;font-size:18px}
+#csm-reorder-screen>header [data-sort-close]{font-size:32px;font-weight:300}
+#csm-reorder-screen>header [data-sort-done]{color:#b2a6ff;font-weight:700}
+#csm-reorder-screen .csm-reorder-instructions{flex:none;margin:12px 20px 18px;line-height:1.4;font-size:13px;color:#bbb7c5}
+#csm-reorder-screen .csm-reorder-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+ touch-action:pan-y;-webkit-overflow-scrolling:touch;scroll-padding-bottom:120px;
+ padding:4px 15px calc(150px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+#csm-reorder-screen .csm-reorder-list{display:flex;flex-direction:column;gap:6px;min-height:100%}
+#csm-reorder-screen .csm-sort-row,.csm-sort-ghost{box-sizing:border-box;display:flex;align-items:center;gap:14px;min-height:76px;
+ padding:12px 12px 12px 18px;background:#30303a;border:1px solid #47434f;border-radius:13px}
+#csm-reorder-screen .csm-sort-symbol{font-size:26px;color:#aaa5bb;flex:0 0 36px;text-align:center}
+#csm-reorder-screen .csm-sort-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}
+#csm-reorder-screen .csm-sort-title strong{font-size:16px;font-weight:650}
+#csm-reorder-screen .csm-sort-title small{color:#aaa7b8;font-size:12px}
+#csm-reorder-screen .csm-sort-grip{background:#4a4459;border:0;border-radius:10px;min-width:55px;min-height:55px;
+ font-size:27px;color:white;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+#csm-reorder-screen .csm-sort-dragging{opacity:.27;border-style:dashed}
+.csm-sort-ghost{position:fixed!important;z-index:31000;pointer-events:none;background:#56476d!important;box-shadow:0 20px 42px #000b;
+ border:1px solid #9572f0!important;transform:scale(1.01);min-height:76px}
+.csm-sort-ghost .csm-sort-grip{opacity:.75}
+#csm-reorder-screen .csm-reorder-status{flex:0 0 auto;padding:13px 20px calc(13px + env(safe-area-inset-bottom,0px));margin:0;
+ text-align:center;background:#24222b;font-size:13px;color:#d6c7f3;min-height:36px}
+body.csm-reordering{overflow:hidden!important}
+@supports not (height:100dvh){#csm-reorder-screen{height:100vh}}
