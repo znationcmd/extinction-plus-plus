@@ -88,9 +88,15 @@ function chanItem(c){
  return '<div class="csm-line"><span>'+ico+'</span><div><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.topic||c.type||'')+'</small></div>'+(canEditChannels()?'<button type="button" data-csm-edit-channel="'+escapeHtml(c.id)+'" class="csm-btn">Modifier</button>':'')+'</div>';
 }
 function channels(){
- const all=ctx.data.channels||[],cats=all.filter(x=>x.type==='category'),rooms=all.filter(x=>x.type!=='category');
- const create=canEditChannels()?'<form id="csm-create-channel" class="csm-form csm-sub"><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Gestion indisponible : droits insuffisants ou bot non installé.');
- return intro('Catégories et salons','Créer, renommer, classer et gérer les salons.')+(ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis la plateforme liée','sync-native','primary')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+create+'<div id="csm-channel-editor"></div><div class="csm-lines">'+cats.map(c=>'<section><div class="csm-parent">'+chanItem(c)+'</div>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon synchronisé.'))+'</div>'+info(note());
+ const all=(ctx.data.channels||[]).slice(),sort=(a,b)=>Number(a.position||0)-Number(b.position||0)||String(a.name||'').localeCompare(String(b.name||''),'fr');
+ const cats=all.filter(x=>x.type==='category').sort(sort),rooms=all.filter(x=>x.type!=='category').sort(sort),edit=canEditChannels();
+ const create=edit?'<form id="csm-create-channel" class="csm-form csm-sub" hidden><h3>Créer un salon ou une catégorie</h3>'+field('Nom','name','','required maxlength="100"')+'<label class="csm-field">Type<select name="type">'+options('text',types)+'</select></label><label class="csm-field">Catégorie<select name="parentId">'+options('',[['','Aucune'],...cats.map(x=>[x.id,x.name])])+'</select></label><button type="submit" class="csm-btn primary">Créer</button></form>':info('Permissions insuffisantes pour modifier les salons.');
+ return '<div class="csm-discord-channels"><header class="csm-discord-channels-head"><h2>Salons</h2>'+(edit?'<button id="csm-reorder-open" type="button">Réorganiser</button>':'')+'</header>'+
+  (ctx.source&&isNative()?'<div class="csm-actions">'+btn('↻ Synchroniser depuis la plateforme liée','sync-native')+btn('Sauvegarde des messages accessibles','mirror-history')+'</div>':'')+
+  '<div id="csm-channel-editor"></div>'+create+
+  '<div class="csm-discord-channels-list">'+cats.map(c=>'<section class="csm-discord-category"><header><strong>'+escapeHtml(c.name)+'</strong>'+(edit?'<button type="button" data-csm-edit-channel="'+escapeHtml(c.id)+'">Modifier</button>':'')+'</header>'+rooms.filter(x=>String(x.source_parent_id||x.parentId||'')===String(c.source_channel_id||c.id)).map(chanItem).join('')+'</section>').join('')+
+  rooms.filter(x=>!x.source_parent_id&&!x.parentId).map(chanItem).join('')+(all.length?'':info('Aucun salon disponible.'))+'</div>'+
+  (edit?'<button type="button" id="csm-open-create" class="csm-discord-create-fab">＋ Créer</button>':'')+'<p class="csm-discord-channels-caption">'+escapeHtml(note())+'</p></div>';
 }
 /* Discord-style permission categories; CMD Hosting remains a separate owner-controlled server permission. */
 const permissionGroups=[
@@ -317,6 +323,10 @@ function render(){
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
  box.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
  box.querySelector('#csm-identity')?.addEventListener('submit',saveIdentity);
+ if(currentTab==='channels'){
+  box.querySelector('#csm-open-create')?.addEventListener('click',()=>revealChannelCreate('text'));
+  box.querySelector('#csm-reorder-open')?.addEventListener('click',openChannelReorderChooser);
+ }
  const createForm=box.querySelector('#csm-create-channel');
  if(createForm){
   createForm.addEventListener('submit',createChannel);
@@ -589,6 +599,105 @@ async function saveIdentity(e){
   notify('Identité du serveur CMD Sphere enregistrée.');newIcon=null;await update();
  }catch(e){notify(e.message,false)}
 }
+function revealChannelCreate(kind='text'){
+ const form=document.getElementById('csm-create-channel');if(!form){notify('Permission Gérer les salons nécessaire.',false);return}
+ form.hidden=false;const select=form.querySelector('[name="type"]');
+ if(select){select.value=kind;select.dispatchEvent(new Event('change',{bubbles:true}))}
+ form.scrollIntoView({block:'center',behavior:'smooth'});form.querySelector('[name="name"]')?.focus({preventScroll:true});
+}
+
+// Local CMD Sphere drag-and-drop. Native channel/category ordering is never sent to Discord.
+function openChannelReorderChooser(){
+ if(!isNative()||!canEditChannels()){notify('Réorganiser nécessite la permission Gérer les salons sur CMD Sphere.',false);return}
+ document.querySelector('#csm-reorder-chooser')?.remove();
+ const sheet=document.createElement('div');sheet.id='csm-reorder-chooser';
+ sheet.innerHTML='<div class="csm-reorder-dim"></div><section role="dialog" aria-modal="true" aria-label="Réorganiser les salons" class="csm-reorder-choices"><span class="csm-reorder-handle"></span><h2>Réorganiser</h2><div class="csm-reorder-types">'+
+ '<button data-reorder-type="category"><span>▦</span>Catégories <b>›</b></button>'+
+ '<button data-reorder-type="text"><span>#</span>Salons textuels <b>›</b></button>'+
+ '<button data-reorder-type="voice"><span>◖))</span>Salons vocaux <b>›</b></button></div></section>';
+ document.body.append(sheet);
+ sheet.querySelector('.csm-reorder-dim').onclick=()=>sheet.remove();
+ sheet.querySelectorAll('[data-reorder-type]').forEach(button=>button.onclick=()=>{const mode=button.dataset.reorderType;sheet.remove();openChannelReorderMode(mode)});
+}
+function openChannelReorderMode(mode){
+ if(!isNative()||!canEditChannels()||!['category','text','voice'].includes(mode))return;
+ const src=ctx.data.channels||[],allowed=mode==='category'?['category']:mode==='voice'?['voice']:['text','announcement','forum'];
+ const items=src.filter(c=>allowed.includes(String(c.type))).slice().sort((a,b)=>Number(a.position||0)-Number(b.position||0)||String(a.name||'').localeCompare(String(b.name||''),'fr'));
+ const catNames=new Map(src.filter(c=>c.type==='category').flatMap(c=>[[String(c.id),c.name],[String(c.source_channel_id||c.id),c.name]]));
+ const label=mode==='category'?'Catégories':mode==='text'?'Salons textuels':'Salons vocaux';
+ document.querySelector('#csm-reorder-screen')?.remove();
+ const page=document.createElement('div');page.id='csm-reorder-screen';
+ page.innerHTML='<header><button type="button" data-sort-close aria-label="Retour">‹</button><strong>'+label+'</strong><button type="button" data-sort-done>Terminé</button></header>'+
+ '<p class="csm-reorder-instructions">Maintiens la poignée ☰ et déplace avec ton doigt. Le nouvel ordre est enregistré au relâchement.</p>'+
+ '<div class="csm-reorder-scroll"><div class="csm-reorder-list" role="list">'+items.map(item=>{
+  const parent=catNames.get(String(item.source_parent_id||item.parentId||''))||'Sans catégorie';
+  return '<div class="csm-sort-row" role="listitem" data-sort-id="'+escapeHtml(item.id)+'"><span class="csm-sort-symbol">'+(mode==='category'?'▦':mode==='voice'?'◖))':'#')+'</span><div class="csm-sort-title"><strong>'+escapeHtml(item.name)+'</strong>'+(mode==='category'?'':'<small>'+escapeHtml(parent)+'</small>')+'</div><button type="button" class="csm-sort-grip" aria-label="Déplacer '+escapeHtml(item.name)+'">☰</button></div>';
+ }).join('')+'</div></div><p class="csm-reorder-status" role="status" aria-live="polite">'+(items.length<2?'Deux éléments minimum sont nécessaires.':'Maintiens puis fais glisser un élément.')+'</p>';
+ document.body.append(page);document.body.classList.add('csm-reordering');
+ const list=page.querySelector('.csm-reorder-list'),scroller=page.querySelector('.csm-reorder-scroll'),status=page.querySelector('.csm-reorder-status');
+ const ids=()=>[...list.children].map(row=>row.dataset.sortId);
+ const controller=new AbortController();
+ let drag=null,saving=false,raf=0;
+ const endAnimation=()=>{if(raf)cancelAnimationFrame(raf);raf=0};
+ const stop=()=>{if(!drag)return;clearTimeout(drag.timer);endAnimation();drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null};
+ const preview=()=>{
+  if(!drag?.started)return;
+  drag.ghost.style.top=(drag.y-drag.offset)+'px';
+  const others=[...list.children].filter(row=>row!==drag.row);
+  let next=null;
+  for(const row of others){const r=row.getBoundingClientRect();if(drag.y<r.top+r.height/2){next=row;break}}
+  if(drag.row.nextElementSibling!==next)list.insertBefore(drag.row,next);
+ };
+ const autoscroll=()=>{
+  raf=0;if(!drag?.started)return;
+  const r=scroller.getBoundingClientRect(),edge=65;let speed=0;
+  if(drag.y<r.top+edge)speed=-Math.min(22,(r.top+edge-drag.y)*.35);
+  else if(drag.y>r.bottom-edge)speed=Math.min(22,(drag.y-(r.bottom-edge))*.35);
+  if(speed)scroller.scrollTop+=speed;
+  preview();raf=requestAnimationFrame(autoscroll);
+ };
+ const start=()=>{
+  if(!drag||drag.started||saving)return;
+  drag.started=true;const r=drag.row.getBoundingClientRect();drag.offset=r.height/2;
+  drag.ghost=drag.row.cloneNode(true);drag.ghost.classList.add('csm-sort-ghost');
+  drag.ghost.style.width=r.width+'px';drag.ghost.style.left=r.left+'px';document.body.append(drag.ghost);
+  drag.row.classList.add('csm-sort-dragging');status.textContent='Relâche pour enregistrer le nouvel ordre.';
+  preview();raf=requestAnimationFrame(autoscroll);
+ };
+ const onMove=e=>{
+  if(!drag||drag.pointer!==e.pointerId)return;
+  drag.y=e.clientY;
+  if(!drag.started&&Math.hypot(e.clientX-drag.x,e.clientY-drag.startY)>14){stop();return}
+  if(drag.started){e.preventDefault();preview()}
+ };
+ const onCancel=e=>{if(drag&&e.pointerId===drag.pointer)stop()};
+ const onUp=async e=>{
+  if(!drag||e.pointerId!==drag.pointer)return;
+  const before=drag.before,started=drag.started;stop();if(!started)return;
+  const after=ids();if(after.join('|')===before.join('|')){status.textContent='Ordre inchangé.';return}
+  saving=true;status.textContent='Enregistrement en cours…';
+  try{
+   await request('/api/native/action',{nativeGuildId:id(),action:'reorder_channels',mode,channelIds:after});
+   await getContext();status.textContent='✓ Ordre enregistré.';
+  }catch(err){
+   const rows=new Map([...list.children].map(row=>[row.dataset.sortId,row]));before.forEach(key=>{if(rows.has(key))list.append(rows.get(key))});
+   status.textContent='Modification non enregistrée : '+err.message;
+  }finally{saving=false}
+ };
+ const close=()=>{if(saving)return;stop();controller.abort();page.remove();document.body.classList.remove('csm-reordering');void getContext().then(()=>{if(currentTab==='channels')render()}).catch(e=>notify(e.message,false))};
+ page.querySelector('[data-sort-close]').onclick=close;page.querySelector('[data-sort-done]').onclick=close;
+ page.addEventListener('pointerdown',e=>{
+  const grip=e.target.closest('.csm-sort-grip');if(!grip||saving||items.length<2)return;
+  if(drag)stop();
+  const row=grip.closest('.csm-sort-row');
+  drag={row,pointer:e.pointerId,x:e.clientX,startY:e.clientY,y:e.clientY,started:false,before:ids(),timer:setTimeout(start,e.pointerType==='mouse'?0:230)};
+  try{grip.setPointerCapture(e.pointerId)}catch{}
+ },{signal:controller.signal});
+ document.addEventListener('pointermove',onMove,{passive:false,signal:controller.signal});
+ document.addEventListener('pointerup',onUp,{signal:controller.signal});
+ document.addEventListener('pointercancel',onCancel,{signal:controller.signal});
+}
+
 async function createChannel(e){
  e.preventDefault();const fd=new FormData(e.currentTarget),type=String(fd.get('type')||'text');
  const name=String(fd.get('name')||'').trim(),parentId=type==='category'?'':String(fd.get('parentId')||'');
@@ -864,9 +973,7 @@ async function menu(){
    shut();await open("channels");
    const form=document.querySelector("#csm-create-channel");
    if(!form){notify('Création indisponible : vérifie tes permissions pour gérer les salons.',false);return}
-   const type=form.querySelector('[name="type"]');
-   if(type){type.value=key==="create-category"?"category":"text";type.dispatchEvent(new Event('change',{bubbles:true}))}
-   form.scrollIntoView({block:"center",behavior:"smooth"});form.querySelector('[name="name"]')?.focus({preventScroll:true});
+   revealChannelCreate(key==="create-category"?"category":"text");
    return;
   }
   shut();await open(key);
