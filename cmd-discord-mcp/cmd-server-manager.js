@@ -640,7 +640,7 @@ function openChannelReorderMode(mode){
  const label=mode==='category'?'Catégories':mode==='text'?'Salons textuels':'Salons vocaux';
  document.querySelector('#csm-reorder-screen')?.remove();
  const page=document.createElement('div');page.id='csm-reorder-screen';
- const rowHtml=c=>'<div class="csm-sort-row" role="listitem" data-sort-id="'+escapeHtml(String(c.id))+'"><span class="csm-sort-symbol">'+(mode==='category'?'▦':mode==='voice'?'◖))':'#')+'</span><div class="csm-sort-title"><strong>'+escapeHtml(c.name)+'</strong></div><button type="button" class="csm-sort-grip" aria-label="Déplacer '+escapeHtml(c.name)+'">⠿</button></div>';
+ const rowHtml=c=>'<div class="csm-sort-row" role="listitem" data-sort-id="'+escapeHtml(String(c.id))+'" data-sort-kind="'+escapeHtml(String(c.type))+'"><span class="csm-sort-symbol">'+(mode==='category'?'▦':mode==='voice'?'🔊':'#')+'</span><div class="csm-sort-title"><strong>'+escapeHtml(c.name)+'</strong></div><button type="button" class="csm-sort-grip" title="Maintenir et déplacer avec le doigt" aria-label="Déplacer '+escapeHtml(c.name)+'" aria-describedby="csm-sort-help">⠿</button></div>';
  const groups=[{id:'',name:'Sans catégorie'},...cats.map(c=>({id:String(c.source_channel_id||c.id),name:String(c.name) }))];
  const content=mode==='category'?items.map(rowHtml).join(''):groups.map(g=>{
    const children=items.filter(c=>groupOf(c)===g.id);
@@ -648,7 +648,7 @@ function openChannelReorderMode(mode){
     '<div class="csm-sort-rows" role="group" aria-label="'+escapeHtml(g.name)+'">'+children.map(rowHtml).join('')+'</div></section>';
  }).join('');
  page.innerHTML='<header><button type="button" data-sort-close aria-label="Retour">‹</button><strong>Salons</strong><button type="button" data-sort-done>Terminé</button></header>'+
- '<p class="csm-reorder-instructions">'+(mode==='category'?'Maintiens la poignée et monte ou descends les catégories.':'Maintiens la poignée puis glisse le salon dans la catégorie de ton choix. Monte ou descends pour faire défiler.')+'</p>'+
+ '<p id="csm-sort-help" class="csm-reorder-instructions">'+(mode==='category'?'Maintiens les six points et glisse la catégorie plus haut ou plus bas.':'Maintiens les six points et dépose le salon dans une autre catégorie, même vide. Approche ton doigt du bord de l’écran pour faire défiler.')+'</p>'+
  '<div class="csm-reorder-scroll"><div class="csm-reorder-list '+(mode==='category'?'csm-sort-categories':'csm-sort-with-categories')+'" role="list">'+content+'</div></div>'+
  '<p class="csm-reorder-status" role="status" aria-live="polite">'+(items.length?'Déplace un élément avec son icône ⠿.':'Aucun élément de ce type à réorganiser.')+'</p>';
  document.body.append(page);document.body.classList.add('csm-reordering');
@@ -665,7 +665,8 @@ function openChannelReorderMode(mode){
  const stop=()=>{if(!drag)return;clearTimeout(drag.timer);if(raf)cancelAnimationFrame(raf);raf=0;drag.row.classList.remove('csm-sort-dragging');drag.ghost?.remove();drag=null;};
  const nearestBucket=y=>{
   const all=buckets();
-  const hit=document.elementFromPoint(drag?.clientX||scroller.getBoundingClientRect().left+25,y)?.closest('.csm-sort-bucket');
+  const viewport=scroller.getBoundingClientRect();const hitX=Math.max(viewport.left+18,Math.min(viewport.right-18,drag?.clientX||viewport.left+25));
+  const hit=document.elementFromPoint(hitX,Math.min(window.innerHeight-1,Math.max(0,y)))?.closest('.csm-sort-bucket');
   if(hit&&all.includes(hit))return hit;
   let best=all[0],distance=Infinity;
   for(const group of all){const r=group.getBoundingClientRect();const d=y<r.top?r.top-y:y>r.bottom?y-r.bottom:0;if(d<distance){best=group;distance=d}}
@@ -678,9 +679,9 @@ function openChannelReorderMode(mode){
   const destination=mode==='category'?null:nearestBucket(drag.y);
   const target=mode==='category'?list:destination?.querySelector('.csm-sort-rows');
   if(highlightedBucket!==destination){
-   if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background=''}
+   if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket.classList.remove('csm-sort-target')}
    highlightedBucket=destination;
-   if(destination){destination.style.borderColor='#9784ef';destination.style.background='#42334e66'}
+   if(destination){destination.style.borderColor='#9784ef';destination.style.background='#42334e66';destination.classList.add('csm-sort-target')}
   }
   if(!target)return;
   const others=[...target.children].filter(row=>row!==drag.row);
@@ -690,20 +691,21 @@ function openChannelReorderMode(mode){
   updateLabels();
   if(destination&&mode!=='category'){
    const destName=categoryNames.get(destination.dataset.sortParent||'')||'Sans catégorie';
-   status.textContent='Destination : '+destName+' — relâche pour enregistrer.';
+   status.textContent='Catégorie cible : '+destName+' — relâche le doigt pour enregistrer.';
   }
  };
  const autoscroll=()=>{
   raf=0;if(!drag?.started)return;
-  const rect=scroller.getBoundingClientRect(),edge=90;let amount=0;
-  if(drag.y<rect.top+edge)amount=-Math.min(24,(rect.top+edge-drag.y)*.38);
-  else if(drag.y>rect.bottom-edge)amount=Math.min(24,(drag.y-(rect.bottom-edge))*.38);
-  if(amount)scroller.scrollTop+=amount;
+  const rect=scroller.getBoundingClientRect(),edge=Math.min(125,rect.height*.26);let amount=0;
+  if(drag.y<rect.top+edge)amount=-Math.min(32,Math.max(4,(rect.top+edge-drag.y)*.40));
+  else if(drag.y>rect.bottom-edge)amount=Math.min(32,Math.max(4,(drag.y-(rect.bottom-edge))*.40));
+  if(amount){const oldTop=scroller.scrollTop;scroller.scrollTop=Math.max(0,Math.min(scroller.scrollHeight-scroller.clientHeight,oldTop+amount));}
   preview();raf=requestAnimationFrame(autoscroll);
  };
  const start=()=>{
   if(!drag||drag.started||saving)return;
   drag.started=true;const r=drag.row.getBoundingClientRect();drag.offset=r.height/2;
+  if(navigator.vibrate)try{navigator.vibrate(12)}catch{}
   drag.ghost=drag.row.cloneNode(true);drag.ghost.classList.add('csm-sort-ghost');
   drag.ghost.style.width=r.width+'px';drag.ghost.style.left=r.left+'px';document.body.append(drag.ghost);
   drag.row.classList.add('csm-sort-dragging');
@@ -721,12 +723,12 @@ function openChannelReorderMode(mode){
   if(drag.started){e.preventDefault();preview()}
  };
  const onCancel=e=>{if(drag&&drag.pointer===e.pointerId){const before=drag.before;stop();
-  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket.classList.remove('csm-sort-target');highlightedBucket=null}
   restore(before);updateLabels()}};
  const onUp=async e=>{
   if(!drag||e.pointerId!==drag.pointer)return;
   const before=drag.before,started=drag.started;stop();
-  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket.classList.remove('csm-sort-target');highlightedBucket=null}
   if(!started)return;
   const after=snapshot();
   if(JSON.stringify(after)===JSON.stringify(before)){status.textContent='Aucun changement.';return}
@@ -740,7 +742,7 @@ function openChannelReorderMode(mode){
   }finally{saving=false}
  };
  const close=()=>{if(saving)return;stop();
-  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket=null}
+  if(highlightedBucket){highlightedBucket.style.borderColor='';highlightedBucket.style.background='';highlightedBucket.classList.remove('csm-sort-target');highlightedBucket=null}
   controller.abort();page.remove();document.body.classList.remove('csm-reordering');void getContext().then(()=>{if(currentTab==='channels')render()}).catch(e=>notify(e.message,false))};
  page.querySelector('[data-sort-close]').onclick=close;page.querySelector('[data-sort-done]').onclick=close;
  page.addEventListener('pointerdown',e=>{
