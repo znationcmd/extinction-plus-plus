@@ -1,0 +1,11 @@
+{
+  "name": "cmd-browser-railway",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "sharp": "0.34.4"
+  }
+}
