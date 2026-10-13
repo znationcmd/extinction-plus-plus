@@ -145,6 +145,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(typeof body?.text!=="string"||body.text.length>2000||!body.text.trim())return response(JSON.stringify({error:"Texte invalide"}),"application/json",400);
   try{return response(JSON.stringify(cmdTranslate(body.text,body.source,body.target)),"application/json")}catch(err){return response(JSON.stringify({error:err.message}),"application/json",400)}
  }
+ if(req.method==="GET"&&path==="/api/ai/status"){
+  const endpoint=Bun.env.NEURIA_AI_ENDPOINT||"",token=Bun.env.NEURIA_AI_API_KEY||"",model=Bun.env.NEURIA_AI_MODEL||"";
+  const configured=!!(endpoint&&token&&model),unresolved=token.includes("\u0024{{");
+  return response(JSON.stringify({configured,unresolved,provider:endpoint.includes("cloudflare.com")?"cloudflare":"other",model:model||null,ready:configured&&!unresolved,note:"Configuration uniquement. Utilisez /api/ai/test pour une requête réelle."}),"application/json");
+ }
+ if(req.method==="POST"&&path==="/api/work/plan"){
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const goal=typeof body?.goal==="string"?body.goal.trim():"";
+  if(goal.length<8||goal.length>900)return response(JSON.stringify({error:"Objectif de 8 à 900 caractères requis"}),"application/json",400);
+  const steps=[{id:1,title:"Définir le résultat attendu",instruction:"Préciser les critères de réussite pour : "+goal.slice(0,180),status:"pending"},{id:2,title:"Recueillir les informations",instruction:"Identifier les sources et autorisations nécessaires.",status:"pending"},{id:3,title:"Préparer les actions",instruction:"Décomposer la tâche en opérations vérifiables.",status:"pending"},{id:4,title:"Valider avant exécution",instruction:"Demander une confirmation avant toute action externe.",status:"requires_approval"}];
+  return response(JSON.stringify({goal,steps,mode:"planning_only",executed:false,note:"Aucune action externe n'a été exécutée."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/search"){
  const url=new URL(req.url),q=(url.searchParams.get("q")||"").trim();
  if(q.length<2||q.length>180)return response(JSON.stringify({error:"Recherche invalide"}),"application/json",400);
@@ -163,6 +175,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(typeof data?.message!=="string"||data.message.trim().length<1||data.message.length>1000)return response(JSON.stringify({error:"Message de 1 à 1000 caractères requis"}),"application/json",400);
   const endpoint=Bun.env.NEURIA_AI_ENDPOINT,token=Bun.env.NEURIA_AI_API_KEY,model=Bun.env.NEURIA_AI_MODEL;
+  if(token?.includes("\u0024{{"))return response(JSON.stringify({error:"La référence du jeton Cloudflare ne peut pas être résolue entre projets Railway.",code:"TOKEN_REFERENCE_UNRESOLVED"}),"application/json",503);
   if(endpoint&&token&&model){
    try{
     const origin=new URL(endpoint);if(origin.protocol!=="https:")throw Error("Le fournisseur IA doit utiliser HTTPS");
