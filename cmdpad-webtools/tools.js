@@ -15,7 +15,10 @@ const audioKinds=new Set('mp3 wav flac m4a wma ogg opus aac aif aiff mid midi am
 const videoKinds=new Set('mp4 mkv mov avi wmv flv webm m2ts mts vob ogv 3gp'.split(' '));
 function extension(s){s=String(s||'').toLowerCase();if(s.endsWith('.tar.gz'))return 'tar.gz';if(s.endsWith('.tar.bz2'))return 'tar.bz2';return s.includes('.')?s.split('.').pop():''}
 function info(s){const x=extension(s);return formats.get(x)||{ext:x,label:'Extension inconnue',tech:'Structure non identifiée',group:'Autres'}}
-function kindFor(name){const e=extension(name);return textKinds.has(e)?'text':imageKinds.has(e)?'image':audioKinds.has(e)?'audio':videoKinds.has(e)?'video':e==='pdf'?'pdf':'binary'}
+/* Extend editable source formats from the already loaded language catalog; never treat known binary files as text. */
+const languageExtensions=new Set((window.CMDPAD_LANGUAGES||[]).flatMap(([,rows])=>rows.split(';').flatMap(row=>(row.split('|')[1]||'').split(',').map(x=>x.trim().replace(/^\./,'').toLowerCase()).filter(Boolean))));
+const protectedBinary=new Set('pdf png jpg jpeg gif webp heic heif bmp ico cur tiff tif wav mp3 flac ogg opus mp4 mov m4a mkv avi webm wmv zip gz 7z rar tar bz2 xz zst sqlite db exe dll so dylib a apk ipa jar class wasm pyc pyo doc docx xls xlsx ppt pptx odt ods odp epub mobi bin dat'.split(' '));
+function kindFor(name){const e=extension(name);return (textKinds.has(e)||languageExtensions.has(e)&&!protectedBinary.has(e))?'text':imageKinds.has(e)?'image':audioKinds.has(e)?'audio':videoKinds.has(e)?'video':e==='pdf'?'pdf':'binary'}
 function active(){return core?.[index()]||null}
 function state(){const x=active();return x?.id==null?null:panelFiles.get(x.id)||null}
 function persist(){try{if(typeof saveWorkspace==='function')saveWorkspace()}catch{}}
@@ -110,13 +113,20 @@ else if(e==='ini'||e==='cfg'||e==='conf'){let section='',seen=new Set();text.spl
 else if(e==='vtt'){if(!/^\uFEFF?WEBVTT/.test(text))issues.push(issue('erreur','En-tête WEBVTT absent',1,1));notes.push('Contrôle de l’en-tête et non de tous les temps.')}
 else if(e==='js'){if(/\b(?:import|export)\b/.test(text)){notes.push('Module JavaScript : contrôle de syntaxe complet non disponible dans cet éditeur.')}else{try{new Function(text);level='vérifié';notes.push('Syntaxe JavaScript classique compilable, sans exécution.')}catch(err){issues.push(issue('erreur',err.message))}}}
 else if(e==='html'||e==='htm'){new DOMParser().parseFromString(text,'text/html');notes.push('Le parseur HTML tolérant a lu le texte, sans garantie de conformité W3C.')}
+else if(window.CMDPAD_validateExtra){const x=window.CMDPAD_validateExtra(text,e);if(x){issues.push(...x.issues);notes.push(...x.notes);level=x.level}else notes.push('Aucun validateur de norme officiel installé pour .'+e+'. Inspection de texte uniquement.')}
 else notes.push('Aucun validateur de norme officiel installé pour .'+e+'. Inspection de texte uniquement.')}
 catch(err){const where=posError(text,err.message);issues.push(issue('erreur',err.message,where.line,where.column))}
 return {issues,notes,level}}
 async function validateNow(show=true){capture();const x=active(),meta=state(),e=extension(x.name),f=info(x.name),kind=statusFor(x);const errors=[],notes=[];let level='partiel',sign=meta?.sign||{detected:'non mesuré',family:'',size:(x.text||'').length};
 if(meta?.file){sign=meta.sign;const expectedTypes=expected[sign.family]?.split(' ')||[];
 if(expectedTypes.length&&e&&!expectedTypes.includes(e))errors.push(issue('avertissement','Extension .'+e+' incompatible avec la signature '+sign.detected));}
-if(kind==='text'){const r=validateText(area.value,e);errors.push(...r.issues);notes.push(...r.notes);level=r.level}
+if(kind==='text'){
+const engineAliases={JSON:'json',XML:'xml',INI:'ini',YAML:'yaml',HTML:'html',SVG:'svg',JAVASCRIPT:'js',MARKDOWN:'md',CSS:'css',SQL:'sql',TYPESCRIPT:'ts',PYTHON:'py'};
+const detected=(['','txt','log'].includes(e)&&el('type')?.value==='AUTO')?window.CMDPAD_detectAuto?.():null;
+const validationExt=detected?.engine&&engineAliases[detected.engine]?engineAliases[detected.engine]:({mjs:'js',cjs:'js',htm:'html',jsonl:'jsonl'}[e]||e);
+const r=validateText(area.value,validationExt);errors.push(...r.issues);notes.push(...r.notes);level=r.level;
+if(validationExt!==e)notes.unshift('Syntaxe inspectée : '+validationExt+' (détection automatique ou alias ; extension d’origine conservée).');
+}
 else{notes.push('Inspection d’en-tête uniquement : le décodage complet, les CRC, le schéma et la conformité du contenu ne sont pas vérifiés.');if(sign.detected==='non reconnu')errors.push(issue('avertissement','Signature binaire non reconnue'))}
 const report={name:x.name,extension:e,format:f.label,category:f.group,technology:f.tech,mime:sign.mime||'non renseigné',size:sign.size,signature:sign.detected,result:errors.some(x=>x.severity==='erreur')?'NON VALIDE':level==='vérifié'?'VALIDE (contrôle ciblé)':'ANALYSE PARTIELLE',issues:errors,notes,timestamp:new Date().toISOString()};
 pendingReport=report;
