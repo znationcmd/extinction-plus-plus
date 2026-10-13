@@ -4,7 +4,7 @@ const from=src.indexOf('async function vpnControl('),to=src.indexOf("ipcMain.han
 assert(from>0&&to>from,'Windows VPN controller found');
 const section=src.slice(from,to);
 let installed=false,profile=false,running=false;const calls=[];
-const env={process:{platform:'win32'},vpnRegions:['France','Canada'],wireguardExe:()=>installed?'C:\\WireGuard\\wireguard.exe':null,vpnFile:()=> 'C:\\profiles\\cmdvpn-ca.conf',vpnService:async()=>running,fs:{existsSync:()=>profile},vpnReply:async()=>({connected:false,handshake:false}),run:async(_exe,args)=>{calls.push(args);if(args[0]==='/installtunnelservice')running=true;if(args[0]==='/uninstalltunnelservice')running=false;return {stdout:''}}};
+const env={process:{platform:'win32'},vpnRegions:['France','Canada'],wireguardExe:()=>installed?'C:\\WireGuard\\wireguard.exe':null,vpnFile:()=> 'C:\\profiles\\cmdvpn-ca.conf',vpnService:async()=>running,vpnTunnel:region=>'cmdvpn-'+(region==='Canada'?'ca':'fr'),fs:{existsSync:()=>profile},vpnReply:async()=>({connected:false,handshake:false}),run:async(_exe,args)=>{calls.push(args);if(args[0]==='/installtunnelservice')running=true;if(args[0]==='/uninstalltunnelservice')running=false;return {stdout:''}}};
 vm.createContext(env);vm.runInContext(section+'\nthis.control=vpnControl;',env);
 (async()=>{
  let v=await env.control('connect','Canada');assert.match(v.error,/Installez WireGuard/);console.log('PASS WireGuard absent');
