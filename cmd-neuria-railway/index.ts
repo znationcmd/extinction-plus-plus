@@ -180,7 +180,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const configured=!!(endpoint&&token&&model),unresolved=token.includes("\u0024{{");
   return response(JSON.stringify({configured,unresolved,provider:endpoint.includes("cloudflare.com")?"cloudflare":"other",model:model||null,ready:configured&&!unresolved,note:"Configuration uniquement. Utilisez /api/ai/test pour une requête réelle."}),"application/json");
  }
- if(req.method==="GET"&&path==="/api/work/connectors/status")return response(JSON.stringify({browserConfigured:!!Bun.env.NEURIA_BROWSER_CDP_URL,githubConfigured:!!Bun.env.NEURIA_GITHUB_TOKEN,railwayConfigured:!!Bun.env.NEURIA_RAILWAY_TOKEN,accessControlConfigured:(Bun.env.NEURIA_WORK_ADMIN_KEY||"").length>=24,note:"Les actions nécessitent une clé d'accès Work et une autorisation explicite pour toute écriture."}),"application/json");
+ if(req.method==="GET"&&path==="/api/work/connectors/status")return response(JSON.stringify({browserConfigured:!!Bun.env.NEURIA_BROWSER_CDP_URL,githubConfigured:!!Bun.env.NEURIA_GITHUB_TOKEN,githubOAuthAvailable:!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET),railwayConfigured:!!Bun.env.NEURIA_RAILWAY_TOKEN,accessControlConfigured:(Bun.env.NEURIA_WORK_ADMIN_KEY||"").length>=24,note:"Les actions nécessitent une clé d'accès Work et une autorisation explicite pour toute écriture."}),"application/json");
  if(req.method==="POST"&&path==="/api/work/browser"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès Work non configuré ou non autorisé"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
