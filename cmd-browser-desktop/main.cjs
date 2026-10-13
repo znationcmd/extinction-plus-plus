@@ -21,8 +21,8 @@ async function vpnReply(){
   try{
     const {stdout}=await run('wg',['show','all','latest-handshakes'],{timeout:3500});
     const now=Math.floor(Date.now()/1000);
-    for(const line of stdout.split('\\n')){
-      const parts=line.trim().split(/\\s+/);
+    for(const line of stdout.split('\n')){
+      const parts=line.trim().split(/\s+/);
       if(parts.length>=3){interfaces.push(parts[0]);const time=Number(parts[2]);if(time>0&&now-time<180)handshake=true}
     }
   }catch{}
