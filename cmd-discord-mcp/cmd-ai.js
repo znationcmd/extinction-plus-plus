@@ -94,10 +94,10 @@ function recipeAnswer(s){
 function simple(message){
  const s=message.trim();if(!s)return "Écris-moi une question ou demande une blague !";
  if(/(blague|fais.moi rire|humour|rigol|dr[oô]le|plaisanterie)/i.test(s)){round++;return jokes[round%jokes.length]}
- if(/^(salut|bonjour|hello|coucou|yo|bonsoir|hey)\b/i.test(s))return "Salut ! 👋 Je suis l’assistant CMD Sphere. Une blague, une question, ou besoin d’aide sur ton profil, les serveurs ou la boutique ?";
+ if(/^(salut|bonjour|hello|coucou|yo|bonsoir|hey)\b/i.test(s))return "Salut ! 👋 Je suis CMD NEURIA, l’assistant CMD Sphere. Une blague, une question, ou besoin d’aide sur ton profil, les serveurs ou la boutique ?";
  if(/(merci|thanks)/i.test(s)&&s.length<45)return "Avec plaisir ! 😄 Une autre question ?";
  for(const [test,response] of info)if(test.test(s))return response;
- if(/(qui es.tu|ton nom|tu es quoi)/i.test(s))return "Je suis l’assistant CMD Sphere : je fais des blagues, j’aide dans l’application et je peux chercher des informations. Pour des réponses plus créatives, le fondateur peut activer gratuitement un modèle Gemini dans Railway.";
+ if(/(qui es.tu|ton nom|tu es quoi)/i.test(s))return "Je suis CMD NEURIA, l’assistant CMD Sphere : je fais des blagues, j’aide dans l’application et je peux chercher des informations. Pour des réponses plus créatives, le fondateur peut activer gratuitement un modèle Gemini dans Railway.";
  return null;
 }
 function cleanHistory(v){return (Array.isArray(v)?v:[]).slice(-8).filter(x=>["user","assistant"].includes(x?.role)&&typeof x.text==="string").map(x=>({role:x.role==="assistant"?"model":"user",parts:[{text:x.text.slice(0,1400)}]}))}
@@ -108,7 +108,7 @@ async function gemini(message,history){
  try{
    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",{
      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},signal,
-     body:JSON.stringify({systemInstruction:{parts:[{text:"Tu es CMD IA, l'assistant sympathique de CMD Sphere, une application communautaire indépendante de Discord. Réponds naturellement dans la langue de l'utilisateur, en français par défaut. Tu fais des blagues originales à la demande, aides pour la rédaction, expliques des sujets et les usages de CMD Sphere. Ne prétends pas avoir accès aux données privées, exécuter des actions, ou synchroniser des serveurs. Sois bref, utile et honnête. Si une fonction n'existe pas, dis-le. Aucune publicité ni abonnement."}]},contents:[...cleanHistory(history),{role:"user",parts:[{text:message}]}],generationConfig:{maxOutputTokens:420,temperature:0.75}})})
+     body:JSON.stringify({systemInstruction:{parts:[{text:"Tu es CMD NEURIA, l'assistant sympathique de CMD Sphere, une application communautaire indépendante de Discord. Réponds naturellement dans la langue de l'utilisateur, en français par défaut. Tu fais des blagues originales à la demande, aides pour la rédaction, expliques des sujets et les usages de CMD Sphere. Ne prétends pas avoir accès aux données privées, exécuter des actions, ou synchroniser des serveurs. Sois bref, utile et honnête. Si une fonction n'existe pas, dis-le. Aucune publicité ni abonnement."}]},contents:[...cleanHistory(history),{role:"user",parts:[{text:message}]}],generationConfig:{maxOutputTokens:420,temperature:0.75}})})
    if(!r.ok)return null;
    const data=await r.json();
    const result=(data.candidates||[]).flatMap(c=>c.content?.parts||[]).map(x=>x.text||"").join("\n").trim().slice(0,4000);
@@ -164,7 +164,7 @@ async function wikipedia(message){
 }
 export async function answerCMD(message,history=[]){
  const m=String(message||"").trim().slice(0,2000);
- if(!m)return {reply:"Écris un message pour discuter avec CMD IA.",mode:"local"};
+ if(!m)return {reply:"Écris un message pour discuter avec CMD NEURIA.",mode:"local"};
  const basic=clockAnswer(m)||recipeAnswer(m)||simple(m);
  if(basic)return {reply:basic,mode:"local"};
  const worldClock=await unknownClockAnswer(m);if(worldClock)return {reply:worldClock,mode:"world-clock"};
