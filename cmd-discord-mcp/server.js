@@ -3142,6 +3142,30 @@ async function startDiscordSyncJob(auth){
   setImmediate(()=>runDiscordSyncJob(auth,id).catch(e=>console.error("[sync-job]",e.message)));
   return {ok:true,job:await discordSyncJobStatus(auth),started:true};
 }
+// Periodic, non-destructive Discord -> CMD Sphere backup. Never posts back to Discord.
+// Linked accounts only; existing job deduplication and a persisted last-run window.
+let cmdAutoDiscordSyncRunning=false;
+async function autoSyncLinkedDiscordAccounts(){
+  if(cmdAutoDiscordSyncRunning)return;
+  cmdAutoDiscordSyncRunning=true;
+  try{
+    const users=await pool.query(`SELECT DISTINCT i.account_id::text AS user_id
+      FROM cmd_account_identities i WHERE i.provider='discord'
+      AND NOT EXISTS (SELECT 1 FROM cmd_discord_sync_jobs j WHERE j.user_id=i.account_id::text
+        AND j.started_at > NOW()-INTERVAL '6 hours')
+      ORDER BY user_id LIMIT 15`);
+    for(const row of users.rows){
+      try{
+        const account=await accountById(row.user_id),identity=await discordIdentityForAccount(row.user_id);
+        if(!account||!identity)continue;
+        const auth=authFromAccount(account,identity);
+        if(!auth.user?.discordId)continue;
+        await startDiscordSyncJob(auth);
+      }catch(e){console.error('[discord-auto-sync] account sync failed:',e.message)}
+    }
+  }catch(e){console.error('[discord-auto-sync] scan failed:',e.message)}
+  finally{cmdAutoDiscordSyncRunning=false}
+}
 async function resumeDiscordSyncJobs(){
   const r=await pool.query("SELECT id::text,user_id FROM cmd_discord_sync_jobs WHERE status IN ('queued','running') AND updated_at > NOW() - INTERVAL '30 minutes' ORDER BY started_at DESC LIMIT 5");
   const users=new Set();
@@ -5513,7 +5537,7 @@ httpServer.listen(port,"0.0.0.0",async()=>{
         }else console.log('[founder] Native founder username already exists, no password was changed');
       }
     }catch(err){console.error('[founder] Founder account provisioning failed: '+err.message)}
-    await attachFounderEmail(pool);setTimeout(()=>seedCmdPhotoEmojis(pool).catch(e=>console.error("[cmd-photo-emojis]",e.message)),2000);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200)}catch(e){console.error("[native] database init failed: "+e.message)}
+    await attachFounderEmail(pool);setTimeout(()=>seedCmdPhotoEmojis(pool).catch(e=>console.error("[cmd-photo-emojis]",e.message)),2000);console.log("[native] CMD Sphere database ready");await setupNotifications(pool);setTimeout(()=>resumeDiscordSyncJobs().catch(e=>console.error("[discord-sync] startup resume failed: "+e.message)),500);setTimeout(()=>resumeMirrorJobs().catch(e=>console.error("[mirror] resume failed: "+e.message)),1200);setTimeout(()=>autoSyncLinkedDiscordAccounts().catch(e=>console.error("[discord-auto-sync]",e.message)),30000);setInterval(()=>autoSyncLinkedDiscordAccounts().catch(e=>console.error("[discord-auto-sync]",e.message)),60*60*1000)}catch(e){console.error("[native] database init failed: "+e.message)}
   console.log("CMD Sphere MCP listening on port "+port+" with OAuth");
   for(const bot of Object.keys(bots)){
     try{const rows=await backend(bot,"guilds");console.log("[selftest] "+bot+" backend OK, guilds="+(Array.isArray(rows)?rows.length:"?"))}
