@@ -1,2 +1,2 @@
 const {contextBridge,ipcRenderer}=require('electron');
-contextBridge.exposeInMainWorld('cmdDesktop',{home:()=>ipcRenderer.invoke('cmd:home'),action:(name,value)=>ipcRenderer.invoke('cmd:action',name,value),onState:(callback)=>ipcRenderer.on('cmd:state',(_e,state)=>callback(state)),onFocusAddress:(callback)=>ipcRenderer.on('cmd:focus-address',callback)});
+contextBridge.exposeInMainWorld('cmdDesktop',{home:()=>ipcRenderer.invoke('cmd:home'),vpn:(action,region)=>ipcRenderer.invoke('cmd:vpn',action,region),action:(name,value)=>ipcRenderer.invoke('cmd:action',name,value),onState:(callback)=>ipcRenderer.on('cmd:state',(_e,state)=>callback(state)),onFocusAddress:(callback)=>ipcRenderer.on('cmd:focus-address',callback)});
