@@ -183,7 +183,7 @@ export default function Shell({ children }) {
       </div>
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
-          <img src="/extinction-logo.png?v=20261008" alt="CMD Extinction++ RSS" className="mx-auto mb-4 h-28 w-28 rounded-full object-cover" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
+          <img src="/extinction-logo.png?v=20261008" alt="CMD CMD Extinction++ RSS" className="mx-auto mb-4 h-28 w-28 rounded-full object-cover" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
           <h1 className="text-2xl font-black text-purple-400">CMD EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
@@ -207,7 +207,7 @@ export default function Shell({ children }) {
 
       <header className="ext-draft-header lg:hidden">
         <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
-        <img src="/extinction-logo.png?v=20261008" alt="CMD Extinction++ RSS" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
+        <img src="/extinction-logo.png?v=20261008" alt="CMD CMD Extinction++ RSS" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
         <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" title="CMD Officiel" className="grid h-8 w-8 place-items-center rounded-full border border-purple-400/35 bg-purple-500/10"><img src="/cmd-official.svg?v=20261008" alt="CMD" className="h-6 w-6"/></a>
         <div className="ext-header-actions">
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
