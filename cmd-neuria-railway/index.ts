@@ -1,5 +1,5 @@
 
-import sharp from "sharp@0.34.4";
+import sharp from "sharp";
 /* CMD AI — experimental CPU neural intent classifier trained from scratch on startup.
    No external AI models, APIs, telemetry, or third-party content loaded. */
 const CMD_AI_UI={"fr":["Effacer","Envoyer","Version expérimentale : réponses limitées, sans historique sur le serveur."],"en":["Clear","Send","Experimental version: limited answers, no chat history stored on the server."],"de":["Löschen","Senden","Experimentell: begrenzte Antworten, kein Chatverlauf auf dem Server."],"es":["Borrar","Enviar","Versión experimental: respuestas limitadas y sin historial guardado en el servidor."],"it":["Cancella","Invia","Versione sperimentale: risposte limitate, nessuna cronologia salvata sul server."],"ru":["Очистить","Отправить","Экспериментальная версия: ограниченные ответы, история не хранится на сервере."],"co":["Sguassà","Mandà","Versione sperimentale: risposte limitate, nisuna storia salvata nant'à u servitore."],"ja":["消去","送信","実験版：回答できる内容は限定的です。サーバーに履歴は保存されません。"],"ko":["지우기","보내기","실험 버전: 답변 범위가 제한되며 서버에 대화 기록을 저장하지 않습니다."],"zh":["清除","发送","实验版本：回答范围有限，服务器不保存聊天记录。"]};
