@@ -32,3 +32,7 @@ a, button {
 .btn-primary {
   @apply bg-extinction-violet text-white;
 }
+
+/* CMD RSS mobile rotation support: portrait and landscape */
+@media (orientation:landscape) and (max-height:650px){html,body{max-width:100%;min-width:0;overflow-x:hidden}body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}main,article,section{min-width:0}input,textarea,select{max-width:100%;box-sizing:border-box}[role="dialog"]{max-height:calc(100dvh - 12px);overflow-y:auto}}
+@media (orientation:portrait) and (max-width:650px){html,body{max-width:100%;overflow-x:hidden}main,article,section{min-width:0}}
