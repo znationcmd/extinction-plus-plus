@@ -1,5 +1,5 @@
 
-import sharp from "sharp@0.34.4";
+import sharp from "sharp";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 const PORT=Number(Bun.env.PORT||3000);
