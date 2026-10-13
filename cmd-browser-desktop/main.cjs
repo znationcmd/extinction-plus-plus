@@ -1,6 +1,7 @@
 const {app,BrowserWindow,WebContentsView,ipcMain,session,dialog}=require('electron');
 const path=require('node:path');
 const fs=require('node:fs');
+const {execFile}=require('node:child_process');
 const HOME='https://cmd-browser-web-rzsb-production.up.railway.app';
 let main,tabs=[],active=-1,sequence=0;
 const statePath=()=>path.join(app.getPath('userData'),'browser-data.json');
@@ -9,6 +10,11 @@ function persist(){try{fs.writeFileSync(statePath(),JSON.stringify(saved))}catch
 function record(url,title){if(!/^https?:\/\//.test(url))return;saved.history.unshift({url,title:title||url,at:Date.now()});saved.history=saved.history.slice(0,1000);persist()}
 
 const BAR=104;
+const vpnRegions=['France','Allemagne','Pays-Bas','Royaume-Uni','États-Unis','Canada','Japon'];
+const vpnStatus={connected:false,region:null,configured:[]};
+function vpnProfiles(){const dir=path.join(app.getPath('userData'),'vpn-profiles');try{fs.mkdirSync(dir,{recursive:true});return vpnRegions.filter(region=>fs.existsSync(path.join(dir,region+'.conf')))}catch{return []}}
+function vpnReply(){return {...vpnStatus,configured:vpnProfiles(),message:'Le VPN nécessite un profil WireGuard valide et un tunnel vérifié. Aucun tunnel n’est lancé depuis CMD Browser.'}}
+
 function normalize(raw){let q=String(raw||'').trim();if(!q)return HOME;if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(q)){q=/^(localhost|[^\s]+\.[^\s]+)(\/[^\s]*)?$/i.test(q)?'https://'+q:'https://cmd-browser-web-rzsb-production.up.railway.app/?q='+encodeURIComponent(q)}try{const u=new URL(q);return ['https:','http:'].includes(u.protocol)?u.href:HOME}catch{return HOME}}
 function emit(){if(!main||main.isDestroyed())return;main.webContents.send('cmd:state',{active,tabs:tabs.map(t=>({id:t.id,title:t.title,url:t.view.webContents.getURL(),loading:t.loading,bookmarked:saved.bookmarks.includes(t.view.webContents.getURL()),back:t.view.webContents.canGoBack(),forward:t.view.webContents.canGoForward()}))})}
 function resize(){if(!main||main.isDestroyed())return;const [w,h]=main.getContentSize();tabs.forEach((t,i)=>{if(i===active)t.view.setBounds({x:0,y:BAR,width:w,height:Math.max(100,h-BAR)})})}
@@ -20,3 +26,5 @@ app.whenReady().then(()=>{try{const data=JSON.parse(fs.readFileSync(statePath(),
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});
 ipcMain.handle('cmd:home',()=>HOME);
 ipcMain.handle('cmd:action',(_event,action,payload)=>{if(!main||main.isDestroyed())return;const t=tabs[active];switch(action){case 'new':newTab(payload||HOME);break;case 'select':select(tabs.findIndex(x=>x.id===payload));break;case 'close':closeTab(payload);break;case 'go':t?.view.webContents.loadURL(normalize(payload)).catch(()=>{});break;case 'back':if(t?.view.webContents.canGoBack())t.view.webContents.goBack();break;case 'forward':if(t?.view.webContents.canGoForward())t.view.webContents.goForward();break;case 'reload':t?.view.webContents.reload();break;case 'home':t?.view.webContents.loadURL(HOME).catch(()=>{});break;case 'bookmark':{const url=t?.view.webContents.getURL();if(url){saved.bookmarks=saved.bookmarks.includes(url)?saved.bookmarks.filter(x=>x!==url):[...saved.bookmarks,url];persist()}break};case 'bookmarks':return saved.bookmarks;case 'history':return saved.history;case 'clear-history':saved.history=[];persist();break}emit()});
+
+ipcMain.handle('cmd:vpn',(_event,action,region)=>{if(action==='status')return vpnReply();if(action==='regions')return vpnRegions;if(action==='connect'){if(!vpnRegions.includes(region))return {...vpnReply(),error:'Région non reconnue'};return {...vpnReply(),error:vpnProfiles().includes(region)?'Profil trouvé, mais connexion système non intégrée : lancez WireGuard manuellement.':'Aucun serveur VPN configuré pour cette région.'}}if(action==='disconnect')return vpnReply();return vpnReply()});
