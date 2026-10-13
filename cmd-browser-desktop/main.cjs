@@ -14,7 +14,7 @@ function record(url,title){if(!/^https?:\/\//.test(url))return;saved.history.uns
 const BAR=104;
 const vpnRegions=['France','Allemagne','Pays-Bas','Royaume-Uni','États-Unis','Canada','Japon'];
 const vpnStatus={connected:false,region:null,configured:[]};
-function vpnProfiles(){const dir=path.join(app.getPath('userData'),'vpn-profiles');try{fs.mkdirSync(dir,{recursive:true});return vpnRegions.filter(region=>fs.existsSync(path.join(dir,region+'.conf')))}catch{return []}}
+function vpnProfiles(){const dir=path.join(app.getPath('userData'),'vpn-profiles');try{fs.mkdirSync(dir,{recursive:true});return vpnRegions.filter(region=>fs.existsSync(path.join(dir,'cmdvpn-'+({'France':'fr','Allemagne':'de','Pays-Bas':'nl','Royaume-Uni':'uk','États-Unis':'us','Canada':'ca','Japon':'jp'}[region])+'.conf')))}catch{return []}}
 async function vpnReply(){
   const configured=vpnProfiles();
   let interfaces=[];let handshake=false;
@@ -42,4 +42,61 @@ app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});
 ipcMain.handle('cmd:home',()=>HOME);
 ipcMain.handle('cmd:action',(_event,action,payload)=>{if(!main||main.isDestroyed())return;const t=tabs[active];switch(action){case 'new':newTab(payload||HOME);break;case 'select':select(tabs.findIndex(x=>x.id===payload));break;case 'close':closeTab(payload);break;case 'go':t?.view.webContents.loadURL(normalize(payload)).catch(()=>{});break;case 'back':if(t?.view.webContents.canGoBack())t.view.webContents.goBack();break;case 'forward':if(t?.view.webContents.canGoForward())t.view.webContents.goForward();break;case 'reload':t?.view.webContents.reload();break;case 'home':t?.view.webContents.loadURL(HOME).catch(()=>{});break;case 'bookmark':{const url=t?.view.webContents.getURL();if(url){saved.bookmarks=saved.bookmarks.includes(url)?saved.bookmarks.filter(x=>x!==url):[...saved.bookmarks,url];persist()}break};case 'bookmarks':return saved.bookmarks;case 'history':return saved.history;case 'clear-history':saved.history=[];persist();break}emit()});
 
-ipcMain.handle('cmd:vpn',async(_event,action,region)=>{if(action==='status')return await vpnReply();if(action==='regions')return vpnRegions;if(action==='connect'){if(!vpnRegions.includes(region))return {...(await vpnReply()),error:'Région non reconnue'};return {...(await vpnReply()),error:vpnProfiles().includes(region)?'Profil trouvé, mais connexion système non intégrée : lancez WireGuard manuellement.':'Aucun serveur VPN configuré pour cette région.'}}if(action==='import'){return (async()=>{const picked=await dialog.showOpenDialog(main,{title:'Importer un profil WireGuard',properties:['openFile'],filters:[{name:'WireGuard',extensions:['conf']} ]});if(picked.canceled||!picked.filePaths[0])return await vpnReply();const source=picked.filePaths[0];const content=fs.readFileSync(source,'utf8');if(content.length>32768||!content.includes('[Interface]')||!content.includes('[Peer]'))return {...(await vpnReply()),error:'Profil WireGuard invalide'};if(!vpnRegions.includes(region))return {...(await vpnReply()),error:'Choisissez une région'};const dir=path.join(app.getPath('userData'),'vpn-profiles');fs.mkdirSync(dir,{recursive:true,mode:0o700});const dest=path.join(dir,region+'.conf');fs.writeFileSync(dest,content,{mode:0o600});return {...(await vpnReply()),message:'Profil importé pour '+region+'. Ouvrez WireGuard pour activer le tunnel.'}})()}if(action==='open-client'){await shell.openExternal('https://www.wireguard.com/install/');return await vpnReply()}if(action==='disconnect')return await vpnReply();return await vpnReply()});
+
+const vpnIds={'France':'fr','Allemagne':'de','Pays-Bas':'nl','Royaume-Uni':'uk','États-Unis':'us','Canada':'ca','Japon':'jp'};
+const vpnDir=()=>path.join(app.getPath('userData'),'vpn-profiles');
+const vpnTunnel=region=>'cmdvpn-'+vpnIds[region];
+const vpnFile=region=>path.join(vpnDir(),vpnTunnel(region)+'.conf');
+function wireguardExe(){
+ if(process.platform!=='win32')return null;
+ const locations=[process.env.ProgramFiles,process.env['ProgramFiles(x86)']].filter(Boolean).map(dir=>path.join(dir,'WireGuard','wireguard.exe'));
+ return locations.find(p=>fs.existsSync(p))||null;
+}
+async function vpnService(region){
+ try{const {stdout}=await run('sc.exe',['query','WireGuardTunnel$'+vpnTunnel(region)],{timeout:5000,windowsHide:true});return /STATE\s*:\s*4\s+RUNNING/.test(stdout)}catch{return false}
+}
+async function vpnControl(action,region){
+ if(process.platform!=='win32')return {...await vpnReply(),error:'Activation intégrée actuellement disponible sur Windows uniquement.'};
+ const exe=wireguardExe();
+ if(!exe)return {...await vpnReply(),error:'Installez WireGuard pour Windows depuis le bouton Installer WireGuard.'};
+ if(!vpnRegions.includes(region))return {...await vpnReply(),error:'Région non reconnue'};
+ if(action==='connect'&&!fs.existsSync(vpnFile(region)))return {...await vpnReply(),error:'Importez un profil WireGuard valide pour cette région.'};
+ try{
+  if(action==='connect'){
+   for(const other of vpnRegions){
+    if(other!==region&&await vpnService(other))await run(exe,['/uninstalltunnelservice',vpnTunnel(other)],{timeout:15000,windowsHide:true});
+   }
+   if(!await vpnService(region))await run(exe,['/installtunnelservice',vpnFile(region)],{timeout:20000,windowsHide:true});
+  }else{
+   if(await vpnService(region))await run(exe,['/uninstalltunnelservice',vpnTunnel(region)],{timeout:15000,windowsHide:true});
+  }
+  const running=await vpnService(region);
+  const status=await vpnReply();
+  return {...status,serviceRunning:running,message:running?'Tunnel WireGuard démarré. Vérifiez maintenant IP publique, pays et DNS.':'Tunnel WireGuard arrêté. La connexion réseau peut utiliser une autre interface.'};
+ }catch(e){
+  return {...await vpnReply(),error:'Commande WireGuard refusée ou échouée. Lancez CMD Browser en administrateur et vérifiez votre profil et le service WireGuard.'};
+ }
+}
+ipcMain.handle('cmd:vpn',async(_event,action,region)=>{
+ if(action==='status')return await vpnReply();
+ if(action==='regions')return vpnRegions;
+ if(action==='connect')return await vpnControl('connect',region);
+ if(action==='disconnect'){
+  if(region&&vpnRegions.includes(region))return await vpnControl('disconnect',region);
+  for(const item of vpnRegions)if(await vpnService(item))return await vpnControl('disconnect',item);
+  return await vpnReply();
+ }
+ if(action==='import'){
+  if(!vpnRegions.includes(region))return {...await vpnReply(),error:'Choisissez une région valide'};
+  const picked=await dialog.showOpenDialog(main,{title:'Importer un profil WireGuard',properties:['openFile'],filters:[{name:'WireGuard',extensions:['conf']}]});
+  if(picked.canceled||!picked.filePaths[0])return await vpnReply();
+  const content=fs.readFileSync(picked.filePaths[0],'utf8');
+  if(content.length>32768||!/^\s*\[Interface\]/m.test(content)||!/^\s*\[Peer\]/m.test(content)||!/^\s*PrivateKey\s*=/m.test(content)||!/^\s*Endpoint\s*=/m.test(content))
+   return {...await vpnReply(),error:'Profil WireGuard incomplet : Interface, PrivateKey, Peer et Endpoint nécessaires'};
+  fs.mkdirSync(vpnDir(),{recursive:true,mode:0o700});
+  fs.writeFileSync(vpnFile(region),content,{mode:0o600});
+  return {...await vpnReply(),message:'Profil importé. Vous pouvez maintenant demander l’activation sous Windows (droits administrateur requis).'};
+ }
+ if(action==='open-client'){await shell.openExternal('https://www.wireguard.com/install/');return await vpnReply()}
+ return await vpnReply();
+});
