@@ -1,48 +1,12 @@
-function localAiAnswer(message) {
-  const q = String(message || '').toLowerCase();
-  if (q.includes('nitrado')) return 'Nitrado : configure ton token dans le dashboard, teste la connexion, puis lie ton service ID au serveur Discord.';
-  if (q.includes('rcon') || q.includes('gportal')) return 'RCON/GPortal : active RCON chez l’hébergeur, copie host, port et mot de passe, puis teste la connexion.';
-  if (q.includes('whitelist') || q.includes('whiltliste')) return 'Whitelist : crée un panneau whitelist, les joueurs font leur demande, puis le bot enregistre/valide selon ta configuration.';
-  if (q.includes('shop')) return 'Shop : ajoute les items, prix et récompenses dans le dashboard, puis utilise la monnaie du bot pour acheter.';
-  if (q.includes('rp')) return 'RP : la page RP gère métiers, licences, amendes, mandats, entreprises, propriétés et salaires.';
-  if (q.includes('interpol')) return 'INTERPOL : dossiers joueurs, signalements, sanctions et historique d’actions staff.';
-  return 'Je peux aider sur Nitrado, RCON, whitelist, shop, économie, RP, INTERPOL, killfeed, Battle Pass et dashboard.';
-}
-
-export async function POST(req) {
-  const { message, system } = await req.json();
-  const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-
-  if (!apiKey) {
-    return Response.json({ answer: localAiAnswer(message), mode: 'local' });
-  }
-
-  try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: system || 'Tu es l’assistant IA du dashboard Extinction++ RSS. Réponds en français, simplement, pour aider à configurer DayZ, Nitrado, Discord, RP, Interpol, whitelist, shop et Battle Pass.' },
-          { role: 'user', content: String(message || '') }
-        ],
-        temperature: 0.3
-      })
-    });
-
-    if (!r.ok) {
-      const err = await r.text();
-      return Response.json({ answer: localAiAnswer(message), mode: 'fallback', error: err }, { status: 200 });
-    }
-
-    const data = await r.json();
-    return Response.json({ answer: data.choices?.[0]?.message?.content || localAiAnswer(message), mode: 'openai' });
-  } catch (e) {
-    return Response.json({ answer: localAiAnswer(message), mode: 'fallback', error: String(e?.message || e) }, { status: 200 });
-  }
-}
+import {guarded} from '../../../lib/dashboard-auth';
+export const POST=guarded(async req=>{
+ let body;try{body=await req.json()}catch{return Response.json({error:'JSON invalide'},{status:400})}
+ const message=typeof body?.message==='string'?body.message.trim():'';
+ if(!message||message.length>1000)return Response.json({error:'Question invalide (1000 caractères maximum)'},{status:400});
+ const history=Array.isArray(body.history)?body.history.slice(-12).filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').map(x=>({role:x.role,content:x.content.slice(0,1200)})):[];
+ try{
+  const upstream=await fetch('https://cmd-ai-cpu-web-production.up.railway.app/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message,history}),signal:AbortSignal.timeout(50000),cache:'no-store'});
+  const data=await upstream.json().catch(()=>({error:'Réponse CMD NEURIA invalide'}));
+  return Response.json(upstream.ok?{reply:String(data.reply||'')}:{error:String(data.error||'CMD NEURIA indisponible')},{status:upstream.status});
+ }catch{return Response.json({error:'CMD NEURIA momentanément indisponible'},{status:503})}
+});
