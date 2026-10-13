@@ -7,6 +7,10 @@
     "start": "bun run index.ts"
   },
   "dependencies": {
-    "sharp": "0.34.4"
+    "sharp": "0.34.4",
+    "pdf-lib": "^1.17.1",
+    "docx": "^9.5.1",
+    "exceljs": "^4.4.0",
+    "pptxgenjs": "^3.12.0"
   }
 }
