@@ -701,3 +701,16 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
  .sphere-app.cmd-native-selected .cmd-server-channels{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
  .sphere-app #channelOverlay .channel-messages{overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
 }
+
+/* CMD Sphere: automatic phone/tablet rotation support (portrait + landscape). */
+@media (orientation:landscape) and (max-height:650px){
+ html,body{max-width:100%;min-width:0;overflow-x:hidden}
+ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+ .cmd-app,.cmd-shell,.discord-layout,.app-shell{max-width:100%;min-width:0}
+ .cmd-modal,.modal,[role="dialog"]{max-height:calc(100dvh - 12px);overflow-y:auto}
+ input,textarea,select{max-width:100%;box-sizing:border-box}
+}
+@media (orientation:portrait) and (max-width:650px){
+ html,body{max-width:100%;overflow-x:hidden}
+ .cmd-app,.cmd-shell,.discord-layout,.app-shell{min-width:0;max-width:100%}
+}
