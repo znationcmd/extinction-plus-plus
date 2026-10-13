@@ -121,6 +121,7 @@ export default function Shell({ children }) {
   const { t } = useLanguage();
   const {refreshApp,refreshing}=usePwa();
   const [menuOpen,setMenuOpen]=useState(false);
+  const [appsOpen,setAppsOpen]=useState(false);
   const [menuQuery,setMenuQuery]=useState('');
   const [workspace,setWorkspace]=useState({guilds:[],selectedGuildId:null});
 
@@ -183,7 +184,7 @@ export default function Shell({ children }) {
       </div>
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 overflow-y-auto border-r border-white/10 bg-black/40 p-6 backdrop-blur-xl lg:left-20 lg:block">
         <Link href="/" prefetch={false} className="mb-6 block">
-          <img src="/extinction-logo.png?v=20261008" alt="CMD CMD Extinction++ RSS" className="mx-auto mb-4 h-28 w-28 rounded-full object-cover" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
+          <img src="/extinction-logo.png?v=20261008" alt="CMD Extinction++ RSS" className="mx-auto mb-4 h-28 w-28 rounded-full object-cover" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
           <h1 className="text-2xl font-black text-purple-400">CMD EXTINCTION++ RSS</h1>
           <p className="text-xs text-white/50">Real Survival System</p>
         </Link>
@@ -213,11 +214,12 @@ export default function Shell({ children }) {
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
             <RefreshCw size={29} className={refreshing?'animate-spin':''}/>
           </button>
-          <button type="button" aria-label="Applications" title="Applications" className="ext-grid-button" onClick={()=>{setMenuOpen(false);window.location.href='/#applications'}}><i/><i/><i/><i/></button>
+          <button type="button" aria-label="Applications" title="Applications" className="ext-grid-button" onClick={()=>{setAppsOpen(v=>!v);setMenuOpen(false)}}><i/><i/><i/><i/></button>
         </div>
       </header>
 
-      {menuOpen&&<div className="ext-menu-shade lg:hidden" onClick={()=>setMenuOpen(false)}/>} 
+      {(menuOpen||appsOpen)&&<div className="ext-menu-shade lg:hidden" onClick={()=>{setMenuOpen(false);setAppsOpen(false)}}/>}
+      {appsOpen&&<section className="ext-apps-drawer lg:hidden" aria-label="Toutes les applications CMD"><div className="ext-apps-heading"><strong>Applications CMD</strong><button type="button" onClick={()=>setAppsOpen(false)} aria-label="Fermer les applications">×</button></div><div className="ext-apps-list">{links.filter(([href])=>href!=='/').map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} onClick={()=>setAppsOpen(false)}><Icon size={23}/><span>{t(label)}</span></Link>)}</div></section>} 
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
         {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble relative ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
