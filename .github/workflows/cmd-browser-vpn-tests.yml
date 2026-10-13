@@ -15,6 +15,6 @@ jobs:
         with:
           node-version: '22'
       - name: Simulate VPN states
-        run: node cmd-browser-desktop/vpn.simulation.test.cjs
+        run: node cmd-browser-desktop/vpn.simulation.test.cjs && node cmd-browser-desktop/vpn-browser.integration.test.cjs
       - name: Check desktop syntax
         run: node --check cmd-browser-desktop/main.cjs && node --check cmd-browser-desktop/preload.cjs
