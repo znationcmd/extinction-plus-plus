@@ -11,6 +11,9 @@
     "pdf-lib": "^1.17.1",
     "docx": "^9.5.1",
     "exceljs": "^4.4.0",
-    "pptxgenjs": "^3.12.0"
+    "pptxgenjs": "^3.12.0",
+    "mammoth": "^1.9.1",
+    "jszip": "^3.10.1",
+    "pdfjs-dist": "^4.10.38"
   }
 }
