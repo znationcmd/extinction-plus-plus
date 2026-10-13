@@ -1,0 +1,12 @@
+{
+  "name": "cmd-neuria",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "sharp": "0.34.4"
+  }
+}
