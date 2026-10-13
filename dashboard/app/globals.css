@@ -275,3 +275,15 @@ input,select,textarea{max-width:100%}
  .ext-content .grid{min-width:0;max-width:100%;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
  .ext-menu-shade{inset:0!important}
 }
+
+/* Shared CMD navigation: identical for administrators and players. Authorization remains server-side. */
+@media(max-width:1023px){
+.ext-draft-header{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+.ext-draft-header>button,.ext-grid-button{display:grid!important;visibility:visible!important;pointer-events:auto!important}
+.ext-apps-drawer{position:fixed;z-index:69;top:calc(var(--ext-head,88px) + env(safe-area-inset-top,0px));right:0;bottom:0;width:min(440px,100vw);background:#121725;border-left:1px solid #6c4cd0;box-shadow:-12px 0 50px #0009;overflow:hidden;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ext-apps-heading{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #ffffff20;font-size:19px}
+.ext-apps-heading button{font-size:30px;color:#fff;padding:0 12px}
+.ext-apps-list{overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}
+.ext-apps-list a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:94px;padding:12px 7px;border:1px solid #ffffff20;border-radius:14px;background:#ffffff10;text-align:center;font-size:13px;overflow-wrap:anywhere}
+.ext-apps-list a:active{background:#6746b9}
+}
