@@ -143,6 +143,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(typeof body?.text!=="string"||body.text.length>2000||!body.text.trim())return response(JSON.stringify({error:"Texte invalide"}),"application/json",400);
   try{return response(JSON.stringify(cmdTranslate(body.text,body.source,body.target)),"application/json")}catch(err){return response(JSON.stringify({error:err.message}),"application/json",400)}
  }
+ if(req.method==="GET"&&path==="/api/search"){
+ const url=new URL(req.url),q=(url.searchParams.get("q")||"").trim();
+ if(q.length<2||q.length>180)return response(JSON.stringify({error:"Recherche invalide"}),"application/json",400);
+ try{
+ const api="https://fr.wikipedia.org/w/api.php?action=query&list=search&srsearch="+encodeURIComponent(q)+"&srlimit=6&format=json";
+ const upstream=await fetch(api,{headers:{"user-agent":"CMD-Neuria/1.0"}});
+ if(!upstream.ok)throw Error("upstream");
+ const data=await upstream.json();
+ const items=(data.query?.search||[]).map(x=>({title:x.title,summary:x.snippet.replace(/<[^>]+>/g,""),url:"https://fr.wikipedia.org/wiki/"+encodeURIComponent(x.title.replace(/ /g,"_"))}));
+ return response(JSON.stringify({items,source:"Wikipedia"}),"application/json");
+ }catch{return response(JSON.stringify({error:"Recherche indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/chat"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Limite de 12 messages par minute."}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
