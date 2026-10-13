@@ -218,7 +218,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
     return response(JSON.stringify({reply,model,engine:"external-llm"}),"application/json");
    }catch(err){return response(JSON.stringify({error:"Impossible de contacter le moteur IA. Réessaie.",detail:err?.name==="AbortError"?"timeout":"provider-error"}),"application/json",502)}
   }
-  return response(JSON.stringify({...multilingual(data.message,data.language),model:"CMD NEURIA — moteur local limité",engine:"local-fallback",notice:"Configurez NEURIA_AI_ENDPOINT, NEURIA_AI_API_KEY et NEURIA_AI_MODEL pour activer les conversations IA."}),"application/json");
+  return response(JSON.stringify({reply:"Le moteur conversationnel Cloudflare n’est pas encore connecté. Je ne peux pas répondre de manière fiable à cette question. Vérifie la configuration du jeton IA dans Railway.",model:"CMD NEURIA",engine:"not_configured",notice:"Cloudflare non configuré : NEURIA_AI_ENDPOINT, NEURIA_AI_API_KEY ou NEURIA_AI_MODEL manquant."}),"application/json",503);
  }
  return response(JSON.stringify({error:"Not found"}),"application/json",404);
 }});
