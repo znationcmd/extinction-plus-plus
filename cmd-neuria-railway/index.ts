@@ -137,7 +137,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(path==="/icon.svg")return new Response(await sharp(NEURIA_LOGO).png().toBuffer(),{headers:{"content-type":"image/png","cache-control":"no-store"}});if(/^\/icon-(180|192|512)\.png$/.test(path)){const size=Number(path.match(/-(180|192|512)\./)[1]);return new Response(await sharp(NEURIA_LOGO).resize(size,size,{fit:"cover"} ).png().toBuffer(),{headers:{"content-type":"image/png","cache-control":"public,max-age=3600"}})}
   if(path==="/manifest.webmanifest")return response(manifest,"application/manifest+json");
   if(path==="/sw.js")return response(sw,"application/javascript");
-  if(path==="/health")return response(JSON.stringify({languages:CMD_TRANS_LANGS.length,translator:"limited locally programmed phrase lexicon",lens:"browser-local QR/colors",ok:true,app:"CMD AI",model:"neural softmax intent classifier",mode:"local-cpu",trained_from_scratch:true,external_ai_api:false,topics:PAIRS.length,languages:Object.keys(CMD_AI_LANGS),multilingual_answers:"limited, common questions"}),"application/json");
+  if(path==="/health")return response(JSON.stringify({ok:true,app:"CMD NEURIA",engineConfigured:!!(Bun.env.NEURIA_AI_ENDPOINT&&Bun.env.NEURIA_AI_API_KEY&&Bun.env.NEURIA_AI_MODEL),engineTokenReferenceUnresolved:(Bun.env.NEURIA_AI_API_KEY||"").startsWith("\u0024{{"),features:{chat:true,wikipediaSearch:true,textAttachment:true,workPlanning:true,autonomousWork:false,imageGeneration:false,persistentMemory:false}}),"application/json");
  }
  if(req.method==="POST"&&path==="/api/translate"){
   if(Number(req.headers.get("content-length")||0)>10000)return response(JSON.stringify({error:"Texte trop long"}),"application/json",413);
