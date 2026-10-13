@@ -96,7 +96,8 @@ Bun.serve({port:PORT,async fetch(request,server){
  const u=new URL(request.url),path=u.pathname;
  if(request.method==="GET"){
  if(path==="/")return res(page);
- if(path==="/favicon.ico")return Response.redirect(new URL("/favicon-48.png?v=cmd-logo-20261013",request.url),302);\n if(["/favicon-48.png","/apple-touch-icon.png","/desktop-256.png","/icon-180.png","/icon-192.png","/icon-512.png"].includes(path)){const fileName=path==="/icon-180.png"?"apple-touch-icon.png":path.slice(1);return new Response(Bun.file(new URL("./assets/"+fileName,import.meta.url)),{headers:{"content-type":"image/png","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}})}
+ if(path==="/favicon.ico")return Response.redirect(new URL("/favicon-48.png?v=cmd-logo-20261013",request.url),302);
+ if(["/favicon-48.png","/apple-touch-icon.png","/desktop-256.png","/icon-180.png","/icon-192.png","/icon-512.png"].includes(path)){const fileName=path==="/icon-180.png"?"apple-touch-icon.png":path.slice(1);return new Response(Bun.file(new URL("./assets/"+fileName,import.meta.url)),{headers:{"content-type":"image/png","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}})}
  if(path==="/icon.svg")return res(logo,"image/svg+xml");
  if(path==="/cosmos.svg")return res(CMD_COSMOS_SVG,"image/svg+xml");
  if(path==="/cmd-reference-background-20261013.avif")return new Response(CMD_REFERENCE_BG,{headers:{"content-type":"image/avif","cache-control":"public, max-age=3600","x-content-type-options":"nosniff"}});
