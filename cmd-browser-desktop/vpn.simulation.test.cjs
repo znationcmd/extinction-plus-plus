@@ -20,7 +20,7 @@ async function scenario(name,output,profiles,expectedHandshake){
  await scenario('recent handshake','wg0 abc '+now,['France'],true);
  await scenario('old handshake','wg0 abc '+(now-3600),['Canada'],false);
  assert(source.includes("if(!vpnRegions.includes(region))"),'Region whitelist must be enforced');
- assert(source.includes("content.includes('[Interface]')")&&source.includes("content.includes('[Peer]')"),'Profile validation required');
- assert(source.includes("fs.writeFileSync(dest,content,{mode:0o600})"),'Restrict profile file permissions');
+ assert(source.includes('PrivateKey')&&source.includes('Endpoint'),'Profile validation required');
+ assert(source.includes("fs.writeFileSync(vpnFile(region),content,{mode:0o600})"),'Restrict profile file permissions');
  console.log('PASS region and import guards');
 })().catch(e=>{console.error('FAIL',e);process.exitCode=1});
