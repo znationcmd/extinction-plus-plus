@@ -44,6 +44,12 @@ const databaseUrl=String(process.env.DATABASE_URL||"");
 const logoB64=String(process.env.CMD_DISCORD_LOGO_B64||"");
 const iconB64=String(process.env.CMD_DISCORD_ICON_B64||"");
 const cmdPwaPngCache=new Map();
+function cmdSphereRoundPwaIcon(input,size){
+  // Keep the official bitmap and its own dark background. Only the OUTSIDE of the circle is transparent.
+  const inset=Math.max(1,Math.round(size*0.012)),r=size/2-inset;
+  const mask=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'"><circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="white"/></svg>');
+  return sharp(input,{failOn:"error"}).resize(size,size,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).composite([{input:mask,blend:"dest-in"}]).png({compressionLevel:8}).toBuffer();
+}
 const cmdPwaSourceB64=iconB64||logoB64; // Prefer the official square application icon, retain the full logo elsewhere.
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
@@ -5164,7 +5170,7 @@ const httpServer=createServer(async(req,res)=>{
       if(!cmdPwaSourceB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
       const size=Number(url.pathname.match(/-(180|192|512)\./)?.[1]||192);
       try{
-        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,sharp(Buffer.from(cmdPwaSourceB64,"base64"),{failOn:"error"}).resize(size,size,{fit:"contain",background:{r:0,g:0,b:0,alpha:0},kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer());
+        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,cmdSphereRoundPwaIcon(Buffer.from(cmdPwaSourceB64,"base64"),size));
         const data=await cmdPwaPngCache.get(size);
         res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600,must-revalidate","x-content-type-options":"nosniff"});res.end(data);
       }catch(error){cmdPwaPngCache.delete(size);res.writeHead(500).end("CMD Sphere icon conversion unavailable");}
@@ -5174,7 +5180,7 @@ const httpServer=createServer(async(req,res)=>{
       const input=cmdPwaSourceB64;
       if(!input){res.writeHead(404,{"content-type":"text/plain"}).end("CMD Sphere icon not configured");return}
       try{
-        const png=await sharp(Buffer.from(input,"base64"),{failOn:"error"}).resize(48,48,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).png().toBuffer();
+        const png=await cmdSphereRoundPwaIcon(Buffer.from(input,"base64"),48);
         const ico=Buffer.alloc(22);ico.writeUInt16LE(1,2);ico.writeUInt16LE(1,4);ico[6]=48;ico[7]=48;ico.writeUInt16LE(1,10);ico.writeUInt16LE(32,12);ico.writeUInt32LE(png.length,14);ico.writeUInt32LE(22,18);
         res.writeHead(200,{"content-type":"image/x-icon","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"});res.end(Buffer.concat([ico,png]));
       }catch(error){res.writeHead(500).end("CMD Sphere ICO generation error")}
@@ -5188,7 +5194,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/app-icon.png"){
       if(!cmdPwaSourceB64){res.writeHead(404).end("icon missing");return}
-      try{const png=await sharp(Buffer.from(cmdPwaSourceB64,"base64")).resize(192,192,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).png().toBuffer();res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600"});res.end(png)}catch{res.writeHead(500).end("Icon conversion error")}return;
+      try{const png=await cmdSphereRoundPwaIcon(Buffer.from(cmdPwaSourceB64,"base64"),192);res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600"});res.end(png)}catch{res.writeHead(500).end("Icon conversion error")}return;
     }
     if(req.method==="GET"&&url.pathname==="/brand-logo.png"){
       if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
