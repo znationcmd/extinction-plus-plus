@@ -142,7 +142,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  const u=new URL(req.url),path=u.pathname;
  if(req.method==="GET"){
   if(path==="/")return new Response(CMD_HTML_ENHANCED.replace("</body>",NEURIA_MENU_FIX+"</body>"),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}});
-  if(path==="/client.js")return new Response(CLIENT+"\n"+NEURIA_NAV+"\n"+NEURIA_PANELS+"\n"+NEURIA_MODES+"\n"+NEURIA_SEARCH_UI+"\n"+NEURIA_FILES_WORK+"\n"+NEURIA_MENU_CLOSE_FIX+"\n"+NEURIA_IMAGE_UI,{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store, max-age=0","pragma":"no-cache"}});
+  if(path==="/client.js")return new Response(CLIENT+"\n"+NEURIA_NAV+"\n"+NEURIA_PANELS+"\n"+NEURIA_MODES+"\n"+NEURIA_SEARCH_UI+"\n"+NEURIA_FILES_WORK+"\n"+NEURIA_MENU_CLOSE_FIX+"\n"+NEURIA_IMAGE_UI+"\n"+NEURIA_DOCUMENT_UI,{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store, max-age=0","pragma":"no-cache"}});
   if(path==="/icon.svg")return new Response(await sharp(NEURIA_LOGO).png().toBuffer(),{headers:{"content-type":"image/png","cache-control":"no-store"}});if(/^\/icon-(180|192|512)\.png$/.test(path)){const size=Number(path.match(/-(180|192|512)\./)[1]);return new Response(await sharp(NEURIA_LOGO).resize(size,size,{fit:"cover"} ).png().toBuffer(),{headers:{"content-type":"image/png","cache-control":"public,max-age=3600"}})}
   if(path==="/manifest.webmanifest")return response(manifest,"application/manifest+json");
   if(path==="/sw.js")return response(sw,"application/javascript");
