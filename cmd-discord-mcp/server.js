@@ -44,7 +44,7 @@ const databaseUrl=String(process.env.DATABASE_URL||"");
 const logoB64=String(process.env.CMD_DISCORD_LOGO_B64||"");
 const iconB64=String(process.env.CMD_DISCORD_ICON_B64||"");
 const cmdPwaPngCache=new Map();
-const cmdPwaSourceB64=logoB64||iconB64;
+const cmdPwaSourceB64=iconB64||logoB64; // Prefer the official square application icon, retain the full logo elsewhere.
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
@@ -196,8 +196,8 @@ function html(res,body,status=200,headers={}){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
     }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
-    const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'">';
-    body=body.replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
+    const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
+    body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
   }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
@@ -5160,11 +5160,11 @@ const httpServer=createServer(async(req,res)=>{
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-pwa-update.js",import.meta.url),"utf8"));return;
     }
-    if(req.method==="GET"&&/^\/pwa-icon-(192|512)\.png$/.test(url.pathname)){
+    if(req.method==="GET"&&/^\/pwa-icon-(180|192|512)\.png$/.test(url.pathname)){
       if(!cmdPwaSourceB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
-      const size=Number(url.pathname.includes("-512.")?512:192);
+      const size=Number(url.pathname.match(/-(180|192|512)\./)?.[1]||192);
       try{
-        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,sharp(Buffer.from(cmdPwaSourceB64,"base64"),{failOn:"error"}).resize(size,size,{fit:"contain",background:"#140826",kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer());
+        if(!cmdPwaPngCache.has(size))cmdPwaPngCache.set(size,sharp(Buffer.from(cmdPwaSourceB64,"base64"),{failOn:"error"}).resize(size,size,{fit:"contain",background:{r:0,g:0,b:0,alpha:0},kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer());
         const data=await cmdPwaPngCache.get(size);
         res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600,must-revalidate","x-content-type-options":"nosniff"});res.end(data);
       }catch(error){cmdPwaPngCache.delete(size);res.writeHead(500).end("CMD Sphere icon conversion unavailable");}
@@ -5174,7 +5174,7 @@ const httpServer=createServer(async(req,res)=>{
       const input=cmdPwaSourceB64;
       if(!input){res.writeHead(404,{"content-type":"text/plain"}).end("CMD Sphere icon not configured");return}
       try{
-        const png=await sharp(Buffer.from(input,"base64"),{failOn:"error"}).resize(48,48,{fit:"contain",background:"#140826"}).png().toBuffer();
+        const png=await sharp(Buffer.from(input,"base64"),{failOn:"error"}).resize(48,48,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).png().toBuffer();
         const ico=Buffer.alloc(22);ico.writeUInt16LE(1,2);ico.writeUInt16LE(1,4);ico[6]=48;ico[7]=48;ico.writeUInt16LE(1,10);ico.writeUInt16LE(32,12);ico.writeUInt32LE(png.length,14);ico.writeUInt32LE(22,18);
         res.writeHead(200,{"content-type":"image/x-icon","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"});res.end(Buffer.concat([ico,png]));
       }catch(error){res.writeHead(500).end("CMD Sphere ICO generation error")}
@@ -5188,7 +5188,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/app-icon.png"){
       if(!cmdPwaSourceB64){res.writeHead(404).end("icon missing");return}
-      try{const png=await sharp(Buffer.from(cmdPwaSourceB64,"base64")).resize(192,192,{fit:"contain",background:"#140826"}).png().toBuffer();res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600"});res.end(png)}catch{res.writeHead(500).end("Icon conversion error")}return;
+      try{const png=await sharp(Buffer.from(cmdPwaSourceB64,"base64")).resize(192,192,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).png().toBuffer();res.writeHead(200,{"content-type":"image/png","cache-control":"public,max-age=3600"});res.end(png)}catch{res.writeHead(500).end("Icon conversion error")}return;
     }
     if(req.method==="GET"&&url.pathname==="/brand-logo.png"){
       if(!logoB64){res.writeHead(404).end("logo missing");return}res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400"});res.end(Buffer.from(logoB64,"base64"));return;
