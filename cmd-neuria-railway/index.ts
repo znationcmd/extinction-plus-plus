@@ -295,7 +295,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  }
  if(req.method==="POST"&&path==="/api/chat"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Limite de 12 messages par minute."}),"application/json",429);
-  if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
+  if(Number(req.headers.get("content-length")||0)>16384)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(typeof data?.message!=="string"||data.message.trim().length<1||data.message.length>1000)return response(JSON.stringify({error:"Message de 1 à 1000 caractères requis"}),"application/json",400);
   const endpoint=Bun.env.NEURIA_AI_ENDPOINT,token=Bun.env.NEURIA_AI_API_KEY,model=Bun.env.NEURIA_AI_MODEL;
@@ -303,10 +303,10 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(endpoint&&token&&model){
    try{
     const origin=new URL(endpoint);if(origin.protocol!=="https:")throw Error("Le fournisseur IA doit utiliser HTTPS");
-    const history=Array.isArray(data.history)?data.history.slice(-16).filter(x=>x&&["user","assistant"].includes(x.role)&&typeof x.content==="string"&&x.content.length<=4000).map(x=>({role:x.role,content:x.content})):[];
+    const history=Array.isArray(data.history)?data.history.slice(-12).filter(x=>x&&["user","assistant"].includes(x.role)&&typeof x.content==="string").map(x=>({role:x.role,content:x.content.slice(0,1200)})):[];while(JSON.stringify(history).length>5200)history.shift();
     const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),45000);
     let upstream;try{upstream=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},body:JSON.stringify({model,messages:[{role:"system",content:"Tu es CMD NEURIA, un assistant conversationnel utile, clair et honnête. Réponds dans la langue de l'utilisateur. Ne prétends pas avoir exécuté des actions sans outils."},...history,{role:"user",content:data.message}]}),signal:ctrl.signal})}finally{clearTimeout(timeout)}
-    if(!upstream.ok){const status=upstream.status;let providerCode="unknown";try{const problem=await upstream.json();providerCode=String(problem?.errors?.[0]?.code??problem?.error?.code??problem?.code??"unknown").slice(0,48)}catch{}console.error("[NEURIA_CLOUDFLARE] status="+status+" code="+providerCode);const reason=status===401||status===403?"Jeton Cloudflare invalide ou autorisations Workers AI insuffisantes.":status===404?"Modèle ou endpoint Cloudflare introuvable.":status===429?"Quota ou limite Cloudflare atteint.":"Cloudflare a refusé la requête.";return response(JSON.stringify({error:reason,providerStatus:status,providerCode,engine:"cloudflare",hint:"Vérifier le jeton Workers AI, le compte Cloudflare et le modèle configuré."}),"application/json",502)}
+    if(!upstream.ok){const status=upstream.status;let providerCode="unknown";try{const problem=await upstream.json();providerCode=String(problem?.errors?.[0]?.code??problem?.error?.code??problem?.code??"unknown").slice(0,48)}catch{}console.error("[NEURIA_CLOUDFLARE] status="+status+" code="+providerCode);const reason=status===400||status===413||status===422?"Le contexte envoyé dépasse les limites du moteur. Réessaie avec un message plus court; ta conversation reste enregistrée.":status===401||status===403?"Jeton Cloudflare invalide ou autorisations Workers AI insuffisantes.":status===404?"Modèle ou endpoint Cloudflare introuvable.":status===429?"Quota ou limite Cloudflare atteint.":"Cloudflare a refusé la requête.";return response(JSON.stringify({error:reason,providerStatus:status,providerCode,engine:"cloudflare",hint:"Vérifier le jeton Workers AI, le compte Cloudflare et le modèle configuré."}),"application/json",502)}
     const answer=await upstream.json();const reply=answer?.choices?.[0]?.message?.content;
     if(typeof reply!=="string"||!reply.trim())throw Error("Réponse du fournisseur vide");
     return response(JSON.stringify({reply,model,engine:"external-llm"}),"application/json");
