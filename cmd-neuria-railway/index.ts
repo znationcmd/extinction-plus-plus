@@ -89,7 +89,7 @@ function clientRuntime(){
  lang.addEventListener("change",()=>{localStorage.setItem("cmd-ai-language",lang.value);const label={fr:"Écris une question...",en:"Ask a question...",de:"Stelle eine Frage...",es:"Haz una pregunta...",it:"Fai una domanda...",ru:"Задайте вопрос...",co:"Fate una dumanda...",ja:"質問を入力...",ko:"질문을 입력하세요...",zh:"请输入问题..."};input.placeholder=label[lang.value]||label.fr;const words=CMD_AI_CLIENT_UI[lang.value]||CMD_AI_CLIENT_UI.fr;send.textContent=words[1];document.querySelector("#clear").textContent=words[0];const status=document.querySelector("#aiInfo");if(status)status.textContent=words[2]});
  lang.dispatchEvent(new Event("change"));
  function line(role,value){const el=document.createElement("article");el.className="bubble "+role;el.textContent=value;feed.append(el);feed.scrollTop=feed.scrollHeight}
- form.addEventListener("submit",async e=>{e.preventDefault();const prompt=input.value.trim();if(!prompt)return;line("me",prompt);input.value="";send.disabled=true;try{const res=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({message:prompt,language:document.querySelector("#aiLanguage")?.value||"fr"})});const data=await res.json();line("bot",data.reply||data.error||"Impossible de répondre.");}catch{line("bot","Connexion indisponible. Réessaie.")}finally{send.disabled=false;input.focus()}});
+ form.addEventListener("submit",async e=>{e.preventDefault();const prompt=input.value.trim();if(!prompt)return;line("me",prompt);input.value="";send.disabled=true;try{const res=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({message:prompt,language:document.querySelector("#aiLanguage")?.value||"fr",history:[...feed.querySelectorAll(".bubble")].slice(-17,-1).map(n=>({role:n.classList.contains("me")?"user":"assistant",content:n.textContent}))})});const data=await res.json();line("bot",data.reply||data.error||"Impossible de répondre.");}catch{line("bot","Connexion indisponible. Réessaie.")}finally{send.disabled=false;input.focus()}});
  document.querySelector("#clear").addEventListener("click",()=>feed.replaceChildren());
  if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 }
@@ -148,7 +148,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(typeof data?.message!=="string"||data.message.trim().length<1||data.message.length>1000)return response(JSON.stringify({error:"Message de 1 à 1000 caractères requis"}),"application/json",400);
-  return response(JSON.stringify({...multilingual(data.message,data.language),model:"CMD AI — petit classificateur neuronal CPU"}),"application/json");
+  const endpoint=Bun.env.NEURIA_AI_ENDPOINT,token=Bun.env.NEURIA_AI_API_KEY,model=Bun.env.NEURIA_AI_MODEL;
+  if(endpoint&&token&&model){
+   try{
+    const origin=new URL(endpoint);if(origin.protocol!=="https:")throw Error("Le fournisseur IA doit utiliser HTTPS");
+    const history=Array.isArray(data.history)?data.history.slice(-16).filter(x=>x&&["user","assistant"].includes(x.role)&&typeof x.content==="string"&&x.content.length<=4000).map(x=>({role:x.role,content:x.content})):[];
+    const ctrl=new AbortController();const timeout=setTimeout(()=>ctrl.abort(),45000);
+    let upstream;try{upstream=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},body:JSON.stringify({model,messages:[{role:"system",content:"Tu es CMD NEURIA, un assistant conversationnel utile, clair et honnête. Réponds dans la langue de l'utilisateur. Ne prétends pas avoir exécuté des actions sans outils."},...history,{role:"user",content:data.message}]}),signal:ctrl.signal})}finally{clearTimeout(timeout)}
+    if(!upstream.ok)return response(JSON.stringify({error:"Le fournisseur IA est temporairement indisponible.",providerStatus:upstream.status}),"application/json",502);
+    const answer=await upstream.json();const reply=answer?.choices?.[0]?.message?.content;
+    if(typeof reply!=="string"||!reply.trim())throw Error("Réponse du fournisseur vide");
+    return response(JSON.stringify({reply,model,engine:"external-llm"}),"application/json");
+   }catch(err){return response(JSON.stringify({error:"Impossible de contacter le moteur IA. Réessaie.",detail:err?.name==="AbortError"?"timeout":"provider-error"}),"application/json",502)}
+  }
+  return response(JSON.stringify({...multilingual(data.message,data.language),model:"CMD NEURIA — moteur local limité",engine:"local-fallback",notice:"Configurez NEURIA_AI_ENDPOINT, NEURIA_AI_API_KEY et NEURIA_AI_MODEL pour activer les conversations IA."}),"application/json");
  }
  return response(JSON.stringify({error:"Not found"}),"application/json",404);
 }});
