@@ -78,7 +78,7 @@ async function vpnControl(action,region){
  }
 }
 ipcMain.handle('cmd:vpn',async(_event,action,region)=>{
- if(action==='status')return await vpnReply();
+ if(action==='status'){const state=await vpnReply();const runningRegions=[];if(process.platform==='win32')for(const item of vpnRegions)if(await vpnService(item))runningRegions.push(item);return {...state,serviceRunning:runningRegions.length>0,activeServices:runningRegions}}
  if(action==='regions')return vpnRegions;
  if(action==='connect')return await vpnControl('connect',region);
  if(action==='disconnect'){
