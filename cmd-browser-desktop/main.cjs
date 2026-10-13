@@ -1,9 +1,16 @@
-const {app,BrowserWindow,ipcMain,shell}=require('electron');
+const {app,BrowserWindow,WebContentsView,ipcMain,session}=require('electron');
 const path=require('node:path');
 const HOME='https://cmd-browser-web-rzsb-production.up.railway.app';
-let main;
-function valid(raw){try{const u=new URL(raw);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}}
-function create(){main=new BrowserWindow({width:1280,height:850,minWidth:720,minHeight:500,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});main.loadFile('renderer.html');main.webContents.setWindowOpenHandler(({url})=>{if(valid(url))shell.openExternal(url);return {action:'deny'}})}
-app.whenReady().then(()=>{create();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)create()})});
+let main,tabs=[],active=-1,sequence=0;
+const BAR=104;
+function normalize(raw){let q=String(raw||'').trim();if(!q)return HOME;if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(q)){q=/^(localhost|[^\s]+\.[^\s]+)(\/[^\s]*)?$/i.test(q)?'https://'+q:'https://cmd-browser-web-rzsb-production.up.railway.app/?q='+encodeURIComponent(q)}try{const u=new URL(q);return ['https:','http:'].includes(u.protocol)?u.href:HOME}catch{return HOME}}
+function emit(){if(!main||main.isDestroyed())return;main.webContents.send('cmd:state',{active,tabs:tabs.map(t=>({id:t.id,title:t.title,url:t.view.webContents.getURL(),loading:t.loading,back:t.view.webContents.canGoBack(),forward:t.view.webContents.canGoForward()}))})}
+function resize(){if(!main||main.isDestroyed())return;const [w,h]=main.getContentSize();tabs.forEach((t,i)=>{if(i===active)t.view.setBounds({x:0,y:BAR,width:w,height:Math.max(100,h-BAR)})})}
+function select(index){if(index<0||index>=tabs.length)return;tabs.forEach(t=>{try{main.contentView.removeChildView(t.view)}catch{}});active=index;main.contentView.addChildView(tabs[index].view);resize();emit()}
+function newTab(url=HOME){const id=++sequence;const view=new WebContentsView({webPreferences:{sandbox:true,contextIsolation:true,nodeIntegration:false,partition:'persist:cmd-browser'}});const t={id,view,title:'Nouvel onglet',loading:false};tabs.push(t);view.webContents.on('page-title-updated',(_,title)=>{t.title=title;emit()});view.webContents.on('did-start-loading',()=>{t.loading=true;emit()});view.webContents.on('did-stop-loading',()=>{t.loading=false;emit()});view.webContents.on('did-navigate',emit);view.webContents.on('did-navigate-in-page',emit);view.webContents.setWindowOpenHandler(({url})=>{if(/^https?:\/\//i.test(url))setImmediate(()=>newTab(url));return {action:'deny'}});view.webContents.on('will-navigate',(event,url)=>{if(!/^https?:\/\//i.test(url))event.preventDefault()});select(tabs.length-1);view.webContents.loadURL(normalize(url)).catch(()=>{});return id}
+function closeTab(id){const i=tabs.findIndex(t=>t.id===id);if(i<0)return;const [t]=tabs.splice(i,1);try{main.contentView.removeChildView(t.view)}catch{};t.view.webContents.close();if(!tabs.length)newTab();else select(Math.min(i,tabs.length-1))}
+function create(){main=new BrowserWindow({width:1280,height:850,minWidth:720,minHeight:500,webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});main.loadFile('renderer.html');main.on('resize',resize);main.webContents.on('did-finish-load',emit);newTab(HOME)}
+app.whenReady().then(()=>{session.defaultSession.setPermissionRequestHandler((wc,permission,callback)=>callback(false));create();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)create()})});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});
 ipcMain.handle('cmd:home',()=>HOME);
+ipcMain.handle('cmd:action',(_event,action,payload)=>{if(!main||main.isDestroyed())return;const t=tabs[active];switch(action){case 'new':newTab(payload||HOME);break;case 'select':select(tabs.findIndex(x=>x.id===payload));break;case 'close':closeTab(payload);break;case 'go':t?.view.webContents.loadURL(normalize(payload)).catch(()=>{});break;case 'back':if(t?.view.webContents.canGoBack())t.view.webContents.goBack();break;case 'forward':if(t?.view.webContents.canGoForward())t.view.webContents.goForward();break;case 'reload':t?.view.webContents.reload();break;case 'home':t?.view.webContents.loadURL(HOME).catch(()=>{});break}emit()});
