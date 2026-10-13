@@ -2905,7 +2905,40 @@ async function saveServerLayout(auth,input){
   return {ok:true,itemKeys:raw};
 }
 
+// Keep two personal folders aligned with Discord membership and administrator rights.
+// Discord ADMINISTRATOR is permission bit 0x8; server owner is always an admin.
+async function syncDiscordMembershipFolders(auth){
+  const linked=await currentLinkedDiscordAuth(auth);
+  if(!linked.user?.discordId)return;
+  const uid=String(auth.user.id);
+  const guilds=Array.isArray(linked.guilds)?linked.guilds:[];
+  if(!guilds.length)return;
+  const groups=[{name:'Propriétaire et administrateur',color:'#8B5CF6',keys:[]},{name:'Membre',color:'#5865F2',keys:[]}];
+  for(const guild of guilds){
+    const id=String(guild.id||'');if(!/^\\d{15,22}$/.test(id))continue;
+    let admin=Boolean(guild.owner);
+    try{admin=admin||(BigInt(String(guild.permissions||'0'))&8n)!==0n}catch{}
+    groups[admin?0:1].keys.push('discord:'+id);
+  }
+  // Preserve existing folder names and non-Discord entries. Only move Discord memberships.
+  const existing=await pool.query('SELECT id,name FROM cmd_server_folders WHERE user_id=$1',[uid]);
+  for(const group of groups){
+    let folder=existing.rows.find(f=>f.name===group.name);
+    if(!folder){
+      const id=crypto.randomUUID();
+      const pos=await pool.query('SELECT COALESCE(MAX(position),-1)+1 AS p FROM cmd_server_folders WHERE user_id=$1',[uid]);
+      await pool.query('INSERT INTO cmd_server_folders(id,user_id,name,color,position) VALUES($1,$2,$3,$4,$5)',[id,uid,group.name,group.color,Number(pos.rows[0]?.p||0)]);
+      folder={id,name:group.name};
+    }
+    if(!group.keys.length)continue;
+    await pool.query('DELETE FROM cmd_server_folder_items WHERE user_id=$1 AND server_key=ANY($2::text[]) AND folder_id<>$3',[uid,group.keys,folder.id]);
+    for(let i=0;i<group.keys.length;i++){
+      await pool.query('INSERT INTO cmd_server_folder_items(folder_id,user_id,server_key,position) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',[folder.id,uid,group.keys[i],i]);
+    }
+  }
+}
 async function getServerFolders(auth){
+  try{await syncDiscordMembershipFolders(auth)}catch(e){console.error('[discord-folders] auto classification failed:',e.message)}
   const userId=String(auth.user.id);
   const [fr,ir]=await Promise.all([
     pool.query('SELECT id,name,color,position,collapsed FROM cmd_server_folders WHERE user_id=$1 ORDER BY position ASC,created_at ASC',[userId]),
