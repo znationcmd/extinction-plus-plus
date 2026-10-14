@@ -102,6 +102,24 @@ function send(res,status,data){
 export async function handleCmdStudioMusic(req,res,url,{auth}={}){
  if(!url.pathname.startsWith("/api/cmd-studio-music"))return false;
  if(!auth?.user?.id){send(res,401,{error:"Connexion CMD Sphere requise."});return true}
+ if(req.method==="GET"&&url.pathname==="/api/cmd-studio-music/external"){
+  const provider=String(url.searchParams.get("provider")||"").toLowerCase();
+  const raw=String(url.searchParams.get("url")||"").trim();
+  let parsed;try{parsed=new URL(raw)}catch{send(res,400,{error:"Lien musical invalide."});return true}
+  if(parsed.protocol!=="https:"||parsed.username||parsed.password||parsed.port){send(res,400,{error:"Lien HTTPS officiel requis."});return true}
+  let embed=null,external=null;
+  if(provider==="youtube"&&["youtube.com","www.youtube.com","m.youtube.com","youtu.be"].includes(parsed.hostname)){
+    const id=parsed.hostname==="youtu.be"?parsed.pathname.slice(1):parsed.pathname.startsWith("/shorts/")?parsed.pathname.split("/")[2]:parsed.searchParams.get("v");
+    if(!/^[A-Za-z0-9_-]{11}$/.test(id||"")){send(res,400,{error:"Identifiant YouTube invalide."});return true}
+    external="https://www.youtube.com/watch?v="+id;embed="https://www.youtube-nocookie.com/embed/"+id;
+  }else if(provider==="spotify"&&["open.spotify.com"].includes(parsed.hostname)){
+    const parts=parsed.pathname.split("/").filter(Boolean);
+    const kind=parts[0]==="intl-fr"?parts[1]:parts[0],id=parts[0]==="intl-fr"?parts[2]:parts[1];
+    if(!["track","album","playlist"].includes(kind)||!/^[A-Za-z0-9]{22}$/.test(id||"")){send(res,400,{error:"Lien Spotify invalide."});return true}
+    external="https://open.spotify.com/"+kind+"/"+id;embed="https://open.spotify.com/embed/"+kind+"/"+id;
+  }else{send(res,400,{error:"Utilise un lien officiel YouTube ou Spotify."});return true}
+  send(res,200,{provider,externalUrl:external,embedUrl:embed,canUseInVideo:false,canDownload:false,notice:"Aperçu officiel uniquement. L'intégration audio dans une vidéo exige les droits de synchronisation nécessaires."});return true;
+ }
  if(req.method==="GET"&&url.pathname==="/api/cmd-studio-music/search"){
   const src=String(url.searchParams.get("source")||"wikimedia");
   if(["openverse","ccmixter","audius","jamendo"].includes(src)){
