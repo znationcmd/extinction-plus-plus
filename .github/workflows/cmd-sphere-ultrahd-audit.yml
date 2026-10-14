@@ -45,6 +45,37 @@ jobs:
               json.dump({'total':len(hashes),'exact_duplicate_groups':exact,'visually_similar_candidates':similar,'dimensions':sizes},f,indent=2)
           print('Animals:',len(hashes),'exact duplicate groups:',len(exact),'visual candidates:',len(similar))
           PY
+      - name: Export original catalogues for reconstruction
+        run: |
+          python - <<'PY'
+          import os, shutil, json, glob
+          base='cmd-discord-mcp/public'
+          out='catalogue-originals'
+          collections={
+            'avatars':glob.glob(base+'/avatars/v3/avatar-*.png'),
+            'animals':glob.glob(base+'/universe/v1/pet-*'),
+            'houses':glob.glob(base+'/universe/v1/home-*'),
+            'vehicles':glob.glob(base+'/universe/v1/vehicle-*'),
+            'scenes':glob.glob(base+'/universe/v1/scene-*'),
+          }
+          counts={}
+          for category, files in collections.items():
+            files=[p for p in files if os.path.isfile(p) and p.lower().endswith(('.png','.webp'))]
+            counts[category]=len(files)
+            os.makedirs(out+'/'+category,exist_ok=True)
+            for source in files:
+              shutil.copy2(source,out+'/'+category+'/'+os.path.basename(source))
+          with open(out+'/manifest.json','w') as f: json.dump(counts,f,indent=2)
+          print('Original catalogue exports:',counts)
+          if not counts['avatars']: raise SystemExit('Avatar sources missing')
+          PY
+      - name: Upload five original catalogues
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmd-sphere-five-original-catalogues
+          path: catalogue-originals/
+          retention-days: 7
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: cmd-sphere-animal-duplicates-audit
