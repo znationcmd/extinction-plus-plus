@@ -143,7 +143,7 @@
  // Message actions: accessible via tap, long press or right click.
  function setupMessageActions(){if($("#cmdMessageActionSheet"))return;
   const sheet=document.createElement("div");sheet.id="cmdMessageActionSheet";sheet.innerHTML='<div class="cmd-message-action-panel"><div class="cmd-message-reactions"></div><div class="cmd-message-action-list"></div><button type="button" class="cmd-message-action-cancel">Fermer</button></div>';document.body.append(sheet);
-  const close=()=>sheet.classList.remove("on");sheet.addEventListener("click",e=>{if(e.target===sheet||e.target.closest(".cmd-message-action-cancel"))close()});
+  const close=()=>{sheet.classList.remove("on");sheet.setAttribute("aria-hidden","true")};sheet.setAttribute("role","dialog");sheet.setAttribute("aria-label","Actions du message");sheet.setAttribute("aria-modal","true");sheet.setAttribute("aria-hidden","true");sheet.addEventListener("click",e=>{if(e.target===sheet||e.target.closest(".cmd-message-action-cancel"))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheet.classList.contains("on"))close()});
   function open(msg){const id=msg.dataset.messageId,author=msg.dataset.cmdAuthorId,own=author&&author===mine(),content=msg.querySelector(".msg-text")?.innerText||"";const actions=sheet.querySelector(".cmd-message-action-list");actions.replaceChildren();
    const add=(label,fn,destructive=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;if(destructive)b.className="destructive";b.onclick=()=>{close();fn()};actions.append(b)};
    const react=sheet.querySelector(".cmd-message-reactions");react.replaceChildren();for(const emoji of ["✅","👍","❤️","🤣","💯","👎","😊"]){const b=document.createElement("button");b.type="button";b.textContent=emoji;b.onclick=()=>{close();alert("Les réactions doivent être raccordées au service de messages.")};react.append(b)}
@@ -154,7 +154,7 @@
    add("🔗 Copier le lien du message",()=>navigator.clipboard?.writeText(location.href.split("#")[0]+"#message-"+encodeURIComponent(id)));
    add("📌 Épingler",()=>alert("L’épinglage nécessite les permissions du serveur et une API dédiée."));
    if(own&&window.cmdSphereMessageActions?.mode()==="native")add("🗑 Supprimer le message",async()=>{if(!confirm("Supprimer définitivement ce message ?"))return;try{await window.cmdSphereMessageActions.delete(id)}catch(e){alert(e.message)}},true);
-   sheet.classList.add("on")}
+   sheet.classList.add("on");sheet.setAttribute("aria-hidden","false");sheet.querySelector(".cmd-message-action-cancel")?.focus()}
   let touchTimer=0,started=null,suppressClickUntil=0;const area=$("#channelMessages");if(!area)return;
   area.addEventListener("contextmenu",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;e.preventDefault();open(msg)});
   area.addEventListener("click",e=>{if(Date.now()<suppressClickUntil)return;if(e.target.closest("button,a,input,textarea,video,audio"))return;const msg=e.target.closest(".discord-message");if(msg)open(msg)});
