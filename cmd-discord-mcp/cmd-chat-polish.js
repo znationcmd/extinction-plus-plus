@@ -155,10 +155,10 @@
    add("📌 Épingler",()=>alert("L’épinglage nécessite les permissions du serveur et une API dédiée."));
    if(own&&window.cmdSphereMessageActions?.mode()==="native")add("🗑 Supprimer le message",async()=>{if(!confirm("Supprimer définitivement ce message ?"))return;try{await window.cmdSphereMessageActions.delete(id)}catch(e){alert(e.message)}},true);
    sheet.classList.add("on")}
-  let touchTimer=0,started=null;const area=$("#channelMessages");if(!area)return;
+  let touchTimer=0,started=null,suppressClickUntil=0;const area=$("#channelMessages");if(!area)return;
   area.addEventListener("contextmenu",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;e.preventDefault();open(msg)});
-  area.addEventListener("click",e=>{if(e.target.closest("button,a,input,textarea"))return;const msg=e.target.closest(".discord-message");if(msg)open(msg)});
-  area.addEventListener("touchstart",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;started=msg;touchTimer=setTimeout(()=>{if(started)open(started)},550)},{passive:true});
+  area.addEventListener("click",e=>{if(Date.now()<suppressClickUntil)return;if(e.target.closest("button,a,input,textarea,video,audio"))return;const msg=e.target.closest(".discord-message");if(msg)open(msg)});
+  area.addEventListener("touchstart",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;started=msg;touchTimer=setTimeout(()=>{if(started){suppressClickUntil=Date.now()+900;open(started)}},550)},{passive:true});
   for(const event of ["touchend","touchcancel","touchmove"])area.addEventListener(event,()=>{clearTimeout(touchTimer);started=null},{passive:true});
  }
  function decorateMessages(){
