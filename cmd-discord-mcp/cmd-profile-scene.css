@@ -1089,3 +1089,6 @@ body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-e
 #cmdSceneSheet .cmd-dressing-categories{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 #cmdSceneSheet .cmd-dressing-categories>button{flex:0 0 auto}
 #cmdSceneSheet .cmd-dressing-categories::-webkit-scrollbar{display:none}
+
+#cmdSceneSheet .cmd-dressing-categories>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:96px;min-height:78px;padding:10px 12px;border-radius:16px}
+#cmdSceneSheet .cmd-mode-category-icon{font-size:29px;line-height:1.1;filter:drop-shadow(0 2px 5px #0007)}
