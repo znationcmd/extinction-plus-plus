@@ -454,7 +454,8 @@ function lookGrid(){
  const groups=[
  ["all","Tout"],["top","Hauts"],["bottom","Pantalons"],["shoes","Chaussures"],["coat","Manteaux"],["bag","Sacs"],["accessory","Accessoires"]
  ];
- const navigation='<nav class="cmd-dressing-categories" aria-label="Catégories du dressing">'+groups.map(([key,label])=>'<button type="button" data-look-category="'+key+'" class="'+(lookCategory===key?"selected":"")+'" aria-pressed="'+(lookCategory===key)+'">'+label+'</button>').join("")+'</nav>';
+ const modeIcons={all:"✨",top:"👕",bottom:"👖",shoes:"👟",coat:"🧥",bag:"👜",accessory:"🕶️"};
+ const navigation='<nav class="cmd-dressing-categories" aria-label="Catégories du dressing">'+groups.map(([key,label])=>'<button type="button" data-look-category="'+key+'" class="'+(lookCategory===key?"selected":"")+'" aria-pressed="'+(lookCategory===key)+'"><span class="cmd-mode-category-icon" aria-hidden="true">'+modeIcons[key]+'</span><span>'+label+'</span></button>').join("")+'</nav>';
  const sections=[
  ["top","Hauts","T-shirts, chemises et pulls",clothes.filter(x=>!["jacket","coat"].includes(x[0]))],
  ["bottom","Pantalons","Jeans, cargos, shorts",pants],
