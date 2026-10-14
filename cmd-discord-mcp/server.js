@@ -723,7 +723,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     return {filename:String(file.name||'fichier').slice(0,120),contentType:type,size:file.size,dataUrl};
   }
   async function addFiles(list){
-    try{const files=[...(list||[])];if(CHAT.pendingAttachments.length+files.length>5)throw new Error("5 fichiers maximum par message.");for(const file of files)CHAT.pendingAttachments.push(await fileToAttachment(file));renderComposePreview()}catch(e){toast(e.message,false)}
+    try{const files=[...(list||[])];if(CHAT.pendingAttachments.length+files.length>5)throw new Error("5 fichiers maximum par message.");const existingBytes=CHAT.pendingAttachments.reduce((n,a)=>n+Number(a.size||0),0),incomingBytes=files.reduce((n,f)=>n+Number(f.size||0),0);if(existingBytes+incomingBytes>12*1024*1024)throw new Error("12 Mo maximum de pièces jointes par message.");const prepared=[];for(const file of files)prepared.push(await fileToAttachment(file));CHAT.pendingAttachments.push(...prepared);renderComposePreview()}catch(e){toast(e.message,false)}
   }
   function openEmojiTab(tab='emoji'){
     const box=qs('#emojiContent');if(!box)return;
