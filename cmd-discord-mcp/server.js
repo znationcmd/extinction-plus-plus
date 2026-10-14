@@ -3486,7 +3486,7 @@ async async function editOwnNativeMessage(auth,input){
  if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant invalide."),{status:400});
  if(!content||content.length>4000)throw Object.assign(new Error("Le message doit contenir entre 1 et 4000 caractères."),{status:400});
  const channel=await nativeTextChannel(auth,guildId,channelId);await requireNativeMember(auth,guildId);
- const result=await pool.query("UPDATE cmd_native_channel_messages SET content=$1 WHERE id=$2 AND guild_id=$3 AND channel_id=$4 AND sender_user_id=$5 RETURNING id,content",[content,messageId,guildId,String(channel.id),String(auth.user.id)]);
+ const result=await pool.query("UPDATE cmd_native_channel_messages SET body=$1, edited_at=NOW() WHERE id=$2 AND guild_id=$3 AND channel_id=$4 AND sender_user_id=$5 RETURNING id,body AS content",[content,messageId,guildId,String(channel.id),String(auth.user.id)]);
  if(!result.rows.length)throw Object.assign(new Error("Message introuvable ou modification interdite."),{status:403});
  return {ok:true,messageId,content};
 }
