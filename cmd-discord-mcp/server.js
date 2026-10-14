@@ -3440,11 +3440,13 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
 
 function sanitizeNativeAttachments(v){
   const arr=Array.isArray(v)?v:[],out=[];
+  let totalBytes=0;
   const allowed=/^data:(image\/(?:png|jpeg|webp|gif)|audio\/(?:webm|mpeg|mp4)|video\/(?:mp4|webm|quicktime)|application\/pdf|text\/plain);base64,/i;
   for(const raw of arr){
     const dataUrl=String(raw?.dataUrl||"");if(!allowed.test(dataUrl))continue;
     const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);
-    if(approx>8*1024*1024||out.length>=5)continue;
+    if(approx>8*1024*1024||out.length>=5||totalBytes+approx>12*1024*1024)continue;
+    totalBytes+=approx;
     out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:safeText(raw?.contentType||"",80),size:approx,url:dataUrl});
   }
   return out;
