@@ -283,7 +283,7 @@ const beardOptions=[["none","Sans barbe"],["stubble","Barbe de 3 jours"],["short
 const faceShapes=[["oval","Ovale"],["round","Rond"],["square","Carré"],["heart","Cœur"]];
 const browStyles=[["natural","Naturels"],["thick","Épais"],["thin","Fins"],["arched","Arquées"]];
 const eyeShapes=[["normal","Classiques"],["wide","Grands"],["almond","En amande"]];
-const tabs=[["avatar","Avatar","◉"],["pet","Mon univers","♧"],["scene","Fonds & décors","▧"]];
+const tabs=[["mode","Mode","♧"],["selfie","Selfie","◉"],["pet","Animal de compagnie","♧"],["scene","Scène","▧"],["avatar","Avatar","◉"]];
 function field(title,id,array){return '<label class="cmd-scene-select-field"><span>'+title+'</span><select data-scene-field="'+id+'">'+options(array,state[id])+'</select></label>'}
 const clothingIcons={"hoodie":"🧥","tshirt":"👕","jacket":"🧥","shirt":"👔","dress":"👗","sport":"🎽","suit":"🤵","armor":"🛡️","jeans":"👖","dark":"👖","shorts":"🩳","skirt":"👗","cargo":"👖","formal":"👞","sneakers":"👟","boots":"🥾","sandals":"🩴","glasses":"🕶️","cap":"🧢","hat":"👒","none":"✕"};
 function garmentArt(value){
