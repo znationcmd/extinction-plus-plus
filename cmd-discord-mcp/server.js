@@ -718,6 +718,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   async function fileToAttachment(file){
     if(!file)return null;
     const type=String(file.type||'application/octet-stream');if(!/^(image\/(png|jpeg|webp|gif)|audio\/(webm|mpeg|mp4)|video\/(mp4|webm|quicktime)|application\/pdf|text\/plain)$/i.test(type))throw new Error('Format non pris en charge.');
+    if(file.size>8*1024*1024)throw new Error('Fichier trop volumineux (8 Mo maximum).');
     const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(new Error('Lecture du fichier impossible'));r.readAsDataURL(file)});
     return {filename:String(file.name||'fichier').slice(0,120),contentType:type,size:file.size,dataUrl};
   }
@@ -3443,6 +3444,7 @@ function sanitizeNativeAttachments(v){
   for(const raw of arr){
     const dataUrl=String(raw?.dataUrl||"");if(!allowed.test(dataUrl))continue;
     const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);
+    if(approx>8*1024*1024||out.length>=5)continue;
     out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:safeText(raw?.contentType||"",80),size:approx,url:dataUrl});
   }
   return out;
