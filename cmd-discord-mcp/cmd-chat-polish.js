@@ -31,6 +31,39 @@
   }
   if(colorButton)colorButton.style.display="none";
  }
+ let cmdWallpaperPanel=null;
+ function cmdWallpaperKey(){return "cmd-wallpaper:"+location.pathname+":"+(window.CHAT?.channelId||$("#channelTitle")?.textContent||"default")}
+ function cmdWallpaperApply(){const box=$("#channelMessages");if(!box)return;let src="";try{src=localStorage.getItem(cmdWallpaperKey())||""}catch{}box.style.backgroundImage=src?"linear-gradient(#10101c88,#10101c88),url("+JSON.stringify(src)+")":"";box.style.backgroundSize="cover";box.style.backgroundPosition="center"}
+ function cmdWallpaperOpen(){
+  const sheet=$("#channelToolSheet");sheet?.classList.remove("on");
+  if(!cmdWallpaperPanel){
+   cmdWallpaperPanel=document.createElement("div");cmdWallpaperPanel.id="cmdWallpaperPanel";
+   cmdWallpaperPanel.style.cssText="position:absolute;z-index:100;left:10px;right:10px;bottom:95px;max-height:60vh;overflow:auto;background:#21152e;border:1px solid #9467bd;border-radius:20px;padding:16px;color:white;box-shadow:0 10px 35px #0009";
+   const title=document.createElement("h3");title.textContent="Fond de cette conversation";cmdWallpaperPanel.append(title);
+   const file=document.createElement("input");file.type="file";file.accept="image/*";file.style.width="100%";file.onchange=()=>{
+    const f=file.files?.[0];if(!f)return;if(f.size>6e6){alert("Image limitée à 6 Mo");return}
+    const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem(cmdWallpaperKey(),String(reader.result));cmdWallpaperApply();cmdWallpaperPanel.remove()}catch{alert("Espace insuffisant : essaie une image plus petite.")}};reader.readAsDataURL(f)
+   };cmdWallpaperPanel.append(file);
+   const reset=document.createElement("button");reset.type="button";reset.textContent="Retirer le fond";reset.onclick=()=>{localStorage.removeItem(cmdWallpaperKey());cmdWallpaperApply();cmdWallpaperPanel.remove()};cmdWallpaperPanel.append(reset);
+  }
+  $("#channelOverlay")?.append(cmdWallpaperPanel);cmdWallpaperApply()
+ }
+ function cmdTool(label,emoji,fn,id){
+  const grid=$("#channelToolSheet .compose-sheet-grid");if(!grid||$("#"+id))return;
+  const b=document.createElement("button");b.type="button";b.className="compose-tool";b.id=id;
+  const ico=document.createElement("b");ico.textContent=emoji;const txt=document.createElement("span");txt.textContent=label;b.append(ico,txt);
+  b.onclick=fn;grid.append(b)
+ }
+ function cmdExtras(){
+  const grid=$("#channelToolSheet .compose-sheet-grid");if(!grid)return;
+  const files=$("#toolFiles");if(files){files.querySelector("b").textContent="🖼️";files.querySelector("span").textContent="Fond d’écran";files.onclick=cmdWallpaperOpen}
+  cmdTool("Caméra","📸",()=>{let input=$("#cmdCameraInput");if(!input){input=document.createElement("input");input.id="cmdCameraInput";input.type="file";input.accept="image/*";input.capture="environment";input.hidden=true;input.onchange=()=>{const photos=$("#channelPhotoInput");if(photos&&input.files?.length){const dt=new DataTransfer();for(const f of input.files)dt.items.add(f);photos.files=dt.files;photos.dispatchEvent(new Event("change",{bubbles:true}))}};document.body.append(input)}input.click()},"cmdToolCamera");
+  cmdTool("Émojis","😊",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="emoji"]')?.click()},"cmdToolEmoji");
+  cmdTool("Stickers","💟",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="sticker"]')?.click()},"cmdToolSticker");
+  cmdTool("Fond d’écran","🌄",cmdWallpaperOpen,"cmdToolWallpaper");
+  cmdTool("Vocal","🎙️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelMic")?.click()},"cmdToolVoice");
+  cmdWallpaperApply()
+ }
  function mountChat(){
    const overlay=$("#channelOverlay"),head=overlay?.querySelector(".channel-head"),buttons=head?.querySelector(".channel-actions");
    if(!overlay||!head||!buttons)return;
@@ -66,7 +99,7 @@
        sourcePanel?.classList.remove("open");palette?.classList.toggle("open");markPalette();
      };buttons.prepend(colorButton);
    }
-   improveTools();
+   improveTools();cmdExtras();
    let count=0;
    for(const id of ids){
      const elem=document.getElementById(id);if(!elem)continue;
