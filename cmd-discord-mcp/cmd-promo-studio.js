@@ -540,10 +540,22 @@ function stopAudition(){
  if(audition){audition.pause();audition.src="";audition=null}
  auditionId="";if(root)$$(".cmd-music-play",root).forEach(b=>b.textContent="▶");
 }
+function installExternalMusicLinks(){
+ const sheet=$("#cmdStudioMusicSheet");if(!sheet||sheet.querySelector("#cmdStudioExternalLink"))return;
+ const panel=document.createElement("div");panel.id="cmdStudioExternalLink";panel.style.cssText="padding:12px;border:1px solid #7656a4;border-radius:12px;margin:12px 0";
+ const heading=document.createElement("strong");heading.textContent="YouTube / Spotify — lien et aperçu officiel";panel.append(heading);
+ const input=document.createElement("input");input.type="url";input.placeholder="Colle un lien YouTube ou Spotify";input.setAttribute("aria-label","Lien musical officiel");input.style.cssText="width:100%;margin:8px 0;padding:10px;border-radius:8px";panel.append(input);
+ const button=document.createElement("button");button.type="button";button.textContent="Afficher l’aperçu";panel.append(button);
+ const output=document.createElement("div");output.setAttribute("aria-live","polite");output.style.marginTop="8px";panel.append(output);
+ const notice=document.createElement("small");notice.textContent="Lecture via le service officiel uniquement. Ce son n'est pas incorporé à la vidéo sans autorisation des ayants droit.";panel.append(notice);
+ button.onclick=async()=>{output.textContent="Vérification du lien…";try{const u=new URL(input.value.trim());const provider=u.hostname.includes("spotify.com")?"spotify":"youtube";const response=await fetch("/api/cmd-studio-music/external?"+new URLSearchParams({provider,url:u.href}),{credentials:"same-origin"});const data=await response.json();if(!response.ok)throw Error(data.error||"Lien refusé");output.replaceChildren();const iframe=document.createElement("iframe");iframe.src=data.embedUrl;iframe.title="Aperçu "+provider;iframe.loading="lazy";iframe.allow="autoplay; encrypted-media; picture-in-picture";iframe.referrerPolicy="strict-origin-when-cross-origin";iframe.style.cssText="width:100%;height:200px;border:0;border-radius:10px";output.append(iframe);const link=document.createElement("a");link.href=data.externalUrl;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Ouvrir sur "+provider;output.append(link)}catch(e){output.textContent=e.message||"Lien invalide"}};
+ sheet.querySelector(".cmd-studio-music-results")?.before(panel);
+}
 function openMusicSheet(){
  if(!root)return;
  const panel=$("#cmdStudioMusicSheet");panel.hidden=false;
  installMusicProviders();
+ installExternalMusicLinks();
  $("#cmdStudioMusicQuery").value=$("#cmdStudioMusicQuery").value||"instrumental";
  if(!musicResults.length)searchMusic($("#cmdStudioMusicQuery").value);
 }
