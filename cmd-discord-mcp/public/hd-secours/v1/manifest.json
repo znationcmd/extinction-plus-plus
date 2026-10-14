@@ -1,0 +1,11 @@
+{
+  "counts": {
+    "avatars": 68,
+    "animals": 265,
+    "houses": 50,
+    "vehicles": 131,
+    "scenes": 150
+  },
+  "method": "Lanczos up to 6x max 1536px; mild sharpening; WebP quality 93; not generative 4K",
+  "originals_preserved": true
+}
