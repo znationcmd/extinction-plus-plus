@@ -188,6 +188,32 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const configured=!!(endpoint&&token&&model),unresolved=token.includes("\u0024{{");
   return response(JSON.stringify({configured,unresolved,provider:endpoint.includes("cloudflare.com")?"cloudflare":"other",model:model||null,ready:configured&&!unresolved,note:"Configuration uniquement. Utilisez /api/ai/test pour une requête réelle."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/repair"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const owner=String(body.owner||"znationcmd"),repo=String(body.repo||"extinction-plus-plus"),branch=String(body.branch||"");
+  const file=String(body.path||""),expectedSha=String(body.sha||""),confirmed=body.confirm==="APPLY_REPAIR";
+  if(owner!=="znationcmd"||repo!=="extinction-plus-plus"||!/^[-\w/]{1,120}$/.test(branch)||!/^[-\w/.]{1,220}$/.test(file)||file.includes("..")||!/^([0-9a-f]{40})$/.test(expectedSha))return response(JSON.stringify({error:"Dépôt, branche, chemin ou SHA invalide"}),"application/json",400);
+  if(!/\.(js|mjs|cjs|ts)$/.test(file))return response(JSON.stringify({error:"Réparation réservée aux sources JavaScript et TypeScript"}),"application/json",400);
+  const token=Bun.env.NEURIA_GITHUB_TOKEN;
+  if(!token)return response(JSON.stringify({error:"Connexion GitHub manquante : configurer NEURIA_GITHUB_TOKEN"}),"application/json",503);
+  const url="https://api.github.com/repos/"+owner+"/"+repo+"/contents/"+file+"?ref="+encodeURIComponent(branch);
+  const headers={"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria-Repair"};
+  const gh=await fetch(url,{headers,signal:AbortSignal.timeout(12000)});
+  if(!gh.ok)return response(JSON.stringify({error:"Lecture GitHub impossible",status:gh.status}),"application/json",502);
+  const data=await gh.json();if(data.sha!==expectedSha)return response(JSON.stringify({error:"Le fichier a changé : relancer l'analyse"}),"application/json",409);
+  const original=Buffer.from(String(data.content||"").replace(/\s/g,""),"base64").toString("utf8");
+  if(original.length>500000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  const fixed=original.replace(/\basync(?:\s+async){1,}\s+function\b/g,"async function");
+  const changes=(original.match(/\basync(?:\s+async){1,}\s+function\b/g)||[]).length;
+  if(!changes)return response(JSON.stringify({changed:false,message:"Aucune correction sûre détectée",applied:false}),"application/json");
+  if(!confirmed)return response(JSON.stringify({changed:true,changes,applied:false,requiresApproval:true,confirmation:"APPLY_REPAIR",message:"Correction préparée. Confirmer pour écrire sur la branche de travail."}),"application/json",409);
+  if(/^(main|master|production)$/.test(branch))return response(JSON.stringify({error:"Écriture interdite sur branche de production"}),"application/json",403);
+  const put=await fetch("https://api.github.com/repos/"+owner+"/"+repo+"/contents/"+file,{method:"PUT",headers:{...headers,"content-type":"application/json"},body:JSON.stringify({message:"fix(neuria): remove repeated async function keywords",content:Buffer.from(fixed).toString("base64"),sha:data.sha,branch}),signal:AbortSignal.timeout(12000)});
+  const saved=await put.json();if(!put.ok)return response(JSON.stringify({error:"Écriture GitHub refusée",status:put.status}),"application/json",502);
+  return response(JSON.stringify({changed:true,changes,applied:true,commit:saved.commit?.sha,branch,notice:"GitHub mis à jour. Vérifier le déploiement Railway avant de considérer le problème résolu."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/work/diagnostics"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   const github=Bun.env.NEURIA_GITHUB_TOKEN,railway=Bun.env.NEURIA_RAILWAY_TOKEN;
