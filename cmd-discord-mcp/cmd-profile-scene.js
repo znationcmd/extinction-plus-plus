@@ -485,8 +485,19 @@ function importedAvatarArt(i,eager=false){
  const src=importedAvatarTiles[i];
  return src?'<img class="cmd-imported-avatar-art" src="'+(eager?src:src.replace('/avatars/v4/','/avatars/v4/thumbs/'))+'"'+(eager?'':' srcset="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+' 1x, '+src+' 2x"')+' alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
 }
-function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Silhouette complète · 2D</small></button>').join("")}
-function avatarEditor(){return '<h2>Choisis ton avatar</h2><p class="cmd-scene-section-intro">68 silhouettes complètes avec leur tenue et leurs accessoires.</p><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards()+'</div>'}
+function importedAvatarCards(group="all"){
+ return Array.from({length:importedAvatarCount},(_,i)=>{
+  // Catalogue order: alternate feminine/masculine artwork. No stored avatar ID changes.
+  if(group!=="all"&&((i%2===0?"femme":"homme")!==group))return "";
+  return '<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b></button>';
+ }).join("");
+}
+let avatarFolder="";
+function avatarEditor(){
+ const folders=[["femme","Femme",0],["homme","Homme",1]];
+ const navigation='<div class="cmd-avatar-folders">'+folders.map(([id,label,index])=>'<button type="button" class="cmd-avatar-folder '+(avatarFolder===id?"selected":"")+'" data-avatar-folder="'+id+'"><span class="cmd-avatar-folder-photo">'+importedAvatarArt(index)+'</span><strong>'+label+'</strong><small>Voir les avatars →</small></button>').join("")+'</div>';
+ return '<h2>Choisis ton avatar</h2>'+(avatarFolder?'<button type="button" class="cmd-avatar-folder-back" data-avatar-folder="">← Dossiers</button><h3>Avatars '+(avatarFolder==="femme"?"femme":"homme")+'</h3><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards(avatarFolder)+'</div>':navigation);
+}
 
 function contents(tab){
  if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits)+screenshotCatalogue("vestes");
@@ -516,7 +527,8 @@ function renderSheet(tab){
  $$("[data-scene-color]",area).forEach(e=>e.addEventListener("click",()=>{state[e.dataset.sceneColor]=e.dataset.value;renderSheet(tab);refreshEditor()}));
  $$("[data-look-category]",area).forEach(e=>e.addEventListener("click",()=>{lookCategory=e.dataset.lookCategory;renderSheet(tab)}));
  $$("[data-look]",area).forEach(e=>e.addEventListener("click",()=>{const look=looks[Number(e.dataset.look)];if(!look)return;for(const key of ["top","topColor","bottom","shoes","accessory"])state[key]=look[key];renderSheet(tab);refreshEditor()}));
- $$("[data-imported-avatar]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarPreset="reference-avatar-"+button.dataset.importedAvatar;state.avatarStyle="2d";renderSheet("avatar");refreshEditor()}));
+ $("[data-avatar-folder]",area).forEach(button=>button.addEventListener("click",()=>{avatarFolder=button.dataset.avatarFolder;renderSheet("avatar")}));
+ $("[data-imported-avatar]",area).forEach(button=>button.addEventListener("click",()=>{state.avatarPreset="reference-avatar-"+button.dataset.importedAvatar;state.avatarStyle="2d";renderSheet("avatar");refreshEditor()}));
  $$("[data-avatar-preset]",area).forEach(button=>button.addEventListener("click",()=>{
   const p=avatarPresets.find(p=>p.id===button.dataset.avatarPreset);if(!p)return;
   Object.assign(state,{avatarPreset:p.id,avatarModel:p.model,gender:p.gender,avatarStyle:"3d",top:p.top,bottom:p.bottom,topColor:p.topColor,skin:p.skin,hair:p.hair,hairColor:p.hairColor,beard:p.beard||"none",beardColor:p.beardColor||p.hairColor,accessory:"none"});
