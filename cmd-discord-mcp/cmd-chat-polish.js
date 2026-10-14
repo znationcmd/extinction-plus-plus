@@ -108,6 +108,7 @@
      };buttons.prepend(colorButton);
    }
    improveTools();cmdExtras();
+   cmdTool("Style du nom","✨",openNameStyle,"cmdToolNameStyle");
    let count=0;
    for(const id of ids){
      const elem=document.getElementById(id);if(!elem)continue;
@@ -131,6 +132,13 @@
  function markPalette(){
    palette?.querySelectorAll("[data-color]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.color===(colors[mine()]||PALETTE[0]))));
  }
+
+ // Local preview of profile-name styling in the chat. Server sync requires a dedicated profile API.
+ const nameStyleKey="cmd-profile-name-style-v1";
+ function readNameStyle(){try{return JSON.parse(localStorage.getItem(nameStyleKey)||"{}")}catch{return {}}}
+ function applyNameStyle(){const st=readNameStyle();const own=mine();if(!own)return;for(const msg of document.querySelectorAll("#channelMessages .discord-message")){const id=msg.dataset.cmdAuthorId||msg.getAttribute("data-author-id")||"";if(id!==own)continue;const name=msg.querySelector(".msg-meta b");if(!name)continue;name.classList.toggle("cmd-styled-name",!!st.effect);name.style.setProperty("--cmd-name-gradient",(st.colors||["#9b00fb","#7ccbff","#f38ad8"]).join(","));name.style.fontFamily=st.font||"inherit";name.style.textShadow=st.effect==="neon"?"0 0 8px #a35bff,0 0 16px #ad68ff":"none";name.style.backgroundImage=st.effect==="uni"?"none":"linear-gradient(90deg,"+(st.colors||["#9b00fb","#7ccbff","#f38ad8"]).join(",")+")";name.style.color=st.effect==="uni"?(st.colors?.[0]||"#b38cff"):"";}}
+ function openNameStyle(){let panel=$("#cmdNameStylePanel");if(!panel){panel=document.createElement("div");panel.id="cmdNameStylePanel";panel.innerHTML='<div class="cmd-name-style-card"><div class="cmd-name-style-head"><strong>Style du pseudonyme</strong><button type="button" id="cmdNameStyleClose" aria-label="Fermer">✕</button></div><label>Police<select id="cmdNameFont"><option value="inherit">Classique</option><option value="Georgia,serif">Journal</option><option value="cursive">Manuscrite</option><option value="monospace">Pixel / Mono</option><option value="fantasy">Fantaisie</option></select></label><label>Effet<select id="cmdNameEffect"><option value="uni">Uni</option><option value="gradient">Dégradé</option><option value="neon">Néon</option><option value="cartoon">Cartoon</option><option value="pop">Pop</option><option value="gelatine">Gélatine</option><option value="prisme">Prisme</option></select></label><div class="cmd-name-colors"><label>Couleur 1<input type="color" id="cmdNameC1"></label><label>Couleur 2<input type="color" id="cmdNameC2"></label><label>Couleur 3<input type="color" id="cmdNameC3"></label></div><div id="cmdNamePreview">Aperçu du pseudonyme</div><p>Prévisualisation sur cet appareil. Synchronisation des profils entre appareils non encore disponible.</p><div class="cmd-name-style-actions"><button type="button" id="cmdNameRandom">🎲 Surprends-moi</button><button type="button" id="cmdNameReset">Réinitialiser</button><button type="button" id="cmdNameSave">Enregistrer</button></div></div>';document.body.append(panel);$("#cmdNameStyleClose").onclick=()=>panel.classList.remove("on");$("#cmdNameReset").onclick=()=>{localStorage.removeItem(nameStyleKey);panel.classList.remove("on");applyNameStyle()};$("#cmdNameSave").onclick=()=>{const colors=[1,2,3].map(i=>$("#cmdNameC"+i).value);try{localStorage.setItem(nameStyleKey,JSON.stringify({font:$("#cmdNameFont").value,effect:$("#cmdNameEffect").value,colors}))}catch{}panel.classList.remove("on");applyNameStyle()};$("#cmdNameRandom").onclick=()=>{const palette=["#9b00fb","#7ccbff","#f38ad8","#11d3a6","#ffb13d","#ff3687"];for(let i=1;i<=3;i++)$("#cmdNameC"+i).value=palette[Math.floor(Math.random()*palette.length)];updatePreview()};for(const el of panel.querySelectorAll("select,input"))el.addEventListener("input",updatePreview)}const st=readNameStyle();$("#cmdNameFont").value=st.font||"inherit";$("#cmdNameEffect").value=st.effect||"prisme";[1,2,3].forEach((i)=>$("#cmdNameC"+i).value=st.colors?.[i-1]||["#9b00fb","#7ccbff","#f38ad8"][i-1]);updatePreview();panel.classList.add("on")}
+ function updatePreview(){const p=$("#cmdNamePreview");if(!p)return;p.style.fontFamily=$("#cmdNameFont").value;p.style.backgroundImage="linear-gradient(90deg,"+[1,2,3].map(i=>$("#cmdNameC"+i).value).join(",")+")";p.style.textShadow=$("#cmdNameEffect").value==="neon"?"0 0 12px #a35bff":"none"}
  function decorateMessages(){
    const own=mine();let idsToLoad=[];
    for(const msg of document.querySelectorAll("#channelMessages .discord-message")){
@@ -143,6 +151,7 @@
      msg.style.setProperty("--cmd-message-bubble",colors[userId]||(userId===own?PALETTE[0]:"#40424c"));
      if(userId&&!Object.hasOwn(colors,userId))idsToLoad.push(userId);
    }
+   applyNameStyle();
    if(own&&!Object.hasOwn(colors,own))idsToLoad.push(own);
    idsToLoad=[...new Set(idsToLoad)];
    if(idsToLoad.length){
