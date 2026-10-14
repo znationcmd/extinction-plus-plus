@@ -4557,18 +4557,18 @@ const httpServer=createServer(async(req,res)=>{
       html(res,dressingPage());return;
     }
     if(url.pathname==="/api/avatar-dressing"&&(req.method==="GET"||req.method==="POST")){
-      const auth=dashboardAuth(req);if(!auth){json(res,{error:"Connexion requise"},401);return}
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
         await pool.query("CREATE TABLE IF NOT EXISTS cmd_avatar_dressing (user_id TEXT PRIMARY KEY, dress JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
         const uid=String(auth.user.id);
         if(req.method==="GET"){
           const result=await pool.query("SELECT dress FROM cmd_avatar_dressing WHERE user_id=$1",[uid]);
-          json(res,{dress:validDress(result.rows[0]?.dress||{})});return;
+          sendJson(res,200,{dress:validDress(result.rows[0]?.dress||{})});return;
         }
         const input=await readFormBodyJson(req),dress=validDress(input);
         await pool.query("INSERT INTO cmd_avatar_dressing(user_id,dress) VALUES($1,$2::jsonb) ON CONFLICT(user_id) DO UPDATE SET dress=EXCLUDED.dress,updated_at=NOW()",[uid,JSON.stringify(dress)]);
-        json(res,{ok:true,dress});return;
-      }catch(e){json(res,{error:"Dressing indisponible"},500);return}
+        sendJson(res,200,{ok:true,dress});return;
+      }catch(e){sendJson(res,500,{error:"Dressing indisponible"});return}
     }
     if(req.method==="GET"&&url.pathname==="/shop"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
