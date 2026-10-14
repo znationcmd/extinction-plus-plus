@@ -67,7 +67,7 @@
   cmdTool("Rôles","👑",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("roles");else alert("Ouvre les paramètres du serveur pour consulter tes rôles.")},"cmdToolRoles");
   cmdTool("Événements","📅",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("events");else alert("Ouvre les paramètres du serveur pour consulter les événements.")},"cmdToolEvents");
   cmdTool("Salon vocal","🎤",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("channels");else alert("Ouvre la liste des salons vocaux du serveur.")},"cmdToolVoiceChannel");
-  cmdTool("Dons","💚",()=>{alert("Les dons PayPal seront disponibles lorsque le lien officiel du bénéficiaire sera configuré.")},"cmdToolDonations");
+  cmdTool("Dons","💚",()=>{const url="https://www.paypal.me/ZnationCmdofficiel";const ok=window.confirm("Ouvrir PayPal pour faire un don volontaire à CMD ?");if(ok)window.open(url,"_blank","noopener,noreferrer")},"cmdToolDonations");
   cmdTool("Mention","＠",()=>{const input=$("#channelInput");if(input){input.value+=" @";input.focus()}$("#channelToolSheet")?.classList.remove("on")},"cmdToolMention");
   cmdTool("Vidéo","🎥",()=>{alert("L’envoi de vidéos sera activé après raccordement au système de pièces jointes.")},"cmdToolVideo");
   cmdWallpaperApply()
