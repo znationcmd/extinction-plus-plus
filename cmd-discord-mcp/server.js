@@ -1,3 +1,4 @@
+import {dressingPage,validDress} from "./avatar-dressing.js";
 import { createServer } from "node:http";
 import { initCmdStarsDb,handleCmdStars } from "./cmd-stars.js";
 import { cmdBoostCount,cmdBoostLevel,requireCmdBoosts,requireCmdExtraPerk,handleCmdServerBoosts } from "./cmd-boost-levels.js";
@@ -2341,7 +2342,7 @@ function shopPage(auth,installed,premium={active:false,owner:false,boosts:[],boo
     return '<article class="item '+(pro?'premiumItem':'')+'">'+shopPreviewHtml(x)+'<div class="itemLine"><b>'+escHtml(x.label)+'</b>'+(pro?'<span class="proPill">PREMIUM</span>':'<span class="freePill">GRATUIT</span>')+'</div><small>'+(pro?'Collection CMD Sphere Premium':'Accessible gratuitement à tous')+'</small><button data-type="'+escHtml(x.type)+'" data-key="'+escHtml(x.key)+'" '+(locked?'disabled':'')+'>'+(locked?'Premium requis':(yes?'Réinstaller':'Installer'))+'</button></article>';
   }).join("")+'</div></section>').join("");
 
-  const freeDressing='<section style="margin:18px 0;padding:18px;border:1px solid #a78bfa66;border-radius:18px;background:#171226"><h2>🧍 Personnaliser mon personnage</h2><p>Personnages, vêtements, coiffures, barbes et accessoires : accès gratuit pour tous.</p><p>Le dressing interactif et les nouvelles planches 4K sont en préparation. Tes avatars actuels restent disponibles.</p><a class="btn" href="/profile">Voir mes avatars actuels</a></section>';
+  const freeDressing='<section style="margin:18px 0;padding:18px;border:1px solid #a78bfa66;border-radius:18px;background:#171226"><h2>🧍 Personnaliser mon personnage</h2><p>Personnages, vêtements, coiffures, barbes et accessoires : accès gratuit pour tous.</p><p>Le dressing interactif et les nouvelles planches 4K sont en préparation. Tes avatars actuels restent disponibles.</p><a class="btn" href="/avatar-dressing">Ouvrir le dressing gratuit</a> <a class="btn" href="/profile">Mes avatars actuels</a></section>';
   const boostMap={};for(const b of premium.boosts||[]){(boostMap[String(b.guildId)]??=[]).push(b)}
   const boostCards=(guilds||[]).map(g=>{
     const mine=boostMap[String(g.id)]||[],total=Number(g.boost_count||0);
@@ -4550,6 +4551,24 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/founder/cmdpad/redeem"){
       try{sendJson(res,200,await redeemFounderAppTicket(await readFormBodyJson(req),"cmdpad"))}catch(e){sendJson(res,401,{error:e.message})}return;
+    }
+    if(url.pathname==="/avatar-dressing"&&req.method==="GET"){
+      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/avatar-dressing"));return}
+      html(res,dressingPage());return;
+    }
+    if(url.pathname==="/api/avatar-dressing"&&(req.method==="GET"||req.method==="POST")){
+      const auth=dashboardAuth(req);if(!auth){json(res,{error:"Connexion requise"},401);return}
+      try{
+        await pool.query("CREATE TABLE IF NOT EXISTS cmd_avatar_dressing (user_id TEXT PRIMARY KEY, dress JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+        const uid=String(auth.user.id);
+        if(req.method==="GET"){
+          const result=await pool.query("SELECT dress FROM cmd_avatar_dressing WHERE user_id=$1",[uid]);
+          json(res,{dress:validDress(result.rows[0]?.dress||{})});return;
+        }
+        const input=await readFormBodyJson(req),dress=validDress(input);
+        await pool.query("INSERT INTO cmd_avatar_dressing(user_id,dress) VALUES($1,$2::jsonb) ON CONFLICT(user_id) DO UPDATE SET dress=EXCLUDED.dress,updated_at=NOW()",[uid,JSON.stringify(dress)]);
+        json(res,{ok:true,dress});return;
+      }catch(e){json(res,{error:"Dressing indisponible"},500);return}
     }
     if(req.method==="GET"&&url.pathname==="/shop"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/shop"));return}
