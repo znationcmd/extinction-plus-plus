@@ -323,7 +323,7 @@ document.addEventListener("error",event=>{
 },true);
 const originalSheets=[];
 const loadedSheets=new Map();
-const petTiles=[],sceneTiles=individualUniverse.scenes.map(x=>x.id.startsWith('cmd-hd-')?x.src+'?v=20261010wide35':x.src),homeTiles=individualUniverse.homes.map(x=>x.src);
+const petTiles=[],sceneTiles=individualUniverse.scenes.map(x=>x.src.replace("/universe/v2/","/universe/v1/").replace(/\.webp$/,x.src.includes("/universe/v2/")?".webp":".webp")),homeTiles=individualUniverse.homes.map(x=>x.src);
 function sceneReferenceIndex(value){return individualUniverse.scenes.findIndex(x=>x.id===value)}
 function sceneReferenceStyle(value){
  const n=sceneReferenceIndex(value);if(n<0)return "";
