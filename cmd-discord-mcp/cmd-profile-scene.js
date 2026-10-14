@@ -504,7 +504,7 @@ function contents(tab){
  if(tab==="mode")return '<h2>Mon dressing</h2><p class="cmd-scene-section-intro">Dressing CMD Sphere · catégories faciles à parcourir. Choisis une tenue illustrée : hauts, bas et chaussures changent directement sur le corps de l’avatar 2D.</p>'+lookGrid()+swatches("Couleur","topColor",outfits)+screenshotCatalogue("vestes");
  if(tab==="selfie")return '<h2>Poses & animations</h2>'+picker("Choisir une pose","pose",poses,"action");
  if(tab==="pet")return universePicker();
- if(tab==="scene")return '<h2>Fonds pour Avatar & décor</h2><p class="cmd-scene-section-intro">Choisis le paysage derrière ton personnage, ton animal et tes objets. Ta bannière de profil reste inchangée. Chaque décor conserve son cadrage complet.</p>'+picker("Arrière-plans d’avatar","scene",scenes,"scene");
+ if(tab==="scene")return '<h2>Fonds pour Avatar & décor</h2><p class="cmd-scene-section-intro">Choisis une scène ou importe ta propre photo. Ton image est conservée sans recadrage.</p><label class="cmd-scene-upload-label" for="cmdScenePersonalFile">＋ Ajouter ma photo personnelle</label><input id="cmdScenePersonalFile" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style="max-width:100%;margin:8px 0 16px"><p class="cmd-scene-section-intro" id="cmdSceneUploadStatus" role="status"></p>'+picker("Arrière-plans d’avatar","scene",scenes,"scene");
  return avatarEditor();
 }
 function renderSheet(tab){
@@ -516,6 +516,25 @@ function renderSheet(tab){
  area.scrollTop=previousScroll;
  if(previousScroller&&outerScroll!=null)previousScroller.scrollTop=outerScroll;
 
+ const personalFile=area.querySelector("#cmdScenePersonalFile");
+ if(personalFile)personalFile.addEventListener("change",async()=>{
+  const file=personalFile.files&&personalFile.files[0],status=area.querySelector("#cmdSceneUploadStatus");
+  if(!file)return;
+  if(file.size>8*1024*1024){if(status)status.textContent="Image trop volumineuse (8 Mo maximum).";return}
+  if(!/^image\//.test(file.type)){if(status)status.textContent="Choisis une image.";return}
+  try{
+   const image=new Image(),url=URL.createObjectURL(file);
+   try{
+    await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url});
+    const canvas=document.createElement("canvas"),ratio=Math.min(1,1920/image.naturalWidth,1920/image.naturalHeight);
+    canvas.width=Math.max(1,Math.round(image.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(image.naturalHeight*ratio));
+    canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+    custom=canvas.toDataURL("image/jpeg",0.86);customDirty=true;state.scene="custom";
+   }finally{URL.revokeObjectURL(url)}
+   renderSheet("scene");refreshEditor();
+   const note=document.querySelector("#cmdSceneNotice");if(note)note.textContent="Photo ajoutée. Appuie sur Enregistrer pour la conserver.";
+  }catch(error){if(status)status.textContent="Impossible de lire cette image. Essaie un fichier JPEG ou PNG."}
+ });
  /* The profile editor is 2D: do not launch the old 3D preview renderer. */
  area.querySelectorAll("[data-sticker-category]").forEach(el=>el.addEventListener("click",()=>{const category=el.dataset.stickerCategory;const n=Number(el.dataset.stickerIndex);if(!Number.isInteger(n))return;const target={vestes:"top",chapeaux:"accessory",lunettes:"accessory",cheveux:"hair",barbes:"beard",piercings:"piercing"}[category];if(!target)return;const options={vestes:clothes,chapeaux:[["hat"],["cap"]],lunettes:[["glasses"],["sunglasses"]],cheveux:[["short"],["long"],["curly"],["ponytail"],["bob"],["shaved"]],barbes:[["none"],["mustache"],["goatee"],["stubble"],["long"]],piercings:piercings}[category];if(Array.isArray(options)&&options.length){const option=options[n%options.length];if(Array.isArray(option))state[target]=option[0]}el.closest(".cmd-original-gallery")?.querySelectorAll(".cmd-original-gallery-tile").forEach(tile=>tile.classList.toggle("selected",tile===el));refreshEditor()}));
  area.querySelectorAll("[data-avatar-part]").forEach(e=>e.addEventListener("click",()=>{avatarPart=e.dataset.avatarPart;renderSheet("avatar");area.scrollTop=0;const scroll=area.closest(".cmd-scene-options-scroll");if(scroll)scroll.scrollTop=0}));
