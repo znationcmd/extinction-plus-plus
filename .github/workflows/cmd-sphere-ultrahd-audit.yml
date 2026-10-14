@@ -42,7 +42,7 @@ jobs:
               for b,hb in hashes[i+1:]:
                   d=ha-hb
                   if d<=5 and not any(a in g and b in g for g in exact):
-                      similar.append({'a':a,'b':b,'distance':d})
+                      similar.append({'a':a,'b':b,'distance':int(d)})
           os.makedirs('audit-output',exist_ok=True)
           with open('audit-output/animals.json','w') as f:
               json.dump({'total':len(hashes),'exact_duplicate_groups':exact,'visually_similar_candidates':similar,'dimensions':sizes},f,indent=2)
