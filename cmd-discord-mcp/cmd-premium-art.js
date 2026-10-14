@@ -51,7 +51,7 @@ function flower(x,y,s,rng){
   const petals=Array.from({length:5},(_,i)=>'<ellipse cx="0" cy="'+f(-s*.46)+'" rx="'+f(s*.32)+'" ry="'+f(s*.52)+'" fill="url(#gem)" stroke="#fff" stroke-opacity=".28" transform="rotate('+(i*72)+')"/>').join('');
   return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rng()*360)+') scale('+f(.7+rng()*.6)+')" filter="url(#shine)">'+petals+'<circle r="'+f(s*.2)+'" fill="#ffe9a7" /></g>';
 }
-function star(x,y,s){return '<path d="M'+f(x)+' '+f(y-s)+' Q'+f(x+s*.22)+' '+f(y-s*.22)+' '+f(x+s)+' '+f(y)+' Q'+f(x+s*.22)+' '+f(y+s*.22)+' '+f(x)+' '+f(y+s)+' Q'+f(x-s*.22)+' '+f(y+s*.22)+' '+f(x-s)+' '+f(y)+' Q'+f(x-s*.22)+' '+f(y-s*.22)+' '+f(x)+' '+f(y-s)+' Z" fill="#fff8d8" filter="url(#glow)" opacity=".9"/>'}
+function star(x,y,s){return '<path d="M'+f(x)+' '+f(y-s)+' Q'+f(x+s*.22)+' '+f(y-s*.22)+' '+f(x+s)+' '+f(y)+' Q'+f(x+s*.22)+' '+f(y+s*.22)+' '+f(x)+' '+f(y+s)+' Q'+f(x-s*.22)+' '+f(y+s*.22)+' '+f(x-s)+' '+f(y)+' Q'+f(x-s*.22)+' '+f(y-s*.22)+' '+f(x)+' '+f(y-s)+' Z" fill="#fff8d8" opacity=".9"/>'}
 function fire(x,y,s,r){return '<path d="M'+f(x)+' '+f(y+s*.6)+' Q'+f(x-s*.6)+' '+f(y-s*.2)+' '+f(x+s*(r-.5))+' '+f(y-s)+' Q'+f(x+s*.7)+' '+f(y-s*.3)+' '+f(x+s*.2)+' '+f(y+s*.45)+' Z" fill="url(#gem)" filter="url(#shine)" stroke="#ffd4a0" stroke-opacity=".55"/>'}
 function piece(family,x,y,size,rng,color,rot=0){
 if(family==="garden")return flower(x,y,size*.48,rng);
@@ -140,39 +140,41 @@ function effectArt(key,meta){
 }
 
 function frameArt(key,meta){
-  const rng=rand(seedFor(key)),family=meta.family,hue=meta.hue,shapes=[];
-  // Three clean metal-and-crystal rails remain visible even on Retina mobile cards.
-  shapes.push('<rect x="42" y="48" width="556" height="344" rx="44" fill="none" stroke="'+hue+'" stroke-opacity=".22" stroke-width="15" filter="url(#glow)"/>');
-  shapes.push('<rect x="45" y="51" width="550" height="338" rx="40" fill="none" stroke="url(#gold)" stroke-width="5.4" opacity=".98"/>');
-  shapes.push('<rect x="55" y="61" width="530" height="318" rx="34" fill="none" stroke="#fff" stroke-opacity=".52" stroke-width="1.6"/>');
-  shapes.push('<rect x="66" y="72" width="508" height="296" rx="25" fill="none" stroke="'+hue+'" stroke-opacity=".57" stroke-width="2.0"/>');
-  shapes.push('<path d="M116 57 H521 M116 383 H521" fill="none" stroke="#fff" stroke-opacity=".58" stroke-width="1.3"/>');
-  for(let i=0;i<46;i++){
-    const group=i%4;
-    let x,y,ang;
-    if(group===0){x=55+rng()*530;y=52+rng()*17;ang=-25+rng()*50}
-    else if(group===1){x=55+rng()*530;y=381+rng()*8;ang=150+rng()*60}
-    else if(group===2){x=50+rng()*13;y=75+rng()*290;ang=-100+rng()*45}
-    else{x=586+rng()*10;y=75+rng()*290;ang=55+rng()*50}
-    const size=(family==="crystal"?29:22)+rng()*46;
-    shapes.push(piece(family,x,y,size,rng,hue,ang));
-  }
-  for(let i=0;i<52;i++){let x=15+rng()*610,y=22+rng()*390;if(x>90&&x<555&&y>108&&y<345)continue;shapes.push(star(x,y,1+rng()*3))}
-  for(const [x,y] of [[46,55],[595,56],[44,386],[596,384]])shapes.push(star(x,y,11));
-  return shapes.join("");
+ const rng=rand(seedFor(key)),{family,hue}=meta,o=[];
+ o.push('<rect x="38" y="38" width="564" height="364" rx="32" stroke="'+hue+'" stroke-opacity=".15" stroke-width="12"/>');
+ o.push('<rect x="42" y="42" width="556" height="356" rx="28" stroke="url(#gold)" stroke-width="3"/><rect x="50" y="50" width="540" height="340" rx="22" stroke="'+hue+'" stroke-opacity=".5" stroke-width="1"/>');
+ // Symmetric corner jewellery: the central profile and its text remain unobstructed.
+ for(const [x,y,angle] of [[54,54,-45],[586,54,45],[586,386,135],[54,386,225]]){
+  o.push('<g transform="translate('+x+' '+y+') rotate('+angle+')"><path d="M-27 40 Q-42 0 0 -32 Q42 0 27 40 M-18 27 Q-27 0 0 -22 Q27 0 18 27" stroke="url(#gold)" stroke-width="2"/>');
+  o.push(piece(family,0,0,33,rng,hue,0));
+  o.push(piece(family,-20,21,18,rng,hue,-28),piece(family,20,21,18,rng,hue,28));
+  o.push('</g>');
+ }
+ for(const y of [43,397]){
+  o.push('<path d="M235 '+y+' L285 '+y+' L300 '+(y-5)+' H340 L355 '+y+' H405" stroke="url(#gold)" stroke-width="2"/>');
+  o.push(piece(family,320,y,20,rng,hue,90));
+ }
+ for(const x of [43,597])o.push('<path d="M'+x+' 186 l6 34 -6 34 -6 -34Z" fill="url(#gem)" stroke="'+hue+'"/>');
+ return o.join('');
 }
 function avatarArt(key,meta){
- const rng=rand(seedFor(key)),family=meta.family,hue=meta.hue,o=[];
- o.push('<circle cx="200" cy="200" r="163" fill="none" stroke="'+hue+'" stroke-width="13" stroke-opacity=".28" filter="url(#glow)"/>');
- o.push('<circle cx="200" cy="200" r="160" fill="none" stroke="url(#gold)" stroke-width="5.2" opacity=".98"/>');
- o.push('<circle cx="200" cy="200" r="152" fill="none" stroke="#fff" stroke-opacity=".65" stroke-width="1.6"/>');
- o.push('<circle cx="200" cy="200" r="146" fill="none" stroke="url(#gem)" stroke-width="2.7" opacity=".82"/>');
- const n=family==="crystal"?30:family==="celestial"?23:family==="garden"?27:family==="fire"?40:32;
- for(let i=0;i<n;i++){const angle=Math.PI*2*i/n+rng()*.17;const radius=159+(rng()-.5)*14;const x=200+Math.cos(angle)*radius,y=200+Math.sin(angle)*radius;
- o.push(piece(family,x,y,22+rng()*30,rng,hue,angle*180/Math.PI+90));
+ const rng=rand(seedFor(key)),{family,hue}=meta,o=[];
+ o.push('<circle cx="200" cy="200" r="155" stroke="'+hue+'" stroke-width="10" stroke-opacity=".12"/><circle cx="200" cy="200" r="155" stroke="url(#gold)" stroke-width="3"/><circle cx="200" cy="200" r="148" stroke="'+hue+'" stroke-width="1" stroke-opacity=".65"/>');
+ const n=family==='garden'?12:family==='fire'?18:8;
+ for(let i=0;i<n;i++){
+  const angle=Math.PI*2*i/n-Math.PI/2,x=200+Math.cos(angle)*156,y=200+Math.sin(angle)*156;
+  const size=i%2===0?27:17;
+  o.push(piece(family,x,y,size,rng,hue,angle*180/Math.PI+90));
  }
- for(let i=0;i<29;i++){const angle=rng()*Math.PI*2,rr=175+rng()*21;o.push(star(200+Math.cos(angle)*rr,200+Math.sin(angle)*rr,1.5+rng()*3.5))}
- return o.join("");
+ for(let i=0;i<32;i++){
+  const a=Math.PI*2*i/32;
+  o.push('<circle cx="'+f(200+Math.cos(a)*143)+'" cy="'+f(200+Math.sin(a)*143)+'" r="1.3" fill="'+hue+'"/>');
+ }
+ // Recognisable insignias for legacy designs, instead of the same generic diamond.
+ if(key==='skull')o.push('<g transform="translate(200 347)"><path d="M-20 0 Q-26 -30 0 -30 Q26 -30 20 0 L13 7 V17 H-13 V7Z" fill="#e2e8f0" stroke="#8896ad" stroke-width="2"/><ellipse cx="-9" cy="-7" rx="6" ry="7" fill="#131323"/><ellipse cx="9" cy="-7" rx="6" ry="7" fill="#131323"/><path d="M0 -2 l-4 8 h8Z M-6 9 v8 M0 9 v8 M6 9 v8" stroke="#131323"/></g>');
+ if(key==='viking')o.push('<g transform="translate(200 48)"><path d="M-24 10 Q-27 -20 0 -25 Q27 -20 24 10Z" fill="url(#gold)" stroke="#f3dcac" stroke-width="2"/><path d="M-22 -8 Q-49 -5 -45 -34 Q-38 -20 -24 -23 M22 -8 Q49 -5 45 -34 Q38 -20 24 -23" fill="#eee0bd"/><path d="M0 -25 V13" stroke="#30263a" stroke-width="5"/></g>');
+ if(key==='radioactive')o.push('<g transform="translate(200 350)"><circle r="23" fill="#c3fc43"/><circle r="5" fill="#14220f"/>'+[0,120,240].map(a=>'<path d="M-5 -8 L-11 -18 A21 21 0 0 1 11 -18 L5 -8Z" fill="#14220f" transform="rotate('+a+')"/>').join('')+'</g>');
+ return o.join('');
 }
 export function renderCmdPremiumSvg(type,key){
  if(!/^[a-z0-9]{2,28}$/.test(key))return null;
@@ -181,8 +183,8 @@ export function renderCmdPremiumSvg(type,key){
  if(!meta)return null;
  const isFrame=type==="frame",isEffect=type==="effect",view=isFrame?"0 0 640 440":isEffect?"0 0 640 360":"0 0 400 400",content=isFrame?frameArt(key,meta):isEffect?effectArt(key,meta):avatarArt(key,meta);
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+view+'" fill="none" aria-hidden="true"><defs>'+
- '<linearGradient id="gem" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
- '<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient>'+
+ '<linearGradient id="gem" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
+ '<linearGradient id="gold" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient>'+
  '<filter id="shine" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="1" stdDeviation=".35" flood-color="#110623" flood-opacity=".28"/></filter>'+
  '<filter id="glow" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="2"/></filter>'+'<filter id="aura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="11"/></filter>'+'<filter id="softAura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="1.5"/></filter>'+'<radialGradient id="sceneGlow"><stop stop-color="'+meta.hue+'" stop-opacity=".8"/><stop offset="1" stop-color="#12132b" stop-opacity="0"/></radialGradient>'+'<radialGradient id="moon"><stop stop-color="#fff"/><stop offset="1" stop-color="#cbd5fb"/></radialGradient>'+'<radialGradient id="sun"><stop stop-color="#ffe2a1"/><stop offset=".6" stop-color="#ec7642"/><stop offset="1" stop-color="#7f2536"/></radialGradient>'+
  '</defs>'+content+'</svg>';
@@ -225,4 +227,39 @@ export const CMD_PREMIUM_ART_CSS=`
 .cmd-shop-invite-link{display:block;padding:8px 10px;border:1px solid #8166a5;border-radius:8px;color:#e0c6ff;text-decoration:none}
 @media(prefers-reduced-motion:no-preference){.cmd-gem-art>img{animation:cmdGemShimmer 4.8s ease-in-out infinite}@keyframes cmdGemShimmer{50%{filter:brightness(1.24) drop-shadow(0 0 13px #c18affdd)}}}
 @media(max-width:600px){.art.cmd-gem-art{height:160px}.cmd-premium-art{max-width:100%}.cmd-profile-art-avatar{width:180px;height:180px}}
+
+/* 2026-10-14: crisp jewellery, full silhouettes, correctly centred avatar samples. */
+.art.cmd-gem-art{height:auto;aspect-ratio:16/11;background:radial-gradient(ellipse at 50% 20%,#302540,#101018 75%);isolation:isolate}
+.cmd-gem-art>img,.diamondCard .cmd-gem-art>img,.frameThumb img.cmd-frame-thumb,.cmd-profile-art-frame{filter:none;animation:none}
+.cmd-gem-art .cmd-gem-mock{inset:15% 12%;background:linear-gradient(150deg,#292332,#15151e);box-shadow:0 12px 28px #0005;border-color:#ffffff13}
+.cmd-gem-art.cmd-avatar-art{height:auto;aspect-ratio:1}
+.cmd-avatar-art .cmd-gem-mock,.diamondCard .cmd-avatar-art .cmd-gem-mock{inset:24%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 30% 20%,#796393,#29233d)}
+.cmd-avatar-art .cmd-gem-mock .cmd-gem-avatar{inset:0;width:100%;height:100%;border:0;background:none}
+.cmd-avatar-art .cmd-gem-avatar:before{left:35%;top:22%;width:30%;height:30%;background:#e0d8ed}
+.cmd-avatar-art .cmd-gem-avatar:after{left:22%;top:57%;width:56%;height:29%;background:#e0d8ed}
+.cmd-avatar-art>img{inset:5%;width:90%;height:90%}
+.diamondCard .art.cmd-gem-art{height:auto;min-height:260px}
+.cmd-effect-preview img{object-fit:contain}
+`;
+
+export const CMD_SHOP_REFINEMENT_CSS=`
+body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
+.wrap{max-width:1240px}.top{flex-wrap:wrap;backdrop-filter:blur(16px);background:#14111beF;gap:12px}.top a{font-size:14px}.hero{padding:32px;background:radial-gradient(ellipse at top right,#68448755,transparent 65%),#191320;border:1px solid #b99cdb30}.hero h1,.hero h2{letter-spacing:-.035em}.hero:after{content:none}
+.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.item{background:#19161f;border-color:#ffffff12;padding:12px;border-radius:20px;gap:12px;min-width:0;align-content:start}.itemLine{align-items:start}.itemLine b{font-size:16px;line-height:1.4}.item small{font-size:12px}.item button,.diamondCard>button:not(:disabled){background:#8b5cce;cursor:pointer}.item button:focus-visible,button.previewItem:focus-visible{outline:3px solid #dcc3ff;outline-offset:3px}.art{height:220px}.item .art.cmd-gem-art{height:auto;aspect-ratio:1.35}.item .art.cmd-avatar-art{aspect-ratio:1.35}.item .cmd-avatar-art>img{inset:5%;width:90%;height:90%}.item .cmd-avatar-art .cmd-gem-mock{height:48%;width:auto;inset:26% auto auto 50%;transform:translateX(-50%)}
+.art.cmd-effect-preview{height:auto;aspect-ratio:16/10;padding:12px}.shopGrid{gap:22px}.diamondCard{background:#19161f;border-color:#ffffff16}.cardBody h3{font-size:22px}.cardBody p{font-size:14px;color:#bcb2c9}.exclusive{font-size:9px;letter-spacing:.08em;background:#2c2439;color:#e0c9ff}.diamondCard .art.cmd-gem-art{padding-top:36px}.diamondCard .cmd-gem-art>img{inset:10% 5% 0;width:90%;height:90%}.diamondCard .cmd-gem-mock{inset:25% 20% 16%}.diamondCard .cmd-avatar-art .cmd-gem-mock{inset:29% 29% 19%}.diamondCard .cmd-effect-preview{padding:60px 12px 12px}.diamondPreviewBody .previewArt .art{height:auto;min-height:240px}.diamondPreviewBody .previewArt{padding:22px;background:#100e17}.diamondPreviewBody .previewArt .cmd-gem-art{aspect-ratio:1.35}.diamondPreviewBody .previewArt .cmd-avatar-art{aspect-ratio:1}
+@media(min-width:1100px){.shopGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.item{padding:8px;border-radius:14px}.itemLine{flex-wrap:wrap}.itemLine b{font-size:14px}.item .art{height:160px}.item .art.cmd-gem-art{height:auto;aspect-ratio:1}.item .cmd-avatar-art .cmd-gem-mock{height:48%}.top{position:relative;padding:12px}.hero{padding:22px}.shopGrid{grid-template-columns:1fr}.diamondCard .art.cmd-gem-art{min-height:280px}.tabs{top:0}.wrap{padding-inline:12px}}
+@media(max-width:350px){.grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.art *{animation:none!important}}
+.shop-nameplate-urban{background:linear-gradient(90deg,#26104c,#8b1a98,#2b0b60)}
+.shop-nameplate-nebula{background:radial-gradient(circle at 25% 40%,#a855f7,#312e81 45%,#09090b)}
+.shop-nameplate-emerald{background:linear-gradient(120deg,#064e3b,#10b981,#052e16)}
+.shop-nameplate-moon{background:linear-gradient(120deg,#0f172a,#1d4ed8,#111827)}
+.shop-nameplate-heart{background:linear-gradient(120deg,#111,#3f3f46)}
+.shop-nameplate-leopard{background:repeating-linear-gradient(45deg,#c87516 0 9px,#111 9px 15px)}
+.shop-nameplate-cosmic{background:linear-gradient(90deg,#7c3aed,#ec4899,#2563eb)}
+.shop-nameplate-flowers{background:linear-gradient(90deg,#14532d,#fde68a,#166534)}
+.shop-nameplate-midnight{background:linear-gradient(90deg,#020617,#312e81,#0f172a)}
+.shop-nameplate-halloween{background:linear-gradient(90deg,#451a03,#f97316,#1c1917)}
+.shop-nameplate-aurora{background:linear-gradient(90deg,#14b8a6,#8b5cf6,#ec4899)}
 `;
