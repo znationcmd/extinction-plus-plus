@@ -1,0 +1,52 @@
+name: CMD Sphere - audit catalogue Ultra HD
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extract original catalogue
+        working-directory: cmd-discord-mcp
+        run: node unpack-profile-assets.cjs
+      - name: Install image analysis dependency
+        run: python -m pip install --quiet pillow imagehash
+      - name: Analyze original assets without deleting anything
+        run: |
+          python - <<'PY'
+          import os,hashlib,json
+          from collections import defaultdict
+          from PIL import Image
+          import imagehash
+          root='cmd-discord-mcp/public/universe/v1'
+          groups=defaultdict(list); hashes=[]; sizes=[]
+          for fn in sorted(os.listdir(root)):
+              if not fn.startswith('pet-') or not fn.lower().endswith(('.png','.webp')):continue
+              path=os.path.join(root,fn)
+              with Image.open(path) as im:
+                  im.load()
+                  sha=hashlib.sha256(im.convert('RGBA').tobytes()).hexdigest()
+                  groups[sha].append(fn)
+                  hashes.append((fn,imagehash.phash(im.convert('RGB'))))
+                  sizes.append({'file':fn,'width':im.width,'height':im.height})
+          exact=[g for g in groups.values() if len(g)>1]
+          similar=[]
+          for i,(a,ha) in enumerate(hashes):
+              for b,hb in hashes[i+1:]:
+                  d=ha-hb
+                  if d<=5 and not any(a in g and b in g for g in exact):
+                      similar.append({'a':a,'b':b,'distance':d})
+          os.makedirs('audit-output',exist_ok=True)
+          with open('audit-output/animals.json','w') as f:
+              json.dump({'total':len(hashes),'exact_duplicate_groups':exact,'visually_similar_candidates':similar,'dimensions':sizes},f,indent=2)
+          print('Animals:',len(hashes),'exact duplicate groups:',len(exact),'visual candidates:',len(similar))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cmd-sphere-animal-duplicates-audit
+          path: audit-output/animals.json
