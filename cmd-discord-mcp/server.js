@@ -1,3 +1,4 @@
+import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
 import {dressingPage,validDress} from "./avatar-dressing.js";
 import { createServer } from "node:http";
 import { initCmdStarsDb,handleCmdStars } from "./cmd-stars.js";
@@ -4551,6 +4552,7 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="POST"&&url.pathname==="/api/founder/cmdpad/redeem"){
       try{sendJson(res,200,await redeemFounderAppTicket(await readFormBodyJson(req),"cmdpad"))}catch(e){sendJson(res,401,{error:e.message})}return;
     }
+    if(url.pathname==="/mon-univers"&&req.method==="GET"){const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next=%2Fmon-univers");return}html(res,cmdUniverseEditorPage());return;}
     if(url.pathname==="/avatar-dressing"&&req.method==="GET"){
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/avatar-dressing"));return}
       html(res,dressingPage());return;
