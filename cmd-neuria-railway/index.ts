@@ -188,6 +188,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const configured=!!(endpoint&&token&&model),unresolved=token.includes("\u0024{{");
   return response(JSON.stringify({configured,unresolved,provider:endpoint.includes("cloudflare.com")?"cloudflare":"other",model:model||null,ready:configured&&!unresolved,note:"Configuration uniquement. Utilisez /api/ai/test pour une requête réelle."}),"application/json");
  }
+ if(req.method==="GET"&&path==="/api/work/diagnostics"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  const github=Bun.env.NEURIA_GITHUB_TOKEN,railway=Bun.env.NEURIA_RAILWAY_TOKEN;
+  const repo=String(new URL(req.url).searchParams.get("repo")||"znationcmd/extinction-plus-plus");
+  if(!/^[-\w]+\/[-.\w]+$/.test(repo))return response(JSON.stringify({error:"Dépôt invalide"}),"application/json",400);
+  const result={repository:repo,githubConfigured:!!github,railwayConfigured:!!railway,checks:[],deployments:[],automaticWrite:false};
+  if(github){try{
+   const gh=await fetch("https://api.github.com/repos/"+repo+"/commits?per_page=5",{headers:{"authorization":"Bearer "+github,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria-Diagnostics"},signal:AbortSignal.timeout(10000)});
+   if(!gh.ok)throw Error("GitHub HTTP "+gh.status);
+   const data=await gh.json();result.checks.push({provider:"github",ok:true,commits:data.map(x=>({sha:x.sha,message:x.commit?.message?.split("\n")[0]}))});
+  }catch(e){result.checks.push({provider:"github",ok:false,error:String(e.message)})}}
+  if(railway){try{
+   const query="query($projectId:String!){deployments(input:{projectId:$projectId},first:5){edges{node{id status createdAt}}}}";
+   const projectId=String(new URL(req.url).searchParams.get("projectId")||"448c9383-00a0-4597-9a2b-5b0f9d93172e");
+   if(!/^[0-9a-f-]{36}$/.test(projectId))throw Error("Projet invalide");
+   const rr=await fetch("https://backboard.railway.com/graphql/v2",{method:"POST",headers:{"authorization":"Bearer "+railway,"content-type":"application/json"},body:JSON.stringify({query,variables:{projectId}}),signal:AbortSignal.timeout(10000)});
+   const data=await rr.json();if(!rr.ok||data.errors?.length)throw Error("Railway: "+(data.errors?.[0]?.message||rr.status));
+   result.deployments=(data.data?.deployments?.edges||[]).map(x=>x.node);result.checks.push({provider:"railway",ok:true});
+  }catch(e){result.checks.push({provider:"railway",ok:false,error:String(e.message)})}}
+  return response(JSON.stringify(result),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/work/connectors/status")return response(JSON.stringify({browserConfigured:!!Bun.env.NEURIA_BROWSER_CDP_URL,githubConfigured:!!Bun.env.NEURIA_GITHUB_TOKEN,githubOAuthAvailable:!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET),railwayConfigured:!!Bun.env.NEURIA_RAILWAY_TOKEN,accessControlConfigured:(Bun.env.NEURIA_WORK_ADMIN_KEY||"").length>=24,note:"Les actions nécessitent une clé d'accès Work et une autorisation explicite pour toute écriture."}),"application/json");
  if(req.method==="POST"&&path==="/api/work/browser"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès Work non configuré ou non autorisé"}),"application/json",403);
