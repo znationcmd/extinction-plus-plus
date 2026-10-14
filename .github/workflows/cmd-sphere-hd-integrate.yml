@@ -1,0 +1,32 @@
+name: CMD Sphere - integrer HD secours en staging
+on:
+  push:
+    branches: [cmd-sphere/hd-secours-664-staging-20261014]
+    paths: [.github/workflows/cmd-sphere-hd-integrate.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch CMD Sphere HTML response
+        run: python cmd-discord-mcp/stage-hd-catalogue.py
+      - name: Verify JS syntax
+        run: |
+          node --check cmd-discord-mcp/server.js
+          node --check cmd-discord-mcp/public/hd-secours/v1/catalogue-resolver.js
+          node --check cmd-discord-mcp/public/hd-secours/v1/catalogue-enable.js
+      - name: Commit only on staging branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cmd-discord-mcp/server.js
+          git diff --cached --quiet || git commit -m "feat(cmd-sphere): wire HD emergency assets into Sphere HTML (staging)"
+          git push origin HEAD:cmd-sphere/hd-secours-664-staging-20261014
