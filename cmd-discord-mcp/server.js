@@ -235,6 +235,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   window.cmdSphereMessageActions={
     mode:()=>CHAT.mode,
     delete:async id=>{if(CHAT.mode!=="native")throw new Error("Suppression disponible uniquement pour les messages CMD Sphere natifs.");const res=await fetch("/api/native/messages/delete",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,messageId:String(id)})});const body=await res.json();if(!res.ok)throw new Error(body.error||"Suppression impossible");CHAT.messages=CHAT.messages.filter(m=>String(m.id)!==String(id));renderChannelMessages();return body},
+    edit:async(id,content)=>{if(CHAT.mode!=="native")throw new Error("Modification disponible uniquement pour les messages natifs.");const res=await fetch("/api/native/messages/edit",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,messageId:String(id),content})});const body=await res.json();if(!res.ok)throw new Error(body.error||"Modification impossible");const m=CHAT.messages.find(x=>String(x.id)===String(id));if(m)m.content=content;renderChannelMessages();return body},
     reply:id=>{const m=CHAT.messages.find(x=>String(x.id)===String(id));if(!m)throw new Error("Message introuvable");replyDiscordMessage(id,m.author?.displayName||m.author?.username||"Utilisateur",String(m.content||"").slice(0,90));qs("#channelInput")?.focus()}
   };
 
