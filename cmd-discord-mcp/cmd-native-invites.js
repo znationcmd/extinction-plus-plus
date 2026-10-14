@@ -24,9 +24,11 @@ export async function initCmdNativeInvites(pool){
    revoked_at TIMESTAMPTZ,
    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
    uses INTEGER NOT NULL DEFAULT 0,
-   max_uses INTEGER
+   max_uses INTEGER,
+   last_used_at TIMESTAMPTZ
  )`);
  await pool.query("ALTER TABLE cmd_native_invites ADD COLUMN IF NOT EXISTS max_uses INTEGER");
+ await pool.query("ALTER TABLE cmd_native_invites ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_native_invites_guild_idx ON cmd_native_invites(guild_id,created_at DESC)");
  // Convert pre-existing permanent links exactly once. They are now visible to
  // server administrators and can be revoked, rather than bypassing expiry checks.
@@ -69,7 +71,7 @@ export async function joinNativeInvite(pool,auth,raw){
   await client.query(`INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name)
     VALUES($1,$2,'member',$3) ON CONFLICT(guild_id,user_id) DO NOTHING`,
     [g.id,user,String(auth.user.displayName||auth.user.name||"Membre").slice(0,80)]);
-  await client.query("UPDATE cmd_native_invites SET uses=uses+1 WHERE code=$1",[code]);
+  await client.query("UPDATE cmd_native_invites SET uses=uses+1,last_used_at=NOW() WHERE code=$1",[code]);
   await client.query("COMMIT");started=false;
   return g;
  }catch(e){if(started)await client.query("ROLLBACK");throw e}finally{client.release()}
@@ -85,14 +87,14 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    const id=String(url.searchParams.get("guildId")||"");
    if(!ID.test(id)){sendJson(res,400,{error:"Identifiant du serveur invalide"});return true}
    const m=await requireNativeMember(auth,id),canManage=["owner","admin"].includes(String(m.membership_role));
-   const r=await pool.query(`SELECT i.code,i.label,i.expires_at,i.created_at,i.uses,i.max_uses,i.revoked_at FROM cmd_native_invites i
+   const r=await pool.query(`SELECT i.code,i.label,i.expires_at,i.created_at,i.uses,i.max_uses,i.last_used_at,i.revoked_at FROM cmd_native_invites i
     WHERE i.guild_id=$1 AND ($2::boolean OR (i.revoked_at IS NULL AND (i.expires_at IS NULL OR i.expires_at>NOW()) AND (i.max_uses IS NULL OR i.uses<i.max_uses)))
     ORDER BY i.created_at DESC LIMIT 100`,[id,canManage]);
    const invites=r.rows.map(row=>({
      code:row.code,url:baseUrl+"/invite/"+encodeURIComponent(row.code),
      label:row.label,expiresAt:row.expires_at,createdAt:row.created_at,
      revoked:!!row.revoked_at,expired:!!row.expires_at&&new Date(row.expires_at)<=new Date(),
-     uses:row.uses,maxUses:row.max_uses,exhausted:row.max_uses!==null&&row.uses>=row.max_uses
+     uses:row.uses,maxUses:row.max_uses,remainingUses:row.max_uses===null?null:Math.max(0,row.max_uses-row.uses),lastUsedAt:row.last_used_at,exhausted:row.max_uses!==null&&row.uses>=row.max_uses
    }));
    sendJson(res,200,{guildId:id,canManage,invites});return true;
   }
