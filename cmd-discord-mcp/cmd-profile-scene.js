@@ -319,7 +319,7 @@ document.addEventListener("error",event=>{
   else if(/^\/universe\/v2\/(?:thumbs\/)?(pet|vehicle|home|scene)-[0-9]{3}\.webp$/.test(pathname))
    original=pathname.replace("/universe/v2/thumbs/","/universe/v1/").replace("/universe/v2/","/universe/v1/").replace(/\.webp$/,pathname.includes("/scene-")?".webp":".png");
  }catch{}
- if(original){img.dataset.cmdOriginalFallback="1";img.src=original;}
+ if(original){img.dataset.cmdOriginalFallback="1";img.removeAttribute("srcset");img.removeAttribute("sizes");img.src=original;}
 },true);
 const originalSheets=[];
 const loadedSheets=new Map();
@@ -483,7 +483,7 @@ function applyScreenshotCatalogue(){
 }
 function importedAvatarArt(i,eager=false){
  const src=importedAvatarTiles[i];
- return src?'<img class="cmd-imported-avatar-art" src="'+(eager?src:src.replace('/avatars/v4/','/avatars/v4/thumbs/'))+'" srcset="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+' 1x, '+src+' 2x" alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
+ return src?'<img class="cmd-imported-avatar-art" src="'+(eager?src:src.replace('/avatars/v4/','/avatars/v4/thumbs/'))+'"'+(eager?'':' srcset="'+src.replace('/avatars/v4/','/avatars/v4/thumbs/')+' 1x, '+src+' 2x"')+' alt="Avatar '+(i+1)+'" loading="'+(eager?'eager':'lazy')+'" decoding="async" style="display:block;width:100%;height:100%;object-fit:contain;object-position:center">':'';
 }
 function importedAvatarCards(){return Array.from({length:importedAvatarCount},(_,i)=>'<button type="button" class="cmd-scene-built-in cmd-imported-avatar-choice '+(state.avatarPreset==="reference-avatar-"+i?"selected":"")+'" data-imported-avatar="'+i+'" aria-pressed="'+(state.avatarPreset==="reference-avatar-"+i)+'"><span class="cmd-scene-model-photo">'+importedAvatarArt(i)+'</span><b>Avatar '+(i+1)+'</b><small>Silhouette complète · 2D</small></button>').join("")}
 function avatarEditor(){return '<h2>Choisis ton avatar</h2><p class="cmd-scene-section-intro">68 silhouettes complètes avec leur tenue et leurs accessoires.</p><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards()+'</div>'}
@@ -694,6 +694,12 @@ async function initialize(){
   animalPhoto=typeof data.animalImage==="string"?data.animalImage:null;
   savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
   present();document.dispatchEvent(new CustomEvent("cmd-avatar-3d:update"));
+  const requestedCatalogue=new URLSearchParams(location.search).get("catalogue");
+  if(["avatar","home","pet","vehicle","scene"].includes(requestedCatalogue)){
+   openSheet();
+   if(["home","pet","vehicle"].includes(requestedCatalogue)){universeCategory=requestedCatalogue;showTab("pet")}
+   else showTab(requestedCatalogue);
+  }
  }catch(e){console.warn("[CMD profil décor]",e)}
 }
 window.cmdSphereSceneState=()=>({...state});

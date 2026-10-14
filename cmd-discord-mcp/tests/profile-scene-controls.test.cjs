@@ -13,7 +13,7 @@ class ClickTarget {
 function makeEditor(){
  const source=fs.readFileSync(path.join(__dirname,"../cmd-profile-scene.js"),"utf8").replace(
   "window.cmdSphereSceneState=()=>({...state});",
-  "window.cmdSphereSceneState=()=>({...state});window.__testProfileEditor={renderSheet};"
+  "window.cmdSphereSceneState=()=>({...state});window.__testProfileEditor={renderSheet,importedAvatarArt};"
  );
  const area={
   _html:"",nodes:[],scrollTop:0,closest(){return null},
@@ -212,3 +212,14 @@ test("restored backgrounds render small gallery images but preserve original HD 
  assert.ok(generator.includes('"thumb_"+path.basename(item.src)'),"Thumbnail filename must match browser URLs");
  assert.ok(server.includes('/cmd-restored-fonds/'),"Existing route for restored images must remain");
 });
+
+ test("Selected avatar previews always use the full image, galleries keep responsive thumbnails",()=>{
+ const {window}=makeEditor();
+ const art=window.__testProfileEditor.importedAvatarArt;
+ for(let i=0;i<68;i++){
+  const preview=art(i,true);
+  assert.ok(!preview.includes('/thumbs/'));
+  assert.ok(!preview.includes('srcset='));
+  assert.ok(art(i).includes('srcset='));
+ }
+ });
