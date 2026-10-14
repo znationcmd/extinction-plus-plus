@@ -2341,6 +2341,7 @@ function shopPage(auth,installed,premium={active:false,owner:false,boosts:[],boo
     return '<article class="item '+(pro?'premiumItem':'')+'">'+shopPreviewHtml(x)+'<div class="itemLine"><b>'+escHtml(x.label)+'</b>'+(pro?'<span class="proPill">PREMIUM</span>':'<span class="freePill">GRATUIT</span>')+'</div><small>'+(pro?'Collection CMD Sphere Premium':'Accessible gratuitement à tous')+'</small><button data-type="'+escHtml(x.type)+'" data-key="'+escHtml(x.key)+'" '+(locked?'disabled':'')+'>'+(locked?'Premium requis':(yes?'Réinstaller':'Installer'))+'</button></article>';
   }).join("")+'</div></section>').join("");
 
+  const freeDressing='<section style="margin:18px 0;padding:18px;border:1px solid #a78bfa66;border-radius:18px;background:#171226"><h2>🧍 Personnaliser mon personnage</h2><p>Personnages, vêtements, coiffures, barbes et accessoires : accès gratuit pour tous.</p><p>Le dressing interactif et les nouvelles planches 4K sont en préparation. Tes avatars actuels restent disponibles.</p><a class="btn" href="/profile">Voir mes avatars actuels</a></section>';
   const boostMap={};for(const b of premium.boosts||[]){(boostMap[String(b.guildId)]??=[]).push(b)}
   const boostCards=(guilds||[]).map(g=>{
     const mine=boostMap[String(g.id)]||[],total=Number(g.boost_count||0);
@@ -2364,7 +2365,7 @@ function shopPage(auth,installed,premium={active:false,owner:false,boosts:[],boo
   '<section><h2>CMD Sphere Premium</h2>'+premiumStatus+'<p class="muted">Avec ton PayPal personnel, le paiement est actuellement validé manuellement. L’automatisation pourra être branchée plus tard si tu passes sur PayPal Business.</p></section>'+
   '<div class="redeem"><input id="rewardCode" placeholder="Code Premium récompense"><button id="redeemCode">Utiliser le code</button></div>'+
   '<section class="boostSection"><h2><span class="cyan">★</span> Boosts serveur</h2><p class="muted">'+(premium.owner?'Tous tes serveurs CMD Sphere sont boostés automatiquement à vie. '+String(premium.autoBoostedServerCount||0)+' serveur(s) boosté(s) actuellement.':premium.active?Math.max(0,3-premium.boostUsed)+' boost(s) disponible(s) sur 3.':'3 boosts inclus avec Premium.')+'</p>'+boostCards+'</section>'+
-  pendingHtml+codeManager+content+
+  pendingHtml+codeManager+freeDressing+content+
   '</main><div id="toast" class="toast"></div><script>'+
   'const toast=document.getElementById("toast");function say(t){toast.textContent=t;toast.classList.add("on");setTimeout(()=>toast.classList.remove("on"),2300)}'+
   'document.querySelectorAll(".item button").forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await fetch("/api/shop/install",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:b.dataset.type,key:b.dataset.key})}),d=await r.json();if(!r.ok)throw new Error(d.error||"Erreur");b.textContent="Installé ✓";say(d.item.label+" installé.")}catch(e){say(e.message)}finally{b.disabled=false}});'+
