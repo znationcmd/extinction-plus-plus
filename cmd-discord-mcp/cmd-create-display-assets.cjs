@@ -16,7 +16,7 @@ fs.mkdirSync(displayUniverse,{recursive:true});
 fs.mkdirSync(displayAvatars,{recursive:true});
 const fileNamePattern=/^(scene|pet|vehicle|home)-([0-9]{3})\.(png|webp)$/;
 const avatarPattern=/^avatar-(0[1-9]|[1-5][0-9]|6[0-8])\.png$/;
-const report={version:2,generatedAt:new Date().toISOString(),files:[],errors:[],originalsRetained:true,realDetailRestoration:false};
+const report={version:3,generatedAt:new Date().toISOString(),files:[],errors:[],originalsRetained:true,realDetailRestoration:false};
 async function processImage(directory,filename,destDirectory,type){
  const input=path.join(directory,filename);
  const outputName=filename.replace(/\.(png|webp)$/i,".webp");
@@ -26,19 +26,19 @@ async function processImage(directory,filename,destDirectory,type){
    if(!meta.width||!meta.height)throw Error("Unknown source dimensions");
    const scene=type==="scene",avatar=type==="avatar";
    // Maintain every limb and every edge; use FIT INSIDE rather than COVER.
-   const options=avatar?{width:540,height:1536,fit:"inside",kernel:"lanczos3"}:
-        scene?{width:1920,height:1080,fit:"inside",kernel:"lanczos3"}:
-        {width:1024,height:1024,fit:"inside",kernel:"lanczos3"};
+   const options=avatar?{width:1080,height:3072,fit:"inside",kernel:"lanczos3"}:
+        scene?{width:3840,height:2160,fit:"inside",kernel:"lanczos3"}:
+        {width:2048,height:2048,fit:"inside",kernel:"lanczos3"};
    const result=await sharp(input,{failOn:"error"})
       .resize(options)
       .sharpen({sigma:1.05,m1:1,m2:2})
-      .webp({quality:86,effort:4,alphaQuality:100})
+      .webp({quality:94,effort:4,alphaQuality:100})
       .toFile(output);
    // Lightweight catalogue thumbnail. The selected profile preview keeps the full display image.
    // Files are written only into v2/v4; original v1/v3 assets remain untouched.
    const thumbDir=path.join(destDirectory,"thumbs");
    fs.mkdirSync(thumbDir,{recursive:true});
-   const thumbSize=scene?{width:480,height:270}:avatar?{width:180,height:512}:{width:320,height:320};
+   const thumbSize=scene?{width:640,height:360}:avatar?{width:240,height:680}:{width:480,height:480};
    const thumbResult=await sharp(input,{failOn:"error"})
       .resize({...thumbSize,fit:"inside",kernel:"lanczos3"})
       .sharpen({sigma:0.8,m1:1,m2:2})
