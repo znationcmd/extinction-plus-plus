@@ -173,3 +173,10 @@
   .sphere-app #channelOverlay .channel-actions {max-width:117px!important}
   .sphere-app #channelOverlay .discord-message .msg-main {max-width:calc(100vw - 67px)!important}
 }
+
+/* CMD Sphere: polished compact composer tools */
+#channelToolSheet .compose-sheet-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;padding:12px!important;max-height:48vh;overflow-y:auto}
+#channelToolSheet .compose-tool{min-width:0!important;min-height:88px!important;border-radius:19px!important;background:linear-gradient(150deg,#342443,#1b1728)!important;border:1px solid #a376cb55!important;box-shadow:0 5px 15px #0004!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:white!important}
+#channelToolSheet .compose-tool b{font-size:30px!important;line-height:1.2;filter:drop-shadow(0 3px 6px #0006)}
+#channelToolSheet .compose-tool span{font-size:12px!important;font-weight:650!important}
+@media(min-width:700px){#channelToolSheet .compose-sheet-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
