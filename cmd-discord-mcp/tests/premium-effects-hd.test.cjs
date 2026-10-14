@@ -45,5 +45,5 @@ test("Effect catalog uses vector art, not emoji-only thumbnails",()=>{
  assert.match(server,/if\(cls==="\.effectTile"\)updateEffectDemo/);
  assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-preview img/);
  assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-live-image/);
- assert.match(server,/cmd-premium-art\.css\?v=20261014atelier1/);
+ assert.match(server,/cmd-premium-art\.css\?v=20261014atelier2/);
 });

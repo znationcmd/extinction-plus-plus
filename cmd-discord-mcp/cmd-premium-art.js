@@ -229,7 +229,7 @@ export const CMD_PREMIUM_ART_CSS=`
 @media(max-width:600px){.art.cmd-gem-art{height:160px}.cmd-premium-art{max-width:100%}.cmd-profile-art-avatar{width:180px;height:180px}}
 
 /* 2026-10-14: crisp jewellery, full silhouettes, correctly centred avatar samples. */
-.art.cmd-gem-art{height:auto;aspect-ratio:16/11;background:radial-gradient(ellipse at 50% 20%,#302540,#101018 75%);isolation:isolate}
+.art.cmd-gem-art{position:relative;display:block;height:auto;aspect-ratio:16/11;background:radial-gradient(ellipse at 50% 20%,#302540,#101018 75%);isolation:isolate}
 .cmd-gem-art>img,.diamondCard .cmd-gem-art>img,.frameThumb img.cmd-frame-thumb,.cmd-profile-art-frame{filter:none;animation:none}
 .cmd-gem-art .cmd-gem-mock{inset:15% 12%;background:linear-gradient(150deg,#292332,#15151e);box-shadow:0 12px 28px #0005;border-color:#ffffff13}
 .cmd-gem-art.cmd-avatar-art{height:auto;aspect-ratio:1}
