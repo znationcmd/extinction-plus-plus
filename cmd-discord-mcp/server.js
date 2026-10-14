@@ -710,7 +710,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   function closeComposeSheets(){qs('#channelToolSheet')?.classList.remove('on');qs('#channelEmojiSheet')?.classList.remove('on')}
   function renderComposePreview(){
     const box=qs('#composePreview');if(!box)return;
-    const chips=(CHAT.pendingAttachments||[]).map((a,i)=>'<span class="compose-chip">'+(String(a.contentType||'').startsWith('image/')?'<img src="'+esc(a.dataUrl)+'" alt="">':'<span>📎</span>')+'<span>'+esc(a.filename)+'</span><button type="button" onclick="removePendingAttachment('+i+')">×</button></span>');
+    const chips=(CHAT.pendingAttachments||[]).map((a,i)=>'<span class="compose-chip">'+(String(a.contentType||'').startsWith('image/')?'<img src="'+esc(a.dataUrl)+'" alt="">':(String(a.contentType||'').startsWith('video/')?'<span>🎬</span>':String(a.contentType||'').startsWith('audio/')?'<span>🎙️</span>':'<span>📎</span>'))+'<span>'+esc(a.filename)+'</span><button type="button" onclick="removePendingAttachment('+i+')">×</button></span>');
     if(CHAT.pendingPoll)chips.push('<span class="compose-chip"><span>📊</span><span>'+esc(CHAT.pendingPoll.question)+'</span><button type="button" onclick="CHAT.pendingPoll=null;renderComposePreview()">×</button></span>');
     box.innerHTML=chips.join('');box.classList.toggle('on',Boolean(chips.length));
   }
