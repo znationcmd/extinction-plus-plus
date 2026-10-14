@@ -62,6 +62,14 @@
   cmdTool("Stickers","💟",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="sticker"]')?.click()},"cmdToolSticker");
   cmdTool("Fond d’écran","🌄",cmdWallpaperOpen,"cmdToolWallpaper");
   cmdTool("Message vocal","🎙️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelMic")?.click()},"cmdToolVoice");
+  cmdTool("GIF","🎞️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="gif"]')?.click()},"cmdToolGif");
+  cmdTool("Lien","🔗",()=>{const url=location.origin+"/invite";if(navigator.share)navigator.share({title:"CMD Sphere",url}).catch(()=>{});else navigator.clipboard?.writeText(url).then(()=>alert("Lien copié")).catch(()=>alert("Invitation : "+url))},"cmdToolInvite");
+  cmdTool("Rôles","👑",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("roles");else alert("Ouvre les paramètres du serveur pour consulter tes rôles.")},"cmdToolRoles");
+  cmdTool("Événements","📅",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("events");else alert("Ouvre les paramètres du serveur pour consulter les événements.")},"cmdToolEvents");
+  cmdTool("Salon vocal","🎤",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("channels");else alert("Ouvre la liste des salons vocaux du serveur.")},"cmdToolVoiceChannel");
+  cmdTool("Dons","💚",()=>{alert("Les dons PayPal seront disponibles lorsque le lien officiel du bénéficiaire sera configuré.")},"cmdToolDonations");
+  cmdTool("Mention","＠",()=>{const input=$("#channelInput");if(input){input.value+=" @";input.focus()}$("#channelToolSheet")?.classList.remove("on")},"cmdToolMention");
+  cmdTool("Vidéo","🎥",()=>{let input=$("#cmdVideoFile");if(!input){input=document.createElement("input");input.id="cmdVideoFile";input.type="file";input.accept="video/*";input.hidden=true;document.body.append(input)}input.click()},"cmdToolVideo");
   cmdWallpaperApply()
  }
  function mountChat(){
