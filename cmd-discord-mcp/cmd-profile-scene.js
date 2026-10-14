@@ -495,7 +495,7 @@ function importedAvatarCards(group="all"){
 }
 let avatarFolder="";
 function avatarEditor(){
- const folders=[["femme","Femme",0],["homme","Homme",1]];
+ const folders=[["femme","Femme",0],["homme","Homme",-1]];
  const navigation='<div class="cmd-avatar-folders">'+folders.map(([id,label,index])=>'<button type="button" class="cmd-avatar-folder '+(avatarFolder===id?"selected":"")+'" data-avatar-folder="'+id+'"><span class="cmd-avatar-folder-photo">'+importedAvatarArt(index)+'</span><strong>'+label+'</strong><small>Voir les avatars →</small></button>').join("")+'</div>';
  return '<h2>Choisis ton avatar</h2>'+(avatarFolder?'<button type="button" class="cmd-avatar-folder-back" data-avatar-folder="">← Dossiers</button><h3>Avatars '+(avatarFolder==="femme"?"femme":"homme")+'</h3><div class="cmd-scene-model-actions cmd-avatar-premium-grid">'+importedAvatarCards(avatarFolder)+'</div>':navigation);
 }
