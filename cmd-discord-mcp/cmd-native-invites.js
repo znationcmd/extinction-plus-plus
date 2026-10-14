@@ -103,10 +103,8 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    const body=await readBody(req),id=String(body.guildId||"");
    if(!ID.test(id)){sendJson(res,400,{error:"Identifiant du serveur invalide"});return true}
    await requireNativeAdmin(auth,id);
-   const period=body.expiry==="3"?3:body.expiry==="30"?30:body.expiry==="never"?"never":null;
-   const expiresAt=inviteExpiry(period);
-   const maxUses=body.maxUses==null||body.maxUses===''?null:Number(body.maxUses);
-   if(maxUses!==null&&(!Number.isInteger(maxUses)||maxUses<1||maxUses>10000)){sendJson(res,400,{error:'Nombre maximal d’utilisations invalide (1 à 10 000).'});return true}
+   const expiresAt=null; // CMD Sphere: invitations permanentes par défaut, sans expiration.
+   const maxUses=null; // Les liens restent réutilisables sans limite.
    const requested=String(body.customCode||"").trim();
    const custom=normalizeInviteCode(requested);
    if(requested&&(custom.length<4||custom.length>40)){sendJson(res,400,{error:"Ton lien personnalisé doit contenir entre 4 et 40 lettres ou chiffres. Les espaces sont convertis en tirets."});return true}
