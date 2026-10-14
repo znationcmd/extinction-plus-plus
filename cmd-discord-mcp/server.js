@@ -3485,7 +3485,7 @@ async function nativeMemberPublicCard(auth,guildId,userId){
    banner:profile.banner_data_url||null,accentColor:profile.accent_color||"#7c3aed",
    membershipRole:member.membership_role,external:false,friendStatus};
 }
-async async function editOwnNativeMessage(auth,input){
+async async async function editOwnNativeMessage(auth,input){
  const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||""),content=String(input?.content||"").trim();
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(messageId))throw Object.assign(new Error("Identifiant invalide."),{status:400});
  if(!content||content.length>4000)throw Object.assign(new Error("Le message doit contenir entre 1 et 4000 caractères."),{status:400});
@@ -3494,7 +3494,7 @@ async async function editOwnNativeMessage(auth,input){
  if(!result.rows.length)throw Object.assign(new Error("Message introuvable ou modification interdite."),{status:403});
  return {ok:true,messageId,content};
 }
-function deleteOwnOrOwnerNativeMessage(auth,input){
+async function deleteOwnOrOwnerNativeMessage(auth,input){
  const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||"");
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(messageId))throw Object.assign(new Error("Identifiant de message invalide."),{status:400});
  const channel=await nativeTextChannel(auth,guildId,channelId);
