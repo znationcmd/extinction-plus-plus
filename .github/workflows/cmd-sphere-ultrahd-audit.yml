@@ -12,8 +12,7 @@ jobs:
         with:
           node-version: '22'
       - name: Extract original catalogue
-        working-directory: cmd-discord-mcp
-        run: node unpack-profile-assets.cjs
+        run: node cmd-discord-mcp/unpack-profile-assets.cjs
       - name: Install image analysis dependency
         run: python -m pip install --quiet pillow imagehash
       - name: Analyze original assets without deleting anything
