@@ -189,6 +189,10 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261009chatfix9"></head>');
+    // HD emergency catalogue: staged, reversible, loaded only in CMD Sphere HTML pages.
+    if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes('id="dockProfileMain"')))
+      body=body.replace(/<\/body>/i,'<script defer src="/hd-secours/v1/catalogue-resolver.js?v=1"></script><script defer src="/hd-secours/v1/catalogue-enable.js?v=1"></script></body>');
+
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
     if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009media9"><link rel="stylesheet" href="/cmd-chat-polish.css?v=20261009chatfix9"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261012-studio-free-catalog-v9"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009media9"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009media9"></script><script defer src="/cmd-emoji-uploader.js?v=20261009media9"></script><script defer src="/cmd-chat-polish.js?v=20261009chatfix9"></script><script defer src="/cmd-gif-encoder.js?v=20261009music5"></script><script defer src="/cmd-promo-studio.js?v=20261012-studio-free-catalog-v9"></script></body>');
 
