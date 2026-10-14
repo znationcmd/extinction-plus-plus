@@ -188,3 +188,13 @@
  #channelToolSheet .compose-tool b{font-size:24px!important}
  #channelToolSheet .compose-tool span{font-size:10px!important;line-height:1.15!important;overflow-wrap:anywhere;text-align:center}
 }
+
+#cmdMessageActionSheet{position:fixed;inset:0;z-index:99998;background:#0009;display:none;align-items:flex-end;justify-content:center}
+#cmdMessageActionSheet.on{display:flex}
+#cmdMessageActionSheet .cmd-message-action-panel{width:min(100%,560px);box-sizing:border-box;background:#f8f8fa;color:#24242b;border-radius:26px 26px 0 0;padding:22px 16px calc(18px + env(safe-area-inset-bottom));max-height:85dvh;overflow-y:auto;box-shadow:0 -12px 40px #0004}
+#cmdMessageActionSheet .cmd-message-reactions{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:18px}
+#cmdMessageActionSheet .cmd-message-reactions button{font-size:26px;background:#ebebee;border:0;border-radius:14px;min-height:55px}
+#cmdMessageActionSheet .cmd-message-action-list{display:flex;flex-direction:column;gap:1px;background:#e7e7eb;border-radius:16px;overflow:hidden}
+#cmdMessageActionSheet .cmd-message-action-list button{width:100%;padding:18px 17px;border:0;background:#f1f1f3;color:#24242b;font-size:17px;text-align:left;min-height:58px}
+#cmdMessageActionSheet .cmd-message-action-list button.destructive{color:#c92536}
+#cmdMessageActionSheet .cmd-message-action-cancel{display:block;margin-top:16px;width:100%;padding:16px;border:0;border-radius:14px;background:#e7e7eb;color:#25252b;font-size:17px}
