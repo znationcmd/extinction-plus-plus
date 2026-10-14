@@ -10,9 +10,11 @@ export function normalizeInviteCode(value){
  return raw.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
   .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
 }
-export const inviteExpiry=(days,now=new Date())=>{
- if(![3,30,"never"].includes(days))throw Object.assign(new Error("Expiration autorisée : 3 jours, 30 jours ou jamais."),{status:400});
- return days==="never"?null:new Date(now.getTime()+Number(days)*86400000);
+export const inviteExpiry=(period,now=new Date())=>{
+ const durations={"30m":1800000,"1h":3600000,"6h":21600000,"12h":43200000,"1d":86400000,"3d":259200000,"7d":604800000,"30d":2592000000};
+ if(period==="never")return null;
+ if(!Object.prototype.hasOwnProperty.call(durations,period))throw Object.assign(new Error("Durée d’invitation invalide."),{status:400});
+ return new Date(now.getTime()+durations[period]);
 };
 export async function initCmdNativeInvites(pool){
  await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_invites (
@@ -103,8 +105,10 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    const body=await readBody(req),id=String(body.guildId||"");
    if(!ID.test(id)){sendJson(res,400,{error:"Identifiant du serveur invalide"});return true}
    await requireNativeAdmin(auth,id);
-   const expiresAt=null; // CMD Sphere: invitations permanentes par défaut, sans expiration.
-   const maxUses=null; // Les liens restent réutilisables sans limite.
+   const period=String(body.expiry??"30d");
+   const expiresAt=inviteExpiry(({"3":"3d","30":"30d"})[period]||period);
+   const maxUses=body.maxUses==null||body.maxUses===""?null:Number(body.maxUses);
+   if(maxUses!==null&&(!Number.isInteger(maxUses)||maxUses<1||maxUses>10000)){sendJson(res,400,{error:"Utilisations maximum : de 1 à 10 000, ou illimité."});return true}
    const requested=String(body.customCode||"").trim();
    const custom=normalizeInviteCode(requested);
    if(requested&&(custom.length<4||custom.length>40)){sendJson(res,400,{error:"Ton lien personnalisé doit contenir entre 4 et 40 lettres ou chiffres. Les espaces sont convertis en tirets."});return true}
