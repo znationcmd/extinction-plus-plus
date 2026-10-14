@@ -1,0 +1,40 @@
+// CMD Sphere original free avatar dressing, no external licensed characters.
+export const DRESS_OPTIONS={
+ skin:["#f1c6a8","#d99a74","#a76b4d","#704632","#f3d5bd"],
+ hair:["#221b22","#6b3e26","#bd8650","#e8cf83","#723248"],
+ tops:["#7652db","#2b9b9b","#d15467","#333c54","#e5a43d"],
+ bottoms:["#29364b","#4b455c","#2b5a51","#82624b"],
+ shoes:["#151923","#ece9e4","#5e3d35"],
+ hairStyle:["court","long","boucle","rasé"],
+ beard:["aucune","courte","longue"],
+ outfit:["veste","t-shirt","sweat"]
+};
+export function validDress(input){
+ const out={};
+ for(const [key,values] of Object.entries(DRESS_OPTIONS)){
+  const value=String(input?.[key]??values[0]);
+  out[key]=values.includes(value)?value:values[0];
+ }
+ return out;
+}
+export function dressingPage(){
+ return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dressing gratuit · CMD Sphere</title>
+ <style>body{margin:0;background:#100e19;color:#fff;font:16px system-ui}main{max-width:1100px;margin:auto;padding:18px}a{color:#c9b3ff}.layout{display:grid;grid-template-columns:minmax(230px,1fr) minmax(260px,1fr);gap:20px}.stage{background:radial-gradient(circle at 50% 35%,#403063,#181326 65%);border:1px solid #7156a0;border-radius:20px;min-height:490px;display:grid;place-items:center}svg{width:100%;max-width:360px;max-height:550px}.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:grid;gap:6px}select,button{font:inherit;border:1px solid #7659ac;border-radius:9px;background:#282039;color:white;padding:12px;min-width:0}button{cursor:pointer;background:#6843bc}button:hover{background:#8056d5}.note{color:#c6bdd9}#message{min-height:24px}@media(max-width:700px){.layout{grid-template-columns:1fr}.stage{min-height:390px}svg{max-height:390px}}</style></head><body><main><p><a href="/shop">← Retour à la boutique</a></p><h1>🧍 Dressing CMD Sphere</h1><p>Personnage original · Toutes les options sont gratuites · Aperçu instantané</p><div class="layout"><div class="stage"><svg viewBox="0 0 360 650" role="img" aria-label="Aperçu du personnage debout"><ellipse cx="180" cy="618" rx="92" ry="15" fill="#000" opacity=".3"/><g id="avatar">
+ <path id="legL" d="M129 342 L176 342 170 556 150 589 124 582Z"/><path id="legR" d="M184 342 L231 342 235 582 210 589 188 556Z"/><path id="shoeL" d="M124 576 Q142 590 170 574 L176 609 116 609Z"/><path id="shoeR" d="M211 574 Q228 591 235 576 L247 609 188 609Z"/>
+ <path id="armL" d="M132 195 Q106 197 100 250 L80 367 Q78 389 96 391 L120 293 148 226Z"/><path id="armR" d="M226 195 Q252 197 260 250 L280 367 Q282 389 264 391 L240 293 212 226Z"/>
+ <path id="neck" d="M158 164 H203 V207 H158Z"/><path id="torso" d="M139 194 Q180 211 220 194 L241 349 Q180 369 119 349Z"/>
+ <ellipse id="face" cx="180" cy="110" rx="63" ry="80"/><path id="hair" d="M117 112 Q106 25 177 24 Q253 20 244 112 L232 74 Q181 91 129 70Z"/><path id="beard" d="M136 155 Q180 205 224 155 L209 176 Q180 205 151 176Z" fill="#221b22"/><g fill="#241c26"><ellipse cx="156" cy="115" rx="5" ry="4"/><ellipse cx="204" cy="115" rx="5" ry="4"/></g><path d="M169 153 Q180 161 192 153" stroke="#7b4346" stroke-width="3" fill="none"/>
+ </g></svg></div><section><h2>Personnalisation</h2><div id="controls" class="controls"></div><p><button id="save" type="button">Enregistrer ma tenue</button></p><p id="message" role="status"></p><p class="note">Prototype vectoriel personnalisable. Les futurs modèles photoréalistes 4K remplaceront ce mannequin sans supprimer tes choix.</p></section></div></main>
+ <script>
+ const options=${JSON.stringify(DRESS_OPTIONS)};
+ const labels={skin:"Peau",hair:"Couleur cheveux",tops:"Couleur haut",bottoms:"Pantalon",shoes:"Chaussures",hairStyle:"Coiffure",beard:"Barbe",outfit:"Vêtement"};
+ const names={court:"Courts",long:"Longs",boucle:"Bouclés",rasé:"Rasés",aucune:"Sans barbe",courte:"Barbe courte",longue:"Barbe longue",veste:"Veste", "t-shirt":"T-shirt",sweat:"Sweat"};
+ const state=Object.fromEntries(Object.entries(options).map(([k,v])=>[k,v[0]]));
+ const controls=document.getElementById("controls");
+ for(const [key,values] of Object.entries(options)){const label=document.createElement("label");label.textContent=labels[key];const select=document.createElement("select");select.id=key;for(const value of values){const opt=document.createElement("option");opt.value=value;opt.textContent=value.startsWith("#")?value:(names[value]||value);if(value.startsWith("#"))opt.style.background=value;select.append(opt)}select.addEventListener("change",()=>{state[key]=select.value;draw()});label.append(select);controls.append(label)}
+ function draw(){for(const id of ["face","neck","armL","armR"])document.getElementById(id).setAttribute("fill",state.skin);document.getElementById("hair").setAttribute("fill",state.hair);document.getElementById("beard").setAttribute("fill",state.hair);document.getElementById("beard").style.display=state.beard==="aucune"?"none":"";document.getElementById("beard").style.transform=state.beard==="courte"?"translateY(-7px) scale(1,.8)":"";document.getElementById("hair").style.display=state.hairStyle==="rasé"?"none":"";document.getElementById("hair").setAttribute("d",state.hairStyle==="long"?"M117 112 Q106 25 177 24 Q253 20 244 112 L251 210 226 201 232 74 Q181 91 129 70 L134 207 109 212Z":state.hairStyle==="boucle"?"M115 114 Q95 76 118 49 Q117 20 148 29 Q180 7 208 28 Q252 18 250 63 Q266 93 243 117 L232 74 Q181 91 129 70Z":"M117 112 Q106 25 177 24 Q253 20 244 112 L232 74 Q181 91 129 70Z");document.getElementById("torso").setAttribute("fill",state.tops);for(const id of ["legL","legR"])document.getElementById(id).setAttribute("fill",state.bottoms);for(const id of ["shoeL","shoeR"])document.getElementById(id).setAttribute("fill",state.shoes);document.getElementById("torso").setAttribute("stroke",state.outfit==="veste"?"#e6d3ff":"none");document.getElementById("torso").setAttribute("stroke-width","5")}
+ async function load(){try{const r=await fetch("/api/avatar-dressing",{credentials:"same-origin"});if(!r.ok)throw Error();const d=await r.json();for(const [k,v] of Object.entries(d.dress||{})){if(options[k]?.includes(v)){state[k]=v;document.getElementById(k).value=v}}draw()}catch{document.getElementById("message").textContent="Impossible de charger la tenue enregistrée.";draw()}}
+ document.getElementById("save").onclick=async()=>{const msg=document.getElementById("message");msg.textContent="Enregistrement…";try{const r=await fetch("/api/avatar-dressing",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(state)});if(!r.ok)throw Error();msg.textContent="Tenue enregistrée sur ton compte ✓"}catch{msg.textContent="Enregistrement impossible. Réessaie."}};
+ load();
+ </script></body></html>`;
+}
