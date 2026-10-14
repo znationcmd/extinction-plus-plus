@@ -53,7 +53,9 @@
   const ico=document.createElement("b");ico.textContent=emoji;const txt=document.createElement("span");txt.textContent=label;b.append(ico,txt);
   b.onclick=fn;grid.append(b)
  }
- function cmdExtras(){
+ function cmdCopyText(value){const text=String(value||'');if(!text)return;const done=()=>{const b=$('#cmdToolShare');if(b){const label=b.querySelector('span');if(label){label.textContent='Lien copié ✓';setTimeout(()=>{if(label.isConnected)label.textContent='Partager le salon'},1800)}}};if(navigator.clipboard?.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>window.prompt('Copie ce lien :',text))}else window.prompt('Copie ce lien :',text)}
+function cmdShareChannel(){const url=location.href;const title='Salon CMD Sphere';if(navigator.share){navigator.share({title,url}).catch(e=>{if(e.name!=='AbortError')cmdCopyText(url)})}else cmdCopyText(url)}
+function cmdExtras(){
   const grid=$("#channelToolSheet .compose-sheet-grid");if(!grid)return;
   const files=$("#toolFiles");if(files){files.querySelector("b").textContent="🖼️";files.querySelector("span").textContent="Fond d’écran";files.onclick=cmdWallpaperOpen}
   cmdTool("Caméra","📸",()=>{let input=$("#cmdCameraInput");if(!input){input=document.createElement("input");input.id="cmdCameraInput";input.type="file";input.accept="image/*";input.capture="environment";input.hidden=true;input.onchange=()=>{const photos=$("#channelPhotoInput");if(photos&&input.files?.length){const dt=new DataTransfer();for(const f of input.files)dt.items.add(f);photos.files=dt.files;photos.dispatchEvent(new Event("change",{bubbles:true}))}};document.body.append(input)}input.click()},"cmdToolCamera");
@@ -62,6 +64,7 @@
   // Wallpaper is already available through the relabeled #toolFiles action.
   cmdTool("Message vocal","🎙️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelMic")?.click()},"cmdToolVoice");
   cmdTool("GIF","🎞️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="gif"]')?.click()},"cmdToolGif");
+  cmdTool("Partager le salon","📤",cmdShareChannel,"cmdToolShare");
   cmdTool("Lien","🔗",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("invites");else alert("Ouvre les invitations dans les paramètres du serveur pour créer un lien valide.")},"cmdToolInvite");
   cmdTool("Rôles","👑",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("roles");else alert("Ouvre les paramètres du serveur pour consulter tes rôles.")},"cmdToolRoles");
   cmdTool("Événements","📅",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("events");else alert("Ouvre les paramètres du serveur pour consulter les événements.")},"cmdToolEvents");
