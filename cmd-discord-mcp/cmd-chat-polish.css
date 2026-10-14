@@ -180,3 +180,11 @@
 #channelToolSheet .compose-tool b{font-size:30px!important;line-height:1.2;filter:drop-shadow(0 3px 6px #0006)}
 #channelToolSheet .compose-tool span{font-size:12px!important;font-weight:650!important}
 @media(min-width:700px){#channelToolSheet .compose-sheet-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+/* CMD Sphere compact six-column action drawer inspired by the approved mockup. */
+@media(max-width:699px){
+ #channelToolSheet .compose-sheet-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:7px!important;padding:12px 8px!important;max-height:52vh;overflow-y:auto}
+ #channelToolSheet .compose-tool{min-height:73px!important;min-width:0!important;border-radius:16px!important;padding:7px 2px!important;gap:5px!important}
+ #channelToolSheet .compose-tool b{font-size:24px!important}
+ #channelToolSheet .compose-tool span{font-size:10px!important;line-height:1.15!important;overflow-wrap:anywhere;text-align:center}
+}
