@@ -90,7 +90,7 @@ mask.innerHTML='<div class="cmd-inv-panel"><div class="cmd-inv-handle"></div><di
  '<p class="cmd-inv-sub">Chaque lien invite seulement sur ce serveur. Les autres serveurs restent privés.</p>'+
  '<form id="cmdInvCreate" class="cmd-inv-create" hidden><h3>Créer une invitation</h3>'+
  '<label class="wide">Nom de l’invitation<input name="label" maxlength="70" placeholder="Amis, équipe, événement…"></label>'+
- '<label>Expiration<select name="expiry"><option value="3">3 jours</option><option value="30" selected>30 jours</option><option value="never">Jamais</option></select></label>'+
+ '<label>Expire après<select name="expiry"><option value="never">Jamais</option><option value="30d" selected>30 jours</option><option value="7d">7 jours</option><option value="1d">1 jour</option><option value="12h">12 heures</option><option value="6h">6 heures</option><option value="1h">1 heure</option><option value="30m">30 minutes</option></select></label><label>Utilisations maximum<select name="maxUses"><option value="" selected>Illimité</option><option value="1">1</option><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>'+
  '<label>Lien personnalisé (facultatif)<input name="customCode" maxlength="70" inputmode="text" autocapitalize="none" spellcheck="false" placeholder="Extinction dayz ps5"></label>'+
  '<p class="cmd-inv-slug-preview" id="cmdInvSlugPreview" aria-live="polite">Les espaces et accents seront convertis automatiquement en tirets.</p>'+
  '<button type="submit">＋ Générer mon lien</button></form>'+
@@ -249,7 +249,7 @@ form.addEventListener("submit",async event=>{
  if(!updateSlugPreview()){customCodeInput.focus();return}
  const fd=new FormData(form),button=form.querySelector("button[type=submit]");button.disabled=true;
  try{
-  const body={guildId:activeGuild,expiry:fd.get("expiry"),customCode:normalizeInviteCode(fd.get("customCode")),label:String(fd.get("label")||"Invitation")};
+  const body={guildId:activeGuild,expiry:fd.get("expiry"),maxUses:fd.get("maxUses")===""?null:Number(fd.get("maxUses")),customCode:normalizeInviteCode(fd.get("customCode")),label:String(fd.get("label")||"Invitation")};
   const result=await api("/api/native/invites","POST",body);
   form.reset();await refresh();hint("Invitation créée pour ce serveur.");
   const row=currentItems.find(x=>x.code===result.code);if(row){const el=list.firstElementChild;el?.scrollIntoView({block:"nearest",behavior:"smooth"})}
