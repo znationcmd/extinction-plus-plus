@@ -68,7 +68,7 @@
   cmdTool("Salon vocal","🎤",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("channels");else alert("Ouvre la liste des salons vocaux du serveur.")},"cmdToolVoiceChannel");
   cmdTool("Dons","💚",()=>{const url="https://www.paypal.me/ZnationCmdofficiel";const ok=window.confirm("Ouvrir PayPal pour faire un don volontaire à CMD ?");if(ok)window.open(url,"_blank","noopener,noreferrer")},"cmdToolDonations");
   cmdTool("Mention","＠",()=>{const input=$("#channelInput");if(input){input.value+=" @";input.focus()}$("#channelToolSheet")?.classList.remove("on")},"cmdToolMention");
-  cmdTool("Vidéo","🎥",()=>{alert("L’envoi de vidéos sera activé après raccordement au système de pièces jointes.")},"cmdToolVideo");
+  cmdTool("Vidéo","🎥",()=>{const input=document.querySelector("#channelPhotoInput");if(!input){alert("Pièces jointes indisponibles dans ce salon.");return}alert("Les vidéos ne sont pas encore acceptées par le serveur. Utilise Photos pour envoyer une image.")},"cmdToolVideo");
   cmdWallpaperApply()
  }
  function mountChat(){
