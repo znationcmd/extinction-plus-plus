@@ -1072,3 +1072,20 @@ body.cmd-scene-editor-open #cmdSceneSheet:not([hidden]) #cmdSceneClose{pointer-e
  #cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPerson{width:46%!important;max-width:46%!important}
  #cmdSceneSheet #cmdSceneHero .cmd-scene-preview #cmdScenePreviewPet{width:21%!important;right:1%!important}
 }
+
+
+/* CMD Sphere: mobile-first one-row navigation, horizontally swipeable. */
+#cmdSceneSheet .cmd-scene-tabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:8px;padding:10px 15px;scrollbar-width:none;align-items:stretch}
+#cmdSceneSheet .cmd-scene-tabs::-webkit-scrollbar{display:none}
+#cmdSceneSheet .cmd-scene-tabs>button{flex:0 0 104px!important;min-width:104px!important;max-width:104px;scroll-snap-align:start;min-height:72px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#cmdSceneSheet .cmd-scene-tabs>button small{font-size:11px!important;line-height:1.2;text-align:center;white-space:normal}
+#cmdSceneSheet .cmd-avatar-folders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0}
+#cmdSceneSheet .cmd-avatar-folder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid #a779cf66;border-radius:20px;background:linear-gradient(160deg,#39234e,#1a1325);color:#fff;padding:12px;min-width:0;cursor:pointer}
+#cmdSceneSheet .cmd-avatar-folder-photo{display:block;width:100%;height:175px;overflow:hidden;border-radius:14px;background:#100e1c}
+#cmdSceneSheet .cmd-avatar-folder-photo img{width:100%;height:100%;object-fit:contain}
+#cmdSceneSheet .cmd-avatar-folder strong{font-size:17px}
+#cmdSceneSheet .cmd-avatar-folder small{font-size:12px;color:#d7bee8}
+#cmdSceneSheet .cmd-avatar-folder-back{background:#342441;border:1px solid #ac83cc66;color:white;border-radius:20px;padding:10px 16px;align-self:flex-start}
+#cmdSceneSheet .cmd-dressing-categories{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#cmdSceneSheet .cmd-dressing-categories>button{flex:0 0 auto}
+#cmdSceneSheet .cmd-dressing-categories::-webkit-scrollbar{display:none}
