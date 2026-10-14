@@ -3439,15 +3439,21 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
 }
 
 function sanitizeNativeAttachments(v){
-  const arr=Array.isArray(v)?v:[],out=[];
-  let totalBytes=0;
-  const allowed=/^data:(image\/(?:png|jpeg|webp|gif)|audio\/(?:webm|mpeg|mp4)|video\/(?:mp4|webm|quicktime)|application\/pdf|text\/plain);base64,/i;
+  const arr=Array.isArray(v)?v:[];
+  if(arr.length>5)throw Object.assign(new Error("5 pièces jointes maximum par message."),{status:413});
+  const out=[];let totalBytes=0;
+  const allowed=/^data:(image\\/(?:png|jpeg|webp|gif)|audio\\/(?:webm|mpeg|mp4)|video\\/(?:mp4|webm|quicktime)|application\\/pdf|text\\/plain);base64,/i;
   for(const raw of arr){
-    const dataUrl=String(raw?.dataUrl||"");if(!allowed.test(dataUrl))continue;
-    const approx=Math.floor((dataUrl.split(",")[1]||"").length*0.75);
-    if(approx>8*1024*1024||out.length>=5||totalBytes+approx>12*1024*1024)continue;
+    const dataUrl=String(raw?.dataUrl||"");
+    const match=dataUrl.match(allowed);
+    if(!match)throw Object.assign(new Error("Format de pièce jointe non autorisé."),{status:415});
+    const payload=dataUrl.slice(match[0].length);
+    if(!payload||payload.length%4!==0||!/^[A-Za-z0-9+/]*={0,2}$/.test(payload))throw Object.assign(new Error("Pièce jointe encodée incorrectement."),{status:400});
+    const approx=payload.length*3/4-(payload.endsWith("==")?2:payload.endsWith("=")?1:0);
+    if(approx>8*1024*1024)throw Object.assign(new Error("8 Mo maximum par fichier."),{status:413});
     totalBytes+=approx;
-    out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:safeText(raw?.contentType||"",80),size:approx,url:dataUrl});
+    if(totalBytes>12*1024*1024)throw Object.assign(new Error("12 Mo maximum par message."),{status:413});
+    out.push({filename:safeText(raw?.filename||"fichier",120)||"fichier",contentType:match[1].toLowerCase(),size:approx,url:dataUrl});
   }
   return out;
 }
