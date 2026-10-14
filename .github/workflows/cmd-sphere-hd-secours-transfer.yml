@@ -1,0 +1,61 @@
+name: CMD Sphere - transfert HD secours 664
+on:
+  push:
+    branches:
+      - cmd-sphere/hd-secours-664-staging-20261014
+    paths:
+      - .github/workflows/cmd-sphere-hd-secours-transfer.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unpack original assets
+        run: node cmd-discord-mcp/unpack-profile-assets.cjs
+      - name: Install Pillow
+        run: python -m pip install --quiet pillow
+      - name: Create HD emergency files
+        run: |
+          python - <<'PY'
+          from PIL import Image,ImageFilter
+          import glob,os,json
+          base='cmd-discord-mcp/public'
+          out=base+'/hd-secours/v1'
+          patterns={'avatars':base+'/avatars/v3/avatar-*.png','animals':base+'/universe/v1/pet-*','houses':base+'/universe/v1/home-*','vehicles':base+'/universe/v1/vehicle-*','scenes':base+'/universe/v1/scene-*'}
+          counts={}
+          for category,pattern in patterns.items():
+              files=[p for p in sorted(glob.glob(pattern)) if p.lower().endswith(('.png','.webp'))]
+              counts[category]=len(files)
+              os.makedirs(out+'/'+category,exist_ok=True)
+              for i,src in enumerate(files,1):
+                  with Image.open(src) as im:
+                      im.load()
+                      im=im.convert('RGBA' if 'A' in im.getbands() or 'transparency' in im.info else 'RGB')
+                      w,h=im.size
+                      scale=min(6,1536/max(w,h))
+                      if scale>1:
+                          im=im.resize((round(w*scale),round(h*scale)),Image.Resampling.LANCZOS)
+                          im=im.filter(ImageFilter.UnsharpMask(radius=1.2,percent=115,threshold=3))
+                      dest=out+'/'+category+'/'+os.path.splitext(os.path.basename(src))[0]+'.webp'
+                      im.save(dest,format='WEBP',quality=93,method=0)
+                  if i%50==0: print(category,i,'/',len(files),flush=True)
+          assert counts=={'avatars':68,'animals':265,'houses':50,'vehicles':131,'scenes':150},counts
+          with open(out+'/manifest.json','w') as f: json.dump({'counts':counts,'method':'Lanczos up to 6x max 1536px; mild sharpening; WebP quality 93; not generative 4K','originals_preserved':True},f,indent=2)
+          print('HD emergency assets generated:',counts)
+          PY
+      - name: Commit HD files only to staging branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cmd-discord-mcp/public/hd-secours/v1/
+          git diff --cached --quiet || git commit -m "assets(cmd-sphere): add 664 HD emergency catalogue files (staging)"
+          git push origin HEAD:cmd-sphere/hd-secours-664-staging-20261014
