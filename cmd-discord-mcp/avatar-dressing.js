@@ -43,10 +43,12 @@ export function dressingPage(){
  async function load(){try{const r=await fetch("/api/avatar-dressing",{credentials:"same-origin"});if(!r.ok)throw Error();const d=await r.json();for(const [k,v] of Object.entries(d.dress||{})){if(options[k]?.includes(v)){state[k]=v;document.getElementById(k).value=v}}draw()}catch{document.getElementById("message").textContent="Impossible de charger la tenue enregistrée.";draw()}}
  document.getElementById("save").onclick=async()=>{const msg=document.getElementById("message");msg.textContent="Enregistrement…";try{const r=await fetch("/api/avatar-dressing",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(state)});if(!r.ok)throw Error();msg.textContent="Tenue enregistrée sur ton compte ✓"}catch{msg.textContent="Enregistrement impossible. Réessaie."}};
  const stage=document.querySelector(".stage");
+ const sceneStoreKey="cmd-sphere-dressing-scene-v1";
+ try{const saved=localStorage.getItem(sceneStoreKey);if(saved)stage.style.backgroundImage='linear-gradient(#130d2880,#130d2880),url("'+saved+'")'}catch{}
  const sceneFile=document.getElementById("scene-file");
  let sceneUrl=null;
- sceneFile.addEventListener("change",()=>{const file=sceneFile.files?.[0];if(!file)return;if(!file.type.startsWith("image/")||file.size>12*1024*1024){document.getElementById("message").textContent="Image invalide ou trop volumineuse (12 Mo maximum).";sceneFile.value="";return}if(sceneUrl)URL.revokeObjectURL(sceneUrl);sceneUrl=URL.createObjectURL(file);stage.style.backgroundImage='linear-gradient(#130d2880,#130d2880),url("'+sceneUrl+'")';});
- document.getElementById("scene-clear").addEventListener("click",()=>{if(sceneUrl)URL.revokeObjectURL(sceneUrl);sceneUrl=null;sceneFile.value="";stage.style.backgroundImage="";});
+ sceneFile.addEventListener("change",()=>{const file=sceneFile.files?.[0];if(!file)return;if(!file.type.startsWith("image/")||file.size>12*1024*1024){document.getElementById("message").textContent="Image invalide ou trop volumineuse (12 Mo maximum).";sceneFile.value="";return}if(sceneUrl)URL.revokeObjectURL(sceneUrl);sceneUrl=URL.createObjectURL(file);try{const reader=new FileReader();reader.onload=()=>{try{localStorage.setItem(sceneStoreKey,String(reader.result||""))}catch{document.getElementById("message").textContent="Stockage local insuffisant."}};reader.readAsDataURL(file)}catch{}stage.style.backgroundImage='linear-gradient(#130d2880,#130d2880),url("'+sceneUrl+'")';});
+ document.getElementById("scene-clear").addEventListener("click",()=>{if(sceneUrl)URL.revokeObjectURL(sceneUrl);sceneUrl=null;sceneFile.value="";try{localStorage.removeItem(sceneStoreKey)}catch{}stage.style.backgroundImage="";});
  load();
  </script></body></html>`;
 }
