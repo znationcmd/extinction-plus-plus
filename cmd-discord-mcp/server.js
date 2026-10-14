@@ -3487,7 +3487,7 @@ async function nativeMemberPublicCard(auth,guildId,userId){
 }
 async async function editOwnNativeMessage(auth,input){
  const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||""),content=String(input?.content||"").trim();
- if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant invalide."),{status:400});
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(messageId))throw Object.assign(new Error("Identifiant invalide."),{status:400});
  if(!content||content.length>4000)throw Object.assign(new Error("Le message doit contenir entre 1 et 4000 caractères."),{status:400});
  const channel=await nativeTextChannel(auth,guildId,channelId);await requireNativeMember(auth,guildId);
  const result=await pool.query("UPDATE cmd_native_channel_messages SET body=$1, edited_at=NOW() WHERE id=$2 AND guild_id=$3 AND channel_id=$4 AND sender_user_id=$5 RETURNING id,body AS content",[content,messageId,guildId,String(channel.id),String(auth.user.id)]);
@@ -3496,7 +3496,7 @@ async async function editOwnNativeMessage(auth,input){
 }
 function deleteOwnOrOwnerNativeMessage(auth,input){
  const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||"");
- if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant de message invalide."),{status:400});
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(messageId))throw Object.assign(new Error("Identifiant de message invalide."),{status:400});
  const channel=await nativeTextChannel(auth,guildId,channelId);
  const member=await requireNativeMember(auth,guildId);
  const isOwner=String(member.membership_role)==="owner";
