@@ -4941,6 +4941,24 @@ const httpServer=createServer(async(req,res)=>{
       if(await handleCmdNativeInvites(req,res,url,{pool,auth,baseUrl,sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeAdmin}))return;
     }
     
+    if(url.pathname==="/api/native/events/rsvp"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        if(req.method!=="POST"){sendJson(res,405,{error:"Méthode non autorisée"});return}
+        const input=await readFormBodyJson(req),guildId=String(input.guildId||""),eventId=String(input.eventId||"");
+        if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(guildId)||!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(eventId)){sendJson(res,400,{error:"Événement ou serveur invalide"});return}
+        await requireNativeMember(auth,guildId);
+        const exists=await pool.query("SELECT id FROM cmd_native_events WHERE id=$1 AND guild_id=$2 AND starts_at>NOW()",[eventId,guildId]);
+        if(!exists.rows.length){sendJson(res,404,{error:"Événement introuvable ou terminé"});return}
+        await pool.query("CREATE TABLE IF NOT EXISTS cmd_native_event_rsvps (event_id UUID NOT NULL REFERENCES cmd_native_events(id) ON DELETE CASCADE,user_id TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('going','interested')),updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(event_id,user_id))");
+        const status=String(input.status||"");
+        if(status==="none"){await pool.query("DELETE FROM cmd_native_event_rsvps WHERE event_id=$1 AND user_id=$2",[eventId,String(auth.user.id)])}
+        else if(status==="going"||status==="interested"){await pool.query("INSERT INTO cmd_native_event_rsvps(event_id,user_id,status) VALUES($1,$2,$3) ON CONFLICT(event_id,user_id) DO UPDATE SET status=EXCLUDED.status,updated_at=NOW()",[eventId,String(auth.user.id),status])}
+        else{sendJson(res,400,{error:"Réponse autorisée : going, interested ou none"});return}
+        const counts=await pool.query("SELECT status,COUNT(*)::int AS count FROM cmd_native_event_rsvps WHERE event_id=$1 GROUP BY status",[eventId]);
+        sendJson(res,200,{ok:true,eventId,status,counts:counts.rows});return;
+      }catch(e){sendJson(res,/membre|Permission/i.test(e.message)?403:400,{error:e.message});return}
+    }
     if(url.pathname==="/api/native/events"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
