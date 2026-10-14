@@ -68,10 +68,11 @@ export async function joinNativeInvite(pool,auth,raw){
     WHERE i.code=$1 AND i.revoked_at IS NULL
     AND (i.expires_at IS NULL OR i.expires_at>NOW()) AND (i.max_uses IS NULL OR i.uses<i.max_uses) FOR UPDATE OF i`,[code]);
   const g=qr.rows[0];if(!g)throw Object.assign(new Error("Ce lien d’invitation est expiré ou désactivé."),{status:410});
-  await client.query(`INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name)
-    VALUES($1,$2,'member',$3) ON CONFLICT(guild_id,user_id) DO NOTHING`,
+  const inserted=await client.query(`INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name)
+    VALUES($1,$2,'member',$3) ON CONFLICT(guild_id,user_id) DO NOTHING RETURNING user_id`,
     [g.id,user,String(auth.user.displayName||auth.user.name||"Membre").slice(0,80)]);
-  await client.query("UPDATE cmd_native_invites SET uses=uses+1,last_used_at=NOW() WHERE code=$1",[code]);
+  // A returning member must not consume another limited invite use.
+  if(inserted.rowCount)await client.query("UPDATE cmd_native_invites SET uses=uses+1,last_used_at=NOW() WHERE code=$1",[code]);
   await client.query("COMMIT");started=false;
   return g;
  }catch(e){if(started)await client.query("ROLLBACK");throw e}finally{client.release()}
