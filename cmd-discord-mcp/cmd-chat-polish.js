@@ -199,6 +199,46 @@ function cmdExtras(){
    if(paintPending)return;paintPending=true;
    requestAnimationFrame(()=>{paintPending=false;decorateMessages()});
  }
+ // Profile options on searched user cards: use existing friend and DM handlers.
+ let cmdUserOptions=null;
+ function closeUserOptions(){cmdUserOptions?.remove();cmdUserOptions=null}
+ document.addEventListener("click",async e=>{
+   const more=e.target.closest(".cmd-user-more");
+   if(more){
+     e.preventDefault();e.stopPropagation();
+     const card=more.closest(".result");if(!card)return;
+     const username=card.querySelector(".addFriend")?.dataset.user||card.querySelector(".msgUser")?.dataset.user;
+     if(!username)return;
+     if(cmdUserOptions?.dataset.user===username){closeUserOptions();return}
+     closeUserOptions();
+     const menu=document.createElement("div");menu.className="cmd-user-options";menu.dataset.user=username;
+     menu.style.cssText="position:absolute;z-index:10000;right:8px;top:calc(100% - 3px);width:min(310px,85vw);background:#292139;color:#fff;border:1px solid #a78bfa80;border-radius:16px;box-shadow:0 16px 45px #000a;padding:7px";
+     for(const [action,label] of [["friend","Ajouter un ami"],["message","Envoyer un message"],["look","Acheter ce look"],["name","Copier le nom d’utilisateur"]]){
+       const b=document.createElement("button");b.type="button";b.dataset.action=action;b.textContent=label;b.style.cssText="display:block;width:100%;padding:13px;text-align:left;border:0;border-bottom:1px solid #ffffff16;background:transparent;color:#fff;font:inherit;cursor:pointer";menu.append(b)
+     }
+     card.style.position="relative";card.append(menu);cmdUserOptions=menu;return;
+   }
+   const option=e.target.closest(".cmd-user-options [data-action]");
+   if(option){
+     const menu=option.closest(".cmd-user-options"),card=menu.closest(".result"),username=menu.dataset.user,action=option.dataset.action;
+     if(action==="friend")card.querySelector(".addFriend")?.click();
+     if(action==="message")card.querySelector(".msgUser")?.click();
+     if(action==="look")location.href="/diamonds/shop";
+     if(action==="name"){try{await navigator.clipboard.writeText(username)}catch{const t=document.createElement("textarea");t.value=username;document.body.append(t);t.select();document.execCommand("copy");t.remove()}}
+     closeUserOptions();return;
+   }
+   if(!e.target.closest(".cmd-user-options"))closeUserOptions();
+ });
+ const userResultObserver=new MutationObserver(()=>{
+   document.querySelectorAll("#results .result").forEach(card=>{
+     if(card.querySelector(".cmd-user-more"))return;
+     const b=document.createElement("button");b.type="button";b.className="cmd-user-more";b.textContent="⋯";b.title="Options du profil";b.setAttribute("aria-label","Options du profil");
+     b.style.cssText="background:#40245f;color:#fff;border:1px solid #a78bfa77;border-radius:10px;padding:6px 11px;font-size:20px;cursor:pointer";
+     card.append(b);
+   });
+ });
+ function mountUserResultOptions(){const results=document.getElementById("results");if(results){userResultObserver.observe(results,{childList:true,subtree:true});results.querySelectorAll(".result").forEach(card=>{if(!card.querySelector(".cmd-user-more")){const b=document.createElement("button");b.type="button";b.className="cmd-user-more";b.textContent="⋯";b.title="Options du profil";card.append(b)}})}}
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mountUserResultOptions);else mountUserResultOptions();
  document.addEventListener("click",e=>{
    if(e.target.closest("#cmdChatSourcesPanel .btn"))sourcePanel?.classList.remove("open");
    if(e.target.closest("#channelInput"))hideMenus();
