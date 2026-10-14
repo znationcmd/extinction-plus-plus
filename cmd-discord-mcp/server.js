@@ -4554,8 +4554,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(url.pathname==="/mon-univers"&&req.method==="GET"){const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next=%2Fmon-univers");return}html(res,cmdUniverseEditorPage());return;}
     if(url.pathname==="/avatar-dressing"&&req.method==="GET"){
-      const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/avatar-dressing"));return}
-      html(res,dressingPage());return;
+      redirect(res,baseUrl+"/mon-univers");return;
     }
     if(url.pathname==="/api/avatar-dressing"&&(req.method==="GET"||req.method==="POST")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
