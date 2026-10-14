@@ -3514,6 +3514,7 @@ async function deleteOwnOrOwnerNativeMessage(auth,input){
 }
 async function sendNativeChannelMessage(auth,input){
   const guildId=String(input.guildId||""),ch=await nativeTextChannel(auth,guildId,input.channelId),body=String(input.content||"").trim();
+  if(body.length>4000)throw Object.assign(new Error("4000 caractères maximum par message."),{status:413});
   const attachments=sanitizeNativeAttachments(input.attachments),metadata=sanitizeNativeMetadata(input.metadata);
   if(!body&&!attachments.length&&!metadata.poll)throw new Error("Message vide.");
   let replyTo=null;
