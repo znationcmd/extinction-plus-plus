@@ -19,6 +19,18 @@
    b.onclick=closeEmojiFocus;tabs.append(b);
  }
  function hideMenus(){palette?.classList.remove("open");sourcePanel?.classList.remove("open")}
+ function improveTools(){
+  const grid=$("#channelToolSheet .compose-sheet-grid");
+  if(!grid)return;
+  const tool=$("#cmdToolPaint");
+  if(!tool){
+   const b=document.createElement("button");b.type="button";b.className="compose-tool";b.id="cmdToolPaint";
+   b.innerHTML="<b>🎨</b><span>Peinture</span>";
+   b.onclick=()=>{palette?.classList.toggle("open");$("#channelToolSheet")?.classList.remove("on");markPalette()};
+   grid.append(b);
+  }
+  if(colorButton)colorButton.style.display="none";
+ }
  function mountChat(){
    const overlay=$("#channelOverlay"),head=overlay?.querySelector(".channel-head"),buttons=head?.querySelector(".channel-actions");
    if(!overlay||!head||!buttons)return;
@@ -54,6 +66,7 @@
        sourcePanel?.classList.remove("open");palette?.classList.toggle("open");markPalette();
      };buttons.prepend(colorButton);
    }
+   improveTools();
    let count=0;
    for(const id of ids){
      const elem=document.getElementById(id);if(!elem)continue;
