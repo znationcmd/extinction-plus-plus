@@ -18,7 +18,7 @@ function installMusicProviders(){
  const search=$("#cmdStudioMusicQuery");if(!search||$("#cmdStudioMusicProvider"))return;
  const label=document.createElement("label");label.className="cmd-music-provider";label.textContent="Catalogue";
  const select=document.createElement("select");select.id="cmdStudioMusicProvider";
- for(const [value,title] of [["wikimedia","Wikimedia"],["openverse","Openverse"],["ccmixter","ccMixter"],["audius","Audius · découvrir"],["jamendo","Jamendo · licence requise"]]){
+ for(const [value,title] of [["wikimedia","CMD Music · Wikimedia"],["openverse","CMD Music · Openverse"],["ccmixter","ccMixter"],["audius","Audius · découvrir"],["jamendo","Jamendo · licence requise"]]){
   const option=document.createElement("option");option.value=value;option.textContent=title;select.append(option);
  }
  select.value=musicProvider;
@@ -554,6 +554,12 @@ function installExternalMusicLinks(){
 function openMusicSheet(){
  if(!root)return;
  const panel=$("#cmdStudioMusicSheet");panel.hidden=false;
+ if(!panel.querySelector("#cmdMusicLibraryIntro")){
+  const intro=document.createElement("div");intro.id="cmdMusicLibraryIntro";intro.style.cssText="padding:10px 12px;margin:8px 0;border-radius:10px;background:rgba(132,74,201,.14);font-size:13px";
+  intro.textContent="CMD Music — bibliothèque gratuite : découvre les morceaux sous licence compatible, écoute-les et ajoute-les à tes vidéos. Tu peux aussi importer un son dont tu détiens les droits.";
+  panel.querySelector(".cmd-studio-search")?.before(intro);
+ }
+
  installMusicProviders();
  installExternalMusicLinks();
  $("#cmdStudioMusicQuery").value=$("#cmdStudioMusicQuery").value||"instrumental";
