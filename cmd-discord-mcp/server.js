@@ -3480,7 +3480,16 @@ async function nativeMemberPublicCard(auth,guildId,userId){
    banner:profile.banner_data_url||null,accentColor:profile.accent_color||"#7c3aed",
    membershipRole:member.membership_role,external:false,friendStatus};
 }
-async function deleteOwnOrOwnerNativeMessage(auth,input){
+async async function editOwnNativeMessage(auth,input){
+ const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||""),content=String(input?.content||"").trim();
+ if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant invalide."),{status:400});
+ if(!content||content.length>4000)throw Object.assign(new Error("Le message doit contenir entre 1 et 4000 caractères."),{status:400});
+ const channel=await nativeTextChannel(auth,guildId,channelId);await requireNativeMember(auth,guildId);
+ const result=await pool.query("UPDATE cmd_native_channel_messages SET content=$1 WHERE id=$2 AND guild_id=$3 AND channel_id=$4 AND sender_user_id=$5 RETURNING id,content",[content,messageId,guildId,String(channel.id),String(auth.user.id)]);
+ if(!result.rows.length)throw Object.assign(new Error("Message introuvable ou modification interdite."),{status:403});
+ return {ok:true,messageId,content};
+}
+function deleteOwnOrOwnerNativeMessage(auth,input){
  const guildId=String(input?.guildId||""),channelId=String(input?.channelId||""),messageId=String(input?.messageId||"");
  if(!/^[0-9a-f-]{36}$/i.test(messageId))throw Object.assign(new Error("Identifiant de message invalide."),{status:400});
  const channel=await nativeTextChannel(auth,guildId,channelId);
@@ -5065,6 +5074,7 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,{profile:await nativeMemberPublicCard(auth,url.searchParams.get("guildId")||"",url.searchParams.get("userId")||"")})}
       catch(e){sendJson(res,e.status||403,{error:e.message})}return;
     }
+    if(req.method==="POST"&&url.pathname==="/api/native/messages/edit"){const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}try{sendJson(res,200,await editOwnNativeMessage(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,e.status||400,{error:e.message})}return;}
     if(req.method==="POST"&&url.pathname==="/api/native/messages/delete"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await deleteOwnOrOwnerNativeMessage(auth,await readFormBodyJson(req)))}
