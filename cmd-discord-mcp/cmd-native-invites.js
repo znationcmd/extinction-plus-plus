@@ -23,8 +23,10 @@ export async function initCmdNativeInvites(pool){
    expires_at TIMESTAMPTZ,
    revoked_at TIMESTAMPTZ,
    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-   uses INTEGER NOT NULL DEFAULT 0
+   uses INTEGER NOT NULL DEFAULT 0,
+   max_uses INTEGER
  )`);
+ await pool.query("ALTER TABLE cmd_native_invites ADD COLUMN IF NOT EXISTS max_uses INTEGER");
  await pool.query("CREATE INDEX IF NOT EXISTS cmd_native_invites_guild_idx ON cmd_native_invites(guild_id,created_at DESC)");
  // Convert pre-existing permanent links exactly once. They are now visible to
  // server administrators and can be revoked, rather than bypassing expiry checks.
@@ -35,7 +37,7 @@ export async function initCmdNativeInvites(pool){
 }
 export async function activeInviteForGuild(pool,guildId){
  const r=await pool.query(`SELECT code FROM cmd_native_invites
- WHERE guild_id=$1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW())
+ WHERE guild_id=$1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW()) AND (max_uses IS NULL OR uses<max_uses)
  ORDER BY created_at DESC LIMIT 1`,[guildId]);return r.rows[0]?.code||null;
 }
 export async function previewNativeInvite(pool,raw){
@@ -46,7 +48,7 @@ export async function previewNativeInvite(pool,raw){
  i.expires_at FROM cmd_native_invites i
  JOIN cmd_native_guilds g ON g.id=i.guild_id
  WHERE i.code=$1 AND i.revoked_at IS NULL
- AND (i.expires_at IS NULL OR i.expires_at>NOW()) LIMIT 1`,[code]);
+ AND (i.expires_at IS NULL OR i.expires_at>NOW()) AND (i.max_uses IS NULL OR i.uses<i.max_uses) LIMIT 1`,[code]);
  if(!r.rows[0])throw Object.assign(new Error("Ce lien d’invitation est expiré ou désactivé."),{status:410});
  return r.rows[0];
 }
@@ -62,7 +64,7 @@ export async function joinNativeInvite(pool,auth,raw){
   const qr=await client.query(`SELECT g.id,g.name FROM cmd_native_invites i
     JOIN cmd_native_guilds g ON g.id=i.guild_id
     WHERE i.code=$1 AND i.revoked_at IS NULL
-    AND (i.expires_at IS NULL OR i.expires_at>NOW()) FOR UPDATE OF i`,[code]);
+    AND (i.expires_at IS NULL OR i.expires_at>NOW()) AND (i.max_uses IS NULL OR i.uses<i.max_uses) FOR UPDATE OF i`,[code]);
   const g=qr.rows[0];if(!g)throw Object.assign(new Error("Ce lien d’invitation est expiré ou désactivé."),{status:410});
   await client.query(`INSERT INTO cmd_native_members(guild_id,user_id,membership_role,profile_display_name)
     VALUES($1,$2,'member',$3) ON CONFLICT(guild_id,user_id) DO NOTHING`,
@@ -83,14 +85,14 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    const id=String(url.searchParams.get("guildId")||"");
    if(!ID.test(id)){sendJson(res,400,{error:"Identifiant du serveur invalide"});return true}
    const m=await requireNativeMember(auth,id),canManage=["owner","admin"].includes(String(m.membership_role));
-   const r=await pool.query(`SELECT i.code,i.label,i.expires_at,i.created_at,i.uses,i.revoked_at FROM cmd_native_invites i
-    WHERE i.guild_id=$1 AND ($2::boolean OR (i.revoked_at IS NULL AND (i.expires_at IS NULL OR i.expires_at>NOW())))
+   const r=await pool.query(`SELECT i.code,i.label,i.expires_at,i.created_at,i.uses,i.max_uses,i.revoked_at FROM cmd_native_invites i
+    WHERE i.guild_id=$1 AND ($2::boolean OR (i.revoked_at IS NULL AND (i.expires_at IS NULL OR i.expires_at>NOW()) AND (i.max_uses IS NULL OR i.uses<i.max_uses)))
     ORDER BY i.created_at DESC LIMIT 100`,[id,canManage]);
    const invites=r.rows.map(row=>({
      code:row.code,url:baseUrl+"/invite/"+encodeURIComponent(row.code),
      label:row.label,expiresAt:row.expires_at,createdAt:row.created_at,
      revoked:!!row.revoked_at,expired:!!row.expires_at&&new Date(row.expires_at)<=new Date(),
-     uses:row.uses
+     uses:row.uses,maxUses:row.max_uses,exhausted:row.max_uses!==null&&row.uses>=row.max_uses
    }));
    sendJson(res,200,{guildId:id,canManage,invites});return true;
   }
@@ -100,16 +102,18 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
    await requireNativeAdmin(auth,id);
    const period=body.expiry==="3"?3:body.expiry==="30"?30:body.expiry==="never"?"never":null;
    const expiresAt=inviteExpiry(period);
+   const maxUses=body.maxUses==null||body.maxUses===''?null:Number(body.maxUses);
+   if(maxUses!==null&&(!Number.isInteger(maxUses)||maxUses<1||maxUses>10000)){sendJson(res,400,{error:'Nombre maximal d’utilisations invalide (1 à 10 000).'});return true}
    const requested=String(body.customCode||"").trim();
    const custom=normalizeInviteCode(requested);
    if(requested&&(custom.length<4||custom.length>40)){sendJson(res,400,{error:"Ton lien personnalisé doit contenir entre 4 et 40 lettres ou chiffres. Les espaces sont convertis en tirets."});return true}
    const code=custom||crypto.randomBytes(18).toString("base64url");
    const label=String(body.label||"Invitation").trim().slice(0,70);
    try{
-    await pool.query(`INSERT INTO cmd_native_invites(code,guild_id,creator_id,label,expires_at)
-    VALUES($1,$2,$3,$4,$5)`,[code,id,String(auth.user.id),label,expiresAt]);
+    await pool.query(`INSERT INTO cmd_native_invites(code,guild_id,creator_id,label,expires_at,max_uses)
+    VALUES($1,$2,$3,$4,$5,$6)`,[code,id,String(auth.user.id),label,expiresAt,maxUses]);
    }catch(e){if(e.code==="23505"){sendJson(res,409,{error:"Ce lien personnalisé existe déjà. Essaie un autre nom."});return true}throw e}
-   sendJson(res,201,{ok:true,guildId:id,code,url:baseUrl+"/invite/"+encodeURIComponent(code),expiresAt});return true;
+   sendJson(res,201,{ok:true,guildId:id,code,url:baseUrl+"/invite/"+encodeURIComponent(code),expiresAt,maxUses});return true;
   }
   if(path==="/api/native/invites/revoke"&&req.method==="POST"){
    const body=await readBody(req),id=String(body.guildId||""),code=String(body.code||"");
