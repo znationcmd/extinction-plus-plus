@@ -3442,7 +3442,7 @@ function sanitizeNativeAttachments(v){
   const arr=Array.isArray(v)?v:[];
   if(arr.length>5)throw Object.assign(new Error("5 pièces jointes maximum par message."),{status:413});
   const out=[];let totalBytes=0;
-  const allowed=/^data:(image\\/(?:png|jpeg|webp|gif)|audio\\/(?:webm|mpeg|mp4)|video\\/(?:mp4|webm|quicktime)|application\\/pdf|text\\/plain);base64,/i;
+  const allowed=/^data:(image\/(?:png|jpeg|webp|gif)|audio\/(?:webm|mpeg|mp4)|video\/(?:mp4|webm|quicktime)|application\/pdf|text\/plain);base64,/i;
   for(const raw of arr){
     const dataUrl=String(raw?.dataUrl||"");
     const match=dataUrl.match(allowed);
