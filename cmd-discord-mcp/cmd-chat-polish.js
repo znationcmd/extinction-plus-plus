@@ -60,7 +60,7 @@
   cmdTool("Caméra","📸",()=>{let input=$("#cmdCameraInput");if(!input){input=document.createElement("input");input.id="cmdCameraInput";input.type="file";input.accept="image/*";input.capture="environment";input.hidden=true;input.onchange=()=>{const photos=$("#channelPhotoInput");if(photos&&input.files?.length){const dt=new DataTransfer();for(const f of input.files)dt.items.add(f);photos.files=dt.files;photos.dispatchEvent(new Event("change",{bubbles:true}))}};document.body.append(input)}input.click()},"cmdToolCamera");
   cmdTool("Émojis","😊",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="emoji"]')?.click()},"cmdToolEmoji");
   cmdTool("Stickers","💟",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="sticker"]')?.click()},"cmdToolSticker");
-  cmdTool("Fond d’écran","🌄",cmdWallpaperOpen,"cmdToolWallpaper");
+  // Wallpaper is already available through the relabeled #toolFiles action.
   cmdTool("Message vocal","🎙️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelMic")?.click()},"cmdToolVoice");
   cmdTool("GIF","🎞️",()=>{$("#channelToolSheet")?.classList.remove("on");$("#channelEmoji")?.click();document.querySelector('[data-emoji-tab="gif"]')?.click()},"cmdToolGif");
   cmdTool("Lien","🔗",()=>{const api=window.cmdSphereServerSettings;if(api&&typeof api.open==="function")api.open("invites");else alert("Ouvre les invitations dans les paramètres du serveur pour créer un lien valide.")},"cmdToolInvite");
