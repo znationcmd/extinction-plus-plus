@@ -183,11 +183,11 @@ function render(items,canManage){
  list.replaceChildren();
  if(!items.length){const p=document.createElement("p");p.className="cmd-inv-status";p.textContent=canManage?"Aucun lien actif. Crée une invitation pour ce serveur.":"Aucun lien actif. Demande une invitation à un administrateur.";list.append(p);return}
  for(const item of items){
-  const expired=item.expired||item.revoked;
+  const expired=item.expired||item.revoked||item.exhausted;
   const article=document.createElement("section");article.className="cmd-inv-item"+(expired?" expired":"");
   const head=document.createElement("h3");head.textContent=item.label||"Invitation du serveur";
   const meta=document.createElement("small");
-  meta.textContent=item.revoked?"Désactivée":item.expired?"Expirée":item.expiresAt?"Expire le "+new Date(item.expiresAt).toLocaleDateString("fr-FR"):"Sans expiration";
+  meta.textContent=item.revoked?"Désactivée":item.expired?"Expirée":item.exhausted?"Nombre d’utilisations atteint":(item.expiresAt?"Expire le "+new Date(item.expiresAt).toLocaleDateString("fr-FR"):"Sans expiration")+" · "+(item.maxUses==null?"Utilisations illimitées":item.uses+" / "+item.maxUses+" utilisations");
   article.append(head,meta);
   if(!expired){
    const input=document.createElement("input");input.className="cmd-inv-url";input.value=item.url;input.readOnly=true;input.setAttribute("aria-label","Lien d’invitation du serveur");article.append(input);
