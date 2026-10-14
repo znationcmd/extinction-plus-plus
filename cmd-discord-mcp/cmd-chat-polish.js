@@ -148,7 +148,7 @@
   function open(msg){const id=msg.dataset.messageId,author=msg.dataset.cmdAuthorId,own=author&&author===mine(),content=msg.querySelector(".msg-text")?.innerText||"";const actions=sheet.querySelector(".cmd-message-action-list");actions.replaceChildren();
    const add=(label,fn,destructive=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;if(destructive)b.className="destructive";b.onclick=()=>{close();fn()};actions.append(b)};
    const react=sheet.querySelector(".cmd-message-reactions");react.replaceChildren();for(const emoji of ["✅","👍","❤️","🤣","💯","👎","😊"]){const b=document.createElement("button");b.type="button";b.textContent=emoji;b.onclick=()=>{close();alert("Les réactions doivent être raccordées au service de messages.")};react.append(b)}
-   if(own)add("✏️ Modifier le message",()=>alert("La modification des messages sera disponible après raccordement à l’API."));
+   if(own&&window.cmdSphereMessageActions?.mode()==="native")add("✏️ Modifier le message",async()=>{const next=prompt("Modifier ton message :",content);if(next===null||next===content)return;try{await window.cmdSphereMessageActions.edit(id,next)}catch(e){alert(e.message)}});
    add("↩ Répondre",()=>{try{window.cmdSphereMessageActions?.reply(id)}catch(e){const btn=msg.querySelector("[data-reply-message]");if(btn)btn.click();else alert(e.message||"Réponse indisponible")}});
    add("➦ Transférer",()=>{if(navigator.share)navigator.share({text:content}).catch(()=>{});else navigator.clipboard?.writeText(content)});
    add("▣ Copier le texte",()=>navigator.clipboard?.writeText(content));
