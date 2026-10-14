@@ -149,12 +149,12 @@
    const add=(label,fn,destructive=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;if(destructive)b.className="destructive";b.onclick=()=>{close();fn()};actions.append(b)};
    const react=sheet.querySelector(".cmd-message-reactions");react.replaceChildren();for(const emoji of ["✅","👍","❤️","🤣","💯","👎","😊"]){const b=document.createElement("button");b.type="button";b.textContent=emoji;b.onclick=()=>{close();alert("Les réactions doivent être raccordées au service de messages.")};react.append(b)}
    if(own)add("✏️ Modifier le message",()=>alert("La modification des messages sera disponible après raccordement à l’API."));
-   add("↩ Répondre",()=>{const btn=msg.querySelector("[data-reply-message]");if(btn)btn.click();else alert("Réponse indisponible dans cette conversation.")});
+   add("↩ Répondre",()=>{try{window.cmdSphereMessageActions?.reply(id)}catch(e){const btn=msg.querySelector("[data-reply-message]");if(btn)btn.click();else alert(e.message||"Réponse indisponible")}});
    add("➦ Transférer",()=>{if(navigator.share)navigator.share({text:content}).catch(()=>{});else navigator.clipboard?.writeText(content)});
    add("▣ Copier le texte",()=>navigator.clipboard?.writeText(content));
    add("🔗 Copier le lien du message",()=>navigator.clipboard?.writeText(location.href.split("#")[0]+"#message-"+encodeURIComponent(id)));
    add("📌 Épingler",()=>alert("L’épinglage nécessite les permissions du serveur et une API dédiée."));
-   if(own)add("🗑 Supprimer le message",()=>alert("La suppression nécessite une confirmation et le raccordement à l’API du serveur."),true);
+   if(own&&window.cmdSphereMessageActions?.mode()==="native")add("🗑 Supprimer le message",async()=>{if(!confirm("Supprimer définitivement ce message ?"))return;try{await window.cmdSphereMessageActions.delete(id)}catch(e){alert(e.message)}},true);
    sheet.classList.add("on")}
   let touchTimer=0,started=null;const area=$("#channelMessages");if(!area)return;
   area.addEventListener("contextmenu",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;e.preventDefault();open(msg)});
