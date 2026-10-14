@@ -42,7 +42,7 @@ jobs:
                       similar.append({'a':a,'b':b,'distance':d})
           os.makedirs('audit-output',exist_ok=True)
           with open('audit-output/animals.json','w') as f:
-              json.dump({'total':len(hashes),'exact_duplicate_groups':exact,'visually_similar_candidates':similar,'dimensions':sizes},f,indent=2)
+              json.dump({'total':len(hashes),'exact_duplicate_groups':exact,'visually_similar_candidates':similar,'dimensions':sizes},f,indent=2,default=lambda value: int(value) if hasattr(value,'__int__') else str(value))
           print('Animals:',len(hashes),'exact duplicate groups:',len(exact),'visual candidates:',len(similar))
           PY
       - name: Export original catalogues for reconstruction
