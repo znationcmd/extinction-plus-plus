@@ -3402,7 +3402,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
     const cutoff=b.rows[0]?.created_at;
     rows=cutoff
       ? await pool.query(`SELECT m.*,COALESCE(mem.profile_display_name,gp.display_name,a.display_name,a.username,'Utilisateur') AS author_name,
-          COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar,
+          COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar,COALESCE(mem.profile_name_style,gp.name_style,'prism') AS author_name_style,
           rm.body AS reply_body,COALESCE(rmem.profile_display_name,rgp.display_name,ra.display_name,ra.username,'Utilisateur') AS reply_author
         FROM cmd_native_channel_messages m
         LEFT JOIN cmd_native_members mem ON mem.guild_id=m.guild_id AND mem.user_id=m.sender_user_id
@@ -3416,7 +3416,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
       : {rows:[]};
   }else{
     rows=await pool.query(`SELECT m.*,COALESCE(mem.profile_display_name,gp.display_name,a.display_name,a.username,'Utilisateur') AS author_name,
-        COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar,
+        COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar,COALESCE(mem.profile_name_style,gp.name_style,'prism') AS author_name_style,
         rm.body AS reply_body,COALESCE(rmem.profile_display_name,rgp.display_name,ra.display_name,ra.username,'Utilisateur') AS reply_author
       FROM cmd_native_channel_messages m
       LEFT JOIN cmd_native_members mem ON mem.guild_id=m.guild_id AND mem.user_id=m.sender_user_id
@@ -3430,7 +3430,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
   }
   const messages=(rows.rows||[]).map(row=>({
     id:String(row.id),channelId:String(ch.id),guildId:String(guildId),content:String(row.body||""),timestamp:row.created_at,editedTimestamp:row.edited_at,
-    author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},
+    author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,nameStyle:String(row.author_name_style||'plain'),bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},
     attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata&&typeof row.metadata==="object"?row.metadata:{},embeds:Array.isArray(row.metadata?.embeds)?row.metadata.embeds:[],stickers:[],reactions:[],mentions:[],mentionRoles:[],pinned:false,tts:false,type:0,
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
