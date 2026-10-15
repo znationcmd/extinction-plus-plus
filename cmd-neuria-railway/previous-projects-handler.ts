@@ -1,10 +1,6 @@
 import { listAuthorizedProjects } from "./github-project-inventory.ts";
 
-/**
- * API adapter for CMD NEURIA.
- * Caller MUST enforce NEURIA_WORK_AUTH and rate limits before invoking.
- * This function does not restore or deploy projects.
- */
+/** Read-only project inventory. Caller must authenticate and rate-limit first. */
 export async function previousProjectsHandler(request: Request): Promise<Response> {
   const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
     status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
@@ -30,4 +26,9 @@ export async function previousProjectsHandler(request: Request): Promise<Respons
   } catch {
     return json({ error: "Recherche des projets échouée" }, 502);
   }
+}
+
+/** Wire this into the server router only after the server's authorization and IP rate-limit checks. */
+export function isPreviousProjectsRoute(request: Request, pathname: string): boolean {
+  return request.method === "POST" && pathname === "/api/work/previous-project-retrieval";
 }
