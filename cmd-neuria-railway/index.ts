@@ -731,6 +731,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-retention"){
+  if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const backups=Array.isArray(body?.backups)?body.backups:[];
+  const keep=Math.max(1,Math.min(100,Number.isInteger(body?.keep)?body.keep:10));
+  if(!backups.length||backups.length>200)return response(JSON.stringify({error:"Liste de 1 à 200 sauvegardes requise"}),"application/json",400);
+  const seen=new Set(),entries=[];
+  for(const item of backups){const id=item?.id,createdAt=item?.createdAt;if(typeof id!=="string"||!id||id.length>120||seen.has(id)||typeof createdAt!=="string"||!/^\d{4}-\d\d-\d\dT/.test(createdAt)||!Number.isFinite(Date.parse(createdAt)))return response(JSON.stringify({error:"Identifiant, date ou doublon invalide"}),"application/json",400);seen.add(id);entries.push({id,createdAt,pinned:item?.pinned===true})}
+  entries.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+  const pinned=entries.filter(x=>x.pinned),regular=entries.filter(x=>!x.pinned);
+  return response(JSON.stringify({keepRequested:keep,protected:pinned.map(x=>x.id),keep:[...pinned,...regular.slice(0,keep)].map(x=>x.id),eligibleForDeletion:regular.slice(keep).map(x=>x.id),mode:"retention_preview_only",deleted:false,note:"Aucune sauvegarde supprimée. Les sauvegardes épinglées sont protégées."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-diff"){
   if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
