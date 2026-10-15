@@ -580,6 +580,30 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }catch{return new Response(JSON.stringify({error:"Analyse Aura indisponible"}),{status:503,headers:{"content-type":"application/json"}})}
   finally{for(const p of [input,output]){try{await (await import("node:fs/promises")).unlink(p)}catch{}}}
  }
+ if(req.method==="GET"&&path==="/api/neuria/generation/providers"){
+  const oracle=!!(Bun.env.NEURIA_ORACLE_WORKER_URL&&Bun.env.NEURIA_GENERATION_WORKER_TOKEN);
+  const pulse=!!(Bun.env.NEURIA_PULSE_WORKER_URL&&Bun.env.NEURIA_GENERATION_WORKER_TOKEN);
+  return new Response(JSON.stringify({oracle:{configured:oracle,format:"glb",endpoint:"/api/neuria/generation/oracle"},pulse:{configured:pulse,format:"wav",endpoint:"/api/neuria/generation/pulse"},notice:"Requires an external authorized model worker; no simulated generation"}),{headers:{"content-type":"application/json","cache-control":"no-store"}});
+ }
+ if(req.method==="POST"&&(path==="/api/neuria/generation/oracle"||path==="/api/neuria/generation/pulse")){
+  if(!NEURIA_WORK_AUTH(req))return new Response(JSON.stringify({error:"Accès non autorisé"}),{status:403,headers:{"content-type":"application/json"}});
+  const oracle=path.endsWith("/oracle"),worker=Bun.env[oracle?"NEURIA_ORACLE_WORKER_URL":"NEURIA_PULSE_WORKER_URL"],token=Bun.env.NEURIA_GENERATION_WORKER_TOKEN;
+  if(!worker||!token)return new Response(JSON.stringify({error:"Moteur IA non raccordé : configurer le worker et son jeton"}),{status:503,headers:{"content-type":"application/json"}});
+  let url;try{url=new URL(worker);if(url.protocol!=="https:"&&!["localhost","127.0.0.1"].includes(url.hostname))throw Error("TLS required");}catch{return new Response(JSON.stringify({error:"URL de worker invalide : HTTPS requis"}),{status:503,headers:{"content-type":"application/json"}})}
+  let payload;try{payload=await req.json();if(!payload||typeof payload.prompt!=="string"||!payload.prompt.trim()||payload.prompt.length>1200)throw Error("invalid")}catch{return new Response(JSON.stringify({error:"Description invalide (1 à 1200 caractères)"}),{status:400,headers:{"content-type":"application/json"}})}
+  try{
+   const res=await fetch(url,{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},body:JSON.stringify({prompt:payload.prompt.slice(0,1200),format:oracle?"glb":"wav"}),signal:AbortSignal.timeout(110000)});
+   if(!res.ok)return new Response(JSON.stringify({error:"Moteur distant en échec",status:res.status}),{status:502,headers:{"content-type":"application/json"}});
+   const mime=(res.headers.get("content-type")||"").split(";")[0].trim().toLowerCase();
+   const allowed=oracle?["model/gltf-binary","application/octet-stream"]:["audio/wav","audio/x-wav","application/octet-stream"];
+   if(!allowed.includes(mime))return new Response(JSON.stringify({error:"Le moteur n'a pas retourné le format attendu"}),{status:502,headers:{"content-type":"application/json"}});
+   const size=Number(res.headers.get("content-length")||0);if(size>40_000_000)return new Response(JSON.stringify({error:"Fichier généré trop volumineux"}),{status:502,headers:{"content-type":"application/json"}});
+   const data=new Uint8Array(await res.arrayBuffer());if(data.length<44||data.length>40_000_000)return new Response(JSON.stringify({error:"Résultat vide ou trop volumineux"}),{status:502,headers:{"content-type":"application/json"}});
+   const sig=oracle?String.fromCharCode(...data.slice(0,4))==="glTF":String.fromCharCode(...data.slice(0,4))==="RIFF"&&String.fromCharCode(...data.slice(8,12))==="WAVE";
+   if(!sig)return new Response(JSON.stringify({error:"Fichier retourné invalide"}),{status:502,headers:{"content-type":"application/json"}});
+   return new Response(data,{headers:{"content-type":oracle?"model/gltf-binary":"audio/wav","content-disposition":"attachment; filename=\"CMD-NEURIA-"+(oracle?"Oracle.glb":"Pulse.wav")+"\"","cache-control":"no-store"}});
+  }catch{return new Response(JSON.stringify({error:"Moteur distant inaccessible ou délai dépassé"}),{status:502,headers:{"content-type":"application/json"}})}
+ }
  if(req.method==="GET"&&path==="/api/neuria/creation/readiness"){
   return new Response(JSON.stringify({oracle:{ui:true,prompt:true,realistic3DGeneration:false,glbFromPrompt:false},aura:{ui:true,audioFileSelection:true,worldwideRecognition:false,localLibraryMatching:"UI connected; requires configured local catalog and FFmpeg"},pulse:{ui:true,browserInstrumentalWav:true,durationSecondsOptions:[5,15,30,60],aiVocals:false,neuralComposition:false},accounts:{emailRegistration:false,githubOAuthConfigured:!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET&&Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY)}}),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});
  }
