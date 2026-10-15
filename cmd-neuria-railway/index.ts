@@ -245,6 +245,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const providers=[];
   const googleKey=Bun.env.NEURIA_GOOGLE_SEARCH_API_KEY,googleCx=Bun.env.NEURIA_GOOGLE_SEARCH_ENGINE_ID;
   if(googleKey&&googleCx)providers.push(async()=>{const url="https://www.googleapis.com/customsearch/v1?"+new URLSearchParams({key:googleKey,cx:googleCx,q,num:"5"});const res=await fetch(url,{signal:AbortSignal.timeout(6500)});if(!res.ok)throw Error("Google unavailable");const data=await res.json();return {provider:"Google Programmable Search",results:(data.items||[]).map(x=>({title:x.title,description:x.snippet||"",url:x.link})).filter(x=>x.url?.startsWith("https://"))}});
+  const browserCdp=Bun.env.NEURIA_BROWSER_CDP_URL;
+  if(browserCdp)providers.push(async()=>{
+   const {chromium}=await import("playwright-core");
+   const browser=await chromium.connectOverCDP(browserCdp,{timeout:7000});
+   try{
+    const context=await browser.newContext({javaScriptEnabled:false});
+    const page=await context.newPage();
+    try{
+     await page.route("**/*",route=>{const u=new URL(route.request().url());if(u.hostname==="www.google.com"&&u.protocol==="https:")return route.continue();return route.abort()});
+     await page.goto("https://www.google.com/search?"+new URLSearchParams({q,num:"5"}),{waitUntil:"domcontentloaded",timeout:8500});
+     const results=await page.locator("a:has(h3)").evaluateAll(nodes=>nodes.slice(0,6).map(a=>({title:a.querySelector("h3")?.textContent||"",url:a.href,description:""})));
+     return {provider:"CMD Neuria Browser (Google Web)",results:results.filter(x=>x.title&&x.url.startsWith("https://"))};
+    }finally{await page.close();await context.close()}
+   }finally{await browser.close()}
+  });
   const braveKey=Bun.env.NEURIA_BRAVE_SEARCH_API_KEY;
   if(braveKey)providers.push(async()=>{const url="https://api.search.brave.com/res/v1/web/search?"+new URLSearchParams({q,count:"5",search_lang:"fr"});const res=await fetch(url,{headers:{"accept":"application/json","x-subscription-token":braveKey},signal:AbortSignal.timeout(6500)});if(!res.ok)throw Error("Brave unavailable");const data=await res.json();return {provider:"Brave Search",results:(data.web?.results||[]).map(x=>({title:x.title,description:String(x.description||"").slice(0,400),url:x.url})).filter(x=>x.url?.startsWith("https://"))}});
   const searx=Bun.env.NEURIA_SEARXNG_URL;
