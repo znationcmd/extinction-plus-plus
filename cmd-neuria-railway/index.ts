@@ -504,6 +504,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/backup-restore-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!b||typeof b!=="object"||!Array.isArray(b.backup)||b.backup.length>200||!Array.isArray(b.current)||b.current.length>200)return response(JSON.stringify({error:"Sauvegarde invalide"}),"application/json",400);
+  const validate=(items)=>items.every(x=>x&&typeof x.key==="string"&&x.key.length<=150&&Number.isSafeInteger(x.version)&&x.version>=0&&typeof x.checksum==="string"&&/^[a-f0-9]{64}$/i.test(x.checksum));
+  if(!validate(b.backup)||!validate(b.current))return response(JSON.stringify({error:"Métadonnées invalides"}),"application/json",400);
+  const saved=new Map(b.backup.map(x=>[x.key,x])),live=new Map(b.current.map(x=>[x.key,x]));
+  if(saved.size!==b.backup.length||live.size!==b.current.length)return response(JSON.stringify({error:"Clés dupliquées"}),"application/json",400);
+  const restore=[],unchanged=[],conflicts=[];
+  for(const [key,item] of saved){
+   const current=live.get(key);
+   if(!current)restore.push({key,reason:"missing"});
+   else if(current.checksum===item.checksum)unchanged.push(key);
+   else if(current.version>item.version)conflicts.push({key,reason:"current_newer"});
+   else restore.push({key,reason:"backup_differs"});
+  }
+  return response(JSON.stringify({executed:true,previewOnly:true,restored:false,restore,unchanged,conflicts,backupCount:saved.size,currentCount:live.size}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/multi-device-sync-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
