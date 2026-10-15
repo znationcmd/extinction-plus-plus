@@ -14,12 +14,14 @@ import sys
 
 HERE=pathlib.Path(__file__).resolve().parent
 MEDIA=HERE/"media_engine.py"
-MODES=("text-to-video","image-to-video","text-to-3d","image-to-3d","image-animation","mp4-convert")
+MODES=("text-to-video","image-to-video","text-to-3d","image-to-3d","image-animation","mp4-convert","music-generation","music-recognition")
 
 def available():
     return {
         "image-animation": bool(shutil.which("ffmpeg")),
         "mp4-convert": bool(shutil.which("ffmpeg")),
+        "music-generation": bool(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER")) and pathlib.Path(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER","")).is_file(),
+        "music-recognition": bool(os.environ.get("CMD_NEURIA_MUSIC_RECOGNITION_WORKER")) and pathlib.Path(os.environ.get("CMD_NEURIA_MUSIC_RECOGNITION_WORKER","")).is_file(),
         "text-to-video": bool(os.environ.get("CMD_NEURIA_TEXT_VIDEO_WORKER")),
         "image-to-video": bool(os.environ.get("CMD_NEURIA_IMAGE_VIDEO_WORKER")),
         "text-to-3d": bool(os.environ.get("CMD_NEURIA_TEXT_3D_WORKER")),
@@ -50,11 +52,13 @@ def main():
         args=[sys.executable,str(MEDIA),"image" if a.mode=="image-animation" else "convert","--input",a.input,"--output",str(out)]
         if a.mode=="image-animation":args+=["--seconds",str(a.seconds),"--motion",a.motion]
     else:
-        key={"text-to-video":"CMD_NEURIA_TEXT_VIDEO_WORKER","image-to-video":"CMD_NEURIA_IMAGE_VIDEO_WORKER","text-to-3d":"CMD_NEURIA_TEXT_3D_WORKER","image-to-3d":"CMD_NEURIA_IMAGE_3D_WORKER"}[a.mode]
+        key={"text-to-video":"CMD_NEURIA_TEXT_VIDEO_WORKER","image-to-video":"CMD_NEURIA_IMAGE_VIDEO_WORKER","text-to-3d":"CMD_NEURIA_TEXT_3D_WORKER","image-to-3d":"CMD_NEURIA_IMAGE_3D_WORKER","music-generation":"CMD_NEURIA_MUSIC_GENERATION_WORKER","music-recognition":"CMD_NEURIA_MUSIC_RECOGNITION_WORKER"}[a.mode]
         executable=os.environ[key]
         if not pathlib.Path(executable).is_file():
             raise RuntimeError("Exécutable local absent : "+key)
         args=[executable,"--output",str(out)]
+        if a.mode in ("music-generation","text-to-video","text-to-3d") and not a.prompt:p.error("--prompt requis")
+        if a.mode in ("music-recognition","image-to-video","image-to-3d") and not a.input:p.error("--input requis")
         if a.prompt:args+=["--prompt",a.prompt]
         if a.input:args+=["--input",a.input]
     subprocess.run(args,check=True,timeout=3600)
