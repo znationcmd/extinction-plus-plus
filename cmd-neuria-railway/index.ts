@@ -531,7 +531,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const results=[];const original=JSON.stringify(doc);
   for(let i=0;i<operations.length;i++){
    const op=operations[i],action=String(op?.action||""),key=String(op?.key||"");
-   if(!/^[A-Za-z_][A-Za-z0-9_-]{0,79}$/.test(key)||!["set","delete","assert"].includes(action))return response(JSON.stringify({error:"Opération invalide",step:i+1,results,rolledBack:true}),"application/json",400);
+   if(!/^[A-Za-z_][A-Za-z0-9_-]{0,79}$/.test(key)||["__proto__","prototype","constructor"].includes(key)||!["set","delete","assert"].includes(action))return response(JSON.stringify({error:"Opération invalide",step:i+1,results,rolledBack:true}),"application/json",400);
    const exists=Object.prototype.hasOwnProperty.call(doc,key);
    if(action==="assert"){if(!exists||JSON.stringify(doc[key])!==JSON.stringify(op.value))return response(JSON.stringify({error:"Assertion échouée",step:i+1,key,results,rolledBack:true}),"application/json",409);results.push({step:i+1,action,key,passed:true});continue}
    if(action==="delete"){if(!exists)return response(JSON.stringify({error:"Clé absente",step:i+1,key,results,rolledBack:true}),"application/json",400);delete doc[key]}
@@ -540,6 +540,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   const preview=JSON.stringify(doc,null,2);if(preview.length>150000)return response(JSON.stringify({error:"Résultat trop volumineux",rolledBack:true}),"application/json",413);
   return response(JSON.stringify({valid:true,steps:results,changed:original!==JSON.stringify(doc),preview,execution:"in_memory_only",persisted:false,note:"Exécution séquentielle réelle en mémoire, sans écriture de fichier ni accès externe."}),"application/json");
+ }
+ if(req.method==="POST"&&path==="/api/developer/batch-json-test"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const source=body?.content,tests=body?.tests;
+  if(typeof source!=="string"||source.length>100000||!Array.isArray(tests)||tests.length<1||tests.length>50)return response(JSON.stringify({error:"Contenu ou tests invalides"}),"application/json",400);
+  let doc;try{doc=JSON.parse(source)}catch{return response(JSON.stringify({error:"JSON source invalide"}),"application/json",400)}
+  if(!doc||typeof doc!=="object"||Array.isArray(doc))return response(JSON.stringify({error:"Objet JSON requis"}),"application/json",400);
+  const results=[];
+  for(const test of tests){
+   const key=String(test?.key||""),type=String(test?.type||"equals");
+   if(!/^[A-Za-z_][A-Za-z0-9_-]{0,79}$/.test(key)||!["equals","exists","type"].includes(type))return response(JSON.stringify({error:"Test invalide"}),"application/json",400);
+   const exists=Object.prototype.hasOwnProperty.call(doc,key);
+   const actual=exists?doc[key]:undefined;
+   const passed=type==="exists"?exists===Boolean(test?.expected):type==="type"?exists&&typeof actual===String(test?.expected):exists&&JSON.stringify(actual)===JSON.stringify(test?.expected);
+   results.push({key,type,passed,actual:exists?actual:null});
+  }
+  return response(JSON.stringify({valid:results.every(x=>x.passed),passed:results.filter(x=>x.passed).length,total:results.length,results,execution:"in_memory_only",persisted:false}),"application/json");
  }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
