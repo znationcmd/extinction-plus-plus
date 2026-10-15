@@ -504,6 +504,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="GET"&&path==="/api/media-studio/avatar-obj"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  const u=new URL(req.url),kind=u.searchParams.get("kind")||"robot";
+  if(!["robot","human","fantasy"].includes(kind))return response(JSON.stringify({error:"Type inconnu"}),"application/json",400);
+  const lines=["# CMD NEURIA Media Studio - procedural 3D avatar","o CMD_NEURIA_"+kind];let vertex=0;
+  const box=(name,x,y,z,w,h,d)=>{lines.push("g "+name);const v=[[x-w/2,y-h/2,z-d/2],[x+w/2,y-h/2,z-d/2],[x+w/2,y+h/2,z-d/2],[x-w/2,y+h/2,z-d/2],[x-w/2,y-h/2,z+d/2],[x+w/2,y-h/2,z+d/2],[x+w/2,y+h/2,z+d/2],[x-w/2,y+h/2,z+d/2]];for(const p of v)lines.push("v "+p.join(" "));const faces=[[1,2,3,4],[5,8,7,6],[1,5,6,2],[4,3,7,8],[1,4,8,5],[2,6,7,3]];for(const face of faces)lines.push("f "+face.map(i=>i+vertex).join(" "));vertex+=8;};
+  box("torso",0,1.45,0,.76,1.0,.4);box("head",0,2.25,0,.56,.58,.52);box("neck",0,1.91,0,.22,.18,.22);
+  box("left_arm",-.55,1.39,0,.26,.92,.29);box("right_arm",.55,1.39,0,.26,.92,.29);
+  box("left_leg",-.22,.53,0,.29,1.03,.33);box("right_leg",.22,.53,0,.29,1.03,.33);
+  box("left_foot",-.22,.08,.12,.34,.16,.58);box("right_foot",.22,.08,.12,.34,.16,.58);
+  if(kind==="robot"){box("visor",0,2.29,.275,.43,.15,.05);box("chest_panel",0,1.48,.225,.42,.32,.05)}
+  if(kind==="human"){box("nose",0,2.2,.285,.12,.16,.12);box("hair",0,2.56,0,.59,.16,.55)}
+  if(kind==="fantasy"){box("left_horn",-.19,2.66,0,.12,.38,.13);box("right_horn",.19,2.66,0,.12,.38,.13);box("belt",0,1.06,0,.82,.13,.44)}
+  return new Response(lines.join("\n")+"\n",{headers:{"Content-Type":"text/plain; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-avatar-"+kind+".obj\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+ }
  if(req.method==="GET"&&path==="/api/media-studio/capabilities"){
   return response(JSON.stringify({studio:"CMD NEURIA Media Studio",features:[
    {id:"text-to-video",label:"Texte vers vidéo",status:"planning",inputs:["prompt"],outputs:["mp4"],engineConnected:false},
