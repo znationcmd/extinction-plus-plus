@@ -731,6 +731,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-restore-dry-run"){
+  if(Number(req.headers.get("content-length")||0)>160000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const current=body?.current,incoming=body?.incoming,resolutions=body?.resolutions||{};
+  if(!current||typeof current!=="object"||Array.isArray(current)||!incoming||typeof incoming!=="object"||Array.isArray(incoming)||!resolutions||typeof resolutions!=="object"||Array.isArray(resolutions))return response(JSON.stringify({error:"Fichiers et résolutions requis"}),"application/json",400);
+  const paths=[...new Set([...Object.keys(current),...Object.keys(incoming)])];
+  if(paths.length>100)return response(JSON.stringify({error:"Maximum 100 fichiers"}),"application/json",400);
+  for(const p of paths)if(!p||p.length>240||p.includes("\\")||p.split("/").some(x=>!x||x==="."||x==="..")||typeof (Object.prototype.hasOwnProperty.call(current,p)?current[p]:incoming[p])!=="string"||(Object.prototype.hasOwnProperty.call(incoming,p)&&typeof incoming[p]!=="string"))return response(JSON.stringify({error:"Chemin ou contenu invalide"}),"application/json",400);
+  const output={...current},actions=[],unresolved=[];
+  for(const p of Object.keys(incoming)){
+   if(!Object.prototype.hasOwnProperty.call(current,p)){output[p]=incoming[p];actions.push({path:p,action:"add"});continue}
+   if(current[p]===incoming[p]){actions.push({path:p,action:"unchanged"});continue}
+   const choice=Object.prototype.hasOwnProperty.call(resolutions,p)?resolutions[p]:undefined;
+   if(choice==="use_backup"){output[p]=incoming[p];actions.push({path:p,action:"replace_in_preview"})}
+   else if(choice==="keep_current"||choice==="skip")actions.push({path:p,action:"preserve"});
+   else unresolved.push(p);
+  }
+  const extra=Object.keys(resolutions).filter(p=>!Object.prototype.hasOwnProperty.call(current,p)||!Object.prototype.hasOwnProperty.call(incoming,p)||current[p]===incoming[p]);
+  return response(JSON.stringify({ready:unresolved.length===0&&extra.length===0,actions,unresolved,unexpectedDecisions:extra,preview:unresolved.length===0&&extra.length===0?output:null,mode:"in_memory_dry_run_only",persisted:false,restored:false,authenticated:false,note:"Aucune écriture sur disque, aucune autorisation ni restauration réelle."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-restore-resolution"){
   if(Number(req.headers.get("content-length")||0)>32000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
