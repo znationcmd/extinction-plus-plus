@@ -409,6 +409,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-analyze"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows;
+  if(!Array.isArray(rows)||rows.length<1||rows.length>500||rows.some(r=>!r||typeof r!=="object"||Array.isArray(r)))return response(JSON.stringify({error:"1 à 500 lignes d'objets requises"}),"application/json",400);
+  const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  if(cols.length>30||cols.some(c=>c.length>100||c==="__proto__"||c==="constructor"||c==="prototype"))return response(JSON.stringify({error:"Colonnes invalides (maximum 30)"}),"application/json",400);
+  const stats=cols.map(column=>{
+   const vals=rows.map(r=>r[column]).filter(v=>v!==null&&v!==undefined&&v!=="");
+   const nums=vals.filter(v=>typeof v==="number"&&Number.isFinite(v));
+   const numeric=vals.length>0&&nums.length===vals.length;
+   return {column,count:vals.length,missing:rows.length-vals.length,type:numeric?"number":"mixed_or_text",...(numeric?{min:Math.min(...nums),max:Math.max(...nums),sum:nums.reduce((a,b)=>a+b,0),average:nums.reduce((a,b)=>a+b,0)/nums.length}:{uniqueCount:new Set(vals.map(v=>JSON.stringify(v))).size})};
+  });
+  return response(JSON.stringify({executed:true,rowCount:rows.length,columnCount:cols.length,columns:stats,chartData:rows.slice(0,100),chartDataTruncated:rows.length>100,scope:"in_memory_table_statistics",note:"Analyse calculée sur les données fournies, sans stockage."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/work/roadmap"){
   const priority=["developer-engine","format-detection","game-mods","plugin-marketplace","multi-plugin-execution","github-railway","isolated-execution","project-generation","cmd-discord-connectors","verification-autonomy"];
   const existing=["chat","web-search","browser","search-providers","web-page-reading","plugin-catalog","oauth-connectors","plugin-orchestration","file-editor","game-config-editor","app-bot-builder","github-integration","railway-integration","automated-testing","image-generation","persistent-memory","responsive-pwa"];
