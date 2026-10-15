@@ -504,6 +504,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/video-edit-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>40000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>40000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Number.isFinite(b?.durationSeconds)||b.durationSeconds<=0||b.durationSeconds>21600||!Array.isArray(b.clips)||b.clips.length>100)
+   return response(JSON.stringify({error:"Montage invalide"}),"application/json",400);
+  const clips=[];let total=0;
+  for(const clip of b.clips){
+   if(!clip||!Number.isFinite(clip.start)||!Number.isFinite(clip.end)||clip.start<0||clip.end<=clip.start||clip.end>b.durationSeconds||typeof clip.label!=="string"||clip.label.length>100)
+    return response(JSON.stringify({error:"Segment invalide"}),"application/json",400);
+   const duration=clip.end-clip.start;total+=duration;clips.push({label:clip.label,start:clip.start,end:clip.end,duration});
+  }
+  return response(JSON.stringify({executed:true,planOnly:true,videoRendered:false,clipCount:clips.length,totalOutputSeconds:Math.round(total*100)/100,timeline:clips,renderEngineRequired:true}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/live-voice-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
