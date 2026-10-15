@@ -658,10 +658,29 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>2000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
-  if(data?.plugin!=="github"||!["account_status","repository_status"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
-  const repo=String(data?.repository||"");if(data.action==="repository_status"&&!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))return response(JSON.stringify({error:"Dépôt attendu au format propriétaire/nom"}),"application/json",400);
+  if(data?.plugin!=="github"||!["account_status","repository_status","file_read"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
+  const repo=String(data?.repository||"");if(["repository_status","file_read"].includes(data.action)&&!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))return response(JSON.stringify({error:"Dépôt attendu au format propriétaire/nom"}),"application/json",400);
+  if(data.action==="file_read"){
+   const filePath=data.path,ref=data.ref;
+   if(typeof filePath!=="string"||filePath.length>350||!filePath||filePath.startsWith("/")||filePath.split("/").some(part=>!part||part==="."||part==="..")||/[\\\x00-\x1f]/.test(filePath))return response(JSON.stringify({error:"Chemin de fichier invalide"}),"application/json",400);
+   if(ref!==undefined&&(typeof ref!=="string"||ref.length>120||!/^[A-Za-z0-9_./-]+$/.test(ref)||ref.includes("..")))return response(JSON.stringify({error:"Référence Git invalide"}),"application/json",400);
+  }
   const token=await NEURIA_OAUTH_OPEN(req);if(!token)return response(JSON.stringify({error:"Connecte ton compte GitHub dans Connexions"}),"application/json",401);
-  try{const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
+  try{
+   if(data.action==="file_read"){
+    const url="https://api.github.com/repos/"+repo+"/contents/"+data.path.split("/").map(encodeURIComponent).join("/")+(data.ref?"?ref="+encodeURIComponent(data.ref):"");
+    const upstream=await fetch(url,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github.raw+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(12000)});
+    if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Fichier inaccessible":"Lecture GitHub refusée",status:upstream.status}),"application/json",upstream.status===404?404:502);
+    const length=Number(upstream.headers.get("content-length")||0);
+    if(length>150000)return response(JSON.stringify({error:"Fichier trop volumineux (150 Ko maximum)"}),"application/json",413);
+    const reader=upstream.body?.getReader();if(!reader)return response(JSON.stringify({error:"Réponse GitHub vide"}),"application/json",502);
+    const chunks=[];let total=0;while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>150000){await reader.cancel();return response(JSON.stringify({error:"Fichier trop volumineux (150 Ko maximum)"}),"application/json",413)}chunks.push(value)}
+    const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+    if(bytes.includes(0))return response(JSON.stringify({error:"Fichier binaire non pris en charge"}),"application/json",415);
+    const content=new TextDecoder("utf-8",{fatal:true}).decode(bytes);
+    return response(JSON.stringify({executed:true,plugin:"github",action:"file_read",repository:repo,path:data.path,content,bytes:total,readOnly:true}),"application/json");
+   }
+   const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
  if(req.method==="POST"&&path==="/api/plugins/orchestrate"){
   if(Number(req.headers.get("content-length")||0)>4000)return response(JSON.stringify({error:"Demande trop longue"}),"application/json",413);
