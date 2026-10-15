@@ -758,7 +758,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
-  if(data?.plugin!=="github"||!["account_status","repository_status","file_read","file_metadata","file_update","directory_list"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
+  if(data?.plugin!=="github"||!["account_status","repository_status","file_read","file_metadata","file_update","directory_list","directory_tree"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
   const repo=String(data?.repository||"");if(["repository_status","file_read","file_metadata","file_update","directory_list"].includes(data.action)&&!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))return response(JSON.stringify({error:"Dépôt attendu au format propriétaire/nom"}),"application/json",400);
   if(["file_read","file_metadata","file_update"].includes(data.action)){
    const filePath=data.path,ref=data.ref;
@@ -772,12 +772,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    if(typeof data.branch!=="string"||!data.branch||data.branch.length>120||!/^[A-Za-z0-9_./-]+$/.test(data.branch)||data.branch.includes(".."))return response(JSON.stringify({error:"Branche explicite requise"}),"application/json",400);
    if(typeof data.message!=="string"||data.message.trim().length<8||data.message.length>180)return response(JSON.stringify({error:"Message de commit requis (8 à 180 caractères)"}),"application/json",400);
   }
+  if(data.action==="directory_tree"){
+   if(data.path!==undefined&&(typeof data.path!=="string"||data.path.length>350||data.path.startsWith("/")||data.path.split("/").some(part=>part==="."||part===".."||(part===""&&data.path!==""))||/[\\\x00-\x1f]/.test(data.path)))return response(JSON.stringify({error:"Chemin de dossier invalide"}),"application/json",400);
+   if(typeof data.ref!=="string"||!data.ref||data.ref.length>120||!/^[A-Za-z0-9_./-]+$/.test(data.ref)||data.ref.includes(".."))return response(JSON.stringify({error:"Référence Git explicite requise"}),"application/json",400);
+  }
   if(data.action==="directory_list"){
    if(data.path!==undefined&&(typeof data.path!=="string"||data.path.length>350||data.path.startsWith("/")||data.path.split("/").some(part=>part==="."||part===".."||(part===""&&data.path!==""))||/[\\\x00-\x1f]/.test(data.path)))return response(JSON.stringify({error:"Chemin de dossier invalide"}),"application/json",400);
    if(data.ref!==undefined&&(typeof data.ref!=="string"||data.ref.length>120||!/^[A-Za-z0-9_./-]+$/.test(data.ref)||data.ref.includes("..")))return response(JSON.stringify({error:"Référence Git invalide"}),"application/json",400);
   }
   const token=await NEURIA_OAUTH_OPEN(req);if(!token)return response(JSON.stringify({error:"Connecte ton compte GitHub dans Connexions"}),"application/json",401);
   try{
+   if(data.action==="directory_tree"){
+    const treeUrl="https://api.github.com/repos/"+repo+"/git/trees/"+encodeURIComponent(data.ref)+"?recursive=1";
+    const upstream=await fetch(treeUrl,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(15000)});
+    if(!upstream.ok)return response(JSON.stringify({error:"Lecture de l'arborescence GitHub impossible",status:upstream.status}),"application/json",upstream.status===404?404:502);
+    const tree=await upstream.json();if(!Array.isArray(tree.tree))return response(JSON.stringify({error:"Réponse GitHub invalide"}),"application/json",502);
+    const prefix=data.path?data.path+"/":"";
+    const items=tree.tree.filter(item=>item.path.startsWith(prefix)&&item.path!==data.path).slice(0,2000).map(item=>({path:item.path,type:item.type,size:item.size||0,sha:item.sha}));
+    return response(JSON.stringify({executed:true,plugin:"github",action:"directory_tree",repository:repo,ref:data.ref,path:data.path||"",items,truncated:!!tree.truncated||tree.tree.length>2000,readOnly:true}),"application/json");
+   }
    if(data.action==="directory_list"){
     const folder=String(data.path||"");
     const url="https://api.github.com/repos/"+repo+"/contents"+(folder?"/"+folder.split("/").map(encodeURIComponent).join("/"):"")+(data.ref?"?ref="+encodeURIComponent(data.ref):"");
