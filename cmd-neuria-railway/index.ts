@@ -446,6 +446,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/previous-project-retrieval"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>2500)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const owner=String(body?.owner||"").trim(),page=Number(body?.page||1);
+  if(!/^[a-zA-Z0-9-]{1,39}$/.test(owner)||!Number.isInteger(page)||page<1||page>100)return response(JSON.stringify({error:"Propriétaire ou page invalide"}),"application/json",400);
+  const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN||"";
+  if(!token)return response(JSON.stringify({error:"Connexion GitHub non configurée"}),"application/json",503);
+  try{const upstream=await fetch("https://api.github.com/users/"+encodeURIComponent(owner)+"/repos?per_page=50&page="+page+"&sort=updated",{headers:{"accept":"application/vnd.github+json","authorization":"Bearer "+token,"user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(12000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Impossible de récupérer les projets",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();if(!Array.isArray(data))throw Error("Réponse invalide");
+   return response(JSON.stringify({executed:true,source:"github",owner,page,projects:data.filter(p=>p.owner?.login?.toLowerCase()===owner.toLowerCase()).map(p=>({name:p.name,fullName:p.full_name,description:p.description,private:p.private,updatedAt:p.updated_at,defaultBranch:p.default_branch,url:p.html_url})),note:"Inventaire GitHub uniquement; restauration des données et déploiements non effectuée."}),"application/json");
+  }catch{return response(JSON.stringify({error:"Recherche des anciens projets échouée"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/live-voice-session"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
