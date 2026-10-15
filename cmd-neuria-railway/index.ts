@@ -504,6 +504,30 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/mod-dependency-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>80000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>80000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.mods)||b.mods.length>250)return response(JSON.stringify({error:"Mods invalides"}),"application/json",400);
+  const byId=new Map();
+  for(const mod of b.mods){
+   if(!mod||typeof mod.id!=="string"||!mod.id||mod.id.length>100||!Array.isArray(mod.dependencies)||mod.dependencies.length>100||mod.dependencies.some(x=>typeof x!=="string"||x.length>100)||byId.has(mod.id))
+    return response(JSON.stringify({error:"Mod invalide ou dupliqué"}),"application/json",400);
+   byId.set(mod.id,mod);
+  }
+  const missing=[],ordered=[],cycles=[],state=new Map(),stack=[];
+  function visit(id){
+   if(state.get(id)===2)return;
+   if(state.get(id)===1){cycles.push([...stack.slice(stack.indexOf(id)),id]);return}
+   state.set(id,1);stack.push(id);
+   for(const dep of byId.get(id).dependencies){if(!byId.has(dep)){missing.push({mod:id,dependency:dep});continue}visit(dep)}
+   stack.pop();state.set(id,2);ordered.push(id);
+  }
+  for(const id of byId.keys())visit(id);
+  return response(JSON.stringify({executed:true,planOnly:true,installExecuted:false,valid:missing.length===0&&cycles.length===0,loadOrder:cycles.length?[]:ordered,missingDependencies:missing,cycles}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/security-audit-preview"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
