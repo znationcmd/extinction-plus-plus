@@ -421,6 +421,16 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const row of left){if(!Object.prototype.hasOwnProperty.call(row,key))return response(JSON.stringify({error:"Clé absente du tableau gauche"}),"application/json",400);const value=row[key],match=value===null||typeof value==="object"?undefined:index.get(typeof value+":"+String(value));if(match)matched++;const merged={...row};if(match)for(const [col,v] of Object.entries(match)){if(col!==key){const safe=["__proto__","constructor","prototype"].includes(col)?"right_"+col:col;merged[Object.prototype.hasOwnProperty.call(merged,safe)?"right_"+safe:safe]=v}}output.push(merged)}
   return response(JSON.stringify({executed:true,rows:output,rowCount:output.length,matched,unmatched:output.length-matched,mode:"left_join",stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/table-quality"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows;if(!Array.isArray(rows)||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x)))return response(JSON.stringify({error:"Maximum 500 lignes d'objets"}),"application/json",400);
+  const columns=[...new Set(rows.flatMap(x=>Object.keys(x)))];if(columns.length>30)return response(JSON.stringify({error:"Maximum 30 colonnes"}),"application/json",400);
+  const quality=columns.map(column=>{const values=rows.map(row=>row[column]);const missing=values.filter(v=>v===null||v===undefined||v==="").length;const numeric=values.filter(v=>typeof v==="number"&&Number.isFinite(v)).length;return {column,missing,present:rows.length-missing,numeric,completeness:rows.length?Math.round((rows.length-missing)/rows.length*100):100}});
+  const signatures=new Set();let duplicates=0;for(const row of rows){const signature=JSON.stringify(columns.map(c=>row[c]??null));if(signatures.has(signature))duplicates++;else signatures.add(signature)}
+  return response(JSON.stringify({executed:true,rowCount:rows.length,duplicateRows:duplicates,columns:quality,mode:"in_memory_quality_audit",stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-group-summary"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
