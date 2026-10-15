@@ -1,5 +1,6 @@
 
 import sharp from "sharp";
+import { reserveGeneration } from "./neuria-generation-quota.ts";
 import { summarizeText, extractTasks } from "./neuria-text-tools.ts";
 import { compareDocuments, analyzeDocument } from "./neuria-document-tools.ts";
 import { inventoryGitHubFolder, inspectGitHubFolderFiles } from "./neuria-folder-inventory.ts";
@@ -594,8 +595,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  }
  if(req.method==="POST"&&(path==="/api/neuria/generation/oracle"||path==="/api/neuria/generation/pulse")){
   if(!NEURIA_WORK_AUTH(req))return new Response(JSON.stringify({error:"Accès non autorisé"}),{status:403,headers:{"content-type":"application/json"}});
-  // Fail closed until durable account-linked quota is enforced; never allow unlimited GPU usage.
-  if(true)return new Response(JSON.stringify({error:"Limite gratuite : 1 génération Oracle ET 1 génération Pulse par compte toutes les 24 h. Comptes et quotas persistants non encore activés.",quota:{oracle:{limit:1,windowHours:24},pulse:{limit:1,windowHours:24},independent:true,enforced:false}}),{status:503,headers:{"content-type":"application/json","cache-control":"no-store"}});
+  // Fail closed without a real worker, verified account, and durable database.
+  const engine=path.endsWith("/oracle")?"oracle":"pulse";
+  if(!Bun.env.NEURIA_QUOTA_DB_PATH)return new Response(JSON.stringify({error:"Stockage persistant des quotas non configuré"}),{status:503,headers:{"content-type":"application/json"}});
+  if(!Bun.env[engine==="oracle"?"NEURIA_ORACLE_WORKER_URL":"NEURIA_PULSE_WORKER_URL"]||!Bun.env.NEURIA_GENERATION_WORKER_TOKEN)return new Response(JSON.stringify({error:"Moteur "+engine+" non installé : aucune génération facturable lancée"}),{status:503,headers:{"content-type":"application/json"}});
+  const githubToken=await NEURIA_OAUTH_OPEN(req);
+  if(!githubToken)return new Response(JSON.stringify({error:"Connecte ton compte GitHub pour utiliser le quota personnel"}),{status:401,headers:{"content-type":"application/json"}});
+  let accountId;
+  try{
+   const identity=await fetch("https://api.github.com/user",{headers:{"authorization":"Bearer "+githubToken,"accept":"application/vnd.github+json","user-agent":"CMD-NEURIA"},signal:AbortSignal.timeout(8000)});
+   if(!identity.ok)throw Error("invalid identity");
+   const user=await identity.json();
+   if(!Number.isSafeInteger(user.id)||user.id<=0)throw Error("invalid user");
+   accountId="github:"+user.id;
+  }catch{return new Response(JSON.stringify({error:"Identité du compte non vérifiable"}),{status:401,headers:{"content-type":"application/json"}})}
+  try{
+   const quota=reserveGeneration(accountId,engine);
+   if(!quota.allowed)return new Response(JSON.stringify({error:"Quota de 24 h atteint",engine,retryAt:quota.retryAt}),{status:429,headers:{"content-type":"application/json","cache-control":"no-store"}});
+  }catch{return new Response(JSON.stringify({error:"Stockage des quotas indisponible : génération bloquée"}),{status:503,headers:{"content-type":"application/json"}})}
+
   const oracle=path.endsWith("/oracle"),worker=Bun.env[oracle?"NEURIA_ORACLE_WORKER_URL":"NEURIA_PULSE_WORKER_URL"],token=Bun.env.NEURIA_GENERATION_WORKER_TOKEN;
   if(!worker||!token)return new Response(JSON.stringify({error:"Moteur IA non raccordé : configurer le worker et son jeton"}),{status:503,headers:{"content-type":"application/json"}});
   let url;try{url=new URL(worker);if(url.protocol!=="https:"&&!["localhost","127.0.0.1"].includes(url.hostname))throw Error("TLS required");}catch{return new Response(JSON.stringify({error:"URL de worker invalide : HTTPS requis"}),{status:503,headers:{"content-type":"application/json"}})}
