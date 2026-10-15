@@ -731,6 +731,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-integrity-chain"){
+  if(Number(req.headers.get("content-length")||0)>32000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const entries=body?.entries;
+  if(!Array.isArray(entries)||entries.length<1||entries.length>100)return response(JSON.stringify({error:"1 à 100 entrées requises"}),"application/json",400);
+  const seen=new Set(),issues=[];let previous=null;
+  for(let i=0;i<entries.length;i++){
+   const e=entries[i],id=e?.id,hash=e?.hash,prev=e?.previousHash;
+   if(typeof id!=="string"||!id||id.length>120||seen.has(id))issues.push({index:i,issue:"invalid_or_duplicate_id"});else seen.add(id);
+   if(typeof hash!=="string"||!/^([a-fA-F0-9]{64})$/.test(hash))issues.push({index:i,issue:"invalid_sha256"});
+   if(i===0&&prev!==null&&prev!==undefined&&prev!=="")issues.push({index:i,issue:"first_entry_must_not_link"});
+   if(i>0&&prev!==previous)issues.push({index:i,issue:"broken_previous_hash_link"});
+   previous=hash;
+  }
+  return response(JSON.stringify({valid:issues.length===0,count:entries.length,issues,mode:"chain_structure_audit_only",contentVerified:false,authenticated:false,note:"Contrôle des liens déclarés entre empreintes ; ne recalcule pas les SHA-256 du contenu et ne prouve pas l'authenticité."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-job-transition"){
   if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
