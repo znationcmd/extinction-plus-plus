@@ -504,6 +504,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/speech-synthesis-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>30000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>30000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof b?.text!=="string"||!b.text.trim()||b.text.length>10000||typeof b.language!=="string"||b.language.length>12||typeof b.voice!=="string"||b.voice.length>80)
+   return response(JSON.stringify({error:"Paramètres vocaux invalides"}),"application/json",400);
+  const segments=b.text.match(/[^.!?\n]+[.!?]?/g)?.map(x=>x.trim()).filter(Boolean)||[];
+  const chunks=[];for(const segment of segments){if(segment.length<=500)chunks.push(segment);else for(let i=0;i<segment.length;i+=500)chunks.push(segment.slice(i,i+500))}
+  return response(JSON.stringify({executed:true,planOnly:true,audioGenerated:false,language:b.language,voice:b.voice,segmentCount:chunks.length,segments:chunks.slice(0,100),providerRequired:true}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/audio-transcription-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
