@@ -504,6 +504,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/live-voice-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!["audio/webm","audio/ogg","audio/pcm","audio/wav"].includes(b?.inputMimeType)||!Number.isFinite(b.sampleRate)||b.sampleRate<8000||b.sampleRate>192000||!Number.isInteger(b.channels)||b.channels<1||b.channels>2||typeof b.language!=="string"||b.language.length>12)
+   return response(JSON.stringify({error:"Configuration vocale invalide"}),"application/json",400);
+  const chunkMs=Number.isInteger(b.chunkMs)&&b.chunkMs>=100&&b.chunkMs<=2000?b.chunkMs:500;
+  const bytesPerSecond=b.sampleRate*b.channels*2;
+  return response(JSON.stringify({executed:true,planOnly:true,liveSessionStarted:false,transcriptionActive:false,speechOutputActive:false,chunkMs,estimatedPcmBytesPerChunk:Math.round(bytesPerSecond*chunkMs/1000),requirements:["microphone_permission","realtime_transport","speech_recognition_provider","speech_synthesis_provider"]}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/image-understanding-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
