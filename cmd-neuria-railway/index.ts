@@ -427,8 +427,10 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(records.length<2||records.length>501)return response(JSON.stringify({error:"En-tête et 1 à 500 lignes requis"}),"application/json",400);
   const headers=records.shift();if(headers.length<1||headers.length>30||headers.some(x=>!x||x.length>100||["__proto__","constructor","prototype"].includes(x))||new Set(headers).size!==headers.length)return response(JSON.stringify({error:"En-têtes invalides ou dupliqués"}),"application/json",400);
   if(records.some(x=>x.length!==headers.length))return response(JSON.stringify({error:"Nombre de colonnes incohérent"}),"application/json",400);
-  const rows=records.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,cells[i]])));
-  return response(JSON.stringify({executed:true,rows,columns:headers,rowCount:rows.length,mode:"in_memory_csv_parse",stored:false}),"application/json");
+  const numericColumns=headers.filter((h,i)=>records.some(row=>row[i].trim()!=="")&&records.every(row=>row[i].trim()===""||/^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)$/.test(row[i].trim())&&Number.isFinite(Number(row[i].trim()))));
+  const numericSet=new Set(numericColumns);
+  const rows=records.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,numericSet.has(h)?(cells[i].trim()===""?null:Number(cells[i].trim())):cells[i]])));
+  return response(JSON.stringify({executed:true,rows,columns:headers,numericColumns,rowCount:rows.length,mode:"in_memory_csv_parse",stored:false}),"application/json");
  }
  if(req.method==="POST"&&path==="/api/work/table-csv"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
