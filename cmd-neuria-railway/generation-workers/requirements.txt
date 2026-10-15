@@ -1,0 +1,10 @@
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+pydantic>=2,<3
+torch>=2.3,<3
+transformers>=4.46,<5
+diffusers>=0.31,<1
+accelerate>=1,<2
+trimesh>=4,<5
+numpy>=1.26,<3
+safetensors>=0.4,<1
