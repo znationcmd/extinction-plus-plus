@@ -504,6 +504,31 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/security-audit-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>150000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>150000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.files)||b.files.length>30)return response(JSON.stringify({error:"Fichiers invalides"}),"application/json",400);
+  const rules=[
+   {id:"embedded-private-key",severity:"critical",pattern:/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/},
+   {id:"hardcoded-secret",severity:"high",pattern:/(?:api[_-]?key|secret|password|token)\s*[:=]\s*["'][^"']{12,}["']/i},
+   {id:"unsafe-eval",severity:"medium",pattern:/\beval\s*\(/},
+   {id:"insecure-http",severity:"low",pattern:/http:\/\/(?!localhost|127\.0\.0\.1)/}
+  ];
+  const findings=[];
+  for(const file of b.files){
+   if(!file||typeof file.path!=="string"||file.path.length>300||typeof file.content!=="string"||file.content.length>50000)
+    return response(JSON.stringify({error:"Fichier invalide"}),"application/json",400);
+   const lines=file.content.split(/\r?\n/);
+   for(let i=0;i<lines.length;i++)for(const rule of rules)if(rule.pattern.test(lines[i])){
+    findings.push({path:file.path,line:i+1,rule:rule.id,severity:rule.severity});
+    if(findings.length>=150)break;
+   }
+  }
+  return response(JSON.stringify({executed:true,staticHeuristicOnly:true,filesScanned:b.files.length,findings:findings.slice(0,150),truncated:findings.length>=150,remediated:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/backup-restore-preview"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
