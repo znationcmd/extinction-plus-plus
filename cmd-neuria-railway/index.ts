@@ -504,6 +504,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/change-detection"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>120000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{const raw=await req.text();if(raw.length>120000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);body=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const before=body?.before,after=body?.after;
+  if(typeof before!=="string"||typeof after!=="string"||before.length>50000||after.length>50000)
+   return response(JSON.stringify({error:"Données invalides"}),"application/json",400);
+  const previous=before.replace(/\r\n/g,"\n").split("\n"),current=after.replace(/\r\n/g,"\n").split("\n");
+  const counts=new Map();for(const line of current)counts.set(line,(counts.get(line)||0)+1);
+  const removed=[];for(const line of previous){const n=counts.get(line)||0;if(n)counts.set(line,n-1);else removed.push(line)}
+  const oldCounts=new Map();for(const line of previous)oldCounts.set(line,(oldCounts.get(line)||0)+1);
+  const added=[];for(const line of current){const n=oldCounts.get(line)||0;if(n)oldCounts.set(line,n-1);else added.push(line)}
+  const changed=before!==after;
+  return response(JSON.stringify({executed:true,changed,addedCount:added.length,removedCount:removed.length,added:added.slice(0,100),removed:removed.slice(0,100),truncated:added.length>100||removed.length>100,monitoringActive:false,notificationsSent:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/schedule-preview"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
