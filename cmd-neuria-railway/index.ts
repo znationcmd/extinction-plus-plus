@@ -446,6 +446,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/live-voice-session"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>2500)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const voice=body?.voice||"alloy";if(!["alloy","ash","ballad","coral","echo","sage","shimmer","verse"].includes(voice))return response(JSON.stringify({error:"Voix invalide"}),"application/json",400);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,"");
+  if(!key)return response(JSON.stringify({error:"Conversation vocale non configurée",configured:false}),"application/json",503);
+  try{const upstream=await fetch(base+"/realtime/sessions",{method:"POST",headers:{authorization:"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({model:process.env.OPENAI_REALTIME_MODEL||"gpt-4o-realtime-preview",voice,modalities:["audio","text"],instructions:"Tu es CMD Neuria, un assistant utile. Réponds en français sauf demande contraire."}),signal:AbortSignal.timeout(15000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Création de session vocale impossible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();if(!data?.client_secret?.value)return response(JSON.stringify({error:"Session sans jeton temporaire"}),"application/json",502);
+   return response(JSON.stringify({executed:true,clientSecret:data.client_secret.value,expiresAt:data.client_secret.expires_at||null,model:data.model||null,voice,transport:"webrtc",note:"Jeton éphémère destiné au client autorisé. Le navigateur doit établir sa connexion WebRTC."}),"application/json");
+  }catch{return response(JSON.stringify({error:"Service vocal indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/local-place-search"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
