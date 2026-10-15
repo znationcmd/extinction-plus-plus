@@ -504,6 +504,35 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/multi-device-sync-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>50000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>50000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.devices)||b.devices.length>20)return response(JSON.stringify({error:"Appareils invalides"}),"application/json",400);
+  const devices=[];
+  for(const d of b.devices){
+   if(!d||typeof d.id!=="string"||d.id.length>100||!Array.isArray(d.changes)||d.changes.length>100)return response(JSON.stringify({error:"Appareil invalide"}),"application/json",400);
+   const changes=[];
+   for(const change of d.changes){
+    if(!change||typeof change.key!=="string"||change.key.length>120||!Number.isSafeInteger(change.version)||change.version<0||typeof change.updatedAt!=="string"||!Number.isFinite(Date.parse(change.updatedAt)))
+     return response(JSON.stringify({error:"Modification invalide"}),"application/json",400);
+    changes.push({key:change.key,version:change.version,updatedAt:change.updatedAt,deviceId:d.id});
+   }
+   devices.push({id:d.id,changes});
+  }
+  const groups=new Map();
+  for(const d of devices)for(const ch of d.changes){if(!groups.has(ch.key))groups.set(ch.key,[]);groups.get(ch.key).push(ch)}
+  const plan=[],conflicts=[];
+  for(const [key,versions] of groups){
+   versions.sort((a,b)=>b.version-a.version||Date.parse(b.updatedAt)-Date.parse(a.updatedAt));
+   const top=versions[0],ties=versions.filter(x=>x.version===top.version);
+   if(ties.length>1&&new Set(ties.map(x=>x.updatedAt)).size>1)conflicts.push({key,devices:ties.map(x=>x.deviceId)});
+   plan.push({key,sourceDevice:top.deviceId,version:top.version,targetDevices:devices.filter(x=>x.id!==top.deviceId).map(x=>x.id)});
+  }
+  return response(JSON.stringify({executed:true,assessmentOnly:true,applied:false,plan,conflicts,deviceCount:devices.length}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/offline-readiness"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
