@@ -504,6 +504,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/conditional-notification-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>120000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>120000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof b?.before!=="string"||typeof b?.after!=="string"||b.before.length>50000||b.after.length>50000||!Array.isArray(b.rules)||b.rules.length>30)
+   return response(JSON.stringify({error:"Données invalides"}),"application/json",400);
+  const changed=b.before!==b.after;
+  const supported=new Set(["changed","contains","not_contains","minimum_length"]);
+  const matches=[];
+  for(const rule of b.rules){
+   if(!rule||typeof rule.id!=="string"||rule.id.length>100||!supported.has(rule.type)||typeof rule.value!=="string"||rule.value.length>500)
+    return response(JSON.stringify({error:"Règle invalide"}),"application/json",400);
+   const ok=rule.type==="changed"?changed:rule.type==="contains"?b.after.includes(rule.value):rule.type==="not_contains"?!b.after.includes(rule.value):Number.isFinite(Number(rule.value))&&b.after.length>=Number(rule.value);
+   if(ok)matches.push({id:rule.id,type:rule.type});
+  }
+  return response(JSON.stringify({executed:true,changed,triggered:matches.length>0,matches,notificationPreview:matches.length?String(b.message||"Changement détecté").slice(0,300):null,notificationsSent:false,monitoringActive:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/change-detection"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
