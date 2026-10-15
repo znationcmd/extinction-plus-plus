@@ -731,6 +731,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/recovery-plan"){
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const project=String(body?.project||"").trim().slice(0,120);
+  const incident=String(body?.incident||"").trim().slice(0,1200);
+  const files=Array.isArray(body?.files)?body.files.slice(0,100).filter(x=>typeof x==="string"&&x.length<=240&&!x.startsWith("/")&&!x.split("/").includes("..")):[];
+  if(project.length<2||incident.length<8)return response(JSON.stringify({error:"Projet et description de l'incident requis"}),"application/json",400);
+  const steps=[
+   {id:"freeze",action:"Suspendre les écritures risquées et noter la version active",automatic:false},
+   {id:"inventory",action:"Inventorier les fichiers et versions disponibles",automatic:false},
+   {id:"backup",action:"Créer une sauvegarde avant toute restauration",automatic:false},
+   {id:"compare",action:"Comparer la version de secours et les changements récents",automatic:false},
+   {id:"restore",action:"Restaurer uniquement après confirmation explicite",requiresApproval:true,automatic:false},
+   {id:"verify",action:"Vérifier le service, les données et les fonctions essentielles",automatic:false}
+  ];
+  return response(JSON.stringify({project,incident,files,steps,mode:"recovery_plan_only",executed:false,requiresApprovalForRestore:true,note:"Aucune sauvegarde ni restauration exécutée par cette route."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/plugins/orchestrate"){
   if(Number(req.headers.get("content-length")||0)>4000)return response(JSON.stringify({error:"Demande trop longue"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
