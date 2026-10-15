@@ -580,6 +580,31 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const errors=[];if(unsafe.length)errors.push("Chemins non sécurisés");if(duplicates.length)errors.push("Noms de fichiers en doublon");if(size>100000)errors.push("Contenu total supérieur à 100000 caractères");
   return response(JSON.stringify({valid:errors.length===0,count:total.length,totalCharacters:size,errors,unsafe:unsafe.slice(0,30),duplicates:duplicates.slice(0,30),files:total.slice(0,200),execution:"analysis_only",persisted:false,note:"Inventaire de fichiers fourni par le client ; aucun accès au disque serveur."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/project-apply-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const files=body?.files,operations=body?.operations;
+  if(!Array.isArray(files)||files.length>100||!Array.isArray(operations)||operations.length<1||operations.length>30)return response(JSON.stringify({error:"Fichiers ou opérations invalides"}),"application/json",400);
+  const validPath=p=>typeof p==="string"&&p.length>0&&p.length<=240&&!p.startsWith("/")&&!/^[A-Za-z]:/.test(p)&&!/[\\\x00-\x1f]/.test(p)&&p.split("/").every(x=>x&&x!=="."&&x!=="..");
+  const map=new Map();
+  for(const file of files){const path=file?.path,content=file?.content;if(!validPath(path)||typeof content!=="string"||map.has(path))return response(JSON.stringify({error:"Fichier initial invalide ou en doublon"}),"application/json",400);map.set(path,content)}
+  const results=[];
+  for(let i=0;i<operations.length;i++){
+   const op=operations[i],path=op?.path,action=op?.action;
+   if(!validPath(path)||!["create","replace","delete","assert"].includes(action))return response(JSON.stringify({error:"Opération invalide",step:i+1,rolledBack:true}),"application/json",400);
+   const exists=map.has(path);
+   if(action==="create"&&exists||action!=="create"&&!exists)return response(JSON.stringify({error:"Conflit de fichier",step:i+1,path,rolledBack:true}),"application/json",409);
+   if(action==="assert"){if(map.get(path)!==op.content)return response(JSON.stringify({error:"Assertion échouée",step:i+1,path,rolledBack:true}),"application/json",409)}
+   else if(action==="delete")map.delete(path);
+   else{if(typeof op.content!=="string")return response(JSON.stringify({error:"Contenu manquant",step:i+1,rolledBack:true}),"application/json",400);map.set(path,op.content)}
+   results.push({step:i+1,action,path,passed:true});
+  }
+  const output=[...map].map(([path,content])=>({path,content}));const size=output.reduce((n,x)=>n+x.content.length,0);
+  if(output.length>100||size>100000)return response(JSON.stringify({error:"Projet résultant trop volumineux",rolledBack:true}),"application/json",413);
+  return response(JSON.stringify({valid:true,steps:results,files:output,count:output.length,totalCharacters:size,execution:"in_memory_only",persisted:false,note:"Aucune écriture disque, GitHub ou Railway."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
