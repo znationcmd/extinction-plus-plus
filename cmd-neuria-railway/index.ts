@@ -320,6 +320,9 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({format,valid:errors.length===0,errors:errors.slice(0,30),warnings:warnings.slice(0,30),details,execution:"validation_only"}),"application/json");
  }
+ if(req.method==="GET"&&path==="/api/developer/formats"){
+  return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
