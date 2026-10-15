@@ -241,6 +241,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let sealed;try{sealed=await NEURIA_OAUTH_SEAL(data.access_token)}catch{return response(JSON.stringify({error:"NEURIA_OAUTH_ENCRYPTION_KEY manquante"}),"application/json",503)}
   return new Response(null,{status:302,headers:[["location","/"],["cache-control","no-store"],["set-cookie","neuria_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/api/oauth/github; Max-Age=0"],["set-cookie","neuria_github="+sealed+"; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000"]]});
  }
+ if(req.method==="GET"&&path==="/api/research/web"){
+  const q=String(new URL(req.url).searchParams.get("q")||"").trim().slice(0,150);
+  if(q.length<3)return response(JSON.stringify({error:"Requête trop courte"}),"application/json",400);
+  try{
+   const url="https://fr.wikipedia.org/w/api.php?"+new URLSearchParams({action:"opensearch",search:q,limit:"8",namespace:"0",format:"json",origin:"*"});
+   const res=await fetch(url,{signal:AbortSignal.timeout(7000)});
+   if(!res.ok)throw Error("Service indisponible");
+   const data=await res.json();
+   const results=(data[1]||[]).map((title,i)=>({title,description:data[2]?.[i]||"",url:data[3]?.[i]})).filter(x=>x.url?.startsWith("https://"));
+   return response(JSON.stringify({query:q,source:"Wikipédia",results,limited:true}),"application/json");
+  }catch{return response(JSON.stringify({error:"Recherche indisponible"}),"application/json",502)}
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
