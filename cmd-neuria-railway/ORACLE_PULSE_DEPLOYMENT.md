@@ -30,3 +30,13 @@ Variables nécessaires sur Railway :
 6. Marquer Oracle et Pulse « opérationnels » uniquement après ces tests.
 
 **Important :** HF_TOKEN seul n'installe ni Hunyuan3D ni ACE-Step, et n'assure pas de capacité GPU gratuite.
+
+## Budget utilisateur confirmé : 0 € supplémentaires (15 octobre 2026)
+
+- **Interdiction de créer des services GPU payants**, instances permanentes ou abonnements pour Oracle/Pulse sans nouvel accord explicite.
+- Ne pas provisionner deux services Railway CPU inutiles : ils ne feraient pas tourner les modèles 3D/chant et pourraient générer des frais.
+- Cibles gratuites possibles : espaces publics Hugging Face ZeroGPU, avec disponibilité, quotas, licences et interfaces API à vérifier individuellement. L'accès via navigateur ne garantit pas l'accès API automatisé depuis CMD NEURIA.
+- Le jeton `HF_TOKEN` présent dans Railway ne fournit pas à lui seul de GPU, ni d'endpoint de génération.
+- Le pont existant attend des workers HTTPS renvoyant directement des fichiers GLB et WAV ; un adaptateur réel serait nécessaire pour un Space Gradio.
+- **Critères avant activation :** accès autorisé, coût vérifié à 0 €, génération de test effective, validation des formats, limites d'usage et vérification des conditions d'utilisation.
+- Statut à afficher : `Oracle : moteur non installé`, `Pulse : moteur non installé` tant que ces critères ne sont pas remplis.
