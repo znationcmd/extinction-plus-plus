@@ -731,6 +731,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-content-verify"){
+  if(Number(req.headers.get("content-length")||0)>250000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const entries=body?.entries;
+  if(!Array.isArray(entries)||entries.length<1||entries.length>25)return response(JSON.stringify({error:"1 à 25 fichiers requis"}),"application/json",400);
+  const seen=new Set(),results=[];let total=0;
+  for(const e of entries){
+   const path=e?.path,content=e?.content,expected=e?.sha256;
+   if(typeof path!=="string"||!path||path.length>240||path.includes("\\")||path.split("/").some(x=>!x||x==="."||x==="..")||seen.has(path)||typeof content!=="string"||typeof expected!=="string"||! /^[a-fA-F0-9]{64}$/.test(expected))return response(JSON.stringify({error:"Chemin, contenu ou SHA-256 invalide ou dupliqué"}),"application/json",400);
+   seen.add(path);
+   const bytes=new TextEncoder().encode(content);total+=bytes.length;
+   if(total>180000)return response(JSON.stringify({error:"Contenu cumulé supérieur à 180 Ko"}),"application/json",413);
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(b=>b.toString(16).padStart(2,"0")).join("");
+   results.push({path,match:digest===expected.toLowerCase(),actualSha256:digest,sizeBytes:bytes.length});
+  }
+  return response(JSON.stringify({verified:results.every(x=>x.match),results,mode:"content_hash_verification",authenticated:false,stored:false,note:"SHA-256 recalculé sur les contenus UTF-8 fournis. Ne prouve ni l'origine ni la propriété des fichiers et n'accorde aucun accès."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-integrity-chain"){
   if(Number(req.headers.get("content-length")||0)>32000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
