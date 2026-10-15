@@ -375,6 +375,30 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(!templates[type])return response(JSON.stringify({error:"Type inconnu",supported:Object.keys(templates)}),"application/json",400);
   return response(JSON.stringify({type,name,files:templates[type],execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/mod-audit"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const mods=Array.isArray(body?.mods)?body.mods.slice(0,250):[];
+  if(!mods.length)return response(JSON.stringify({error:"Liste de mods vide"}),"application/json",400);
+  const ids=new Set(),duplicates=[],missing=[],edges=[],warnings=[];
+  for(const item of mods){
+   const id=String(item?.id||"").trim().slice(0,120);
+   if(!id){warnings.push("Mod sans identifiant");continue}
+   if(ids.has(id))duplicates.push(id);ids.add(id);
+  }
+  for(const item of mods){
+   const id=String(item?.id||"").trim().slice(0,120);
+   for(const dep of (Array.isArray(item?.dependencies)?item.dependencies:[]).slice(0,40)){
+    const dependency=String(dep||"").trim().slice(0,120);
+    if(!dependency)continue;
+    if(!ids.has(dependency))missing.push({mod:id,dependency});
+    else edges.push({mod:id,dependency});
+   }
+  }
+  return response(JSON.stringify({count:mods.length,duplicates:[...new Set(duplicates)],missingDependencies:missing.slice(0,200),dependencyEdges:edges.slice(0,500),warnings:warnings.slice(0,30),execution:"analysis_only",note:"Audit déclaratif : aucune installation ni vérification du Workshop/CurseForge."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
