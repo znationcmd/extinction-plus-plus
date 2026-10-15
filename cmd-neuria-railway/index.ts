@@ -736,7 +736,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   const goal=String(body.goal||"").trim().slice(0,500).toLowerCase();
   if(goal.length<5)return response(JSON.stringify({error:"Décris ton objectif en quelques mots"}),"application/json",400);
-  const github=!!(await NEURIA_OAUTH_OPEN(req)),railway=false;
+  const github=!!(await NEURIA_OAUTH_OPEN(req)),railway=Boolean(Bun.env.NEURIA_RAILWAY_TOKEN);
   const tasks=[
    {id:"github",name:"GitHub",connected:github,keywords:["github","code","bug","script","commit","dépôt","repository","corrig","développ"],action:"read_code"},
    {id:"railway",name:"Railway",connected:railway,keywords:["railway","déploi","serveur","logs","journal","héberg","production"],action:"inspect_deployments"},
