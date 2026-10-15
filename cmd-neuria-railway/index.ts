@@ -477,6 +477,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const index=matches[0],before=lines[index],eq=before.indexOf("=");lines[index]=before.slice(0,eq+1)+value;
   return response(JSON.stringify({valid:true,section,key,line:index+1,before,after:lines[index],preview:lines.join("\n"),execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/xml-check"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const xml=String(body?.content||"");if(xml.length>100000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  const warnings=[],errors=[];
+  if(!xml.trim().startsWith("<"))errors.push("Le document ne commence pas par une balise XML");
+  if(/<!DOCTYPE|<!ENTITY/i.test(xml))errors.push("DOCTYPE et ENTITY interdits pour la validation de sécurité");
+  const tags=xml.match(/<\/?[A-Za-z_][A-Za-z0-9_.:-]*(?:\s[^<>]*?)?\s*\/?>/g)||[];
+  const stack=[];
+  for(const tag of tags){
+   if(tag.startsWith("</")){const name=tag.slice(2).split(/[\s>]/)[0];const expected=stack.pop();if(expected!==name)errors.push("Balise fermante inattendue : "+name+" (attendu : "+(expected||"aucune")+")")}
+   else if(!tag.endsWith("/>")){const name=tag.slice(1).split(/[\s/>]/)[0];stack.push(name)}
+   if(errors.length>25)break;
+  }
+  if(stack.length)errors.push("Balises non fermées : "+stack.slice(-10).join(", "));
+  warnings.push("Vérification structurelle partielle : attributs, espaces de noms et entités non validés par un parseur XML complet.");
+  return response(JSON.stringify({valid:errors.length===0&&tags.length>0,errors:errors.slice(0,30),warnings,tagCount:tags.length,execution:"analysis_only",parser:"basic_tag_balance"}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
