@@ -323,6 +323,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  if(req.method==="GET"&&path==="/api/developer/formats"){
   return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/backup-download-verify"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const bundle=body?.bundle||body;
+  if(bundle?.format!=="cmd-neuria-backup-v1"||typeof bundle.projectId!=="string"||! /^[a-zA-Z0-9_-]{2,80}$/.test(bundle.projectId)||!Array.isArray(bundle.manifest)||!bundle.files||typeof bundle.files!=="object"||Array.isArray(bundle.files))return response(JSON.stringify({error:"Sauvegarde invalide"}),"application/json",400);
+  if(bundle.manifest.length<1||bundle.manifest.length>100||Object.keys(bundle.files).length!==bundle.manifest.length)return response(JSON.stringify({error:"Manifeste incohérent"}),"application/json",400);
+  const seen=new Set();let total=0;
+  for(const entry of bundle.manifest){
+   const p=entry?.path;
+   if(typeof p!=="string"||!p||p.length>240||p.includes("\\")||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||seen.has(p)||!Object.prototype.hasOwnProperty.call(bundle.files,p)||typeof bundle.files[p]!=="string"||typeof entry.sha256!=="string"||! /^[a-fA-F0-9]{64}$/.test(entry.sha256)||!Number.isInteger(entry.sizeBytes)||entry.sizeBytes<0)return response(JSON.stringify({error:"Entrée invalide"}),"application/json",400);
+   seen.add(p);const bytes=new TextEncoder().encode(bundle.files[p]);total+=bytes.length;
+   if(total>180000)return response(JSON.stringify({error:"Sauvegarde trop volumineuse"}),"application/json",413);
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(x=>x.toString(16).padStart(2,"0")).join("");
+   if(digest!==entry.sha256.toLowerCase()||bytes.length!==entry.sizeBytes)return response(JSON.stringify({error:"Intégrité échouée",path:p,verified:false}),"application/json",422);
+  }
+  const payload=JSON.stringify(bundle);
+  return new Response(payload,{status:200,headers:{"content-type":"application/json; charset=utf-8","content-disposition":'attachment; filename="cmd-neuria-'+bundle.projectId+'-verified.json"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+ }
  if(req.method==="POST"&&path==="/api/work/backup-roundtrip-test"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   const samples={"config/settings.json":"{\\"enabled\\":true,\\"slots\\":10}","notes/readme.txt":"CMD Neuria — sauvegarde de contrôle"};
