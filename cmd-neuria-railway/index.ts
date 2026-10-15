@@ -731,6 +731,17 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-storage-estimate"){
+  if(Number(req.headers.get("content-length")||0)>18000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const backups=Array.isArray(body?.backups)?body.backups:[];
+  if(!backups.length||backups.length>200)return response(JSON.stringify({error:"1 à 200 sauvegardes requises"}),"application/json",400);
+  const seen=new Set();let total=0,pinned=0;const items=[];
+  for(const b of backups){const id=b?.id,size=b?.bytes;if(typeof id!=="string"||!id||id.length>120||seen.has(id)||!Number.isSafeInteger(size)||size<0||size>1e12)return response(JSON.stringify({error:"Identifiant, doublon ou taille invalide"}),"application/json",400);seen.add(id);total+=size;if(!Number.isSafeInteger(total))return response(JSON.stringify({error:"Volume total excessif"}),"application/json",400);if(b.pinned===true)pinned+=size;items.push({id,bytes:size,pinned:b.pinned===true})}
+  const budget=body?.budgetBytes;
+  if(budget!==undefined&&(!Number.isSafeInteger(budget)||budget<0))return response(JSON.stringify({error:"Budget invalide"}),"application/json",400);
+  return response(JSON.stringify({count:items.length,totalBytes:total,pinnedBytes:pinned,budgetBytes:budget??null,overBudget:budget===undefined?null:total>budget,excessBytes:budget===undefined?null:Math.max(0,total-budget),items,mode:"estimate_only",measured:false,deleted:false,note:"Estimation fondée sur les tailles fournies, sans accès au stockage réel."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-retention"){
   if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
