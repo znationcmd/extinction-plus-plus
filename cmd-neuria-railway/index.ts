@@ -323,6 +323,11 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  if(req.method==="GET"&&path==="/api/developer/formats"){
   return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
  }
+ if(req.method==="GET"&&path==="/api/work/roadmap"){
+  const priority=["developer-engine","format-detection","game-mods","plugin-marketplace","multi-plugin-execution","github-railway","isolated-execution","project-generation","cmd-discord-connectors","verification-autonomy"];
+  const existing=["chat","web-search","browser","search-providers","web-page-reading","plugin-catalog","oauth-connectors","plugin-orchestration","file-editor","game-config-editor","app-bot-builder","github-integration","railway-integration","automated-testing","image-generation","persistent-memory","responsive-pwa"];
+  return response(JSON.stringify({project:"CMD NEURIA",total:27,priority:priority.map((id,index)=>({id,rank:index+1,status:"in_progress_or_planned"})),existing:existing.map(id=>({id,status:"in_progress_or_planned"})),policy:{preserveExisting:true,requireApprovalForSensitiveActions:true,doNotClaimUntestedFeaturesComplete:true},note:"Feuille de route, pas déclaration de fonctionnalités opérationnelles."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
