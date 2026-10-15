@@ -458,6 +458,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({valid:true,changes,preview:JSON.stringify(doc,null,2),execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/ini-patch-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const content=String(body?.content||"");if(content.length>100000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  const section=String(body?.section||"").trim(),key=String(body?.key||"").trim(),value=String(body?.value??"");
+  if(!/^[A-Za-z0-9_.-]{1,80}$/.test(key)||section&&!/^[A-Za-z0-9_. -]{1,100}$/.test(section)||value.includes("\n")||value.includes("\r")||value.length>2000)return response(JSON.stringify({error:"Section, clé ou valeur non valide"}),"application/json",400);
+  const lines=content.split("\n");let current="",matches=[];
+  for(let i=0;i<lines.length;i++){
+   const t=lines[i].trim();
+   if(t.startsWith("[")&&t.endsWith("]")){current=t.slice(1,-1).trim();continue}
+   if(t.startsWith(";")||t.startsWith("#"))continue;
+   const eq=t.indexOf("=");if(eq>0&&current===section&&t.slice(0,eq).trim()===key)matches.push(i);
+  }
+  if(matches.length!==1)return response(JSON.stringify({error:matches.length?"Clé ambiguë (doublons)":"Clé introuvable",matches:matches.length}),"application/json",400);
+  const index=matches[0],before=lines[index],eq=before.indexOf("=");lines[index]=before.slice(0,eq+1)+value;
+  return response(JSON.stringify({valid:true,section,key,line:index+1,before,after:lines[index],preview:lines.join("\n"),execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
