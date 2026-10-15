@@ -497,6 +497,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   warnings.push("Vérification structurelle partielle : attributs, espaces de noms et entités non validés par un parseur XML complet.");
   return response(JSON.stringify({valid:errors.length===0&&tags.length>0,errors:errors.slice(0,30),warnings,tagCount:tags.length,execution:"analysis_only",parser:"basic_tag_balance"}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/yaml-check"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const yaml=String(body?.content||"");if(yaml.length>100000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  const errors=[],warnings=[];let previousIndent=0,linesChecked=0;
+  for(const [i,line] of yaml.split("\n").entries()){
+   if(!line.trim()||line.trimStart().startsWith("#"))continue;
+   linesChecked++;
+   if(line.includes("\t"))errors.push("Ligne "+(i+1)+": tabulation non autorisée pour l'indentation");
+   const indent=line.length-line.trimStart().length;
+   if(indent>previousIndent+8)warnings.push("Ligne "+(i+1)+": augmentation importante de l'indentation");
+   previousIndent=indent;
+   if(!/^\s*(-\s+|[\w.'"-]+\s*:|[{}\[\],]|---|\.\.\.)/.test(line))warnings.push("Ligne "+(i+1)+": structure YAML non reconnue");
+   if(errors.length+warnings.length>60)break;
+  }
+  warnings.push("Contrôle indicatif : ce résultat ne garantit pas la validité YAML complète.");
+  return response(JSON.stringify({valid:errors.length===0,errors:errors.slice(0,30),warnings:warnings.slice(0,30),linesChecked,parser:"heuristic_only",execution:"analysis_only"}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
