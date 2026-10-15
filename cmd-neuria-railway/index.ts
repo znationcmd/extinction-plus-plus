@@ -256,7 +256,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
      await page.route("**/*",route=>{const u=new URL(route.request().url());if(u.hostname==="www.google.com"&&u.protocol==="https:")return route.continue();return route.abort()});
      await page.goto("https://www.google.com/search?"+new URLSearchParams({q,num:"5"}),{waitUntil:"domcontentloaded",timeout:8500});
      const results=await page.locator("a:has(h3)").evaluateAll(nodes=>nodes.slice(0,6).map(a=>({title:a.querySelector("h3")?.textContent||"",url:a.href,description:""})));
-     return {provider:"CMD Neuria Browser (Google Web)",results:results.filter(x=>x.title&&x.url.startsWith("https://"))};
+     return {provider:"CMD Neuria Browser (Google Web)",results:results.filter(x=>{try{const u=new URL(x.url);return !!x.title&&u.protocol==="https:"&&!u.hostname.endsWith(".google.com")&&u.hostname!=="www.google.com"}catch{return false}})};
     }finally{await page.close();await context.close()}
    }finally{await browser.close()}
   });
