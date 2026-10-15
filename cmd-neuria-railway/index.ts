@@ -328,6 +328,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const existing=["chat","web-search","browser","search-providers","web-page-reading","plugin-catalog","oauth-connectors","plugin-orchestration","file-editor","game-config-editor","app-bot-builder","github-integration","railway-integration","automated-testing","image-generation","persistent-memory","responsive-pwa"];
   return response(JSON.stringify({project:"CMD NEURIA",total:27,priority:priority.map((id,index)=>({id,rank:index+1,status:"in_progress_or_planned"})),existing:existing.map(id=>({id,status:"in_progress_or_planned"})),policy:{preserveExisting:true,requireApprovalForSensitiveActions:true,doNotClaimUntestedFeaturesComplete:true},note:"Feuille de route, pas déclaration de fonctionnalités opérationnelles."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/detect"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>120000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const filename=String(body?.filename||"").split(/[\\/]/).pop().slice(0,160).toLowerCase();
+  const sample=String(body?.sample||"").slice(0,12000);
+  const ext=filename.includes(".")?filename.split(".").pop():"";
+  const formats={json:"json",jsonc:"jsonc",xml:"xml",ini:"ini",cfg:"configuration",conf:"configuration",yaml:"yaml",yml:"yaml",lua:"lua",js:"javascript",ts:"typescript",html:"html",css:"css",py:"python",cs:"csharp",txt:"text",properties:"properties"};
+  const games=[];
+  const tests=[["dayz",/(types\.xml|events\.xml|cfgeventspawns\.xml|serverdz\.cfg|init\.c|dayz)/i],["arma-reforger",/(enfusion|reforger|\.conf$|\.et$)/i],["ark-survival-ascended",/(gameusersettings\.ini|game\.ini|arkascended|shootergame)/i],["7-days-to-die",/(serverconfig\.xml|entityclasses\.xml|7daystodie)/i],["conan-exiles",/(engine\.ini|serversettings\.ini|conan)/i],["farming-simulator-25",/(moddesc\.xml|farming.simulator|fs25)/i],["minecraft",/(server\.properties|pack\.mcmeta|datapack|minecraft)/i],["fivem",/(fxmanifest\.lua|__resource\.lua|fivem|citizenfx)/i]];
+  for(const [id,re] of tests)if(re.test(filename+" "+sample.slice(0,2000)))games.push(id);
+  return response(JSON.stringify({filename,extension:ext||null,format:formats[ext]||"unknown",games,confidence:games.length===1?"heuristic":"uncertain",requiresReview:true,execution:"detection_only"}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
