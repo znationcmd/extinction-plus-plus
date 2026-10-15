@@ -253,6 +253,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const run of providers){try{const result=await run();if(result.results.length)return result}catch{}}
   return {provider:"none",results:[]};
  }
+ if(req.method==="GET"&&path==="/api/research/providers")return response(JSON.stringify({providers:[{name:"Google Custom Search",configured:!!(Bun.env.NEURIA_GOOGLE_SEARCH_API_KEY&&Bun.env.NEURIA_GOOGLE_SEARCH_ENGINE_ID),availability:"legacy accounts only"},{name:"Brave Search",configured:!!Bun.env.NEURIA_BRAVE_SEARCH_API_KEY},{name:"SearXNG",configured:!!Bun.env.NEURIA_SEARXNG_URL},{name:"Wikipedia",configured:true}],note:"Configured does not guarantee live availability."}),"application/json");
  if(req.method==="GET"&&path==="/api/research/web"){
   const q=String(new URL(req.url).searchParams.get("q")||"").trim().slice(0,150);
   if(q.length<3)return response(JSON.stringify({error:"Requête trop courte"}),"application/json",400);
