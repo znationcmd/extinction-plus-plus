@@ -656,17 +656,31 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  }
  if(req.method==="POST"&&path==="/api/plugins/execute"){
   const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
-  if(Number(req.headers.get("content-length")||0)>2000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
-  if(data?.plugin!=="github"||!["account_status","repository_status","file_read","file_metadata"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
-  const repo=String(data?.repository||"");if(["repository_status","file_read","file_metadata"].includes(data.action)&&!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))return response(JSON.stringify({error:"Dépôt attendu au format propriétaire/nom"}),"application/json",400);
-  if(["file_read","file_metadata"].includes(data.action)){
+  if(data?.plugin!=="github"||!["account_status","repository_status","file_read","file_metadata","file_update"].includes(data?.action))return response(JSON.stringify({error:"Action non disponible; aucune écriture automatique"}),"application/json",400);
+  const repo=String(data?.repository||"");if(["repository_status","file_read","file_metadata","file_update"].includes(data.action)&&!/^[A-Za-z0-9_.-]{1,80}\/[A-Za-z0-9_.-]{1,100}$/.test(repo))return response(JSON.stringify({error:"Dépôt attendu au format propriétaire/nom"}),"application/json",400);
+  if(["file_read","file_metadata","file_update"].includes(data.action)){
    const filePath=data.path,ref=data.ref;
    if(typeof filePath!=="string"||filePath.length>350||!filePath||filePath.startsWith("/")||filePath.split("/").some(part=>!part||part==="."||part==="..")||/[\\\x00-\x1f]/.test(filePath))return response(JSON.stringify({error:"Chemin de fichier invalide"}),"application/json",400);
    if(ref!==undefined&&(typeof ref!=="string"||ref.length>120||!/^[A-Za-z0-9_./-]+$/.test(ref)||ref.includes("..")))return response(JSON.stringify({error:"Référence Git invalide"}),"application/json",400);
   }
+  if(data.action==="file_update"){
+   if(data.confirmed!==true)return response(JSON.stringify({error:"Confirmation explicite requise pour écrire sur GitHub"}),"application/json",403);
+   if(typeof data.content!=="string"||new TextEncoder().encode(data.content).byteLength>65000)return response(JSON.stringify({error:"Contenu limité à 65 Ko"}),"application/json",413);
+   if(typeof data.sha!=="string"||!/^[a-f0-9]{40}$/.test(data.sha))return response(JSON.stringify({error:"SHA du fichier existant requis"}),"application/json",400);
+   if(typeof data.branch!=="string"||!data.branch||data.branch.length>120||!/^[A-Za-z0-9_./-]+$/.test(data.branch)||data.branch.includes(".."))return response(JSON.stringify({error:"Branche explicite requise"}),"application/json",400);
+   if(typeof data.message!=="string"||data.message.trim().length<8||data.message.length>180)return response(JSON.stringify({error:"Message de commit requis (8 à 180 caractères)"}),"application/json",400);
+  }
   const token=await NEURIA_OAUTH_OPEN(req);if(!token)return response(JSON.stringify({error:"Connecte ton compte GitHub dans Connexions"}),"application/json",401);
   try{
+   if(data.action==="file_update"){
+    const url="https://api.github.com/repos/"+repo+"/contents/"+data.path.split("/").map(encodeURIComponent).join("/");
+    const encoded=Buffer.from(data.content,"utf8").toString("base64");
+    const upstream=await fetch(url,{method:"PUT",headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","content-type":"application/json","user-agent":"CMD-Neuria"},body:JSON.stringify({message:data.message.trim(),content:encoded,sha:data.sha,branch:data.branch}),signal:AbortSignal.timeout(15000)});
+    if(!upstream.ok)return response(JSON.stringify({error:upstream.status===409?"Conflit : le fichier a changé, recharge son SHA":"Écriture GitHub refusée",status:upstream.status}),"application/json",upstream.status===409?409:502);
+    const result=await upstream.json();return response(JSON.stringify({executed:true,plugin:"github",action:"file_update",repository:repo,path:data.path,branch:data.branch,commitSha:result.commit?.sha,fileSha:result.content?.sha,write:true}),"application/json");
+   }
    if(data.action==="file_metadata"){
     const url="https://api.github.com/repos/"+repo+"/contents/"+data.path.split("/").map(encodeURIComponent).join("/")+(data.ref?"?ref="+encodeURIComponent(data.ref):"");
     const upstream=await fetch(url,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(12000)});
