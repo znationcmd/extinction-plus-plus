@@ -446,6 +446,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/image-edit"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>5500000)return response(JSON.stringify({error:"Image trop volumineuse"}),"application/json",413);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,"");
+  if(!key)return response(JSON.stringify({error:"Édition d'image non configurée",configured:false}),"application/json",503);
+  let form;try{form=await req.formData()}catch{return response(JSON.stringify({error:"Formulaire multipart invalide"}),"application/json",400)}
+  const file=form.get("image"),prompt=form.get("prompt");
+  if(!(file instanceof File)||file.size===0||file.size>5000000||!["image/png","image/jpeg","image/webp"].includes(file.type)||typeof prompt!=="string"||!prompt.trim()||prompt.length>1500)return response(JSON.stringify({error:"Image et consigne valides requises"}),"application/json",400);
+  const outgoing=new FormData();outgoing.append("image",file,file.name||"image.png");outgoing.append("prompt",prompt);outgoing.append("model",process.env.OPENAI_IMAGE_EDIT_MODEL||"gpt-image-1");
+  try{const upstream=await fetch(base+"/images/edits",{method:"POST",headers:{authorization:"Bearer "+key},body:outgoing,signal:AbortSignal.timeout(90000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Édition d'image impossible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();const result=data.data?.[0];if(!result?.b64_json&&!result?.url)return response(JSON.stringify({error:"Aucune image générée"}),"application/json",502);
+   return response(JSON.stringify({executed:true,imageBase64:result.b64_json||null,imageUrl:result.url||null,stored:false}),"application/json");
+  }catch{return response(JSON.stringify({error:"Fournisseur d'édition indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/image-understanding"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
