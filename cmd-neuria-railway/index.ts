@@ -409,6 +409,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-csv-import"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"CSV trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof body?.csv!=="string"||new TextEncoder().encode(body.csv).length>100000)return response(JSON.stringify({error:"CSV requis (100 Ko maximum)"}),"application/json",400);
+  const source=body.csv.replace(/^\uFEFF/,"");const records=[];let cells=[],cell="",quoted=false;
+  for(let i=0;i<source.length;i++){
+   const ch=source[i];
+   if(ch==='"'){if(quoted&&source[i+1]==='"'){cell+='"';i++}else if(!quoted&&cell===""){quoted=true}else if(quoted){quoted=false}else return response(JSON.stringify({error:"Guillemets CSV invalides"}),"application/json",400)}
+   else if(ch===","&&!quoted){cells.push(cell);cell=""}
+   else if((ch==="\n"||ch==="\r")&&!quoted){if(ch==="\r"&&source[i+1]==="\n")i++;cells.push(cell);records.push(cells);cells=[];cell="";if(records.length>502)return response(JSON.stringify({error:"Maximum 500 lignes"}),"application/json",413)}
+   else{cell+=ch;if(cell.length>10000)return response(JSON.stringify({error:"Cellule trop longue"}),"application/json",413)}
+  }
+  if(quoted)return response(JSON.stringify({error:"CSV incomplet : guillemets non fermés"}),"application/json",400);
+  if(cell!==""||cells.length){cells.push(cell);records.push(cells)}
+  if(records.length<2||records.length>501)return response(JSON.stringify({error:"En-tête et 1 à 500 lignes requis"}),"application/json",400);
+  const headers=records.shift();if(headers.length<1||headers.length>30||headers.some(x=>!x||x.length>100||["__proto__","constructor","prototype"].includes(x))||new Set(headers).size!==headers.length)return response(JSON.stringify({error:"En-têtes invalides ou dupliqués"}),"application/json",400);
+  if(records.some(x=>x.length!==headers.length))return response(JSON.stringify({error:"Nombre de colonnes incohérent"}),"application/json",400);
+  const rows=records.map(cells=>Object.fromEntries(headers.map((h,i)=>[h,cells[i]])));
+  return response(JSON.stringify({executed:true,rows,columns:headers,rowCount:rows.length,mode:"in_memory_csv_parse",stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-csv"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
