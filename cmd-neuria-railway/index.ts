@@ -446,6 +446,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/audio-transcription"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,"");
+  if(!key)return response(JSON.stringify({error:"Fournisseur de transcription non configuré",configured:false}),"application/json",503);
+  if(Number(req.headers.get("content-length")||0)>10000000)return response(JSON.stringify({error:"Audio trop volumineux (10 Mo max)"}),"application/json",413);
+  const type=req.headers.get("content-type")||"";if(!type.includes("multipart/form-data"))return response(JSON.stringify({error:"Envoi multipart avec fichier audio requis"}),"application/json",415);
+  let form;try{form=await req.formData()}catch{return response(JSON.stringify({error:"Formulaire invalide"}),"application/json",400)}
+  const file=form.get("file");if(!(file instanceof File)||file.size>10000000||file.size===0||!/^audio\//.test(file.type))return response(JSON.stringify({error:"Fichier audio invalide"}),"application/json",400);
+  const outbound=new FormData();outbound.append("file",file,file.name||"audio.wav");outbound.append("model","whisper-1");
+  const language=form.get("language");if(typeof language==="string"&&/^[a-z]{2}$/.test(language))outbound.append("language",language);
+  try{const upstream=await fetch(base+"/audio/transcriptions",{method:"POST",headers:{authorization:"Bearer "+key},body:outbound,signal:AbortSignal.timeout(45000)});if(!upstream.ok)return response(JSON.stringify({error:"Transcription impossible",status:upstream.status}),"application/json",502);const data=await upstream.json();return response(JSON.stringify({executed:true,text:String(data.text||""),provider:"configured_openai_compatible",stored:false}),"application/json")}
+  catch{return response(JSON.stringify({error:"Fournisseur de transcription indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/table-clean"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
