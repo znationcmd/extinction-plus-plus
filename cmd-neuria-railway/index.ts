@@ -414,6 +414,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const valid=!duplicates.length&&!missing.length&&!cycles.length;
   return response(JSON.stringify({valid,ordered:valid?ordered:[],suggestedOrder:ordered,duplicates:[...new Set(duplicates)],missingDependencies:missing.slice(0,200),cycles:cycles.slice(0,30),execution:"analysis_only",note:"Ordre topologique théorique, sans garantie de compatibilité avec le moteur de jeu."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/config-diff"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const before=String(body?.before||""),after=String(body?.after||"");
+  if(before.length>100000||after.length>100000)return response(JSON.stringify({error:"Limite 100000 caractères par version"}),"application/json",413);
+  const left=before.split("\n"),right=after.split("\n"),changes=[];
+  for(let i=0;i<Math.max(left.length,right.length)&&changes.length<200;i++){
+   if(left[i]!==right[i])changes.push({line:i+1,before:left[i]??null,after:right[i]??null});
+  }
+  return response(JSON.stringify({changed:before!==after,beforeLines:left.length,afterLines:right.length,changes,truncated:Math.max(left.length,right.length)>200&&changes.length===200,algorithm:"line_by_line",execution:"analysis_only",note:"Comparaison positionnelle, sans modification de fichier ni analyse syntaxique."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
