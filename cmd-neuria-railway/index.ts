@@ -431,6 +431,16 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const signatures=new Set();let duplicates=0;for(const row of rows){const signature=JSON.stringify(columns.map(c=>row[c]??null));if(signatures.has(signature))duplicates++;else signatures.add(signature)}
   return response(JSON.stringify({executed:true,rowCount:rows.length,duplicateRows:duplicates,columns:quality,mode:"in_memory_quality_audit",stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/table-deduplicate"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows,keys=body?.keys;
+  if(!Array.isArray(rows)||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x))||!Array.isArray(keys)||!keys.length||keys.length>30||keys.some(x=>typeof x!=="string"||!x||x.length>100)||new Set(keys).size!==keys.length)return response(JSON.stringify({error:"Lignes ou colonnes de déduplication invalides"}),"application/json",400);
+  const seen=new Set(),unique=[],duplicateIndexes=[];
+  for(let i=0;i<rows.length;i++){const row=rows[i];if(keys.some(k=>!Object.prototype.hasOwnProperty.call(row,k)))return response(JSON.stringify({error:"Colonne manquante",index:i}),"application/json",400);const signature=JSON.stringify(keys.map(k=>row[k]));if(seen.has(signature))duplicateIndexes.push(i);else{seen.add(signature);unique.push(row)}}
+  return response(JSON.stringify({executed:true,rows:unique,removedCount:duplicateIndexes.length,duplicateIndexes,inputCount:rows.length,mode:"in_memory_deduplication",stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-group-summary"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
