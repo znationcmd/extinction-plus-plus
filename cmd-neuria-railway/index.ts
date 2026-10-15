@@ -409,6 +409,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-join"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableaux trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const left=body?.left,right=body?.right,key=body?.key;
+  if(!Array.isArray(left)||!Array.isArray(right)||left.length>500||right.length>500||typeof key!=="string"||!key||key.length>100||["__proto__","constructor","prototype"].includes(key)||[...left,...right].some(x=>!x||typeof x!=="object"||Array.isArray(x)))return response(JSON.stringify({error:"Deux tableaux (500 lignes max) et une clé requis"}),"application/json",400);
+  const index=new Map();
+  for(const row of right){if(!Object.prototype.hasOwnProperty.call(row,key))return response(JSON.stringify({error:"Clé absente du tableau droit"}),"application/json",400);const value=row[key];if(value===null||typeof value==="object")return response(JSON.stringify({error:"Clé non scalaire"}),"application/json",400);const token=typeof value+":"+String(value);if(index.has(token))return response(JSON.stringify({error:"Clé dupliquée dans le tableau droit"}),"application/json",400);index.set(token,row)}
+  const output=[];let matched=0;
+  for(const row of left){if(!Object.prototype.hasOwnProperty.call(row,key))return response(JSON.stringify({error:"Clé absente du tableau gauche"}),"application/json",400);const value=row[key],match=value===null||typeof value==="object"?undefined:index.get(typeof value+":"+String(value));if(match)matched++;const merged={...row};if(match)for(const [col,v] of Object.entries(match)){if(col!==key){const safe=["__proto__","constructor","prototype"].includes(col)?"right_"+col:col;merged[Object.prototype.hasOwnProperty.call(merged,safe)?"right_"+safe:safe]=v}}output.push(merged)}
+  return response(JSON.stringify({executed:true,rows:output,rowCount:output.length,matched,unmatched:output.length-matched,mode:"left_join",stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-group-summary"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
