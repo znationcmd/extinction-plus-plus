@@ -431,6 +431,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const signatures=new Set();let duplicates=0;for(const row of rows){const signature=JSON.stringify(columns.map(c=>row[c]??null));if(signatures.has(signature))duplicates++;else signatures.add(signature)}
   return response(JSON.stringify({executed:true,rowCount:rows.length,duplicateRows:duplicates,columns:quality,mode:"in_memory_quality_audit",stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/table-compare"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Tableaux trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const left=body?.left,right=body?.right,keys=body?.keys;
+  if(!Array.isArray(left)||!Array.isArray(right)||left.length>500||right.length>500||!Array.isArray(keys)||keys.length<1||keys.length>10||keys.some(x=>typeof x!=="string"||!x||x.length>100)||new Set(keys).size!==keys.length||[...left,...right].some(x=>!x||typeof x!=="object"||Array.isArray(x)||Object.keys(x).length>30||keys.some(k=>!Object.prototype.hasOwnProperty.call(x,k))))return response(JSON.stringify({error:"Deux tableaux (500 lignes chacun) et clés communes requis"}),"application/json",400);
+  const signature=row=>JSON.stringify(keys.map(k=>row[k]));
+  const a=new Map(),b=new Map();
+  for(const row of left){const key=signature(row);if(a.has(key))return response(JSON.stringify({error:"Clés dupliquées dans le tableau gauche"}),"application/json",400);a.set(key,row)}
+  for(const row of right){const key=signature(row);if(b.has(key))return response(JSON.stringify({error:"Clés dupliquées dans le tableau droit"}),"application/json",400);b.set(key,row)}
+  const onlyLeft=[],onlyRight=[],changed=[],unchanged=[];
+  for(const [key,row] of a){if(!b.has(key)){onlyLeft.push(row);continue}const other=b.get(key);const columns=[...new Set([...Object.keys(row),...Object.keys(other)])];const differences=columns.filter(c=>JSON.stringify(row[c])!==JSON.stringify(other[c]));if(differences.length)changed.push({key:keys.map(k=>row[k]),columns:differences,left:row,right:other});else unchanged.push(row)}
+  for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
+  return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-clean"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
