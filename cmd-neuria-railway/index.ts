@@ -504,6 +504,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/user-isolation-audit"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.resources)||b.resources.length>500||typeof b.actorId!=="string"||!b.actorId||b.actorId.length>120)return response(JSON.stringify({error:"Entrée invalide"}),"application/json",400);
+  const denied=[],allowed=[];
+  for(const item of b.resources){
+   if(!item||typeof item.id!=="string"||item.id.length>120||typeof item.ownerId!=="string"||!item.ownerId||item.ownerId.length>120||!Array.isArray(item.sharedWith)||item.sharedWith.length>50||item.sharedWith.some(x=>typeof x!=="string"||x.length>120))
+    return response(JSON.stringify({error:"Ressource invalide"}),"application/json",400);
+   const access=item.ownerId===b.actorId||item.sharedWith.includes(b.actorId);
+   (access?allowed:denied).push(item.id);
+  }
+  return response(JSON.stringify({executed:true,auditOnly:true,enforcementActive:false,actorId:b.actorId,allowedCount:allowed.length,deniedCount:denied.length,allowed,denied}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/mod-dependency-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
