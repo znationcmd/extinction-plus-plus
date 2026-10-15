@@ -605,6 +605,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(output.length>100||size>100000)return response(JSON.stringify({error:"Projet résultant trop volumineux",rolledBack:true}),"application/json",413);
   return response(JSON.stringify({valid:true,steps:results,files:output,count:output.length,totalCharacters:size,execution:"in_memory_only",persisted:false,note:"Aucune écriture disque, GitHub ou Railway."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/document-export"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const format=String(body?.format||"").toLowerCase(),title=String(body?.title||"Document").slice(0,120),content=body?.content;
+  if(typeof content!=="string"||content.length>100000||!["txt","md","csv"].includes(format))return response(JSON.stringify({error:"Format ou contenu invalide. Formats : txt, md, csv"}),"application/json",400);
+  let output=content,mime="text/plain; charset=utf-8";
+  if(format==="md"){mime="text/markdown; charset=utf-8";output="# "+title.replace(/[\r\n#]/g," ").trim()+"\n\n"+content}
+  if(format==="csv"){
+   mime="text/csv; charset=utf-8";
+   const rows=Array.isArray(body?.rows)?body.rows:null;
+   if(!rows||rows.length>500||rows.some(row=>!Array.isArray(row)||row.length>40))return response(JSON.stringify({error:"Lignes CSV invalides (500 lignes, 40 colonnes maximum)"}),"application/json",400);
+   const escapeCell=v=>{let value=String(v??"");if(/^[\s]*[=+@-]/.test(value))value="'"+value;return '"'+value.replace(/"/g,'""')+'"'};
+   output="\uFEFF"+rows.map(row=>row.map(escapeCell).join(",")).join("\r\n");
+   if(output.length>100000)return response(JSON.stringify({error:"CSV trop volumineux"}),"application/json",413);
+  }
+  const safeName=title.replace(/[^A-Za-z0-9_-]/g,"_").slice(0,60)||"document";
+  return new Response(output,{status:200,headers:{"content-type":mime,"content-disposition":'attachment; filename="'+safeName+"."+format+'"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
