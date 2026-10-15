@@ -467,7 +467,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
     const origin=new URL(endpoint);if(origin.protocol!=="https:")throw Error("Le fournisseur IA doit utiliser HTTPS");
     const history=Array.isArray(data.history)?data.history.slice(-12).filter(x=>x&&["user","assistant"].includes(x.role)&&typeof x.content==="string").map(x=>({role:x.role,content:x.content.slice(0,1200)})):[];while(JSON.stringify(history).length>5200)history.shift();
     const question=data.message.trim();
-    const researchIntent=/\\b(recherche|cherche|internet|web|source|sources|actualité|actualités|qui est|qu'est-ce que|définition|histoire de|wikipedia|wikipédia|research|search|latest|who is|what is)\\b/i.test(question);
+    const researchIntent=/\b(recherche|cherche|internet|web|source|sources|actualité|actualités|qui est|qu'est-ce que|définition|histoire de|wikipedia|wikipédia|research|search|latest|who is|what is)\b/i.test(question);
     let researchSources=[];
     if(researchIntent){
      try{
