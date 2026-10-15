@@ -21,7 +21,8 @@ export async function listAuthorizedProjects(options: {
   // Unlike /users/:owner/repos, this endpoint supports private inventory.
   const url = new URL("https://api.github.com/user/repos");
   url.searchParams.set("visibility", "all");
-  url.searchParams.set("affiliation", "owner,collaborator,organization_member");
+  // GitHub does not permit affiliation and visibility in the same request.
+  // The authenticated endpoint defaults to all repositories available to this token.
   url.searchParams.set("sort", "updated");
   url.searchParams.set("per_page", String(perPage));
   url.searchParams.set("page", String(page));
