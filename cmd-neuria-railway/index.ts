@@ -731,6 +731,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/restore-package"){
+  if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const project=String(body?.project||"").trim().slice(0,120);
+  const current=Array.isArray(body?.current)?body.current:[];
+  const backup=Array.isArray(body?.backup)?body.backup:[];
+  if(project.length<2||!backup.length||backup.length>100||current.length>100)return response(JSON.stringify({error:"Projet et sauvegarde de 1 à 100 fichiers requis"}),"application/json",400);
+  const parse=(items)=>{const map=new Map();let bytes=0;for(const item of items){const p=item?.path,c=item?.content;if(typeof p!=="string"||!p||p.length>240||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||/[\\\x00-\x1f]/.test(p)||typeof c!=="string"||map.has(p))return null;bytes+=new TextEncoder().encode(c).byteLength;if(bytes>70000)return null;map.set(p,c)}return map};
+  const a=parse(current),b=parse(backup);if(!a||!b)return response(JSON.stringify({error:"Fichiers invalides, doublons ou taille excessive"}),"application/json",400);
+  const merged=new Map(a),changes=[];
+  for(const [p,c] of b){if(!a.has(p)||a.get(p)!==c){changes.push({path:p,operation:a.has(p)?"replace":"create"});merged.set(p,c)}}
+  const files=[...merged].map(([path,content])=>({path,content}));
+  return response(JSON.stringify({project,files,changes,preserved:[...a.keys()].filter(p=>!b.has(p)),mode:"in_memory_package",applied:false,persisted:false,requiresApprovalForExternalWrite:true,note:"Paquet restauré calculé en mémoire seulement ; aucune écriture disque, GitHub ou Railway."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/restore-preview"){
   if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
