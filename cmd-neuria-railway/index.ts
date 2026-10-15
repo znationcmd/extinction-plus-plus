@@ -507,6 +507,33 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,repository:repo,branch,file,sha:data.sha,size:data.size,contentBase64:data.content||"",encoding:data.encoding||"",note:"Lecture seule : aucune tâche n'a été relancée automatiquement."}),"application/json");
   }catch{return response(JSON.stringify({error:"GitHub indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/work/conditional-evaluate"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rules=body?.rules,values=body?.values;
+  if(!Array.isArray(rules)||rules.length>30||!values||typeof values!=="object"||Array.isArray(values))return response(JSON.stringify({error:"Règles ou valeurs invalides"}),"application/json",400);
+  const allowed=["eq","neq","gt","gte","lt","lte","contains"];
+  const results=[];
+  for(const rule of rules){
+    if(!rule||typeof rule.key!=="string"||!/^[a-zA-Z0-9_-]{1,64}$/.test(rule.key)||!allowed.includes(rule.operator)||!Object.prototype.hasOwnProperty.call(values,rule.key))return response(JSON.stringify({error:"Règle invalide"}),"application/json",400);
+    const actual=values[rule.key],expected=rule.value;
+    if(!["string","number","boolean"].includes(typeof actual)||!["string","number","boolean"].includes(typeof expected))return response(JSON.stringify({error:"Types non pris en charge"}),"application/json",400);
+    let matched=false;
+    if(rule.operator==="eq")matched=actual===expected;
+    else if(rule.operator==="neq")matched=actual!==expected;
+    else if(rule.operator==="contains")matched=typeof actual==="string"&&typeof expected==="string"&&actual.includes(expected);
+    else if(typeof actual==="number"&&typeof expected==="number"&&Number.isFinite(actual)&&Number.isFinite(expected)){
+      if(rule.operator==="gt")matched=actual>expected;
+      if(rule.operator==="gte")matched=actual>=expected;
+      if(rule.operator==="lt")matched=actual<expected;
+      if(rule.operator==="lte")matched=actual<=expected;
+    }
+    results.push({key:rule.key,operator:rule.operator,matched});
+  }
+  return response(JSON.stringify({executed:true,allMatched:results.length>0&&results.every(x=>x.matched),results,note:"Évaluation immédiate uniquement ; aucun envoi de notification ni surveillance programmée."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/live-voice-session"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
