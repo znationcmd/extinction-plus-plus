@@ -323,6 +323,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  if(req.method==="GET"&&path==="/api/developer/formats"){
   return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/backup-roundtrip-test"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  const samples={"config/settings.json":"{\\"enabled\\":true,\\"slots\\":10}","notes/readme.txt":"CMD Neuria — sauvegarde de contrôle"};
+  const hash=async(value)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
+  const manifest=await Promise.all(Object.entries(samples).map(async([path,content])=>({path,sha256:await hash(content),sizeBytes:new TextEncoder().encode(content).length})));
+  const exported={format:"cmd-neuria-backup-v1",projectId:"selftest",manifest,files:{...samples}};
+  const verify=async(bundle)=>{if(bundle.format!=="cmd-neuria-backup-v1"||bundle.manifest.length!==Object.keys(bundle.files).length)return false;for(const entry of bundle.manifest){if(typeof bundle.files[entry.path]!=="string"||await hash(bundle.files[entry.path])!==entry.sha256||new TextEncoder().encode(bundle.files[entry.path]).length!==entry.sizeBytes)return false}return true};
+  const validBundleAccepted=await verify(exported);
+  const tampered=structuredClone(exported);tampered.files["config/settings.json"]="corrupted";
+  const corruptedBundleRejected=!(await verify(tampered));
+  const tests=[{name:"export_import_roundtrip",passed:validBundleAccepted},{name:"tampering_detection",passed:corruptedBundleRejected}];
+  return response(JSON.stringify({passed:tests.filter(t=>t.passed).length,total:tests.length,tests,mode:"live_in_memory_roundtrip",persistentStorageTested:false,restorationTested:false,note:"Exécute réellement les empreintes et détecte une altération, sans écriture persistante."}),"application/json",tests.every(t=>t.passed)?200:500);
+ }
  if(req.method==="POST"&&path==="/api/work/backup-import-verify"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
