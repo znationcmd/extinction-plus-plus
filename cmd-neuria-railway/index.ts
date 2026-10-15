@@ -1,5 +1,6 @@
 
 import sharp from "sharp";
+import { summarizeText, extractTasks } from "./neuria-text-tools.ts";
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
@@ -472,6 +473,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   try{const inventory=await listNeuriaProjects(owner,token,page);
    return response(JSON.stringify({executed:true,source:"github",...inventory,note:"Inventaire uniquement; aucune restauration ni modification automatique."}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire des projets échoué"}),"application/json",502)}
+ }
+ if(req.method==="POST"&&path==="/api/work/text-tools"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Texte trop long"}),"application/json",413);
+  let body;try{const raw=await req.text();if(raw.length>110000)return response(JSON.stringify({error:"Texte trop long"}),"application/json",413);body=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  try{
+   if(typeof body?.text!=="string"||body.text.length>100000)return response(JSON.stringify({error:"Texte invalide"}),"application/json",400);
+   if(body.action==="summarize")return response(JSON.stringify({executed:true,summary:summarizeText(body.text,body.maxSentences??3),method:"extractive"}),"application/json");
+   if(body.action==="extract_tasks")return response(JSON.stringify({executed:true,tasks:extractTasks(body.text)}),"application/json");
+   return response(JSON.stringify({error:"Action inconnue"}),"application/json",400);
+  }catch{return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400)}
  }
  if(req.method==="POST"&&path==="/api/work/live-voice-session"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
