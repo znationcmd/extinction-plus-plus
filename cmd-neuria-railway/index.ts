@@ -731,6 +731,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-retry-preview"){
+  if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const jobs=Array.isArray(body?.jobs)?body.jobs:[];
+  const maxAttempts=body?.maxAttempts===undefined?3:body.maxAttempts;
+  if(!jobs.length||jobs.length>100||!Number.isInteger(maxAttempts)||maxAttempts<1||maxAttempts>10)return response(JSON.stringify({error:"1 à 100 tâches et 1 à 10 tentatives requis"}),"application/json",400);
+  const seen=new Set(),retry=[],exhausted=[],ignored=[];
+  for(const job of jobs){
+   const id=job?.id,attempts=job?.attempts,status=job?.status;
+   if(typeof id!=="string"||!id||id.length>120||seen.has(id)||!Number.isInteger(attempts)||attempts<0||!["queued","running","success","failed"].includes(status))return response(JSON.stringify({error:"Tâche invalide ou dupliquée"}),"application/json",400);
+   seen.add(id);
+   if(status!=="failed"){ignored.push(id);continue}
+   if(attempts>=maxAttempts){exhausted.push(id);continue}
+   retry.push({id,nextAttempt:attempts+1,delaySeconds:Math.min(3600,30*Math.pow(2,attempts))});
+  }
+  return response(JSON.stringify({retry,exhausted,ignored,maxAttempts,mode:"retry_preview_only",executed:false,scheduled:false,note:"Planification théorique de nouvelles tentatives ; aucune tâche n'est relancée."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-job-audit"){
   if(Number(req.headers.get("content-length")||0)>24000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
