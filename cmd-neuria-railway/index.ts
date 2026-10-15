@@ -559,12 +559,15 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(kind==="fantasy"){box("left_horn",-.19,2.66,0,.12,.38,.13);box("right_horn",.19,2.66,0,.12,.38,.13);box("belt",0,1.06,0,.82,.13,.44)}
   return new Response(lines.join("\n")+"\n",{headers:{"Content-Type":"text/plain; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-avatar-"+kind+".obj\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
  }
+ if(req.method==="GET"&&path==="/api/neuria/menu-tools"){
+  return response(JSON.stringify({tools:[{id:"oracle",name:"Oracle",category:"Avatar 3D",modes:["text-to-3d","image-to-3d"],status:"engine_pending"},{id:"aura",name:"Aura",category:"Reconnaissance musicale",modes:["music-recognition"],status:"local_catalog_only"},{id:"pulse",name:"Pulse",category:"Création musicale",modes:["music-generation"],status:"procedural_wav_available"}]}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/media-studio/capabilities"){
   return response(JSON.stringify({studio:"CMD NEURIA Media Studio",features:[
    {id:"text-to-video",label:"Texte vers vidéo",status:"planning",inputs:["prompt"],outputs:["mp4"],engineConnected:false},
    {id:"image-to-video",label:"Animer une image",status:"planning",inputs:["prompt","sourceImage"],outputs:["mp4"],engineConnected:false},
-   {id:"text-to-3d",label:"Texte vers avatar 3D",status:"planning",inputs:["prompt"],outputs:["glb"],engineConnected:false},
-   {id:"image-to-3d",label:"Image vers avatar 3D",status:"planning",inputs:["sourceImage"],outputs:["glb"],engineConnected:false}
+   {id:"text-to-3d",label:"Oracle — Créer un avatar 3D",status:"planning",inputs:["prompt"],outputs:["glb"],engineConnected:false},
+   {id:"image-to-3d",label:"Oracle — Avatar 3D depuis une image",status:"planning",inputs:["sourceImage"],outputs:["glb"],engineConnected:false}
   ],note:"Aucun modèle génératif vidéo ou 3D n'est encore raccordé."}),"application/json");
  }
  if(req.method==="POST"&&path==="/api/media-studio/job-spec"){
