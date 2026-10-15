@@ -361,6 +361,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   ];
   return response(JSON.stringify({goal,target:target||null,steps,execution:"planning_only",automatedExecution:false,note:"Aucune écriture GitHub/Railway, aucun test ni déploiement n'est exécuté par cette route."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/project-template"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const type=String(body?.type||"").toLowerCase(),name=String(body?.name||"cmd-project").toLowerCase().replace(/[^a-z0-9-]/g,"-").slice(0,60)||"cmd-project";
+  const templates={
+   website:[{path:"index.html",content:"<!doctype html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>"+name+"</title></head><body><main><h1>"+name+"</h1></main></body></html>"}],
+   api:[{path:"package.json",content:JSON.stringify({name,private:true,type:"module",scripts:{start:"node server.js"}},null,2)},{path:"server.js",content:"import http from 'node:http';\nconst server=http.createServer((req,res)=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true}));});\nserver.listen(process.env.PORT||3000);"}],
+   bot:[{path:"package.json",content:JSON.stringify({name,private:true,type:"module",scripts:{start:"node bot.js"}},null,2)},{path:"bot.js",content:"console.log('"+name+" : configurez un fournisseur et ses autorisations avant de connecter le bot');"}]
+  };
+  if(!templates[type])return response(JSON.stringify({error:"Type inconnu",supported:Object.keys(templates)}),"application/json",400);
+  return response(JSON.stringify({type,name,files:templates[type],execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
