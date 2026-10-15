@@ -561,6 +561,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({valid:results.every(x=>x.passed),passed:results.filter(x=>x.passed).length,total:results.length,results,execution:"in_memory_only",persisted:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/file-manifest-check"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const files=body?.files;if(!Array.isArray(files)||files.length>200)return response(JSON.stringify({error:"Liste de fichiers invalide (200 maximum)"}),"application/json",400);
+  const names=new Set(),duplicates=[],unsafe=[],total=[];
+  for(const file of files){
+   const path=String(file?.path||"");
+   const normalized=path.replace(/\\/g,"/");
+   if(!normalized||normalized.length>240||normalized.startsWith("/")||/^[A-Za-z]:/.test(normalized)||normalized.split("/").some(x=>!x||x==="."||x==="..")||/[\x00-\x1f]/.test(normalized)){unsafe.push(path.slice(0,240));continue}
+   if(names.has(normalized.toLowerCase()))duplicates.push(normalized);names.add(normalized.toLowerCase());
+   const content=typeof file?.content==="string"?file.content:"";
+   total.push({path:normalized,size:content.length,extension:normalized.split(".").pop()?.toLowerCase()||""});
+  }
+  const size=total.reduce((n,x)=>n+x.size,0);
+  const errors=[];if(unsafe.length)errors.push("Chemins non sécurisés");if(duplicates.length)errors.push("Noms de fichiers en doublon");if(size>100000)errors.push("Contenu total supérieur à 100000 caractères");
+  return response(JSON.stringify({valid:errors.length===0,count:total.length,totalCharacters:size,errors,unsafe:unsafe.slice(0,30),duplicates:duplicates.slice(0,30),files:total.slice(0,200),execution:"analysis_only",persisted:false,note:"Inventaire de fichiers fourni par le client ; aucun accès au disque serveur."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
