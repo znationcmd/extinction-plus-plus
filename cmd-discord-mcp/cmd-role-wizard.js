@@ -69,7 +69,7 @@ window.cmdOpenRoleWizard=async function({guildId,onDone}={}){
  if(document.getElementById("cmd-role-wizard"))return;
  const [guildData,memberData]=await Promise.all([req("/api/native/guild/"+encodeURIComponent(guildId)),req("/api/native/members?guildId="+encodeURIComponent(guildId))]);
  if(guildData.member?.membership_role!=="owner")throw Error("Seul le propriétaire peut créer et attribuer des rôles.");
- const members=(memberData.members||[]).filter(m=>m.membership_role!=="owner");
+ const members=(memberData.members||[]).filter(m=>String(m.user_id||"").trim()); // The owner may wear display roles, even though their owner rights are unconditional.
  const st={step:1,name:"",color:"#5964f3",preset:0,permissions:{},hosting:false,hoist:false,selected:new Set(),query:"",roleId:"",busy:false};
  if(!document.getElementById("cmd-role-wizard-style")){const style=document.createElement("style");style.id="cmd-role-wizard-style";style.textContent=css;document.head.append(style)}
  const root=document.createElement("div");root.id="cmd-role-wizard";root.setAttribute("role","dialog");root.setAttribute("aria-modal","true");document.body.append(root);
@@ -87,7 +87,7 @@ window.cmdOpenRoleWizard=async function({guildId,onDone}={}){
   }else if(st.step===2){
    content='<h1>Définir les permissions</h1><p class="rw-desc">De quels pouvoirs ce rôle devrait-il disposer ? Tu peux toujours modifier les permissions plus tard.</p><div class="rw-track" style="--rw-color:'+presets[st.preset].color+';--rw-width:'+((st.preset/3)*100)+'%"><span></span></div><div class="rw-presets-name">'+presets.map(p=>'<span>'+esc(p.name)+'</span>').join("")+'</div><div class="rw-presets">'+presets.map((p,i)=>'<button class="rw-card '+(i===st.preset?"selected":"")+'" data-preset="'+i+'" style="--rw-color:'+p.color+'"><strong>'+esc(p.name)+'</strong><small>'+esc(p.description)+'</small><small>'+p.examples.map(x=>'<div><em>✓</em> '+esc(x)+'</div>').join("")+'</small></button>').join("")+'</div><details><summary>Personnaliser les permissions</summary>'+groups.map(([title,perms])=>'<h4>'+esc(title)+'</h4>'+perms.map(([key,label])=>'<label class="rw-check"><input type="checkbox" data-role-permission="'+esc(key)+'" '+(st.permissions[key]?"checked":"")+'>'+esc(label)+'</label>').join("")).join("")+'<h4>CMD Hosting</h4><label class="rw-check"><input id="rwHosting" type="checkbox" '+(st.hosting?"checked":"")+'> Gérer le serveur CMD Hosting lié (démarrer, arrêter, redémarrer)</label></details>'+footer("Sélectionner",true,false);
   }else{
-   content='<h1>Ajouter des membres</h1><p class="rw-desc">Assigne ce rôle à tes membres. Les membres peuvent avoir plusieurs rôles. Tu peux en ajouter jusqu’à 30 simultanément.</p><input id="rwSearch" class="rw-text rw-search" placeholder="⌕ Rechercher des membres" value="'+esc(st.query)+'"><div class="rw-count" id="rwCount">'+st.selected.size+' / 30 sélectionnés</div><div class="rw-list" id="rwMembers"></div>'+footer("Terminer",true,st.selected.size===0);
+   content='<h1>Ajouter des membres</h1><p class="rw-desc">Attribue ce rôle à toi-même ou aux membres de ton serveur. Les droits du propriétaire restent toujours actifs, même sans rôle. Tu peux sélectionner jusqu’à 30 personnes.</p><input id="rwSearch" class="rw-text rw-search" placeholder="⌕ Rechercher des membres" value="'+esc(st.query)+'"><div class="rw-count" id="rwCount">'+st.selected.size+' / 30 sélectionnés</div><div class="rw-list" id="rwMembers"></div>'+footer("Terminer",true,st.selected.size===0);
   }
   root.innerHTML='<div class="rw-page">'+heading+'<div class="rw-main">'+content+'</div></div>';
   root.querySelector("#rwClose").onclick=()=>{if(!st.busy)close()};
@@ -125,7 +125,7 @@ window.cmdOpenRoleWizard=async function({guildId,onDone}={}){
      const label=document.createElement("label");label.className="rw-person";
      const avatar=String(m.avatar||"");if(/^https:\/\//i.test(avatar)||/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(avatar)){const img=document.createElement("img");img.src=avatar;img.alt="";label.append(img)}
      else{const ico=document.createElement("span");ico.className="rw-avatar";ico.textContent="👤";label.append(ico)}
-     const title=document.createElement("div");title.className="rw-person-name";const strong=document.createElement("strong");strong.textContent=m.display_name||"Membre";const small=document.createElement("small");small.textContent=m.user_id;title.append(strong,small);
+     const title=document.createElement("div");title.className="rw-person-name";const strong=document.createElement("strong");strong.textContent=m.display_name||"Membre";const small=document.createElement("small");small.textContent=(m.membership_role==="owner"?"👑 Propriétaire · ":"")+m.user_id;title.append(strong,small);
      const box=document.createElement("input");box.type="checkbox";box.checked=st.selected.has(m.user_id);
      box.onchange=()=>{if(box.checked){if(st.selected.size>=30){box.checked=false;root.querySelector("#rwError").textContent="Maximum 30 membres simultanément.";return}st.selected.add(m.user_id)}else st.selected.delete(m.user_id);root.querySelector("#rwCount").textContent=st.selected.size+" / 30 sélectionnés";root.querySelector("#rwNext").disabled=st.selected.size===0};
      label.append(title,box);host.append(label)
