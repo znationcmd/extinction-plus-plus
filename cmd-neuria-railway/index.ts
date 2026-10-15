@@ -731,6 +731,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-job-transition"){
+  if(Number(req.headers.get("content-length")||0)>8192)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const transitions={queued:["running","failed"],running:["success","failed"],failed:["queued"],success:[]};
+  const id=body?.id,from=body?.from,to=body?.to;
+  if(typeof id!=="string"||!id||id.length>120||!Object.prototype.hasOwnProperty.call(transitions,from)||!Object.prototype.hasOwnProperty.call(transitions,to))return response(JSON.stringify({error:"Tâche ou état invalide"}),"application/json",400);
+  const allowed=transitions[from].includes(to);
+  const requiresRetry=from==="failed"&&to==="queued";
+  const retryBudgetValid=Number.isInteger(body?.attempts)&&Number.isInteger(body?.maxAttempts)&&body.attempts>=0&&body.maxAttempts>=1&&body.maxAttempts<=10&&body.attempts<body.maxAttempts;
+  const permitted=allowed&&(!requiresRetry||retryBudgetValid);
+  return response(JSON.stringify({id,from,to,permitted,requiresRetry,reason:permitted?"Transition autorisée par les règles déclaratives":requiresRetry&&!retryBudgetValid?"Limite de tentatives atteinte ou invalide":"Transition interdite",mode:"transition_validation_only",persisted:false,executed:false,authenticated:false,note:"Cette validation ne modifie aucune tâche et ne remplace pas les contrôles serveur."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-retry-preview"){
   if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
