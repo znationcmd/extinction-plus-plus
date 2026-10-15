@@ -446,6 +446,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/speech-synthesis"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>15000)return response(JSON.stringify({error:"Texte trop long"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const input=body?.text,voice=body?.voice||"alloy";
+  if(typeof input!=="string"||!input.trim()||input.length>4000||!["alloy","echo","fable","onyx","nova","shimmer"].includes(voice))return response(JSON.stringify({error:"Texte ou voix invalide"}),"application/json",400);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,"");
+  if(!key)return response(JSON.stringify({error:"Synthèse vocale non configurée",configured:false}),"application/json",503);
+  try{const upstream=await fetch(base+"/audio/speech",{method:"POST",headers:{authorization:"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({model:"tts-1",voice,input,response_format:"mp3"}),signal:AbortSignal.timeout(45000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Synthèse vocale impossible",status:upstream.status}),"application/json",502);
+   const bytes=await upstream.arrayBuffer();if(bytes.byteLength>10000000)return response(JSON.stringify({error:"Audio généré trop volumineux"}),"application/json",502);
+   return new Response(bytes,{status:200,headers:{"content-type":"audio/mpeg","content-disposition":"attachment; filename=neuria-voice.mp3","cache-control":"no-store"}});
+  }catch{return response(JSON.stringify({error:"Fournisseur vocal indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/audio-transcription"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
