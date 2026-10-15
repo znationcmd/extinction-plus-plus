@@ -431,6 +431,16 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const signatures=new Set();let duplicates=0;for(const row of rows){const signature=JSON.stringify(columns.map(c=>row[c]??null));if(signatures.has(signature))duplicates++;else signatures.add(signature)}
   return response(JSON.stringify({executed:true,rowCount:rows.length,duplicateRows:duplicates,columns:quality,mode:"in_memory_quality_audit",stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/table-clean"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows;
+  if(!Array.isArray(rows)||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x)||Object.keys(x).length>30))return response(JSON.stringify({error:"Maximum 500 lignes et 30 colonnes"}),"application/json",400);
+  const trim=body.trim!==false,emptyToNull=body.emptyToNull===true;
+  let trimmedCells=0,emptyCells=0;const cleaned=rows.map(row=>Object.fromEntries(Object.entries(row).map(([k,v])=>{let value=v;if(typeof v==="string"){if(trim){value=v.trim();if(value!==v)trimmedCells++}if(value===""){emptyCells++;if(emptyToNull)value=null}}else if(v===null||v===undefined)emptyCells++;return [k,value]})));
+  return response(JSON.stringify({executed:true,rows:cleaned,rowCount:cleaned.length,trimmedCells,emptyCells,emptyToNull,stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-deduplicate"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
