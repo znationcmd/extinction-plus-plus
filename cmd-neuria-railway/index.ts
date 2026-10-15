@@ -496,10 +496,10 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Trop volumineux"}),"application/json",413);
-  let b;try{b=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"Trop volumineux"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   const repo=String(b?.repository||""),branch=String(b?.branch||""),file=String(b?.file||"");
   if(!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)||!branch||branch.length>150||!/^[-a-zA-Z0-9_./]+$/.test(file)||file.includes("..")||file.length>200)return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400);
-  const token=process.env.GITHUB_TOKEN;if(!token)return response(JSON.stringify({error:"GitHub non configuré"}),"application/json",503);
+  const token=(await NEURIA_OAUTH_OPEN(req))||Bun.env.NEURIA_GITHUB_TOKEN||process.env.GITHUB_TOKEN||process.env.GH_TOKEN||"";if(!token)return response(JSON.stringify({error:"Connecte ton compte GitHub depuis Connexions"}),"application/json",401);
   try{const u="https://api.github.com/repos/"+repo+"/contents/"+file+"?ref="+encodeURIComponent(branch);
    const upstream=await fetch(u,{headers:{authorization:"Bearer "+token,accept:"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(12000)});
    if(!upstream.ok)return response(JSON.stringify({error:"Lecture du point de reprise impossible",status:upstream.status}),"application/json",502);
