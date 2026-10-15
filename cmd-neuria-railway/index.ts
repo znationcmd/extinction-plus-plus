@@ -731,6 +731,14 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-access-check"){
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const owner=body?.ownerId,actor=body?.actorId,operation=body?.operation;
+  if(typeof owner!=="string"||!owner||owner.length>120||typeof actor!=="string"||!actor||actor.length>120||!["read","create","restore","delete"].includes(operation))return response(JSON.stringify({error:"Identifiants et opération requis"}),"application/json",400);
+  const sameOwner=owner===actor;
+  return response(JSON.stringify({allowed:false,ownerMatches:sameOwner,operation,mode:"policy_preview_only",authenticated:false,reason:"Les identifiants transmis par le client ne prouvent pas son identité. Vérification par session serveur requise.",note:"Aucun accès ni aucune modification accordés par cet endpoint."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-storage-estimate"){
   if(Number(req.headers.get("content-length")||0)>18000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
