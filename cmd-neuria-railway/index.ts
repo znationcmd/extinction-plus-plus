@@ -731,6 +731,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-scope-audit"){
+  if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const backups=Array.isArray(body?.backups)?body.backups:[];
+  if(!backups.length||backups.length>150)return response(JSON.stringify({error:"Liste de 1 à 150 sauvegardes requise"}),"application/json",400);
+  const seen=new Set(),issues=[],owners=new Map();
+  for(const b of backups){
+   const id=b?.id,ownerId=b?.ownerId,scope=b?.scope;
+   if(typeof id!=="string"||!id||id.length>120||seen.has(id)){issues.push({id:String(id||""),issue:"invalid_or_duplicate_id"});continue}
+   seen.add(id);
+   if(typeof ownerId!=="string"||!ownerId||ownerId.length>120)issues.push({id,issue:"missing_owner"});
+   if(typeof scope!=="string"||!["private","project"].includes(scope))issues.push({id,issue:"invalid_scope"});
+   if(typeof ownerId==="string"&&ownerId){owners.set(ownerId,(owners.get(ownerId)||0)+1)}
+  }
+  return response(JSON.stringify({valid:issues.length===0,count:backups.length,distinctOwners:owners.size,issues,mode:"metadata_audit_only",authenticated:false,accessGranted:false,note:"Audit déclaratif : aucune session utilisateur, base de données ou permission réelle n'a été vérifiée."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-access-check"){
   if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
