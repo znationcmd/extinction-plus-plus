@@ -740,6 +740,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({executed:true,allMatched:results.length>0&&results.every(x=>x.matched),results,note:"Évaluation immédiate uniquement ; aucun envoi de notification ni surveillance programmée."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/monitor-check"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>5000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const checks=body?.checks;if(!Array.isArray(checks)||checks.length<1||checks.length>10)return response(JSON.stringify({error:"Entre 1 et 10 contrôles requis"}),"application/json",400);
+  const allowed=(process.env.NEURIA_MONITOR_HOSTS||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  if(!allowed.length)return response(JSON.stringify({error:"Liste NEURIA_MONITOR_HOSTS non configurée"}),"application/json",503);
+  const targets=[];for(const check of checks){if(typeof check?.url!=="string"||check.url.length>500)return response(JSON.stringify({error:"URL invalide"}),"application/json",400);
+   let u;try{u=new URL(check.url);if(u.protocol!=="https:"||u.username||u.password||u.port||!allowed.includes(u.hostname.toLowerCase()))throw Error("non autorisé")}catch{return response(JSON.stringify({error:"Hôte HTTPS non autorisé"}),"application/json",400)}
+   targets.push(u.toString());
+  }
+  const results=[];for(const url of targets){const started=Date.now();try{const res=await fetch(url,{method:"GET",redirect:"manual",headers:{accept:"text/plain,application/json"},signal:AbortSignal.timeout(5000)});results.push({url,status:res.status,healthy:res.status>=200&&res.status<400,latencyMs:Date.now()-started})}catch{results.push({url,status:null,healthy:false,latencyMs:Date.now()-started})}}
+  return response(JSON.stringify({executed:true,checkedAt:new Date().toISOString(),healthy:results.every(x=>x.healthy),results,note:"Contrôle ponctuel. Pour une surveillance continue, programmer des exécutions périodiques."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/live-voice-session"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
