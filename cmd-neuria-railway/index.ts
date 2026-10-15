@@ -731,6 +731,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-restore-conflicts"){
+  if(Number(req.headers.get("content-length")||0)>32000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const current=body?.current,incoming=body?.incoming;
+  if(!Array.isArray(current)||!Array.isArray(incoming)||current.length>150||incoming.length>150)return response(JSON.stringify({error:"Listes de 0 à 150 fichiers requises"}),"application/json",400);
+  const parse=(list)=>{const map=new Map();for(const item of list){const p=item?.path,h=item?.sha256;if(typeof p!=="string"||!p||p.length>240||p.includes("\\")||p.split("/").some(x=>!x||x==="."||x==="..")||map.has(p)||typeof h!=="string"||! /^[a-fA-F0-9]{64}$/.test(h))return null;map.set(p,h.toLowerCase())}return map};
+  const a=parse(current),b=parse(incoming);
+  if(!a||!b)return response(JSON.stringify({error:"Chemin ou empreinte invalide ou dupliqué"}),"application/json",400);
+  const conflicts=[],unchanged=[],newFiles=[],preserved=[];
+  for(const [path,hash] of b){if(!a.has(path))newFiles.push(path);else if(a.get(path)===hash)unchanged.push(path);else conflicts.push(path)}
+  for(const path of a.keys())if(!b.has(path))preserved.push(path);
+  return response(JSON.stringify({conflicts,unchanged,newFiles,preserved,requiresExplicitConflictResolution:conflicts.length>0,mode:"restore_conflict_preview_only",restored:false,deleted:false,authenticated:false,note:"Comparaison d'empreintes déclarées, aucune écriture ni suppression. Les fichiers absents de la sauvegarde sont conservés."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-content-verify"){
   if(Number(req.headers.get("content-length")||0)>250000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
