@@ -446,6 +446,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/image-understanding"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>5500000)return response(JSON.stringify({error:"Image trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const image=body?.image,question=body?.question||"Décris cette image en français.";
+  if(typeof image!=="string"||image.length>5200000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(image)||typeof question!=="string"||question.length>1000)return response(JSON.stringify({error:"Image base64 PNG/JPEG/WebP et question valides requises"}),"application/json",400);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,""),model=process.env.OPENAI_VISION_MODEL||"gpt-4o-mini";
+  if(!key)return response(JSON.stringify({error:"Fournisseur de vision non configuré",configured:false}),"application/json",503);
+  try{const upstream=await fetch(base+"/chat/completions",{method:"POST",headers:{authorization:"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({model,messages:[{role:"user",content:[{type:"text",text:question},{type:"image_url",image_url:{url:image}}]}],max_tokens:800}),signal:AbortSignal.timeout(45000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Analyse d'image impossible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();return response(JSON.stringify({executed:true,answer:String(data.choices?.[0]?.message?.content||""),stored:false}),"application/json");
+  }catch{return response(JSON.stringify({error:"Fournisseur de vision indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/speech-synthesis"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
