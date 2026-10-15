@@ -504,6 +504,17 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/image-understanding-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof b?.filename!=="string"||b.filename.length>200||!["image/jpeg","image/png","image/webp","image/gif"].includes(b.mimeType)||!Number.isSafeInteger(b.bytes)||b.bytes<1||b.bytes>25000000||!Number.isSafeInteger(b.width)||!Number.isSafeInteger(b.height)||b.width<1||b.height<1||b.width>30000||b.height>30000)
+   return response(JSON.stringify({error:"Métadonnées image invalides"}),"application/json",400);
+  const maxDimension=2048,scale=Math.min(1,maxDimension/Math.max(b.width,b.height));
+  return response(JSON.stringify({executed:true,planOnly:true,imageAnalyzed:false,filename:b.filename,original:{width:b.width,height:b.height},suggested:{width:Math.max(1,Math.round(b.width*scale)),height:Math.max(1,Math.round(b.height*scale))},visionModelRequired:true,uploadRequired:true}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/video-analysis-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
