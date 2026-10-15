@@ -409,6 +409,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-csv"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows;
+  if(!Array.isArray(rows)||rows.length<1||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x)))return response(JSON.stringify({error:"1 à 500 lignes d'objets requises"}),"application/json",400);
+  const columns=[...new Set(rows.flatMap(x=>Object.keys(x)))];
+  if(!columns.length||columns.length>30||columns.some(x=>x.length>100||["__proto__","constructor","prototype"].includes(x)))return response(JSON.stringify({error:"Colonnes invalides"}),"application/json",400);
+  const csvCell=(value)=>{
+   let text=value===null||value===undefined?"":typeof value==="object"?JSON.stringify(value):String(value);
+   if(text.length>10000)text=text.slice(0,10000);
+   if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(text))text="'"+text;
+   return '"'+text.replace(/"/g,'""')+'"';
+  };
+  const csv=[columns.map(csvCell).join(","),...rows.map(row=>columns.map(col=>csvCell(row[col])).join(","))].join("\r\n");
+  return new Response("\uFEFF"+csv,{status:200,headers:{"content-type":"text/csv; charset=utf-8","content-disposition":'attachment; filename="cmd-neuria-table.csv"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+ }
  if(req.method==="POST"&&path==="/api/work/chart-svg"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Graphique trop volumineux"}),"application/json",413);
