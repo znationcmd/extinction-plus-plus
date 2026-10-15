@@ -1,6 +1,7 @@
 
 import sharp from "sharp";
 import { summarizeText, extractTasks } from "./neuria-text-tools.ts";
+import { compareDocuments, analyzeDocument } from "./neuria-document-tools.ts";
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
@@ -483,6 +484,11 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    if(typeof body?.text!=="string"||body.text.length>100000)return response(JSON.stringify({error:"Texte invalide"}),"application/json",400);
    if(body.action==="summarize")return response(JSON.stringify({executed:true,summary:summarizeText(body.text,body.maxSentences??3),method:"extractive"}),"application/json");
    if(body.action==="extract_tasks")return response(JSON.stringify({executed:true,tasks:extractTasks(body.text)}),"application/json");
+   if(body.action==="analyze_document")return response(JSON.stringify({executed:true,analysis:analyzeDocument(body.text)}),"application/json");
+   if(body.action==="compare_documents"){
+    if(typeof body.otherText!=="string"||body.otherText.length>100000)return response(JSON.stringify({error:"Second document invalide"}),"application/json",400);
+    return response(JSON.stringify({executed:true,comparison:compareDocuments(body.text,body.otherText)}),"application/json");
+   }
    return response(JSON.stringify({error:"Action inconnue"}),"application/json",400);
   }catch{return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400)}
  }
