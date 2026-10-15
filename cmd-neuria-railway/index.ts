@@ -427,6 +427,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({changed:before!==after,beforeLines:left.length,afterLines:right.length,changes,truncated:Math.max(left.length,right.length)>200&&changes.length===200,algorithm:"line_by_line",execution:"analysis_only",note:"Comparaison positionnelle, sans modification de fichier ni analyse syntaxique."}),"application/json");
  }
+ if(req.method==="GET"&&path==="/api/developer/game-formats"){
+  const games=[
+   {id:"dayz",files:["serverDZ.cfg","types.xml","events.xml","cfgeventspawns.xml","init.c"],validation:["json","ini"]},
+   {id:"arma-reforger",files:["server.json","*.conf","*.et"],validation:["json"]},
+   {id:"ark-survival-ascended",files:["Game.ini","GameUserSettings.ini"],validation:["ini"]},
+   {id:"7-days-to-die",files:["serverconfig.xml"],validation:[]},
+   {id:"conan-exiles",files:["ServerSettings.ini","Engine.ini"],validation:["ini"]},
+   {id:"farming-simulator-25",files:["modDesc.xml"],validation:[]},
+   {id:"minecraft",files:["server.properties","pack.mcmeta"],validation:["json"]},
+   {id:"fivem",files:["fxmanifest.lua","server.cfg"],validation:[]}
+  ];
+  return response(JSON.stringify({games,mode:"reference_catalog",note:"Les formats listés ne sont pas tous validés par le moteur actuel ; aucune compatibilité d'installation n'est garantie."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
