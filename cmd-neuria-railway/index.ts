@@ -504,6 +504,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/video-analysis-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof b?.filename!=="string"||b.filename.length>200||!["video/mp4","video/webm","video/quicktime"].includes(b.mimeType)||!Number.isFinite(b.durationSeconds)||b.durationSeconds<=0||b.durationSeconds>21600||!Number.isSafeInteger(b.bytes)||b.bytes<1||b.bytes>2000000000)
+   return response(JSON.stringify({error:"Métadonnées vidéo invalides"}),"application/json",400);
+  const interval=Number.isFinite(b.frameIntervalSeconds)&&b.frameIntervalSeconds>=1&&b.frameIntervalSeconds<=300?b.frameIntervalSeconds:10;
+  const frames=Math.min(300,Math.ceil(b.durationSeconds/interval)),timestamps=Array.from({length:frames},(_,i)=>Math.round(i*interval*100)/100);
+  return response(JSON.stringify({executed:true,planOnly:true,videoAnalyzed:false,framesExtracted:false,filename:b.filename,estimatedFrames:frames,timestamps,requiresVideoDecoder:true,requiresVisionModel:true}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/speech-synthesis-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
