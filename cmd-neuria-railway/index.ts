@@ -446,6 +446,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/video-understanding"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>9500000)return response(JSON.stringify({error:"Échantillons vidéo trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const frames=body?.frames,question=body?.question||"Résume cette séquence vidéo en français.";
+  if(!Array.isArray(frames)||frames.length<1||frames.length>6||typeof question!=="string"||question.length>1000||frames.some(f=>typeof f?.image!=="string"||f.image.length>1500000||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(f.image)||typeof f?.seconds!=="number"||!Number.isFinite(f.seconds)||f.seconds<0))return response(JSON.stringify({error:"1 à 6 images horodatées requises"}),"application/json",400);
+  const key=process.env.OPENAI_API_KEY||"",base=(process.env.OPENAI_API_BASE||"https://api.openai.com/v1").replace(/\/$/,""),model=process.env.OPENAI_VISION_MODEL||"gpt-4o-mini";
+  if(!key)return response(JSON.stringify({error:"Fournisseur de vision non configuré",configured:false}),"application/json",503);
+  try{const content=[{type:"text",text:question+" Analyse les images dans leur ordre chronologique."},...frames.sort((a,b)=>a.seconds-b.seconds).flatMap(f=>[{type:"text",text:"Temps vidéo : "+f.seconds+" secondes"},{type:"image_url",image_url:{url:f.image}}])];
+   const upstream=await fetch(base+"/chat/completions",{method:"POST",headers:{authorization:"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({model,messages:[{role:"user",content}],max_tokens:1000}),signal:AbortSignal.timeout(60000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Analyse vidéo impossible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();return response(JSON.stringify({executed:true,answer:String(data.choices?.[0]?.message?.content||""),framesAnalyzed:frames.length,mode:"sampled_frames",stored:false}),"application/json");
+  }catch{return response(JSON.stringify({error:"Fournisseur vidéo indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/image-edit"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
