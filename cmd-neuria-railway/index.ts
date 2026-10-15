@@ -731,6 +731,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-diff"){
+  if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const before=Array.isArray(body?.before)?body.before:[];
+  const after=Array.isArray(body?.after)?body.after:[];
+  if(before.length>100||after.length>100)return response(JSON.stringify({error:"100 fichiers maximum par version"}),"application/json",400);
+  const parse=(items)=>{const out=new Map();let size=0;for(const f of items){const p=f?.path,c=f?.content;if(typeof p!=="string"||!p||p.length>240||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||/[\\\x00-\x1f]/.test(p)||typeof c!=="string"||out.has(p))return null;size+=new TextEncoder().encode(c).byteLength;if(size>70000)return null;out.set(p,c)}return out};
+  const a=parse(before),b=parse(after);if(!a||!b)return response(JSON.stringify({error:"Fichiers invalides, doublons ou taille excessive"}),"application/json",400);
+  const added=[],removed=[],modified=[],unchanged=[];
+  for(const [p,c] of b){if(!a.has(p))added.push(p);else if(a.get(p)!==c)modified.push(p);else unchanged.push(p)}
+  for(const p of a.keys())if(!b.has(p))removed.push(p);
+  return response(JSON.stringify({added,removed,modified,unchanged,summary:{added:added.length,removed:removed.length,modified:modified.length,unchanged:unchanged.length},mode:"comparison_only",executed:false,note:"Aucun fichier supprimé ou modifié."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/restore-package-verify"){
   if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
