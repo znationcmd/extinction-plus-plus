@@ -454,8 +454,8 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let body;try{const raw=await req.text();if(raw.length>2500)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);body=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   const owner=String(body?.owner||"").trim(),page=body?.page===undefined?1:body.page;
   if(!/^[a-zA-Z0-9-]{1,39}$/.test(owner)||!Number.isInteger(page)||page<1||page>100)return response(JSON.stringify({error:"Propriétaire ou page invalide"}),"application/json",400);
-  const token=process.env.GITHUB_TOKEN||process.env.GH_TOKEN||"";
-  if(!token)return response(JSON.stringify({error:"Connexion GitHub non configurée"}),"application/json",503);
+  const token=(await NEURIA_OAUTH_OPEN(req))||Bun.env.NEURIA_GITHUB_TOKEN||process.env.GITHUB_TOKEN||process.env.GH_TOKEN||"";
+  if(!token)return response(JSON.stringify({error:"Connecte ton compte GitHub depuis Connexions"}),"application/json",401);
   try{const inventory=await listNeuriaProjects(owner,token,page);
    return response(JSON.stringify({executed:true,source:"github",...inventory,note:"Inventaire uniquement; restauration des données et déploiements non effectuée."}),"application/json");
   }catch{return response(JSON.stringify({error:"Recherche des anciens projets échouée"}),"application/json",502)}
