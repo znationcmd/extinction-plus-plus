@@ -344,7 +344,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  }
  if(req.method==="POST"&&path==="/api/work/backup-roundtrip-test"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
-  const samples={"config/settings.json":"{\\"enabled\\":true,\\"slots\\":10}","notes/readme.txt":"CMD Neuria — sauvegarde de contrôle"};
+  const samples={"config/settings.json":JSON.stringify({enabled:true,slots:10}),"notes/readme.txt":"CMD Neuria — sauvegarde de contrôle"};
   const hash=async(value)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
   const manifest=await Promise.all(Object.entries(samples).map(async([path,content])=>({path,sha256:await hash(content),sizeBytes:new TextEncoder().encode(content).length})));
   const exported={format:"cmd-neuria-backup-v1",projectId:"selftest",manifest,files:{...samples}};
