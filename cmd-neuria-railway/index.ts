@@ -523,7 +523,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let b;try{const raw=await req.text();if(raw.length>40000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(!Array.isArray(b?.clips)||b.clips.length<1||b.clips.length>100||typeof b.source!=="string"||!b.source.trim()||b.source.length>200)
    return response(JSON.stringify({error:"Source ou segments invalides"}),"application/json",400);
-  const csvCell=(v)=>'"'+String(v).replace(/"/g,'""')+'"';
+  const csvCell=(v)=>{const s=String(v).replace(/[\\r\\n]+/g," ");const safe=/^[\\s]*[=+@-]/.test(s)?"\'"+s:s;return '"' + safe.replace(/"/g,'""') + '"';};
   const lines=["source,label,source_in_seconds,source_out_seconds,timeline_in_seconds,timeline_out_seconds"];
   let position=0;
   for(const clip of b.clips){
@@ -532,7 +532,8 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    const start=position;position+=clip.end-clip.start;
    lines.push([b.source,clip.label,clip.start,clip.end,start,position].map(csvCell).join(","));
   }
-  return response(JSON.stringify({executed:true,exportFormat:"csv",filename:"cmd-neuria-timeline.csv",content:lines.join("\\n"),clipCount:b.clips.length,totalDurationSeconds:Math.round(position*1000)/1000,videoRendered:false}),"application/json");
+  if(b.download===true)return new Response("\uFEFF"+lines.join("\r\n"),{status:200,headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-timeline.csv\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
+  return response(JSON.stringify({executed:true,exportFormat:"csv",filename:"cmd-neuria-timeline.csv",content:lines.join("\n"),clipCount:b.clips.length,totalDurationSeconds:Math.round(position*1000)/1000,videoRendered:false}),"application/json");
  }
  if(req.method==="POST"&&path==="/api/work/video-edit-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
