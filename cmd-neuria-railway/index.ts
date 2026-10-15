@@ -409,6 +409,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-filter-sort"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows;
+  if(!Array.isArray(rows)||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x)))return response(JSON.stringify({error:"Maximum 500 lignes d'objets"}),"application/json",400);
+  const columns=[...new Set(rows.flatMap(x=>Object.keys(x)))];if(columns.length>30)return response(JSON.stringify({error:"Maximum 30 colonnes"}),"application/json",400);
+  const filter=body?.filter,sort=body?.sort;
+  if(filter!==undefined&&(!filter||!columns.includes(filter.column)||!["equals","contains","greater","less"].includes(filter.operator)||!["string","number"].includes(typeof filter.value)))return response(JSON.stringify({error:"Filtre invalide"}),"application/json",400);
+  if(sort!==undefined&&(!sort||!columns.includes(sort.column)||!["asc","desc"].includes(sort.direction)))return response(JSON.stringify({error:"Tri invalide"}),"application/json",400);
+  let output=rows.slice();
+  if(filter)output=output.filter(row=>{const v=row[filter.column];if(filter.operator==="equals")return String(v??"")===String(filter.value);if(filter.operator==="contains")return String(v??"").toLowerCase().includes(String(filter.value).toLowerCase());if(typeof v!=="number"||typeof filter.value!=="number")return false;return filter.operator==="greater"?v>filter.value:v<filter.value});
+  if(sort)output.sort((a,b)=>{const x=a[sort.column],y=b[sort.column];const result=typeof x==="number"&&typeof y==="number"?x-y:String(x??"").localeCompare(String(y??""),"fr",{numeric:true});return sort.direction==="desc"?-result:result});
+  return response(JSON.stringify({executed:true,rows:output,rowCount:output.length,inputCount:rows.length,filterApplied:!!filter,sortApplied:!!sort,stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-csv-import"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"CSV trop volumineux"}),"application/json",413);
