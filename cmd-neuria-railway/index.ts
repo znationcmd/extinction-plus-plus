@@ -275,6 +275,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const found=await NEURIA_SEARCH_MULTI(q);
   return response(JSON.stringify({query:q,source:found.provider,results:found.results,limited:true}),"application/json");
  }
+ if(req.method==="GET"&&path==="/api/work/capabilities"){
+  const github=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
+  const browser=!!Bun.env.NEURIA_BROWSER_CDP_URL;
+  const llm=!!(Bun.env.NEURIA_AI_ENDPOINT&&Bun.env.NEURIA_AI_API_KEY&&Bun.env.NEURIA_AI_MODEL);
+  const capabilities=[
+   {id:"chat",implemented:true,configured:llm,verified:false},
+   {id:"web-search",implemented:true,configured:true,verified:false},
+   {id:"browser",implemented:true,configured:browser,verified:false},
+   {id:"google-search",implemented:true,configured:!!(Bun.env.NEURIA_GOOGLE_SEARCH_API_KEY&&Bun.env.NEURIA_GOOGLE_SEARCH_ENGINE_ID),verified:false},
+   {id:"brave-search",implemented:true,configured:!!Bun.env.NEURIA_BRAVE_SEARCH_API_KEY,verified:false},
+   {id:"searxng",implemented:true,configured:!!Bun.env.NEURIA_SEARXNG_URL,verified:false},
+   {id:"github-oauth",implemented:true,configured:github,verified:false},
+   {id:"plugin-catalog",implemented:true,configured:true,verified:false},
+   {id:"plugin-orchestration",implemented:false,configured:false,verified:false},
+   {id:"autonomous-work",implemented:false,configured:false,verified:false},
+   {id:"persistent-memory",implemented:false,configured:false,verified:false},
+   {id:"developer-engine",implemented:false,configured:false,verified:false},
+   {id:"automated-tests",implemented:false,configured:false,verified:false}
+  ];
+  return response(JSON.stringify({capabilities,checkedAt:new Date().toISOString(),note:"Presence du code ou de la configuration, pas une preuve de fonctionnement de bout en bout."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
