@@ -440,6 +440,24 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   ];
   return response(JSON.stringify({games,mode:"reference_catalog",note:"Les formats listés ne sont pas tous validés par le moteur actuel ; aucune compatibilité d'installation n'est garantie."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/json-patch-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const source=String(body?.content||"");if(source.length>100000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  let doc;try{doc=JSON.parse(source)}catch(e){return response(JSON.stringify({error:"JSON source invalide",details:String(e?.message||"").slice(0,180)}),"application/json",400)}
+  const updates=Array.isArray(body?.updates)?body.updates.slice(0,40):[];
+  if(!updates.length)return response(JSON.stringify({error:"Aucune modification demandée"}),"application/json",400);
+  const changes=[];
+  for(const update of updates){
+   const key=String(update?.key||"");
+   if(!/^[A-Za-z_][A-Za-z0-9_-]{0,79}$/.test(key)||!doc||typeof doc!=="object"||Array.isArray(doc))return response(JSON.stringify({error:"Seules les clés directes d'un objet JSON sont prises en charge"}),"application/json",400);
+   if(!Object.prototype.hasOwnProperty.call(doc,key))return response(JSON.stringify({error:"Clé absente",key}),"application/json",400);
+   const before=doc[key];doc[key]=update.value;changes.push({key,before,after:update.value});
+  }
+  return response(JSON.stringify({valid:true,changes,preview:JSON.stringify(doc,null,2),execution:"preview_only",note:"Aucun fichier n'a été écrit ni déployé."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
