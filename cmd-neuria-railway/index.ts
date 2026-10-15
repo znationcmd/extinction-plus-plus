@@ -504,6 +504,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/chart-data-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.rows)||b.rows.length>1000||typeof b.categoryKey!=="string"||b.categoryKey.length>100||typeof b.valueKey!=="string"||b.valueKey.length>100||!["sum","average","count"].includes(b.operation))
+   return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400);
+  const groups=new Map();
+  for(const row of b.rows){
+   if(!row||typeof row!=="object"||Array.isArray(row))return response(JSON.stringify({error:"Ligne invalide"}),"application/json",400);
+   const category=row[b.categoryKey],value=row[b.valueKey];
+   if(typeof category!=="string"&&typeof category!=="number")return response(JSON.stringify({error:"Catégorie invalide"}),"application/json",400);
+   if(b.operation!=="count"&&(typeof value!=="number"||!Number.isFinite(value)))return response(JSON.stringify({error:"Valeur invalide"}),"application/json",400);
+   const key=String(category).slice(0,150),old=groups.get(key)||{category:key,sum:0,count:0};
+   old.sum+=b.operation==="count"?0:value;old.count++;groups.set(key,old);
+  }
+  const data=[...groups.values()].map(x=>({category:x.category,value:b.operation==="count"?x.count:b.operation==="average"?x.sum/x.count:x.sum}));
+  return response(JSON.stringify({executed:true,previewOnly:true,chartType:["bar","line","pie"].includes(b.chartType)?b.chartType:"bar",operation:b.operation,points:data.length,data,chartRendered:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/user-isolation-audit"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
