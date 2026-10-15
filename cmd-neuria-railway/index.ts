@@ -420,7 +420,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const csvCell=(value)=>{
    let text=value===null||value===undefined?"":typeof value==="object"?JSON.stringify(value):String(value);
    if(text.length>10000)text=text.slice(0,10000);
-   if(/^[\\s\\u0000-\\u001f]*[=+@-]/.test(text))text="'"+text;
+   if(/^[ \t]*[=+@-]/.test(text))text=String.fromCharCode(39)+text;
    return '"'+text.replace(/"/g,'""')+'"';
   };
   const csv=[columns.map(csvCell).join(","),...rows.map(row=>columns.map(col=>csvCell(row[col])).join(","))].join("\r\n");
