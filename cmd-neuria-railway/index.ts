@@ -446,6 +446,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [key,row] of b)if(!a.has(key))onlyRight.push(row);
   return response(JSON.stringify({executed:true,keys,onlyLeft,onlyRight,changed,unchangedCount:unchanged.length,summary:{onlyLeft:onlyLeft.length,onlyRight:onlyRight.length,changed:changed.length,unchanged:unchanged.length},stored:false}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/local-place-search"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>3000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const query=body?.query,limitResults=Math.min(5,Math.max(1,Number(body?.limit)||5));
+  if(typeof query!=="string"||query.trim().length<3||query.length>180||!Number.isFinite(limitResults))return response(JSON.stringify({error:"Recherche géographique invalide"}),"application/json",400);
+  const endpoint=process.env.NEURIA_GEOCODING_URL||"https://nominatim.openstreetmap.org/search";
+  let parsed;try{parsed=new URL(endpoint);if(parsed.protocol!=="https:")throw Error("HTTPS requis")}catch{return response(JSON.stringify({error:"Fournisseur géographique mal configuré"}),"application/json",503)}
+  parsed.searchParams.set("q",query.trim());parsed.searchParams.set("format","jsonv2");parsed.searchParams.set("addressdetails","1");parsed.searchParams.set("limit",String(limitResults));
+  try{const upstream=await fetch(parsed.toString(),{headers:{"accept":"application/json","user-agent":process.env.NEURIA_GEOCODING_USER_AGENT||"CMD-Neuria/1.0 (geocoding integration; contact admin)"},signal:AbortSignal.timeout(12000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Recherche géographique indisponible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();if(!Array.isArray(data))throw Error("Réponse invalide");
+   return response(JSON.stringify({executed:true,provider:"nominatim-compatible",places:data.slice(0,limitResults).map(p=>({name:String(p.display_name||"").slice(0,500),latitude:Number(p.lat),longitude:Number(p.lon),category:String(p.type||""),address:p.address||{}})),note:"Résultats de géocodage, pas une disponibilité en temps réel."}),"application/json");
+  }catch{return response(JSON.stringify({error:"Recherche géographique échouée"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/video-understanding"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
