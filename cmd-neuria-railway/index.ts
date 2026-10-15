@@ -731,6 +731,32 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-verify"){
+  if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const manifest=Array.isArray(body?.manifest)?body.manifest:[];
+  const files=Array.isArray(body?.files)?body.files:[];
+  if(!manifest.length||manifest.length>100||files.length>100)return response(JSON.stringify({error:"Manifeste de 1 à 100 fichiers requis"}),"application/json",400);
+  const actual=new Map(),duplicates=[],invalid=[],missing=[],changed=[],unexpected=[];let totalBytes=0;
+  for(const item of files){
+   const p=item?.path,c=item?.content;
+   if(typeof p!=="string"||!p||p.length>240||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||/[\\\x00-\x1f]/.test(p)||typeof c!=="string"){invalid.push(String(p||""));continue}
+   if(actual.has(p)){duplicates.push(p);continue}
+   const bytes=new TextEncoder().encode(c);totalBytes+=bytes.byteLength;if(totalBytes>70000)return response(JSON.stringify({error:"Total limité à 70 Ko"}),"application/json",413);
+   const digest=await crypto.subtle.digest("SHA-256",bytes);
+   actual.set(p,{bytes:bytes.byteLength,sha256:Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,"0")).join("")});
+  }
+  const expected=new Set();
+  for(const item of manifest){
+   const p=item?.path;
+   if(typeof p!=="string"||!p||p.length>240||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||/[\\\x00-\x1f]/.test(p)||typeof item.sha256!=="string"||!/^[a-f0-9]{64}$/.test(item.sha256)||!Number.isSafeInteger(item.bytes)||item.bytes<0){invalid.push(String(p||""));continue}
+   if(expected.has(p)){duplicates.push(p);continue}expected.add(p);
+   const got=actual.get(p);if(!got)missing.push(p);else if(got.sha256!==item.sha256||got.bytes!==item.bytes)changed.push({path:p,expectedBytes:item.bytes,actualBytes:got.bytes});
+  }
+  for(const p of actual.keys())if(!expected.has(p))unexpected.push(p);
+  const valid=!duplicates.length&&!invalid.length&&!missing.length&&!changed.length&&!unexpected.length;
+  return response(JSON.stringify({valid,verifiedFiles:expected.size,missing,changed,unexpected,duplicates,invalid,mode:"verification_only",restored:false,saved:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-manifest"){
   if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
