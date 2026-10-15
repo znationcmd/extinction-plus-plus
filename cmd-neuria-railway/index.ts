@@ -504,6 +504,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/audio-transcription-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const types=new Set(["audio/wav","audio/mpeg","audio/mp4","audio/webm","audio/ogg","audio/flac"]);
+  if(typeof b?.filename!=="string"||b.filename.length>200||!types.has(b.mimeType)||!Number.isSafeInteger(b.bytes)||b.bytes<1||b.bytes>100000000||typeof b.language!=="string"||b.language.length>12)
+   return response(JSON.stringify({error:"Métadonnées audio invalides"}),"application/json",400);
+  const provider=String(b.provider||"unconfigured");
+  const supported=["openai","whisper-local","custom"].includes(provider);
+  return response(JSON.stringify({executed:true,metadataValidated:true,providerConfigured:false,providerSupported:supported,transcriptionStarted:false,filename:b.filename,language:b.language,estimatedUploadMB:Math.round(b.bytes/1048576*100)/100,nextStep:"Configure a transcription provider and upload audio through a dedicated authenticated endpoint."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/chart-data-preview"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
