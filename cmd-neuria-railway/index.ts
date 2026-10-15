@@ -504,6 +504,28 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/schedule-notification-evaluate"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>30000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>30000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.tasks)||b.tasks.length>50)return response(JSON.stringify({error:"Tâches invalides"}),"application/json",400);
+  const now=Date.now(),due=[],upcoming=[];
+  for(const task of b.tasks){
+   if(!task||typeof task.id!=="string"||task.id.length>100||typeof task.title!=="string"||task.title.length>200||typeof task.dueAt!=="string")
+    return response(JSON.stringify({error:"Tâche invalide"}),"application/json",400);
+   const when=Date.parse(task.dueAt),minutes=task.recurrenceMinutes;
+   if(!Number.isFinite(when)||(minutes!==undefined&&(!Number.isInteger(minutes)||minutes<60||minutes>525600)))
+    return response(JSON.stringify({error:"Échéance invalide"}),"application/json",400);
+   if(task.enabled===false)continue;
+   const message=String(task.message||task.title).slice(0,300);
+   if(when<=now)due.push({id:task.id,title:task.title,message,dueAt:new Date(when).toISOString()});
+   const next=minutes===undefined?(when>now?when:null):when+(when<=now?Math.floor((now-when)/(minutes*60000))+1:0)*minutes*60000;
+   if(next!==null)upcoming.push({id:task.id,nextDueAt:new Date(next).toISOString()});
+  }
+  return response(JSON.stringify({executed:true,evaluatedAt:new Date(now).toISOString(),dueCount:due.length,notificationPreviews:due,upcoming,notificationsSent:false,persisted:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/conditional-notification-preview"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
