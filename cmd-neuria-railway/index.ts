@@ -409,6 +409,23 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/table-group-summary"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const rows=body?.rows,groupBy=body?.groupBy,valueColumn=body?.valueColumn;
+  if(!Array.isArray(rows)||rows.length<1||rows.length>500||rows.some(x=>!x||typeof x!=="object"||Array.isArray(x))||typeof groupBy!=="string"||!groupBy||groupBy.length>100||typeof valueColumn!=="string"||!valueColumn||valueColumn.length>100)return response(JSON.stringify({error:"Lignes et colonnes de regroupement requis"}),"application/json",400);
+  const groups=new Map();
+  for(const row of rows){
+   if(!Object.prototype.hasOwnProperty.call(row,groupBy)||!Object.prototype.hasOwnProperty.call(row,valueColumn))return response(JSON.stringify({error:"Colonnes manquantes"}),"application/json",400);
+   const key=String(row[groupBy]??"(vide)").slice(0,150),value=row[valueColumn];
+   if(typeof value!=="number"||!Number.isFinite(value))return response(JSON.stringify({error:"La colonne de valeurs doit être numérique"}),"application/json",400);
+   const item=groups.get(key)||{group:key,count:0,sum:0,min:value,max:value};
+   item.count++;item.sum+=value;item.min=Math.min(item.min,value);item.max=Math.max(item.max,value);groups.set(key,item);
+  }
+  const summary=Array.from(groups.values()).map(x=>({...x,average:x.sum/x.count}));
+  return response(JSON.stringify({executed:true,groupBy,valueColumn,groups:summary,groupCount:summary.length,rowCount:rows.length,chartData:summary.map(x=>({label:x.group,value:x.sum})),stored:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/table-filter-sort"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Tableau trop volumineux"}),"application/json",413);
