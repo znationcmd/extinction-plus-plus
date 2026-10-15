@@ -731,6 +731,26 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-manifest"){
+  if(Number(req.headers.get("content-length")||0)>90000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const project=String(body?.project||"").trim().slice(0,120);
+  const files=Array.isArray(body?.files)?body.files:[];
+  if(project.length<2||files.length===0||files.length>100)return response(JSON.stringify({error:"Projet et 1 à 100 fichiers requis"}),"application/json",400);
+  const entries=[],seen=new Set();let totalBytes=0;
+  for(const item of files){
+   const path=item?.path,content=item?.content;
+   if(typeof path!=="string"||!path||path.length>240||path.startsWith("/")||path.split("/").some(x=>!x||x==="."||x==="..")||/[\\\x00-\x1f]/.test(path)||typeof content!=="string")return response(JSON.stringify({error:"Fichier ou chemin invalide"}),"application/json",400);
+   if(seen.has(path))return response(JSON.stringify({error:"Chemin dupliqué",path}),"application/json",400);
+   seen.add(path);
+   const bytes=new TextEncoder().encode(content);totalBytes+=bytes.byteLength;
+   if(totalBytes>70000)return response(JSON.stringify({error:"Total limité à 70 Ko"}),"application/json",413);
+   const digest=await crypto.subtle.digest("SHA-256",bytes);
+   const sha256=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,"0")).join("");
+   entries.push({path,bytes:bytes.byteLength,sha256});
+  }
+  return response(JSON.stringify({project,files:entries,totalBytes,algorithm:"SHA-256",mode:"manifest_only",saved:false,restored:false,note:"Inventaire vérifiable uniquement : les contenus ne sont pas stockés."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/recovery-plan"){
   if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop longue"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
