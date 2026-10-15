@@ -323,6 +323,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  if(req.method==="GET"&&path==="/api/developer/formats"){
   return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/backup-export"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const projectId=body?.projectId,files=body?.files;
+  if(typeof projectId!=="string"||! /^[a-zA-Z0-9_-]{2,80}$/.test(projectId)||!files||typeof files!=="object"||Array.isArray(files))return response(JSON.stringify({error:"Projet ou fichiers invalides"}),"application/json",400);
+  const names=Object.keys(files);
+  if(!names.length||names.length>100)return response(JSON.stringify({error:"1 à 100 fichiers requis"}),"application/json",400);
+  const manifest=[],contents={};let total=0;
+  for(const name of names){
+   if(name.length>240||name.includes("\\")||name.startsWith("/")||name.split("/").some(x=>!x||x==="."||x==="..")||typeof files[name]!=="string")return response(JSON.stringify({error:"Chemin ou contenu invalide"}),"application/json",400);
+   const bytes=new TextEncoder().encode(files[name]);total+=bytes.length;
+   if(total>180000)return response(JSON.stringify({error:"Contenu supérieur à 180 Ko"}),"application/json",413);
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(x=>x.toString(16).padStart(2,"0")).join("");
+   manifest.push({path:name,sha256:digest,sizeBytes:bytes.length});contents[name]=files[name];
+  }
+  manifest.sort((a,b)=>a.path.localeCompare(b.path));
+  const bundle={format:"cmd-neuria-backup-v1",projectId,createdAt:new Date().toISOString(),manifest,files:contents};
+  const filename="cmd-neuria-"+projectId+"-backup.json";
+  return new Response(JSON.stringify(bundle),{status:200,headers:{"content-type":"application/json; charset=utf-8","content-disposition":'attachment; filename="'+filename+'"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+ }
  if(req.method==="GET"&&path==="/api/work/self-test"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   const tests=[];const check=(name,condition)=>tests.push({name,passed:!!condition});
