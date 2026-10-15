@@ -504,6 +504,27 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/schedule-preview"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{const raw=await req.text();if(raw.length>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);body=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const items=body?.tasks;
+  if(!Array.isArray(items)||items.length>50)return response(JSON.stringify({error:"Liste de tâches invalide"}),"application/json",400);
+  const now=Date.now(),out=[];
+  for(const item of items){
+   if(!item||typeof item.id!=="string"||item.id.length>100||typeof item.title!=="string"||item.title.length>200||typeof item.dueAt!=="string")
+    return response(JSON.stringify({error:"Tâche invalide"}),"application/json",400);
+   const due=Date.parse(item.dueAt),step=item.recurrenceMinutes;
+   if(!Number.isFinite(due)||(step!==undefined&&(!Number.isInteger(step)||step<60||step>525600)))
+    return response(JSON.stringify({error:"Échéance ou récurrence invalide"}),"application/json",400);
+   const enabled=item.enabled!==false,overdue=enabled&&due<=now;
+   const next=enabled?(step===undefined?(due>now?due:null):due+(due<=now?Math.floor((now-due)/(step*60000))+1:0)*step*60000):null;
+   out.push({id:item.id,title:item.title,due:overdue,nextDueAt:next===null?null:new Date(next).toISOString()});
+  }
+  return response(JSON.stringify({executed:true,persisted:false,notificationsSent:false,evaluatedAt:new Date(now).toISOString(),dueCount:out.filter(x=>x.due).length,tasks:out}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/resume-checkpoint"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
