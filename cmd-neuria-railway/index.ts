@@ -504,6 +504,17 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/video-generation-plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>20000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(typeof b?.prompt!=="string"||!b.prompt.trim()||b.prompt.length>5000||!Number.isInteger(b.durationSeconds)||b.durationSeconds<1||b.durationSeconds>120||!["16:9","9:16","1:1"].includes(b.aspectRatio)||!Number.isInteger(b.fps)||b.fps<12||b.fps>60)
+   return response(JSON.stringify({error:"Paramètres vidéo invalides"}),"application/json",400);
+  const dimensions=b.aspectRatio==="16:9"?{width:1280,height:720}:b.aspectRatio==="9:16"?{width:720,height:1280}:{width:1024,height:1024};
+  return response(JSON.stringify({executed:true,planOnly:true,videoGenerated:false,prompt:b.prompt,seconds:b.durationSeconds,frames:b.durationSeconds*b.fps,dimensions,modelRequired:true,renderRequired:true}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/video-edit-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
