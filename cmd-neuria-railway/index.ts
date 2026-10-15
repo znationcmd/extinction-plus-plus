@@ -521,6 +521,10 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 720" width="1280" height="720"><style>image {transform-origin:center;animation:motion '+seconds+'s ease-in-out infinite alternate}@keyframes motion {'+animations[motion]+'}</style><rect width="1280" height="720" fill="#080510"/><image x="-40" y="-40" width="1360" height="800" preserveAspectRatio="xMidYMid slice" href="'+image.replace(/&/g,"&amp;")+'"/></svg>';
   return new Response(svg,{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-animation.svg\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; img-src https:; style-src 'unsafe-inline'; sandbox"}});
  }
+ if(req.method==="GET"&&path==="/api/media-studio/providers"){
+  if(!NEURIA_WORK_AUTH(req)&&!NEURIA_OAUTH_OPEN(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  return response(JSON.stringify({providers:[{id:"replicate",features:["text-to-video","image-to-video","text-to-3d","image-to-3d"],configured:!!process.env.REPLICATE_API_TOKEN,enabled:false,reason:"Exécution payante désactivée tant que modèle, budget et consentement ne sont pas configurés"}],localExports:[{format:"OBJ",ready:true},{format:"GLB",ready:true},{format:"SVG animé",ready:true},{format:"WebM",ready:true},{format:"MP4",ready:false}],note:"Les fonctionnalités locales et les APIs de préparation ne sont pas des générateurs IA."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/media-studio/avatar-glb"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   const kind=new URL(req.url).searchParams.get("kind")||"robot";
