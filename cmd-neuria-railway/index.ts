@@ -399,6 +399,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }
   return response(JSON.stringify({count:mods.length,duplicates:[...new Set(duplicates)],missingDependencies:missing.slice(0,200),dependencyEdges:edges.slice(0,500),warnings:warnings.slice(0,30),execution:"analysis_only",note:"Audit déclaratif : aucune installation ni vérification du Workshop/CurseForge."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/mod-order"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>100000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const mods=Array.isArray(body?.mods)?body.mods.slice(0,250):[];
+  if(!mods.length)return response(JSON.stringify({error:"Liste vide"}),"application/json",400);
+  const entries=new Map(),duplicates=[];
+  for(const m of mods){const id=String(m?.id||"").trim().slice(0,120);if(!id)continue;if(entries.has(id))duplicates.push(id);else entries.set(id,(Array.isArray(m?.dependencies)?m.dependencies:[]).slice(0,40).map(x=>String(x).trim().slice(0,120)).filter(Boolean))}
+  const missing=[],cycles=[],ordered=[],state=new Map(),stack=[];
+  function visit(id){if(state.get(id)===2)return;if(state.get(id)===1){cycles.push([...stack,id]);return}state.set(id,1);stack.push(id);for(const dep of entries.get(id)||[]){if(!entries.has(dep)){missing.push({mod:id,dependency:dep});continue}visit(dep)}stack.pop();state.set(id,2);ordered.push(id)}
+  for(const id of entries.keys())visit(id);
+  const valid=!duplicates.length&&!missing.length&&!cycles.length;
+  return response(JSON.stringify({valid,ordered:valid?ordered:[],suggestedOrder:ordered,duplicates:[...new Set(duplicates)],missingDependencies:missing.slice(0,200),cycles:cycles.slice(0,30),execution:"analysis_only",note:"Ordre topologique théorique, sans garantie de compatibilité avec le moteur de jeu."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
