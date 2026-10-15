@@ -580,6 +580,13 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   }catch{return new Response(JSON.stringify({error:"Analyse Aura indisponible"}),{status:503,headers:{"content-type":"application/json"}})}
   finally{for(const p of [input,output]){try{await (await import("node:fs/promises")).unlink(p)}catch{}}}
  }
+ if(req.method==="GET"&&path==="/api/neuria/generation/diagnostics"){
+  const token=!!Bun.env.NEURIA_GENERATION_WORKER_TOKEN;
+  const oracle=!!Bun.env.NEURIA_ORACLE_WORKER_URL;
+  const pulse=!!Bun.env.NEURIA_PULSE_WORKER_URL;
+  const inspect=(present)=>({status:present&&token?"configured_not_tested":"missing_configuration",workerUrlConfigured:present,workerTokenConfigured:token,generationVerified:false});
+  return new Response(JSON.stringify({oracle:inspect(oracle),pulse:inspect(pulse),huggingFaceTokenPresent:!!Bun.env.HF_TOKEN,note:"Configured does not mean installed or working; a real model output test is required"}),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});
+ }
  if(req.method==="GET"&&path==="/api/neuria/generation/providers"){
   const oracle=!!(Bun.env.NEURIA_ORACLE_WORKER_URL&&Bun.env.NEURIA_GENERATION_WORKER_TOKEN);
   const pulse=!!(Bun.env.NEURIA_PULSE_WORKER_URL&&Bun.env.NEURIA_GENERATION_WORKER_TOKEN);
