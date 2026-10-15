@@ -731,6 +731,16 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-schedule-preview"){
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const project=String(body?.project||"").trim().slice(0,120);
+  const frequency=body?.frequency,timezone=body?.timezone,keep=body?.keep;
+  if(project.length<2||!["daily","weekly","monthly"].includes(frequency)||typeof timezone!=="string"||timezone.length>80||!Number.isInteger(keep)||keep<1||keep>100)return response(JSON.stringify({error:"Projet, fréquence, fuseau horaire et conservation (1 à 100) requis"}),"application/json",400);
+  try{new Intl.DateTimeFormat("en",{timeZone:timezone})}catch{return response(JSON.stringify({error:"Fuseau horaire invalide"}),"application/json",400)}
+  const schedule={daily:"0 3 * * *",weekly:"0 3 * * 0",monthly:"0 3 1 * *"}[frequency];
+  return response(JSON.stringify({project,frequency,timezone,keep,cron:schedule,mode:"schedule_preview_only",scheduled:false,backupCreated:false,requiresPersistentStorage:true,note:"Proposition d'horaire à 03:00 dans le fuseau indiqué. Aucun planificateur ni sauvegarde n'a été activé."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-restore-safety"){
   if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
