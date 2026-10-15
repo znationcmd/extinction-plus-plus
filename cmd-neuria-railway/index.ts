@@ -409,6 +409,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   check("restore_path_accept_nested",pathValid("project/config/settings.json"));
   return response(JSON.stringify({passed:tests.filter(x=>x.passed).length,total:tests.length,tests,scope:"isolated_logic_checks",integrationVerified:false,note:"Tests de logique exécutés côté serveur ; ne vérifient ni GitHub, ni Railway, ni stockage ni restauration de bout en bout."}),"application/json",tests.every(x=>x.passed)?200:500);
  }
+ if(req.method==="POST"&&path==="/api/work/chart-svg"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Graphique trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const items=body?.data;
+  if(!Array.isArray(items)||!items.length||items.length>30||items.some(x=>!x||typeof x.label!=="string"||x.label.length>60||typeof x.value!=="number"||!Number.isFinite(x.value)||x.value<0||x.value>1e12))return response(JSON.stringify({error:"1 à 30 points label/value positifs requis"}),"application/json",400);
+  const esc=x=>String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+  const width=900,left=210,right=100,top=55,rowHeight=36,height=top+items.length*rowHeight+45,max=Math.max(1,...items.map(x=>x.value));
+  const title=typeof body?.title==="string"?body.title.slice(0,100):"CMD Neuria — graphique";
+  const bars=items.map((x,i)=>{const y=top+i*rowHeight,barWidth=Math.round((width-left-right)*x.value/max);return '<text x="'+(left-12)+'" y="'+(y+20)+'" text-anchor="end" font-size="13" fill="#e8dfff">'+esc(x.label)+'</text><rect x="'+left+'" y="'+(y+4)+'" width="'+barWidth+'" height="24" rx="5" fill="#9b63ff"/><text x="'+(left+barWidth+8)+'" y="'+(y+21)+'" font-size="12" fill="#e8dfff">'+esc(x.value)+'</text>'}).join("");
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+'" height="'+height+'" viewBox="0 0 '+width+' '+height+'"><rect width="100%" height="100%" fill="#160e25"/><text x="25" y="32" font-size="20" font-weight="bold" fill="#fff">'+esc(title)+'</text>'+bars+'</svg>';
+  return new Response(svg,{status:200,headers:{"content-type":"image/svg+xml; charset=utf-8","content-disposition":'attachment; filename="cmd-neuria-chart.svg"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+ }
  if(req.method==="POST"&&path==="/api/work/table-analyze"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
