@@ -2,7 +2,7 @@
 import sharp from "sharp";
 import { summarizeText, extractTasks } from "./neuria-text-tools.ts";
 import { compareDocuments, analyzeDocument } from "./neuria-document-tools.ts";
-import { inventoryGitHubFolder } from "./neuria-folder-inventory.ts";
+import { inventoryGitHubFolder, inspectGitHubFolderFiles } from "./neuria-folder-inventory.ts";
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
@@ -500,7 +500,7 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   let body;try{const raw=await req.text();if(raw.length>3000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);body=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   const token=(await NEURIA_OAUTH_OPEN(req))||Bun.env.NEURIA_GITHUB_TOKEN||"";
   if(!token)return response(JSON.stringify({error:"Connecte GitHub depuis Connexions"}),"application/json",401);
-  try{const result=await inventoryGitHubFolder({owner:body?.owner,repo:body?.repo,ref:body?.ref,folder:body?.folder},token);
+  try{const result=body?.inspectFiles===true?await inspectGitHubFolderFiles({owner:body?.owner,repo:body?.repo,ref:body?.ref,folder:body?.folder,maxFiles:body?.maxFiles},token):await inventoryGitHubFolder({owner:body?.owner,repo:body?.repo,ref:body?.ref,folder:body?.folder},token);
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
