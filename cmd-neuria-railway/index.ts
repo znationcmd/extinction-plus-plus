@@ -731,6 +731,18 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    }
    const endpoint=data.action==="repository_status"?"https://api.github.com/repos/"+repo:"https://api.github.com/user";const upstream=await fetch(endpoint,{headers:{"authorization":"Bearer "+token,"accept":"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(9000)});if(!upstream.ok)return response(JSON.stringify({error:upstream.status===404?"Dépôt introuvable ou inaccessible":"GitHub a refusé la requête",status:upstream.status}),"application/json",upstream.status===404?404:502);const user=await upstream.json();const result=data.action==="repository_status"?{fullName:user.full_name,url:user.html_url,private:user.private,defaultBranch:user.default_branch,updatedAt:user.updated_at,permissions:user.permissions||null}:{login:user.login,profile:user.html_url};return response(JSON.stringify({executed:true,plugin:"github",action:data.action,result,readOnly:true}),"application/json")}catch{return response(JSON.stringify({error:"GitHub temporairement indisponible"}),"application/json",502)}
  }
+ if(req.method==="POST"&&path==="/api/developer/backup-restore-safety"){
+  if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const target=body?.target,backup=body?.backup,checks=[];
+  if(typeof target?.projectId!=="string"||!target.projectId||typeof backup?.projectId!=="string"||!backup.projectId)checks.push({id:"project",passed:false,reason:"Projet de destination ou origine manquant"});
+  else checks.push({id:"project",passed:target.projectId===backup.projectId,reason:"Projet source et destination doivent correspondre"});
+  checks.push({id:"manifest",passed:backup?.manifestVerified===true,reason:"Le manifeste doit être vérifié"});
+  checks.push({id:"owner",passed:typeof target?.ownerId==="string"&&!!target.ownerId&&target.ownerId===backup?.ownerId,reason:"Propriétaires déclarés identiques requis"});
+  checks.push({id:"snapshot",passed:target?.preRestoreSnapshot===true,reason:"Une sauvegarde préalable est requise"});
+  checks.push({id:"confirmation",passed:body?.confirmed===true,reason:"Confirmation explicite requise"});
+  return response(JSON.stringify({eligibleForReview:checks.every(x=>x.passed),checks,mode:"safety_check_only",authenticated:false,authorized:false,restored:false,note:"Les déclarations du client ne prouvent ni l'identité ni l'intégrité. Aucun droit ni aucune restauration ne sont accordés."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/developer/backup-scope-audit"){
   if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
