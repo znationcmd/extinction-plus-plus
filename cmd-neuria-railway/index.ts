@@ -515,6 +515,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const dimensions=b.aspectRatio==="16:9"?{width:1280,height:720}:b.aspectRatio==="9:16"?{width:720,height:1280}:{width:1024,height:1024};
   return response(JSON.stringify({executed:true,planOnly:true,videoGenerated:false,prompt:b.prompt,seconds:b.durationSeconds,frames:b.durationSeconds*b.fps,dimensions,modelRequired:true,renderRequired:true}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/video-timeline-export"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>40000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>40000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.clips)||b.clips.length<1||b.clips.length>100||typeof b.source!=="string"||!b.source.trim()||b.source.length>200)
+   return response(JSON.stringify({error:"Source ou segments invalides"}),"application/json",400);
+  const csvCell=(v)=>'"'+String(v).replace(/"/g,'""')+'"';
+  const lines=["source,label,source_in_seconds,source_out_seconds,timeline_in_seconds,timeline_out_seconds"];
+  let position=0;
+  for(const clip of b.clips){
+   if(!clip||!Number.isFinite(clip.start)||!Number.isFinite(clip.end)||clip.start<0||clip.end<=clip.start||clip.end>21600||typeof clip.label!=="string"||clip.label.length>100)
+    return response(JSON.stringify({error:"Segment invalide"}),"application/json",400);
+   const start=position;position+=clip.end-clip.start;
+   lines.push([b.source,clip.label,clip.start,clip.end,start,position].map(csvCell).join(","));
+  }
+  return response(JSON.stringify({executed:true,exportFormat:"csv",filename:"cmd-neuria-timeline.csv",content:lines.join("\\n"),clipCount:b.clips.length,totalDurationSeconds:Math.round(position*1000)/1000,videoRendered:false}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/video-edit-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
