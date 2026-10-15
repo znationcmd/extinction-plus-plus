@@ -342,6 +342,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   for(const [id,re] of tests)if(re.test(filename+" "+sample.slice(0,2000)))games.push(id);
   return response(JSON.stringify({filename,extension:ext||null,format:formats[ext]||"unknown",games,confidence:games.length===1?"heuristic":"uncertain",requiresReview:true,execution:"detection_only"}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/plan"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>20000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const goal=String(body?.goal||"").trim().slice(0,2000);
+  if(goal.length<5)return response(JSON.stringify({error:"Objectif trop court"}),"application/json",400);
+  const target=String(body?.target||"").trim().slice(0,100);
+  const steps=[
+   {id:"inspect",action:"Analyser le projet et les dépendances",requiresApproval:false},
+   {id:"plan",action:"Préparer les modifications et les fichiers concernés",requiresApproval:false},
+   {id:"implement",action:"Proposer un ensemble de modifications vérifiables",requiresApproval:false},
+   {id:"validate",action:"Exécuter les validateurs disponibles",requiresApproval:false},
+   {id:"test",action:"Exécuter les tests dans un environnement isolé",requiresApproval:false},
+   {id:"review",action:"Présenter les résultats et les risques",requiresApproval:false},
+   {id:"apply",action:"Appliquer les modifications sur les services externes",requiresApproval:true}
+  ];
+  return response(JSON.stringify({goal,target:target||null,steps,execution:"planning_only",automatedExecution:false,note:"Aucune écriture GitHub/Railway, aucun test ni déploiement n'est exécuté par cette route."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
