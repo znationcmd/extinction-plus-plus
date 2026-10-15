@@ -296,6 +296,30 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   ];
   return response(JSON.stringify({capabilities,checkedAt:new Date().toISOString(),note:"Presence du code ou de la configuration, pas une preuve de fonctionnement de bout en bout."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/validate"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>120000)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const format=String(body?.format||"").toLowerCase(),content=String(body?.content||"");
+  if(content.length>100000)return response(JSON.stringify({error:"Limite 100000 caractères"}),"application/json",413);
+  if(!["json","jsonc","ini"].includes(format))return response(JSON.stringify({error:"Format non pris en charge",supported:["json","jsonc","ini"]}),"application/json",400);
+  const errors=[],warnings=[];let details={};
+  if(format==="json"||format==="jsonc"){
+   try{if(format==="jsonc")return response(JSON.stringify({format,valid:false,errors:["Validation JSONC non encore implémentée"],warnings,details}),"application/json",501);
+    const value=JSON.parse(content);details={type:Array.isArray(value)?"array":value===null?"null":typeof value,keys:value&&typeof value==="object"?Object.keys(value).length:0};
+   }catch(e){errors.push(String(e?.message||"JSON invalide").slice(0,250))}
+  }else{
+   let section="";const seen=new Set();
+   for(const [index,line] of content.split(/\\r?\\n/).entries()){
+    const t=line.trim();if(!t||t.startsWith(";")||t.startsWith("#"))continue;
+    if(t.startsWith("[")&&t.endsWith("]")){section=t.slice(1,-1).trim();if(!section)errors.push("Ligne "+(index+1)+": section vide");continue}
+    const pos=t.indexOf("=");if(pos<1){errors.push("Ligne "+(index+1)+": clé=valeur attendue");continue}
+    const key=section+"."+t.slice(0,pos).trim();if(seen.has(key))warnings.push("Ligne "+(index+1)+": clé répétée "+key);seen.add(key);
+   }details={entries:seen.size};
+  }
+  return response(JSON.stringify({format,valid:errors.length===0,errors:errors.slice(0,30),warnings:warnings.slice(0,30),details,execution:"validation_only"}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
