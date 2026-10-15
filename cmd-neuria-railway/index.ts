@@ -323,6 +323,25 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  if(req.method==="GET"&&path==="/api/developer/formats"){
   return response(JSON.stringify({formats:[{id:"json",validation:"implemented"},{id:"ini",validation:"implemented"},{id:"jsonc",validation:"not_implemented"},{id:"xml",validation:"planned"},{id:"yaml",validation:"planned"},{id:"lua",validation:"planned"},{id:"python",validation:"planned"},{id:"typescript",validation:"planned"},{id:"javascript",validation:"planned"}],note:"Les formats prévus ne sont pas encore des validateurs fonctionnels."}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/work/backup-import-verify"){
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const bundle=body?.bundle||body;
+  if(bundle?.format!=="cmd-neuria-backup-v1"||typeof bundle?.projectId!=="string"||! /^[a-zA-Z0-9_-]{2,80}$/.test(bundle.projectId)||!Array.isArray(bundle?.manifest)||!bundle.files||typeof bundle.files!=="object"||Array.isArray(bundle.files))return response(JSON.stringify({error:"Format de sauvegarde invalide"}),"application/json",400);
+  const manifest=bundle.manifest,files=bundle.files,names=Object.keys(files);
+  if(!manifest.length||manifest.length>100||names.length!==manifest.length)return response(JSON.stringify({error:"Nombre de fichiers incohérent"}),"application/json",400);
+  const seen=new Set(),results=[];let total=0;
+  for(const entry of manifest){
+   const p=entry?.path;
+   if(typeof p!=="string"||!p||p.length>240||p.includes("\\")||p.startsWith("/")||p.split("/").some(x=>!x||x==="."||x==="..")||seen.has(p)||!Object.prototype.hasOwnProperty.call(files,p)||typeof files[p]!=="string"||typeof entry?.sha256!=="string"||! /^[a-fA-F0-9]{64}$/.test(entry.sha256)||!Number.isInteger(entry.sizeBytes)||entry.sizeBytes<0)return response(JSON.stringify({error:"Manifeste invalide"}),"application/json",400);
+   seen.add(p);const bytes=new TextEncoder().encode(files[p]);total+=bytes.length;
+   if(total>180000)return response(JSON.stringify({error:"Contenu supérieur à 180 Ko"}),"application/json",413);
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map(x=>x.toString(16).padStart(2,"0")).join("");
+   results.push({path:p,valid:digest===entry.sha256.toLowerCase()&&bytes.length===entry.sizeBytes});
+  }
+  return response(JSON.stringify({verified:results.every(x=>x.valid),projectId:bundle.projectId,count:results.length,results,mode:"import_integrity_verification",imported:false,authenticated:true,stored:false,note:"Contenu vérifié contre le manifeste ; aucune restauration ou écriture persistante."}),"application/json",results.every(x=>x.valid)?200:422);
+ }
  if(req.method==="POST"&&path==="/api/work/backup-export"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   if(Number(req.headers.get("content-length")||0)>220000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
