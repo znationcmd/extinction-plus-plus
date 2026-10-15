@@ -492,6 +492,21 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({error:"Action inconnue"}),"application/json",400);
   }catch{return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400)}
  }
+ if(req.method==="POST"&&path==="/api/work/resume-checkpoint"){
+  const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Trop volumineux"}),"application/json",413);
+  let b;try{b=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const repo=String(b?.repository||""),branch=String(b?.branch||""),file=String(b?.file||"");
+  if(!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)||!branch||branch.length>150||!/^[-a-zA-Z0-9_./]+$/.test(file)||file.includes("..")||file.length>200)return response(JSON.stringify({error:"Paramètres invalides"}),"application/json",400);
+  const token=process.env.GITHUB_TOKEN;if(!token)return response(JSON.stringify({error:"GitHub non configuré"}),"application/json",503);
+  try{const u="https://api.github.com/repos/"+repo+"/contents/"+file+"?ref="+encodeURIComponent(branch);
+   const upstream=await fetch(u,{headers:{authorization:"Bearer "+token,accept:"application/vnd.github+json","user-agent":"CMD-Neuria"},signal:AbortSignal.timeout(12000)});
+   if(!upstream.ok)return response(JSON.stringify({error:"Lecture du point de reprise impossible",status:upstream.status}),"application/json",502);
+   const data=await upstream.json();if(data.type!=="file"||Number(data.size)>100000)return response(JSON.stringify({error:"Fichier non pris en charge"}),"application/json",422);
+   return response(JSON.stringify({executed:true,repository:repo,branch,file,sha:data.sha,size:data.size,contentBase64:data.content||"",encoding:data.encoding||"",note:"Lecture seule : aucune tâche n'a été relancée automatiquement."}),"application/json");
+  }catch{return response(JSON.stringify({error:"GitHub indisponible"}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/work/live-voice-session"){
   const ip=server.requestIP(req)?.address||"unknown";if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
