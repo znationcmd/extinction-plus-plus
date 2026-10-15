@@ -504,6 +504,22 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/work/offline-readiness"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  if(!Array.isArray(b?.capabilities)||b.capabilities.length>50)return response(JSON.stringify({error:"Capacités invalides"}),"application/json",400);
+  const remote=new Set(["web-search","github-integration","railway-integration","external-api","cloud-ai","cloud-sync","live-voice"]);
+  const local=new Set(["text-editor","local-file-viewer","local-draft","cached-assets","offline-navigation","local-settings"]);
+  const results=[];
+  for(const item of b.capabilities){
+   if(typeof item!=="string"||item.length>80)return response(JSON.stringify({error:"Capacité invalide"}),"application/json",400);
+   results.push({capability:item,classification:remote.has(item)?"requires_network":local.has(item)?"potentially_offline":"requires_validation"});
+  }
+  return response(JSON.stringify({executed:true,offlineReady:false,assessmentOnly:true,capabilities:results,summary:{requiresNetwork:results.filter(x=>x.classification==="requires_network").length,potentiallyOffline:results.filter(x=>x.classification==="potentially_offline").length,requiresValidation:results.filter(x=>x.classification==="requires_validation").length}}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/schedule-notification-evaluate"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
