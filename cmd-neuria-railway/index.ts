@@ -561,6 +561,11 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   if(kind==="fantasy"){box("left_horn",-.19,2.66,0,.12,.38,.13);box("right_horn",.19,2.66,0,.12,.38,.13);box("belt",0,1.06,0,.82,.13,.44)}
   return new Response(lines.join("\n")+"\n",{headers:{"Content-Type":"text/plain; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-avatar-"+kind+".obj\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
  }
+ if(req.method==="GET"&&path==="/api/neuria/auth/readiness"){
+  const db=!!Bun.env.DATABASE_URL;
+  const github=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET&&Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY);
+  return new Response(JSON.stringify({emailSignup:{ready:false,databaseConfigured:db,migrationsApplied:false,verificationEnabled:false,reason:db?"Schéma et flux de vérification à déployer":"Base de données persistante non configurée"},github:{configured:github},apple:{configured:false},google:{configured:false},guest:{ready:true}}),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});
+ }
  if(req.method==="GET"&&path==="/api/neuria/auth/providers"){
   return new Response(JSON.stringify({providers:{apple:{enabled:false,reason:"OAuth Apple non intégré"},google:{enabled:false,reason:"OAuth Google non intégré"},email:{enabled:false,reason:"Inscription et stockage sécurisé non intégrés"},github:{enabled:!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET&&Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY),reason:"OAuth GitHub nécessite identifiants et clé de chiffrement"},guest:{enabled:true}}}),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}});
  }
