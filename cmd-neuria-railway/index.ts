@@ -626,6 +626,20 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   const safeName=title.replace(/[^A-Za-z0-9_-]/g,"_").slice(0,60)||"document";
   return new Response(output,{status:200,headers:{"content-type":mime,"content-disposition":'attachment; filename="'+safeName+"."+format+'"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
  }
+ if(req.method==="POST"&&path==="/api/developer/workflow-plan"){
+  if(Number(req.headers.get("content-length")||0)>16000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const steps=body?.steps;
+  if(!Array.isArray(steps)||steps.length<1||steps.length>20)return response(JSON.stringify({error:"Entre 1 et 20 étapes requises"}),"application/json",400);
+  const allowed=new Set(["github.file_metadata","github.file_read","developer.batch_json","developer.json_test","review.manual_approval"]);
+  const ids=new Set();const output=[];
+  for(const [i,step] of steps.entries()){
+   const id=String(step?.id||""),action=String(step?.action||""),deps=step?.dependsOn??[];
+   if(!/^[a-zA-Z][a-zA-Z0-9_-]{0,39}$/.test(id)||ids.has(id)||!allowed.has(action)||!Array.isArray(deps)||deps.length>10||deps.some(d=>typeof d!=="string"||!ids.has(d)))return response(JSON.stringify({error:"Étape invalide, doublon ou dépendance non résolue",step:i+1}),"application/json",400);
+   ids.add(id);output.push({id,action,dependsOn:deps,requiresApproval:action==="review.manual_approval",status:"planned"});
+  }
+  return response(JSON.stringify({valid:true,steps:output,execution:"plan_only",externalCalls:0,requiresUserApproval:output.some(x=>x.requiresApproval),note:"Plan ordonné uniquement ; aucune action GitHub ni modification n'est exécutée."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
