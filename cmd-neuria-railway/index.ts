@@ -504,6 +504,32 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="GET"&&path==="/api/media-studio/capabilities"){
+  return response(JSON.stringify({studio:"CMD NEURIA Media Studio",features:[
+   {id:"text-to-video",label:"Texte vers vidéo",status:"planning",inputs:["prompt"],outputs:["mp4"],engineConnected:false},
+   {id:"image-to-video",label:"Animer une image",status:"planning",inputs:["prompt","sourceImage"],outputs:["mp4"],engineConnected:false},
+   {id:"text-to-3d",label:"Texte vers avatar 3D",status:"planning",inputs:["prompt"],outputs:["glb"],engineConnected:false},
+   {id:"image-to-3d",label:"Image vers avatar 3D",status:"planning",inputs:["sourceImage"],outputs:["glb"],engineConnected:false}
+  ],note:"Aucun modèle génératif vidéo ou 3D n'est encore raccordé."}),"application/json");
+ }
+ if(req.method==="POST"&&path==="/api/media-studio/job-spec"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>12000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>12000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const modes=["text-to-video","image-to-video","text-to-3d","image-to-3d"];
+  if(!modes.includes(b?.mode))return response(JSON.stringify({error:"Mode inconnu",modes}),"application/json",400);
+  const prompt=typeof b.prompt==="string"?b.prompt.trim():"";
+  const image=typeof b.sourceImage==="string"?b.sourceImage.trim():"";
+  if((b.mode.startsWith("text-")&&!prompt)||(prompt.length>3000)||(b.mode.startsWith("image-")&&!image)||(image.length>512)||(image&&!/^https:\/\//i.test(image)))
+   return response(JSON.stringify({error:"Description ou référence image invalide; utiliser une URL HTTPS autorisée"}),"application/json",400);
+  const video=b.mode.endsWith("video");
+  const aspectRatio=["16:9","9:16","1:1"].includes(b.aspectRatio)?b.aspectRatio:"16:9";
+  const duration=Number.isInteger(b.durationSeconds)&&b.durationSeconds>=1&&b.durationSeconds<=30?b.durationSeconds:5;
+  const spec={mode:b.mode,prompt:prompt||null,sourceImage:image||null,outputFormat:video?"mp4":"glb",aspectRatio:video?aspectRatio:null,durationSeconds:video?duration:null,quality:"standard",state:"awaiting_provider",generated:false,requiresProvider:true};
+  return response(JSON.stringify({executed:true,jobCreated:false,spec,note:"Spécification validée seulement. Aucun crédit débité, aucun média généré."}),"application/json");
+ }
  if(req.method==="POST"&&path==="/api/work/video-generation-plan"){
   const ip=server.requestIP(req)?.address||"unknown";
   if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
