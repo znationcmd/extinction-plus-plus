@@ -14,13 +14,14 @@ import sys
 
 HERE=pathlib.Path(__file__).resolve().parent
 MEDIA=HERE/"media_engine.py"
+MUSIC=HERE/"music_generate.py"
 MODES=("text-to-video","image-to-video","text-to-3d","image-to-3d","image-animation","mp4-convert","music-generation","music-recognition")
 
 def available():
     return {
         "image-animation": bool(shutil.which("ffmpeg")),
         "mp4-convert": bool(shutil.which("ffmpeg")),
-        "music-generation": bool(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER")) and pathlib.Path(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER","")).is_file(),
+        "music-generation": MUSIC.is_file() or (bool(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER")) and pathlib.Path(os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER","")).is_file()),
         "music-recognition": bool(os.environ.get("CMD_NEURIA_MUSIC_RECOGNITION_WORKER")) and pathlib.Path(os.environ.get("CMD_NEURIA_MUSIC_RECOGNITION_WORKER","")).is_file(),
         "text-to-video": bool(os.environ.get("CMD_NEURIA_TEXT_VIDEO_WORKER")),
         "image-to-video": bool(os.environ.get("CMD_NEURIA_IMAGE_VIDEO_WORKER")),
@@ -43,11 +44,16 @@ def main():
         print(json.dumps({"engine":"CMD NEURIA AI ENGINE","local":True,"paidApi":False,"capabilities":ready},indent=2))
         return
     if not a.mode or not a.output:p.error("--mode et --output requis")
+    if a.mode=="music-generation" and not ready[a.mode]:
+        ready[a.mode]=MUSIC.is_file()
     if not ready[a.mode]:
         raise RuntimeError("Moteur non installé pour "+a.mode+" ; aucune génération simulée")
     out=pathlib.Path(a.output).expanduser().resolve()
     out.parent.mkdir(parents=True,exist_ok=True)
-    if a.mode in ("image-animation","mp4-convert"):
+    if a.mode=="music-generation" and not os.environ.get("CMD_NEURIA_MUSIC_GENERATION_WORKER"):
+        if not a.prompt:p.error("--prompt requis")
+        args=[sys.executable,str(MUSIC),"--prompt",a.prompt,"--output",str(out),"--seconds",str(a.seconds)]
+    elif a.mode in ("image-animation","mp4-convert"):
         if not a.input:p.error("--input requis")
         args=[sys.executable,str(MEDIA),"image" if a.mode=="image-animation" else "convert","--input",a.input,"--output",str(out)]
         if a.mode=="image-animation":args+=["--seconds",str(a.seconds),"--motion",a.motion]
