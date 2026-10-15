@@ -518,6 +518,29 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
   warnings.push("Contrôle indicatif : ce résultat ne garantit pas la validité YAML complète.");
   return response(JSON.stringify({valid:errors.length===0,errors:errors.slice(0,30),warnings:warnings.slice(0,30),linesChecked,parser:"heuristic_only",execution:"analysis_only"}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/developer/batch-json"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(Number(req.headers.get("content-length")||0)>110000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const source=body?.content;if(typeof source!=="string"||source.length>100000)return response(JSON.stringify({error:"Contenu absent ou trop volumineux"}),"application/json",400);
+  let doc;try{doc=JSON.parse(source)}catch{return response(JSON.stringify({error:"Fichier JSON invalide"}),"application/json",400)}
+  const operations=body?.operations;
+  if(!Array.isArray(operations)||operations.length<1||operations.length>30)return response(JSON.stringify({error:"Entre 1 et 30 opérations requises"}),"application/json",400);
+  if(!doc||typeof doc!=="object"||Array.isArray(doc))return response(JSON.stringify({error:"Objet JSON racine requis"}),"application/json",400);
+  const results=[];const original=JSON.stringify(doc);
+  for(let i=0;i<operations.length;i++){
+   const op=operations[i],action=String(op?.action||""),key=String(op?.key||"");
+   if(!/^[A-Za-z_][A-Za-z0-9_-]{0,79}$/.test(key)||!["set","delete","assert"].includes(action))return response(JSON.stringify({error:"Opération invalide",step:i+1,results,rolledBack:true}),"application/json",400);
+   const exists=Object.prototype.hasOwnProperty.call(doc,key);
+   if(action==="assert"){if(!exists||JSON.stringify(doc[key])!==JSON.stringify(op.value))return response(JSON.stringify({error:"Assertion échouée",step:i+1,key,results,rolledBack:true}),"application/json",409);results.push({step:i+1,action,key,passed:true});continue}
+   if(action==="delete"){if(!exists)return response(JSON.stringify({error:"Clé absente",step:i+1,key,results,rolledBack:true}),"application/json",400);delete doc[key]}
+   if(action==="set"){if(!Object.prototype.hasOwnProperty.call(op,"value"))return response(JSON.stringify({error:"Valeur manquante",step:i+1,key,results,rolledBack:true}),"application/json",400);doc[key]=op.value}
+   results.push({step:i+1,action,key,passed:true});
+  }
+  const preview=JSON.stringify(doc,null,2);if(preview.length>150000)return response(JSON.stringify({error:"Résultat trop volumineux",rolledBack:true}),"application/json",413);
+  return response(JSON.stringify({valid:true,steps:results,changed:original!==JSON.stringify(doc),preview,execution:"in_memory_only",persisted:false,note:"Exécution séquentielle réelle en mémoire, sans écriture de fichier ni accès externe."}),"application/json");
+ }
  if(req.method==="GET"&&path==="/api/plugins/health"){
   const githubCookie=!!(await NEURIA_OAUTH_OPEN(req));
   const configured=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
