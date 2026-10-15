@@ -82,7 +82,7 @@ export async function joinNativeInvite(pool,auth,raw){
 export async function handleCmdNativeInvites(req,res,url,ctx){
  const {pool,auth,baseUrl,sendJson,readBody,requireNativeMember,requireNativeAdmin}=ctx;
  const path=url.pathname;
- if(path!=="/api/native/invites"&&path!=="/api/native/invites/revoke")return false;
+ if(path!=="/api/native/invites"&&path!=="/api/native/invites/revoke"&&path!=="/api/native/invites/revoke-all")return false;
  if(!auth?.user?.id){sendJson(res,401,{error:"Connecte-toi à CMD Sphere."});return true}
  const fail=e=>sendJson(res,e.status||(/permission|membre/i.test(e.message)?403:400),{error:String(e.message||"Invitation indisponible")});
  try{
@@ -119,6 +119,15 @@ export async function handleCmdNativeInvites(req,res,url,ctx){
     VALUES($1,$2,$3,$4,$5,$6)`,[code,id,String(auth.user.id),label,expiresAt,maxUses]);
    }catch(e){if(e.code==="23505"){sendJson(res,409,{error:"Ce lien personnalisé existe déjà. Essaie un autre nom."});return true}throw e}
    sendJson(res,201,{ok:true,guildId:id,code,url:baseUrl+"/invite/"+encodeURIComponent(code),expiresAt,maxUses});return true;
+  }
+  if(path==="/api/native/invites/revoke-all"&&req.method==="POST"){
+   const body=await readBody(req),id=String(body.guildId||"");
+   if(!ID.test(id)){sendJson(res,400,{error:"Identifiant du serveur invalide"});return true}
+   await requireNativeAdmin(auth,id);
+   if(body.confirm!==true){sendJson(res,400,{error:"Confirmation explicite requise."});return true}
+   const result=await pool.query(`UPDATE cmd_native_invites SET revoked_at=NOW()
+     WHERE guild_id=$1 AND revoked_at IS NULL RETURNING code`,[id]);
+   sendJson(res,200,{ok:true,guildId:id,revokedCount:result.rowCount||0});return true;
   }
   if(path==="/api/native/invites/revoke"&&req.method==="POST"){
    const body=await readBody(req),id=String(body.guildId||""),code=String(body.code||"");
