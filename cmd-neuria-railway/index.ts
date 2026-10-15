@@ -504,6 +504,19 @@ Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
    return response(JSON.stringify({executed:true,...result}),"application/json");
   }catch{return response(JSON.stringify({error:"Inventaire du dossier impossible ou paramètres invalides"}),"application/json",422)}
  }
+ if(req.method==="POST"&&path==="/api/media-studio/animated-image-svg"){
+  const ip=server.requestIP(req)?.address||"unknown";
+  if(!limit(ip))return response(JSON.stringify({error:"Trop de requêtes"}),"application/json",429);
+  if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>10000)return response(JSON.stringify({error:"Requête trop volumineuse"}),"application/json",413);
+  let b;try{const raw=await req.text();if(raw.length>10000)return response(JSON.stringify({error:"JSON invalide"}),"application/json",400);b=JSON.parse(raw)}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  const image=typeof b?.imageUrl==="string"?b.imageUrl.trim():"",motion=b?.motion||"zoom";
+  if(!/^https:\/\//i.test(image)||image.length>2000||/[<>"'\\s]/.test(image)||!["zoom","pan","float"].includes(motion))return response(JSON.stringify({error:"Image HTTPS ou animation invalide"}),"application/json",400);
+  const seconds=Number.isFinite(b.seconds)&&b.seconds>=2&&b.seconds<=30?b.seconds:6;
+  const animations={zoom:'from {transform:scale(1)} to {transform:scale(1.14)}',pan:'from {transform:translateX(-3%) scale(1.12)} to {transform:translateX(3%) scale(1.12)}',float:'0% {transform:translateY(0) scale(1.06)} 50% {transform:translateY(-2%) scale(1.06)} 100% {transform:translateY(0) scale(1.06)}'};
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 720" width="1280" height="720"><style>image {transform-origin:center;animation:motion '+seconds+'s ease-in-out infinite alternate}@keyframes motion {'+animations[motion]+'}</style><rect width="1280" height="720" fill="#080510"/><image x="-40" y="-40" width="1360" height="800" preserveAspectRatio="xMidYMid slice" href="'+image.replace(/&/g,"&amp;")+'"/></svg>';
+  return new Response(svg,{headers:{"Content-Type":"image/svg+xml; charset=utf-8","Content-Disposition":"attachment; filename=\"cmd-neuria-animation.svg\"","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; img-src https:; style-src 'unsafe-inline'; sandbox"}});
+ }
  if(req.method==="GET"&&path==="/api/media-studio/avatar-obj"){
   if(!NEURIA_WORK_AUTH(req))return response(JSON.stringify({error:"Accès non autorisé"}),"application/json",403);
   const u=new URL(req.url),kind=u.searchParams.get("kind")||"robot";
