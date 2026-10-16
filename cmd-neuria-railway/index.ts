@@ -2333,7 +2333,7 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   if(Number(req.headers.get("content-length")||0)>5500000)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(typeof data?.message!=="string"||data.message.trim().length<1||data.message.length>1000)return response(JSON.stringify({error:"Message de 1 à 1000 caractères requis"}),"application/json",400);
-  if(data.image&&(typeof data.image!=="string"||!/^data:image\\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data.image)||data.image.length>4900000))return response(JSON.stringify({error:"Image invalide ou trop volumineuse"}),"application/json",400);
+  if(data.image&&(typeof data.image!=="string"||!["data:image/png;base64,","data:image/jpeg;base64,","data:image/webp;base64,"].some(prefix=>data.image.startsWith(prefix))||data.image.length>4900000))return response(JSON.stringify({error:"Image invalide ou trop volumineuse"}),"application/json",400);
   // Direct live weather handling in CHAT (not only Work), before LLM fallback.
   const weatherQuery=data.message.trim();
   if(/météo|meteo|quel temps|temps fait|weather|température|temperature/i.test(weatherQuery)){
