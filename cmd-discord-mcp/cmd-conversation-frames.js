@@ -65,5 +65,16 @@ function mount(){
  const button=document.createElement('button');button.type='button';button.className='compose-tool';button.id=mode==='server'?'cmdToolFrame':'cmdDmToolFrame';button.dataset.cmdFrameTool='1';button.innerHTML='<b aria-hidden="true">▣</b><span>Cadres des messages</span>';
  button.onclick=()=>{document.querySelector('#channelToolSheet')?.classList.remove('on');const sheet=document.querySelector('#cmdDmToolSheet');if(sheet)sheet.hidden=true;document.querySelector('#cmdDmPlus')?.setAttribute('aria-expanded','false');if(!picker.open)picker.showModal();select.focus()};grid.append(button);
 }
-let pending=false;new MutationObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;mount();paint()})}).observe(document.body,{childList:true,subtree:true});mount();paint();
+/* Hide duplicate wallpaper controls in the conversation body; their actions remain in +. */
+function hideDuplicateWallpaperControls(){
+ const root=document.querySelector('#channelMessages')?.parentElement||document.querySelector('#msgs,#messages')?.parentElement;
+ if(!root)return;
+ const labels=['importer mon image','supprimer le fond'];
+ root.querySelectorAll('button,[role="button"]').forEach(el=>{
+  if(el.closest('#channelToolSheet,#cmdDmToolSheet,dialog,[id*="ToolSheet"]'))return;
+  const label=(el.textContent||'').replace(/\\s+/g,' ').trim().toLocaleLowerCase('fr');
+  if(labels.some(t=>label.includes(t))&&label.length<90){el.style.setProperty('display','none','important');el.setAttribute('aria-hidden','true')}
+ });
+}
+let pending=false;new MutationObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;mount();paint();hideDuplicateWallpaperControls()})}).observe(document.body,{childList:true,subtree:true});mount();paint();hideDuplicateWallpaperControls();
 })();
