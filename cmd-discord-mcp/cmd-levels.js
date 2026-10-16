@@ -1,16 +1,18 @@
 import crypto from "node:crypto";
 export async function levelTables(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_user_levels(user_id TEXT PRIMARY KEY,xp BIGINT NOT NULL DEFAULT 0,last_xp_at TIMESTAMPTZ)");
+ await pool.query("ALTER TABLE cmd_user_levels ADD COLUMN IF NOT EXISTS last_message_hash TEXT");
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_level_chests(user_id TEXT NOT NULL,level INTEGER NOT NULL,reward INTEGER NOT NULL,opened_at TIMESTAMPTZ DEFAULT NOW(),PRIMARY KEY(user_id,level))");
 }
 export const levelOf=xp=>Math.floor(Math.sqrt(Math.max(0,Number(xp))/120))+1;
 export async function awardMessageXp(pool,userId,content){
- const str=String(content||"").trim();
+ const str=String(content||"").trim(),normalized=str.toLowerCase().replace(/\s+/g," ");
+ const messageHash=crypto.createHash("sha256").update(normalized).digest("hex");
  if(str.length<5||new Set(str.toLowerCase()).size<4)return null;
  await levelTables(pool);const c=await pool.connect();
- try{await c.query("BEGIN");await c.query("INSERT INTO cmd_user_levels(user_id) VALUES($1) ON CONFLICT DO NOTHING",[userId]);const r=await c.query("SELECT xp,last_xp_at FROM cmd_user_levels WHERE user_id=$1 FOR UPDATE",[userId]);const old=Number(r.rows[0].xp),last=r.rows[0].last_xp_at?new Date(r.rows[0].last_xp_at).getTime():0;
- if(Date.now()-last<30000){await c.query("COMMIT");return {xp:old,level:levelOf(old),gained:0}}
- const gained=15+crypto.randomInt(11),xp=old+gained;await c.query("UPDATE cmd_user_levels SET xp=$2,last_xp_at=NOW() WHERE user_id=$1",[userId,xp]);await c.query("COMMIT");return {xp,level:levelOf(xp),gained,leveledUp:levelOf(xp)>levelOf(old)};
+ try{await c.query("BEGIN");await c.query("INSERT INTO cmd_user_levels(user_id) VALUES($1) ON CONFLICT DO NOTHING",[userId]);const r=await c.query("SELECT xp,last_xp_at,last_message_hash FROM cmd_user_levels WHERE user_id=$1 FOR UPDATE",[userId]);const old=Number(r.rows[0].xp),last=r.rows[0].last_xp_at?new Date(r.rows[0].last_xp_at).getTime():0;
+ if(Date.now()-last<30000||r.rows[0].last_message_hash===messageHash){await c.query("COMMIT");return {xp:old,level:levelOf(old),gained:0}}
+ const gained=15+crypto.randomInt(11),xp=old+gained;await c.query("UPDATE cmd_user_levels SET xp=$2,last_xp_at=NOW(),last_message_hash=$3 WHERE user_id=$1",[userId,xp,messageHash]);await c.query("COMMIT");return {xp,level:levelOf(xp),gained,leveledUp:levelOf(xp)>levelOf(old)};
  }catch(e){await c.query("ROLLBACK");throw e}finally{c.release()}
 }
 export async function levelStatus(pool,userId){
