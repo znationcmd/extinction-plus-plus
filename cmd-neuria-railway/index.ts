@@ -165,6 +165,7 @@ const NEURIA_STORM_THEME=`(()=>{if(document.getElementById("neuriaStormUltraHD")
 #neuriaPlusMenu button:active{transform:translateY(3px);box-shadow:inset 0 2px 5px #0008,0 2px 0 #0b0715!important}
 form button,button#send,button#clear{box-shadow:inset 0 2px 2px #e5c5ff45,0 4px 0 #130a24,0 8px 15px #0007;border:1px solid #a97add;border-radius:15px}
 #neuriaPlusMenu button:focus-visible,form button:focus-visible{outline:3px solid #e0c4ff;outline-offset:2px}
+body{background:radial-gradient(ellipse at 25% 8%,#7854a833,transparent 45%),linear-gradient(155deg,#100b1d,#1d1431 55%,#0d0a16)!important}#neuriaPlusMenu{background:radial-gradient(ellipse at 20% 20%,#8e65b855,transparent 55%),linear-gradient(145deg,#191025,#26183a,#0d0a19)!important}#neuriaPlusMenu button{background:linear-gradient(160deg,#594080,#322345 40%,#20152e 85%)!important;border:1px solid #b58ae6!important;box-shadow:inset 0 2px 2px #f3dbff88,inset 0 -3px 4px #0c0614,0 4px 0 #12091c,0 8px 18px #000a!important;border-radius:15px!important}#neuriaPlusMenu button:hover{filter:brightness(1.15)}#neuriaPlusMenu button:active{transform:translateY(3px)}
 @keyframes neuriaStormFlash{0%,12%,14%,37%,39%,75%,77%,100%{opacity:.13}13%,38%,76%{opacity:.95}}
 @media(prefers-reduced-motion:reduce){#neuriaPlusMenu::after{animation:none;opacity:.22}}
 \`;document.head.append(style)})();`;
