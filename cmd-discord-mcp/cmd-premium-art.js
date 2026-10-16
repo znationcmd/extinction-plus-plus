@@ -322,4 +322,12 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
 .shop-nameplate-midnight{background:linear-gradient(90deg,#020617,#312e81,#0f172a)}
 .shop-nameplate-halloween{background:linear-gradient(90deg,#451a03,#f97316,#1c1917)}
 .shop-nameplate-aurora{background:linear-gradient(90deg,#14b8a6,#8b5cf6,#ec4899)}
+/* Mobile profile frame containment: never cover biography, buttons or unsaved preview. */
+.hero{isolation:isolate}
+.hero > img.cmd-profile-art-frame{position:absolute;inset:0 auto auto 0;width:100%;height:clamp(115px,30vw,205px);max-height:38%;object-fit:fill;pointer-events:none;z-index:2;opacity:.88}
+.hero > .banner,.hero > .avatarWrap,.hero > .body{position:relative;z-index:3}
+.hero > .banner{z-index:1}
+.hero .avatarWrap{isolation:isolate}
+@media(max-width:600px){.hero > img.cmd-profile-art-frame{height:clamp(100px,32vw,155px);max-height:32%;opacity:.82}}
+
 `;
