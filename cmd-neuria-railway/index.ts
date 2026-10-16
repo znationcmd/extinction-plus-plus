@@ -2210,6 +2210,27 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
    for(const x of (data.query?.search||[])){sources.push({title:x.title,url:"https://fr.wikipedia.org/wiki/"+encodeURIComponent(x.title.replace(/ /g,"_")),excerpt:x.snippet.replace(/<[^>]*>/g,"").slice(0,450)})}
    steps.push({name:"Recherche documentaire",status:"done",results:sources.length});
   }catch{steps.push({name:"Recherche documentaire",status:"failed",message:"Source externe indisponible"})}
+  // Live weather tool: answer weather requests with measured forecast data, not model guesses.
+  const weatherQuestion=data.message.trim();
+  if(/(?:météo|meteo|quel temps|temps fait|weather|température|temperature)/i.test(weatherQuestion)){
+   try{
+    const placeMatch=weatherQuestion.match(/(?:à|a|in|pour|sur)\\s+([\\p{L}\\p{M}' -]{2,65})/iu);
+    const place=(placeMatch?.[1]||"Tavaco").replace(/\\s+(?:corse|france|aujourd'hui|demain|maintenant).*$/i,"").trim();
+    const geo=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(place)+"&count=5&language=fr&format=json",{signal:AbortSignal.timeout(6500)});
+    if(!geo.ok)throw Error("geocoding");
+    const candidates=(await geo.json()).results||[];
+    const loc=candidates.find((x:any)=>x.country_code==="FR")||candidates[0];
+    if(!loc)throw Error("location");
+    const url="https://api.open-meteo.com/v1/forecast?latitude="+loc.latitude+"&longitude="+loc.longitude+"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&timezone=auto";
+    const forecast=await fetch(url,{signal:AbortSignal.timeout(6500)});
+    if(!forecast.ok)throw Error("forecast");
+    const current=(await forecast.json()).current;
+    if(!current)throw Error("empty");
+    const labels:any={0:"ciel dégagé",1:"plutôt dégagé",2:"partiellement nuageux",3:"couvert",45:"brouillard",48:"brouillard givrant",51:"bruine légère",53:"bruine",55:"forte bruine",61:"pluie légère",63:"pluie",65:"forte pluie",71:"neige légère",73:"neige",75:"forte neige",80:"averses légères",81:"averses",82:"fortes averses",95:"orage"};
+    const reply="Météo actuelle à "+loc.name+" ("+(loc.admin1||loc.country||"")+") : "+current.temperature_2m+" °C, ressenti "+current.apparent_temperature+" °C, "+(labels[current.weather_code]||"conditions code "+current.weather_code)+". Humidité : "+current.relative_humidity_2m+" %. Vent : "+current.wind_speed_10m+" km/h. Précipitations : "+current.precipitation+" mm. Mise à jour : "+current.time+" (heure locale). Source : Open-Meteo.";
+    return response(JSON.stringify({reply,engine:"open-meteo",source:"https://open-meteo.com/"}),"application/json");
+   }catch(e){return response(JSON.stringify({reply:"Je n'arrive pas à récupérer la météo en direct pour cette localité actuellement. Réessaie dans quelques instants.",engine:"weather-unavailable"}),"application/json");}
+  }
   const endpoint=Bun.env.NEURIA_AI_ENDPOINT,token=Bun.env.NEURIA_AI_API_KEY,model=Bun.env.NEURIA_AI_MODEL;
   if(endpoint&&token&&model&&!token.includes("\u0024{{")){
    try{
