@@ -217,6 +217,7 @@ function html(res,body,status=200,headers={}){
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-productivity.js?v=20261016lot4"></script></body>');
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-search.js?v=20261016lot5"></script></body>');
+    body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-history-ui.js?v=20261016fullhistory"></script></body>');
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-navigation.js?v=20261016lot6"></script></body>');
   }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
@@ -4514,6 +4515,7 @@ const httpServer=createServer(async(req,res)=>{
 
     if(req.method==="GET"&&url.pathname==="/cmd-chat-navigation.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-navigation.js",import.meta.url),"utf8"));return}
     if(await handleCmdHistorySearch(req,res,url,{pool,auth:dashboardAuth(req),sendJson,checkGuildPermissions:effectiveNativePermissions}))return;
+    if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
