@@ -210,6 +210,7 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016frames2"></script></body>');
+      if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
@@ -4504,6 +4505,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCmdStudioMusic(req,res,url,{auth:emojiAuth}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
+    if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-motion.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-motion.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-3d.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-3d.js",import.meta.url),"utf8"));return}
