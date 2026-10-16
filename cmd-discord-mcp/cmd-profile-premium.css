@@ -263,3 +263,9 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
    The previous rule drew an inset rectangular frame across profile content. */
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame,
 .cmd-premium-profile .hero.cmd-pm-hero>.cmd-profile-art-frame{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border:0!important;border-image:none!important;background:none!important;object-fit:fill!important;pointer-events:none!important;box-sizing:border-box!important}
+/* CMD FINAL PERIMETER FIX 20261016 */
+.cmd-premium-profile .hero.cmd-pm-hero{position:relative!important;isolation:isolate!important;overflow:visible!important}
+.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{display:none!important;border:0!important;border-image:none!important}
+.cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{display:block!important;position:absolute!important;inset:-11% -11%!important;width:122%!important;height:122%!important;max-width:none!important;max-height:none!important;object-fit:fill!important;pointer-events:none!important;z-index:6!important;opacity:1!important;border:0!important;box-shadow:none!important;filter:none!important}
+.cmd-premium-profile .hero.cmd-pm-hero>.banner,.cmd-premium-profile .hero.cmd-pm-hero>.body,.cmd-premium-profile .hero.cmd-pm-hero>.avatarWrap{position:relative!important;z-index:7!important}
+.cmd-premium-profile .hero.cmd-pm-hero .avatarRing,.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:9!important}
