@@ -21,7 +21,7 @@ test('history route validates identity, length, filters and date bounds',async()
  assert.equal(p(query('server')).guildId,GUILD);
  assert.equal(p(query('group')).groupId,GROUP);
  assert.equal(p(query('dm')).threadId,THREAD);
- assert.equal(p(query('server',{q:'  a  '})).q,'a');
+ assert.equal(p(query('server',{q:'  ab  '})).q,'ab');
 });
 test('empty, invalid, and inverted searches fail before hitting DB',async()=>{
  const {cmdHistoryParameters:p}=await modulePromise;
@@ -45,9 +45,8 @@ test('membership and role permissions block unauthorized server searches',async(
 test('channel and category overwrites fail closed for ordinary members',async()=>{
  const {cmdHistoryParameters:p,searchCmdHistory:s}=await modulePromise;
  const params=p(query('server')),checkGuildPermissions=async()=>({viewChannels:true,readHistory:true});
- for(const [local,parent] of [[[{}],[{}]],[[],[{id:'restricted'}]],[[{id:'private'}],[]]]){
+ for(const [local,parent] of [[[],[{id:'restricted'}]],[[{id:'private'}],[]]]){
   const pool=fakePool('member',local,parent);
-  if(local.length===1&&Object.keys(local[0]).length===0)continue;
   await assert.rejects(s(pool,auth,params,{checkGuildPermissions}),e=>e.status===403);
  }
 });
