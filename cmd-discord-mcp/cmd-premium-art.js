@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 // CMD Sphere original decorative SVG assets. These designs are independent of Discord collectibles.
 export const CMD_ART_FRAMES={
   amethystspire:{label:"Cathédrale d’améthyste",icon:"💜",hue:"#bc6dff",family:"crystal"},
@@ -221,6 +222,8 @@ function avatarArt(key,meta){
  return o.join('');
 }
 export function renderCmdPremiumSvg(type,key){
+ // First replacement artwork: genuine standalone scalable ornament, shared by shop and profile.
+ if(type==="avatar"&&key==="amethystorbit")return readFileSync(new URL("./public/shop-4k/decorations/orbite-amethyste.svg",import.meta.url),"utf8");
  if(!/^[a-z0-9]{2,28}$/.test(key))return null;
  const own=type==="frame"?CMD_ART_FRAMES[key]:type==="avatar"?CMD_ART_AVATARS[key]:type==="effect"?CMD_EFFECT_ART[key]:null;
  const fallback=(aliases[type]||{})[key];let meta=own||(fallback?{hue:fallback[0],family:fallback[1]}:null);
