@@ -371,4 +371,18 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
 .page .hero>.banner,.page .hero>.avatarWrap,.page .hero>.body{position:relative!important;z-index:2!important}
 .page .hero>.avatarWrap>img.cmd-profile-art-avatar{z-index:8!important}
 
+/* AVATAR_RING_CENTER_V3: the actual photo stays completely visible. */
+.page .hero .avatarWrap{position:relative!important;isolation:isolate;overflow:visible!important}
+.page .hero .avatarWrap>.avatar{z-index:4!important}
+.page .hero .avatarWrap>.avatarRing{z-index:3!important}
+.page .hero .avatarWrap>img.cmd-profile-art-avatar{
+ position:absolute!important;left:12px!important;top:-86px!important;width:174px!important;height:174px!important;
+ max-width:none!important;max-height:none!important;object-fit:contain!important;
+ z-index:5!important;pointer-events:none!important;
+}
+.page .hero .avatarWrap>.avatarEditTap,.page .hero .avatarWrap>.statusDot{z-index:9!important}
+@media(max-width:600px){
+ .page .hero .avatarWrap>img.cmd-profile-art-avatar{left:12px!important;top:-86px!important;width:174px!important;height:174px!important}
+}
+
 `;
