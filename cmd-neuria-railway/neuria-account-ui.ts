@@ -4,7 +4,7 @@ export function accountUiRuntime(){
  if(!menu||document.getElementById('neuriaAccountButton'))return;
  let currentUser=null;
  const account=document.createElement('button');account.id='neuriaAccountButton';account.type='button';account.textContent='Mon compte';menu.append(account);
- const style=document.createElement('style');style.textContent=`#neuriaAuthEntry{position:fixed;inset:0;z-index:150;overflow:auto;background:radial-gradient(ellipse at 90% 12%,#443475,transparent 55%),#100c1a;color:#f4edff;display:grid;place-items:center;padding:24px;box-sizing:border-box;font:16px system-ui}#neuriaAuthEntry .authInner{width:min(100%,460px)}#neuriaAuthEntry h1{font-size:30px}#neuriaAuthEntry button,#neuriaAuthEntry input{box-sizing:border-box;width:100%;padding:14px;border-radius:12px;margin:7px 0;font:inherit}#neuriaAuthEntry button{border:1px solid #8160b7;background:#402661;color:white;cursor:pointer}#neuriaAuthEntry button:disabled{opacity:.5;cursor:not-allowed}#neuriaAuthEntry input{border:1px solid #9475ba;background:#f8f5ff;color:#171020}#neuriaAuthEntry label{display:block;margin-top:12px}#neuriaAuthEntry [role=status]{min-height:24px;color:#e8caff;white-space:pre-wrap}#neuriaAccountButton{width:100%;text-align:left;padding:12px;color:inherit;background:transparent;border:0;font:inherit}`;document.head.append(style);
+ const style=document.createElement('style');style.textContent=`#neuriaAuthEntry{position:fixed;inset:0;z-index:150;overflow:auto;background:radial-gradient(ellipse at 90% 12%,#443475,transparent 55%),#100c1a;color:#f4edff;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));box-sizing:border-box;font:16px system-ui}#neuriaAuthEntry .authInner{width:min(100%,440px);margin:auto;padding:24px 20px;border:1px solid #634686;border-radius:24px;background:#1c1329;box-shadow:0 20px 60px #0008}#neuriaAuthEntry h1{font-size:clamp(24px,6vw,30px);line-height:1.2;margin:0 0 22px;text-align:center}#neuriaAuthEntry button,#neuriaAuthEntry input{box-sizing:border-box;width:100%;padding:13px;border-radius:12px;margin:6px 0;font:inherit}#neuriaAuthEntry button{border:1px solid #8160b7;background:#402661;color:white;cursor:pointer}#neuriaAuthEntry button:disabled{opacity:.5;cursor:not-allowed}#neuriaAuthEntry input{border:1px solid #9475ba;background:#f8f5ff;color:#171020}#neuriaAuthEntry label{display:block;margin-top:12px}#neuriaAuthEntry [role=status]{min-height:24px;color:#e8caff;white-space:pre-wrap}#neuriaAccountButton{width:100%;text-align:left;padding:12px;color:inherit;background:transparent;border:0;font:inherit}`;document.head.append(style);
  function update(user){currentUser=user;account.textContent=user?'Mon compte · '+user.email:'Mon compte';window.dispatchEvent(new CustomEvent('neuria-auth-change',{detail:{signedIn:!!user}}));}
  function show(){
   if(document.getElementById('neuriaAuthEntry'))return;
@@ -25,8 +25,8 @@ export function accountUiRuntime(){
    });
   }else{
    const gh=button('Continuer avec GitHub','neuriaGithubSignIn',()=>{location.href='/api/oauth/github/start'});
-   const google=button('Continuer avec Google','neuriaGoogleSignIn',()=>{});google.disabled=true;google.title='Connexion Google non configurée';
-   const apple=button('Continuer avec Apple','neuriaAppleSignIn',()=>{});apple.disabled=true;apple.title='Connexion Apple non configurée';
+   
+   
    const email=button('Continuer avec l’e-mail','neuriaEmailSignIn',()=>{
     if(root.querySelector('#neuriaEmailForm'))return;
     const form=document.createElement('form');form.id='neuriaEmailForm';let signup=false;
