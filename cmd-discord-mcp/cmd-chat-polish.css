@@ -225,3 +225,8 @@
 #channelOverlay .discord-message .msg-main::after{border-color:var(--cmd-message-frame-color,#ffffff35)!important;box-shadow:none!important}
 #channelOverlay .discord-message .msg-main .msg-text,#channelOverlay .discord-message .msg-main .msg-embed,#channelOverlay .discord-message .msg-main .msg-file{height:auto!important;max-height:none!important;white-space:pre-wrap;overflow-wrap:anywhere}
 #channelOverlay .discord-message .msg-main img,#channelOverlay .discord-message .msg-main video{max-width:100%;height:auto;object-fit:contain}
+
+
+/* Equipped large profile frame also decorates this author's message bubbles. */
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border:14px solid transparent!important;border-image-source:var(--cmd-equipped-frame-url)!important;border-image-slice:28 fill!important;border-image-width:14px!important;border-image-outset:0!important;border-image-repeat:stretch!important;background-clip:padding-box!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-shadow:none!important}
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame::after{display:none!important}
