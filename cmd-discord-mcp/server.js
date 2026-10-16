@@ -4506,6 +4506,28 @@ const httpServer=createServer(async(req,res)=>{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
     if(await cmdEmailRoute(req,res,url,{pool,readBody:readFormBodyJson,resetPassword:async(id,pass)=>{const pw=passwordParts(pass);await pool.query("UPDATE cmd_accounts SET password_salt=$1,password_hash=$2,updated_at=NOW() WHERE id=$3",[pw.salt,pw.hash,id]);}}))return;
+    // Private, authenticated wallpaper settings (global or per server; never per channel).
+    if(url.pathname==="/api/cmd/personal-wallpaper"){
+      const session=dashboardAuth(req);
+      if(!session){sendJson(res,401,{error:"Connexion requise"});return}
+      if(!["GET","PUT","DELETE"].includes(req.method)){sendJson(res,405,{error:"Méthode non autorisée"});return}
+      const userId=String(session.user.id);
+      const key=String(url.searchParams.get("scope")||"global");
+      if(key!=="global"&&!/^server:[a-zA-Z0-9_-]{1,100}$/.test(key)){sendJson(res,400,{error:"Portée invalide"});return}
+      await pool.query("CREATE TABLE IF NOT EXISTS cmd_personal_wallpapers (user_id TEXT NOT NULL, scope TEXT NOT NULL, image_data TEXT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW(), PRIMARY KEY(user_id,scope))");
+      if(req.method==="GET"){
+        const result=await pool.query("SELECT image_data FROM cmd_personal_wallpapers WHERE user_id=$1 AND scope=$2",[userId,key]);
+        sendJson(res,200,{image:result.rows[0]?.image_data||null});return;
+      }
+      if(req.method==="DELETE"){
+        await pool.query("DELETE FROM cmd_personal_wallpapers WHERE user_id=$1 AND scope=$2",[userId,key]);sendJson(res,200,{ok:true});return;
+      }
+      const body=await readFormBodyJson(req);
+      const image=String(body.image||"");
+      if(image.length>850000||!/^data:image\\/webp;base64,[A-Za-z0-9+/=]+$/.test(image)){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
+      await pool.query("INSERT INTO cmd_personal_wallpapers(user_id,scope,image_data) VALUES($1,$2,$3) ON CONFLICT(user_id,scope) DO UPDATE SET image_data=EXCLUDED.image_data,updated_at=NOW()",[userId,key,image]);
+      sendJson(res,200,{ok:true});return;
+    }
     const emojiAuth=dashboardAuth(req);
     const emojiFounder=Boolean(emojiAuth&&isCmdOwner(emojiAuth));
     if(await handleCmdEmojiLibrary(req,res,url,{pool,auth:emojiAuth,founder:emojiFounder}))return;
