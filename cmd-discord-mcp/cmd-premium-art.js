@@ -179,7 +179,7 @@ function frameArt(key,meta){
  o.push('<rect x="42" y="42" width="556" height="356" rx="28" stroke="url(#gold)" stroke-width="3"/><rect x="50" y="50" width="540" height="340" rx="22" stroke="'+hue+'" stroke-opacity=".5" stroke-width="1"/>');
  // Symmetric corner jewellery: the central profile and its text remain unobstructed.
  for(const [x,y,angle] of [[54,54,-45],[586,54,45],[586,386,135],[54,386,225]]){
-  o.push('<g transform="translate('+x+' '+y+') rotate('+angle+')"><path d="M-27 40 Q-42 0 0 -32 Q42 0 27 40 M-18 27 Q-27 0 0 -22 Q27 0 18 27" stroke="url(#gold)" stroke-width="2"/>');
+  o.push('<g transform="translate('+x+' '+y+') rotate('+angle+') scale(1.35)"><path d="M-27 40 Q-42 0 0 -32 Q42 0 27 40 M-18 27 Q-27 0 0 -22 Q27 0 18 27" stroke="url(#gold)" stroke-width="2"/>');
   o.push(piece(family,0,0,33,rng,hue,0));
   o.push(piece(family,-20,21,18,rng,hue,-28),piece(family,20,21,18,rng,hue,28));
   o.push('</g>');
