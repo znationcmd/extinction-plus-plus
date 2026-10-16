@@ -54,6 +54,12 @@ function flower(x,y,s,rng){
 function star(x,y,s){return '<path d="M'+f(x)+' '+f(y-s)+' Q'+f(x+s*.22)+' '+f(y-s*.22)+' '+f(x+s)+' '+f(y)+' Q'+f(x+s*.22)+' '+f(y+s*.22)+' '+f(x)+' '+f(y+s)+' Q'+f(x-s*.22)+' '+f(y+s*.22)+' '+f(x-s)+' '+f(y)+' Q'+f(x-s*.22)+' '+f(y-s*.22)+' '+f(x)+' '+f(y-s)+' Z" fill="#fff8d8" opacity=".9"/>'}
 function fire(x,y,s,r){return '<path d="M'+f(x)+' '+f(y+s*.6)+' Q'+f(x-s*.6)+' '+f(y-s*.2)+' '+f(x+s*(r-.5))+' '+f(y-s)+' Q'+f(x+s*.7)+' '+f(y-s*.3)+' '+f(x+s*.2)+' '+f(y+s*.45)+' Z" fill="url(#gem)" filter="url(#shine)" stroke="#ffd4a0" stroke-opacity=".55"/>'}
 function piece(family,x,y,size,rng,color,rot=0){
+if(family==='frost')return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rot)+')" stroke="#d9f7ff" stroke-width="1.5" stroke-linecap="round">'+Array.from({length:6},(_,i)=>'<path transform="rotate('+(i*60)+')" d="M0 0V-'+f(size*.7)+' M0 -'+f(size*.42)+'l-'+f(size*.19)+' -'+f(size*.15)+' M0 -'+f(size*.42)+'l'+f(size*.19)+' -'+f(size*.15)+'"/>').join('')+'<circle r="3" fill="'+color+'"/></g>';
+if(family==='leaf')return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rot)+')"><path d="M0 22C-38 2-22-29 0-34C22-13 35 8 0 22Z" fill="url(#gem)" stroke="'+color+'"/><path d="M0 23V-29M0-14L-12-20M0-3L15-13M0 8L-16-3" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></g>';
+if(family==='rose')return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(size/28)+')"><path d="M-5 8Q-34-15-33 18Q-18 30-5 8M5 8Q34-15 33 18Q18 30 5 8" fill="#245f51" stroke="#75b99d"/>'+[0,60,120,180,240,300].map(a=>'<path transform="rotate('+a+')" d="M0 0C-26-7-20-34-3-27C15-40 31-16 10 2Z" fill="url(#gem)" stroke="#ffbadb" stroke-width="1"/>').join('')+'<path d="M-8 6C-19-16 15-22 15-4C15 12-8 17-8-1C-8-10 6-10 6-3" stroke="#ffe3ee" stroke-width="1.5" fill="none"/></g>';
+if(family==='pearl')return '<g transform="translate('+f(x)+' '+f(y)+')"><circle r="'+f(size*.45)+'" fill="url(#pearl)" stroke="#f8e9ff"/><ellipse cx="'+f(-size*.14)+'" cy="'+f(-size*.16)+'" rx="'+f(size*.16)+'" ry="'+f(size*.09)+'" fill="white" opacity=".85"/></g>';
+if(family==='moon')return '<g transform="translate('+f(x)+' '+f(y)+') rotate('+f(rot)+')"><path d="M9-24A25 25 0 1 0 9 24A24 24 0 0 1 9-24Z" fill="url(#gold)" stroke="#eee5ff"/>'+star(20,-10,5)+'</g>';
+if(family==='sunflower')return '<g transform="translate('+f(x)+' '+f(y)+') scale('+f(size/25)+')">'+Array.from({length:14},(_,i)=>'<ellipse cy="-17" rx="5" ry="12" transform="rotate('+(i*360/14)+')" fill="#f5c346" stroke="#ffe9a0" stroke-width=".6"/>').join('')+'<circle r="10" fill="#4b2c23" stroke="#b98a49"/><circle r="6" fill="none" stroke="#d0a767" stroke-dasharray="1 2"/></g>';
 if(family==="garden")return flower(x,y,size*.48,rng);
 if(family==="fire")return fire(x,y,size,rng(),rot);
 if(family==="celestial")return star(x,y,size*.45);
@@ -97,10 +103,15 @@ function effectArt(key,meta){
    '<path d="M431 182 L483 248 L431 248Z" fill="#95c6ea" opacity=".4"/>'+
    '<path d="M184 286 H470" stroke="#7cb7d4" stroke-width="5" opacity=".4"/>';
  }else if(key==='purplelightning'){
-  main='<path d="M340 -20 L245 124 L326 122 L221 318 L402 98 L317 104 L384 -20Z" fill="#be85ff" stroke="#fff" stroke-width="4" filter="url(#softAura)"/>'+
-   '<path d="M336 -12 L263 128 L330 132 L256 261 L376 86 L312 93Z" fill="#faf1ff"/>'+
-   '<path d="M246 126 L170 177 L134 250 M371 111 L460 165 L504 120 M260 245 L192 297" fill="none" stroke="#c291ff" stroke-width="5" opacity=".8"/>'+
-   '<circle cx="328" cy="165" r="109" fill="none" stroke="#a670ff" stroke-width="2" opacity=".22"/>';
+  // Branched discharge with a white core, instead of an emoji-shaped bolt.
+  for(let k=0;k<4;k++){
+   let x=130+k*135,y=-10,points=[[x,y]];
+   for(let j=0;j<13;j++){x+=(r()-.5)*65;y+=23+r()*14;points.push([x,y]);}
+   const d=points.map(([px,py],i)=>(i?'L':'M')+f(px)+' '+f(py)).join(' ');
+   main+='<path d="'+d+'" stroke="#ad68ff" stroke-width="12" opacity=".35" filter="url(#aura)"/><path d="'+d+'" stroke="#bd8aff" stroke-width="4"/><path d="'+d+'" stroke="#fff7ff" stroke-width="1.3"/>';
+   for(let j=3;j<11;j+=3){const [bx,by]=points[j],sign=j%2?1:-1;main+='<path d="M'+f(bx)+' '+f(by)+'l'+f(sign*35)+' 18 '+f(sign*8)+' 26 '+f(sign*31)+' 12 '+f(sign*18)+' 32" stroke="#d9b5ff" stroke-width="1.2"/>';}
+  }
+  main+='<path d="M0 325L64 294L115 309L178 276L247 306L341 285L402 317L483 288L560 307L640 278V360H0Z" fill="#090917"/>';
  }else if(key==='moonmist'){
   main=moon+mist+'<path d="M0 260 Q110 172 225 261 T460 260 T640 255 L640 360 H0Z" fill="#1a1c35"/>'+
    '<path d="M-10 285 Q155 250 305 280 T650 278" stroke="#b9c5fb" stroke-opacity=".36" stroke-width="12" fill="none" filter="url(#softAura)"/>';
@@ -125,9 +136,11 @@ function effectArt(key,meta){
   }
   main+='<path d="M22 174 H174 L211 120 L256 238 L291 175 H355 L387 125 L418 216 L446 175 H620" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>';
  }else if(key==='aurora'){
-  for(let i=0;i<7;i++){const x=i*34,opacity=f(.23+i*.05);
-   main+='<path d="M'+(x-100)+' -32 Q'+(130+x)+' 70 '+(160+x)+' 200 T'+(500+x)+' 330" stroke="'+(i%2?'#8cf8df':'#bda5ff')+'" stroke-width="'+(21+i*7)+'" stroke-opacity="'+opacity+'" fill="none" filter="url(#aura)"/>';
+  for(let i=0;i<85;i++){
+   const x=i*9-60,yy=45+Math.sin(i*.10)*25;
+   main+='<path d="M'+x+' -15Q'+(x-45)+' '+yy+' '+(x+20)+' '+(yy+75)+'T'+(x+110)+' '+(yy+145)+'" stroke="'+(i%3?'#75ebc4':'#ba8cff')+'" stroke-width="'+(i%4===0?'6':'2')+'" stroke-opacity="'+(.08+(Math.sin(i*.17)+1)*.11).toFixed(2)+'" fill="none"/>';
   }
+  main+='<path d="M0 314L83 249L140 286L218 206L301 284L363 234L468 305L543 240L640 302V360H0Z" fill="#090e1c" stroke="#466578" stroke-width="1"/><path d="M191 238L218 206L248 235L223 224L211 230Z M522 262L543 240L567 260L546 252Z" fill="#b4d4df" opacity=".5"/>';
   main+=mist;
  }else if(key==='sparkle'){
   for(let i=0;i<10;i++){const x=f(92+r()*455),y=f(38+r()*250),size=9+r()*18;main+=sparkle(Number(x),Number(y),size);}
@@ -141,6 +154,26 @@ function effectArt(key,meta){
 
 function frameArt(key,meta){
  const rng=rand(seedFor(key)),{family,hue}=meta,o=[];
+ const botanical=['garden','rose','leaf','sunflower'].includes(family);
+ const fireFamily=family==='fire';
+ // Carved metal rails and individual motifs keep the centre transparent.
+ o.push('<rect x="39" y="39" width="562" height="362" rx="29" stroke="#090711" stroke-width="14"/><rect x="39" y="39" width="562" height="362" rx="29" stroke="url(#metal)" stroke-width="7"/><rect x="45" y="45" width="550" height="350" rx="25" stroke="'+hue+'" stroke-opacity=".7" stroke-width="1"/>');
+ if(botanical){
+  for(const [x,sign] of [[40,1],[600,-1]]){
+   o.push('<path d="M'+x+' 355C'+(x+sign*43)+' 296 '+(x-sign*23)+' 245 '+x+' 199S'+(x+sign*39)+' 106 '+x+' 70" stroke="#497f64" stroke-width="5" fill="none"/>');
+   for(let i=0;i<7;i++)o.push('<g transform="translate('+(x+sign*(i%2?12:-4))+' '+(90+i*40)+') scale(.44)">'+piece('leaf',0,0,25,rng,'#72af8b',i%2?55:-55)+'</g>');
+  }
+ }
+ if(fireFamily){
+  for(let i=0;i<17;i++)for(const y of [40,397])o.push('<g transform="translate('+(75+i*30)+' '+y+') rotate('+(y===40?180:0)+')">'+fire(0,0,18+rng()*20,rng())+'</g>');
+ }
+ if(family==='frost'){
+  for(let i=0;i<12;i++)for(const y of [40,398])o.push(crystal(78+i*44,y,7,15+rng()*14,hue,y===40?180:0));
+ }
+ if(key==='leopard'){
+  o.push('<rect x="40" y="40" width="560" height="360" rx="28" stroke="#d79743" stroke-width="12"/>');
+  for(let i=0;i<28;i++){const x=65+i*19;for(const y of [41,398])o.push('<ellipse cx="'+x+'" cy="'+y+'" rx="6" ry="4" stroke="#251614" stroke-width="3" fill="#976338" transform="rotate('+(i%2?20:-20)+' '+x+' '+y+')"/>')}
+ }
  o.push('<rect x="38" y="38" width="564" height="364" rx="32" stroke="'+hue+'" stroke-opacity=".15" stroke-width="12"/>');
  o.push('<rect x="42" y="42" width="556" height="356" rx="28" stroke="url(#gold)" stroke-width="3"/><rect x="50" y="50" width="540" height="340" rx="22" stroke="'+hue+'" stroke-opacity=".5" stroke-width="1"/>');
  // Symmetric corner jewellery: the central profile and its text remain unobstructed.
@@ -159,11 +192,22 @@ function frameArt(key,meta){
 }
 function avatarArt(key,meta){
  const rng=rand(seedFor(key)),{family,hue}=meta,o=[];
+ o.push('<circle cx="200" cy="200" r="155" stroke="#08060c" stroke-width="13"/><circle cx="200" cy="200" r="155" stroke="url(#metal)" stroke-width="7"/>');
+ if(['garden','rose','leaf','sunflower'].includes(family)){
+  o.push('<path d="M200 46C105 32 28 132 45 217S122 364 211 355S367 282 355 185S283 40 200 46" stroke="#508e77" stroke-width="4"/>');
+  for(let i=0;i<16;i++){const a=i*Math.PI/8;o.push('<g transform="translate('+f(200+Math.cos(a)*155)+' '+f(200+Math.sin(a)*155)+') scale(.4)">'+piece('leaf',0,0,25,rng,'#71b393',a*180/Math.PI)+'</g>')}
+ }
+ if(key==='colosseum'){
+  for(let i=0;i<20;i++)o.push('<g transform="rotate('+(i*18)+' 200 200)"><path d="M186 65V43Q200 22 214 43V65" stroke="url(#gold)" stroke-width="6"/><path d="M184 67H216M185 37H215" stroke="#ead5a5" stroke-width="2"/></g>');
+ }
+ if(key==='neon'||key==='runicorbit'){
+  for(let i=0;i<12;i++)o.push('<g transform="rotate('+(i*30)+' 200 200)"><path d="M196 30V59M203 35L213 43L203 51" stroke="'+(i%2?'#86eeff':'#d5afff')+'" stroke-width="2.5" stroke-linecap="round"/></g>');
+ }
  o.push('<circle cx="200" cy="200" r="155" stroke="'+hue+'" stroke-width="10" stroke-opacity=".12"/><circle cx="200" cy="200" r="155" stroke="url(#gold)" stroke-width="3"/><circle cx="200" cy="200" r="148" stroke="'+hue+'" stroke-width="1" stroke-opacity=".65"/>');
- const n=family==='garden'?12:family==='fire'?18:8;
+ const n=key==='colosseum'||key==='neon'||key==='runicorbit'?0:family==='garden'?10:family==='fire'?24:family==='rose'?7:family==='pearl'?32:8;
  for(let i=0;i<n;i++){
   const angle=Math.PI*2*i/n-Math.PI/2,x=200+Math.cos(angle)*156,y=200+Math.sin(angle)*156;
-  const size=i%2===0?27:17;
+  const size=family==='rose'?29:family==='pearl'?15:i%2===0?27:17;
   o.push(piece(family,x,y,size,rng,hue,angle*180/Math.PI+90));
  }
  for(let i=0;i<32;i++){
@@ -179,17 +223,29 @@ function avatarArt(key,meta){
 export function renderCmdPremiumSvg(type,key){
  if(!/^[a-z0-9]{2,28}$/.test(key))return null;
  const own=type==="frame"?CMD_ART_FRAMES[key]:type==="avatar"?CMD_ART_AVATARS[key]:type==="effect"?CMD_EFFECT_ART[key]:null;
- const fallback=(aliases[type]||{})[key];const meta=own||(fallback?{hue:fallback[0],family:fallback[1]}:null);
+ const fallback=(aliases[type]||{})[key];let meta=own||(fallback?{hue:fallback[0],family:fallback[1]}:null);
  if(!meta)return null;
+ // Recognisable materials and silhouettes; IDs stay stable for saved profiles.
+ const families={glacialcrown:'frost',frosthalo:'frost',frost:'frost',cyanfire:'fire',pinkfire:'fire',midnightrose:'rose',autumnember:'leaf',darkvine:'leaf',moonstone:'moon',moonstars:'moon',moonpetals:'moon',pearls:'pearl',sunflower:'sunflower'};
+ meta={...meta,family:families[key]||meta.family};
  const isFrame=type==="frame",isEffect=type==="effect",view=isFrame?"0 0 640 440":isEffect?"0 0 640 360":"0 0 400 400",content=isFrame?frameArt(key,meta):isEffect?effectArt(key,meta):avatarArt(key,meta);
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+view+'" fill="none" aria-hidden="true"><defs>'+
  '<linearGradient id="gem" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
- '<linearGradient id="gold" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient>'+
+ '<linearGradient id="metal" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#30233d"/><stop offset=".18" stop-color="'+meta.hue+'"/><stop offset=".3" stop-color="#fff2e8"/><stop offset=".34" stop-color="#706276"/><stop offset=".65" stop-color="'+meta.hue+'"/><stop offset=".8" stop-color="#211526"/><stop offset=".93" stop-color="#e9daff"/><stop offset="1" stop-color="'+meta.hue+'"/></linearGradient>'+
+ '<linearGradient id="gold" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient><radialGradient id="pearl" cx="30%" cy="25%"><stop stop-color="#fff"/><stop offset=".35" stop-color="#e9e6f5"/><stop offset=".7" stop-color="#b5a5cb"/><stop offset="1" stop-color="#57516f"/></radialGradient>'+
  '<filter id="shine" x="-35%" y="-35%" width="170%" height="170%"><feDropShadow dx="0" dy="1" stdDeviation=".35" flood-color="#110623" flood-opacity=".28"/></filter>'+
  '<filter id="glow" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="2"/></filter>'+'<filter id="aura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="11"/></filter>'+'<filter id="softAura" x="-75%" y="-75%" width="250%" height="250%"><feGaussianBlur stdDeviation="1.5"/></filter>'+'<radialGradient id="sceneGlow"><stop stop-color="'+meta.hue+'" stop-opacity=".8"/><stop offset="1" stop-color="#12132b" stop-opacity="0"/></radialGradient>'+'<radialGradient id="moon"><stop stop-color="#fff"/><stop offset="1" stop-color="#cbd5fb"/></radialGradient>'+'<radialGradient id="sun"><stop stop-color="#ffe2a1"/><stop offset=".6" stop-color="#ec7642"/><stop offset="1" stop-color="#7f2536"/></radialGradient>'+
  '</defs>'+content+'</svg>';
 }
 export const CMD_PREMIUM_ART_CSS=`
+/* The same artwork is used in the shop, editor and saved profile. */
+.hero:has(.cmd-profile-effect-art):after{content:none!important}
+.hero .cmd-profile-effect-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.38;z-index:1}
+.hero:has(.cmd-profile-effect-art)>.banner{position:relative;z-index:2;opacity:.85}
+.hero:has(.cmd-profile-effect-art)>.avatarWrap,.hero:has(.cmd-profile-effect-art)>.body{position:relative;z-index:2}
+.hero:has(.cmd-profile-art-avatar) .avatarDeco,.hero:has(.cmd-profile-art-avatar) .avatarRing{display:none!important}
+.hero .cmd-profile-art-frame{object-fit:fill;filter:none}
+
 .cmd-empty-art{display:grid;place-items:center;width:100%;height:100%;font-size:32px;color:#b1abc2}
 
 .cmd-premium-art{position:relative;display:block;pointer-events:none;user-select:none;object-fit:contain;z-index:4}
