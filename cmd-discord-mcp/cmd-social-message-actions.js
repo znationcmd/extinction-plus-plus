@@ -185,4 +185,66 @@ function refresh(){scheduled=false;const ctx=context();if(!ctx)return;
 function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(refresh)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
+/* CMD_COMPACT_MESSAGE_MENU_V1: one context menu instead of visible action buttons. */
+const compactCss=document.createElement('style');
+compactCss.textContent=`
+#channelMessages article.discord-message{position:relative;width:fit-content;max-width:min(100%,680px);min-width:0;display:flex;align-self:flex-start;margin:8px 0;padding:10px 12px;box-sizing:border-box;overflow-wrap:anywhere}
+#channelMessages article.discord-message.cmd-own-message{margin-left:auto;align-self:flex-end}
+#channelMessages article.discord-message .msg-main{flex:0 1 auto;min-width:0;max-width:100%;overflow-wrap:anywhere}
+#channelMessages article.discord-message .msg-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+#channelMessages article.discord-message .msg-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#channelMessages article.discord-message .reply-mini,
+#channelMessages article.discord-message .cmd-message-delete,
+#channelMessages article.discord-message .cmd-message-edit,
+#channelMessages article.discord-message .cmd-translation-tools{display:none!important}
+#channelMessages article.discord-message.cmd-message-cosmetic{width:fit-content!important;max-width:min(100%,680px)!important;padding:11px 13px!important;overflow:hidden!important;border-radius:15px}
+#channelMessages article.discord-message .cmd-message-frame-art{display:none!important}
+#channelMessages article.discord-message.cmd-message-cosmetic{border:6px solid transparent!important;border-image-source:var(--cmd-message-frame-source)!important;border-image-slice:28% 20% 28% 20%!important;border-image-width:6px!important;border-image-repeat:stretch!important}
+#channelMessages article.discord-message .cmd-message-nameplate{max-width:min(190px,100%);min-height:29px;padding:4px 9px;font-size:12px}
+#channelMessages article.discord-message .cmd-message-avatar-ornament{inset:-8%;width:116%;height:116%}
+.cmd-compact-action-menu{position:fixed;z-index:12000;width:min(350px,calc(100vw - 28px));padding:10px;background:#201b2a;color:#fff;border:1px solid #806299;border-radius:18px;box-shadow:0 20px 70px #000b;max-height:75dvh;overflow-y:auto}
+.cmd-compact-action-menu button{display:block;width:100%;min-height:44px;text-align:left;margin:2px 0;padding:11px 14px;border:0;border-radius:10px;background:transparent;color:#f1e8fb;font:600 15px system-ui;cursor:pointer}
+.cmd-compact-action-menu button:focus-visible,.cmd-compact-action-menu button:hover{background:#493557;outline:2px solid #87dfff}
+.cmd-compact-action-menu .cmd-danger{color:#ffb3c4}
+#messages .bubble{display:block;width:fit-content;max-width:min(88%,600px);min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+#messages .bubble.me{margin-left:auto}
+#messages .bubble.cmd-chat-framed{width:fit-content!important;max-width:min(88%,600px)!important;border-width:5px!important;border-image-width:5px!important}
+@media(max-width:550px){#channelMessages article.discord-message{max-width:94%}#channelMessages article.discord-message.cmd-message-cosmetic{max-width:94%!important}#channelMessages article.discord-message .cmd-message-nameplate{max-width:150px}#messages .bubble{max-width:90%}}
+`;
+document.head.append(compactCss);
+let compactMenu=null,compactTimer=null,compactOrigin=null;
+function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
+function onCompactEscape(e){if(e.key==='Escape')dismissCompactMenu()}
+function openCompactMenu(article,x,y){
+ dismissCompactMenu();
+ const menu=elem('div','cmd-compact-action-menu');menu.setAttribute('role','menu');menu.setAttribute('aria-label','Actions du message');
+ const source=article.dataset.cmdSource||'',own=article.classList.contains('cmd-own-message');
+ function action(title,handler,danger=false){const b=elem('button',danger?'cmd-danger':'',title);b.type='button';b.setAttribute('role','menuitem');b.onclick=()=>{dismissCompactMenu();handler()};menu.append(b)}
+ const reply=article.querySelector('.reply-mini');if(reply)action('↩ Répondre',()=>reply.click());
+ const translate=article.querySelector('.cmd-translate-action'),original=article.querySelector('.cmd-original-action');
+ if(translate)action('🌐 Traduire',()=>translate.click());
+ if(original&&!original.hidden)action('Voir l’original',()=>original.click());
+ const content=article.querySelector('.msg-text')?.innerText||article.querySelector('.msg-text')?.textContent||'';
+ if(content)action('Copier le texte',()=>navigator.clipboard?.writeText(content).catch(()=>{}));
+ const edit=article.querySelector('.cmd-message-edit');if(own&&edit)action('✎ Modifier',()=>edit.click());
+ const del=article.querySelector('.cmd-message-delete');if(del)action('🗑 Supprimer',()=>del.click(),true);
+ if(source==='discord_archive'||source==='discord')action('Ouvrir le profil',()=>showProfile(article));
+ if(!menu.children.length)return;
+ document.body.append(menu);compactMenu=menu;const w=menu.offsetWidth,h=menu.offsetHeight;
+ menu.style.left=Math.max(8,Math.min(x,innerWidth-w-8))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-h-8))+'px';
+ menu.querySelector('button')?.focus();document.addEventListener('keydown',onCompactEscape);
+}
+document.addEventListener('contextmenu',e=>{
+ const article=e.target.closest?.('#channelMessages article.discord-message');
+ if(!article)return;e.preventDefault();openCompactMenu(article,e.clientX,e.clientY)
+});
+document.addEventListener('touchstart',e=>{
+ const article=e.target.closest?.('#channelMessages article.discord-message');if(!article||e.touches.length!==1)return;
+ const touch=e.touches[0],x=touch.clientX,y=touch.clientY;clearTimeout(compactTimer);
+ compactOrigin={x,y};compactTimer=setTimeout(()=>{compactTimer=null;openCompactMenu(article,x,y);try{navigator.vibrate?.(15)}catch{}},550);
+},{passive:true});
+document.addEventListener('touchmove',e=>{if(!compactTimer||!compactOrigin)return;const t=e.touches[0];if(!t||Math.abs(t.clientX-compactOrigin.x)>12||Math.abs(t.clientY-compactOrigin.y)>12){clearTimeout(compactTimer);compactTimer=null}},{passive:true});
+for(const name of ['touchend','touchcancel','scroll'])document.addEventListener(name,()=>{clearTimeout(compactTimer);compactTimer=null},{passive:true,capture:true});
+document.addEventListener('pointerdown',e=>{if(compactMenu&&!e.target.closest('.cmd-compact-action-menu'))dismissCompactMenu()},true);
+
 })();
