@@ -330,4 +330,22 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
 .hero .avatarWrap{isolation:isolate}
 @media(max-width:600px){.hero > img.cmd-profile-art-frame{height:clamp(100px,32vw,155px);max-height:32%;opacity:.82}}
 
+/* 2026-10-16: keep the full profile frame on all four edges, without obstructing controls. */
+.hero{position:relative;isolation:isolate}
+.hero > img.cmd-profile-art-frame{
+ position:absolute;inset:0;width:100%;height:100%;max-height:none;
+ object-fit:fill;pointer-events:none;z-index:5;opacity:1;
+}
+.hero > .banner{position:relative;z-index:1}
+.hero > .avatarWrap,.hero > .body{position:relative;z-index:3}
+.hero > .avatarWrap{isolation:isolate}
+.hero > .avatarWrap > img.cmd-profile-art-avatar{
+ position:absolute;inset:-12% auto auto -12%;
+ width:124%;height:124%;max-width:none;object-fit:contain;z-index:8;pointer-events:none
+}
+@media(max-width:600px){
+ .hero > img.cmd-profile-art-frame{height:100%;max-height:none;opacity:1}
+ .hero > .avatarWrap > img.cmd-profile-art-avatar{width:124%;height:124%}
+}
+
 `;
