@@ -277,3 +277,6 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 
 /* Profile frame height alignment: preserve existing crystal width and foreground layering; extend only downward to the card's lower perimeter. */
 .cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{inset:-11% -11% -16% -11%!important;width:122%!important;height:127%!important}
+
+/* Align upper crystal rail with the start of the banner, and lower rail slightly below the profile card. Keep width and ornament unchanged. */
+.cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{top:-1%!important;bottom:-19%!important;left:-11%!important;right:-11%!important;width:122%!important;height:120%!important}
