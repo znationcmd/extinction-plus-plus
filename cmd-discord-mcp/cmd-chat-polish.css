@@ -230,3 +230,6 @@
 /* Equipped large profile frame also decorates this author's message bubbles. */
 #channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border:14px solid transparent!important;border-image-source:var(--cmd-equipped-frame-url)!important;border-image-slice:28 fill!important;border-image-width:14px!important;border-image-outset:0!important;border-image-repeat:stretch!important;background-clip:padding-box!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;box-shadow:none!important}
 #channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame::after{display:none!important}
+
+/* Keep crystal corners stable as message height grows; no stretched image overlay. */
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border:clamp(10px,3vw,18px) solid transparent!important;border-image-source:var(--cmd-equipped-frame-url)!important;border-image-slice:24!important;border-image-width:1!important;border-image-repeat:stretch!important;padding:12px 14px!important;box-sizing:border-box!important;min-width:0!important;max-width:min(84%,620px)!important;width:fit-content!important;height:auto!important;max-height:none!important;background-color:var(--cmd-message-bubble,#40424c)!important}
