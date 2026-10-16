@@ -269,3 +269,8 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 .cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{display:block!important;position:absolute!important;inset:-11% -11%!important;width:122%!important;height:122%!important;max-width:none!important;max-height:none!important;object-fit:fill!important;pointer-events:none!important;z-index:6!important;opacity:1!important;border:0!important;box-shadow:none!important;filter:none!important}
 .cmd-premium-profile .hero.cmd-pm-hero>.banner,.cmd-premium-profile .hero.cmd-pm-hero>.body,.cmd-premium-profile .hero.cmd-pm-hero>.avatarWrap{position:relative!important;z-index:7!important}
 .cmd-premium-profile .hero.cmd-pm-hero .avatarRing,.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:9!important}
+
+/* FRAME_FOREGROUND: the selected ornamental image must be IN FRONT of banner/body. */
+.cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{z-index:30!important;pointer-events:none!important}
+.cmd-premium-profile .hero.cmd-pm-hero>.banner,.cmd-premium-profile .hero.cmd-pm-hero>.body,.cmd-premium-profile .hero.cmd-pm-hero>.avatarWrap{z-index:2!important}
+.cmd-premium-profile .hero.cmd-pm-hero .avatarRing,.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:32!important;pointer-events:none!important}
