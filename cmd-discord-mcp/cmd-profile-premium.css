@@ -275,3 +275,8 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{inset:-6px!important;width:calc(100% + 12px)!important;height:calc(100% + 12px)!important;border-width:clamp(31px,8vw,53px)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;border-image-repeat:stretch!important;filter:drop-shadow(0 0 3px #a85aff99)!important}
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame.frame-amethyst{filter:drop-shadow(0 0 4px #c36cff) drop-shadow(0 0 9px #9e34ff99)!important}
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame::before{content:none!important}
+
+/* Stable decoration on mobile: artwork stays on profile edges, without covering text. */
+.cmd-premium-profile .hero.cmd-pm-hero{position:relative!important;isolation:isolate!important}
+.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;border-width:clamp(23px,6vw,38px)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;pointer-events:none!important;z-index:3!important}
+.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame.frame-amethyst{filter:drop-shadow(0 0 3px #b65affaa)!important}
