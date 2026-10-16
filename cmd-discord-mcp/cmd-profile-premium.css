@@ -259,8 +259,7 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 .cmd-premium-profile .hero.cmd-pm-hero .avatar{z-index:5!important}
 
 
-/* CMD profile: nine-slice the SAME selected frame around the entire profile. Keep thick corner gems without stretching them across content. */
-.cmd-premium-profile .hero.cmd-pm-hero{position:relative!important;isolation:isolate!important}
-.cmd-premium-profile .hero.cmd-pm-hero>.cmd-profile-art-frame{display:none!important}
-.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;z-index:8!important;pointer-events:none!important;border-style:solid!important;border-width:clamp(45px,11vw,78px)!important;border-image-source:var(--cmd-profile-frame-image)!important;border-image-slice:105 105 105 105!important;border-image-width:1!important;border-image-repeat:stretch!important;border-image-outset:0!important;background:none!important;box-shadow:none!important}
-.cmd-premium-profile .hero.cmd-pm-hero .avatarRing,.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:10!important}
+/* Restore original full-card artwork: no CSS border-image on an image element.
+   The previous rule drew an inset rectangular frame across profile content. */
+.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame,
+.cmd-premium-profile .hero.cmd-pm-hero>.cmd-profile-art-frame{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border:0!important;border-image:none!important;background:none!important;object-fit:fill!important;pointer-events:none!important;box-sizing:border-box!important}
