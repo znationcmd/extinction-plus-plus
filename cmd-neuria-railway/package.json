@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "bun run index.ts"
+    "start": "bun run index.ts",
+    "test": "bun test ./neuria*.test.ts"
   },
   "dependencies": {
     "sharp": "0.34.4",
@@ -16,5 +17,8 @@
     "jszip": "^3.10.1",
     "pdfjs-dist": "^4.10.38",
     "playwright-core": "^1.56.1"
+  },
+  "devDependencies": {
+    "happy-dom": "21.0.3"
   }
 }

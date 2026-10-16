@@ -79,3 +79,40 @@ test('document exports preserve lines, columns, slides and accented PDF text',as
  const pdf=await request('pdf','Café été\nDeuxième ligne');expect(pdf.status).toBe(200);
  const bytes=new Uint8Array(await pdf.arrayBuffer());expect(new TextDecoder().decode(bytes.slice(0,5))).toBe('%PDF-');
 });
+test('email registration, persistent session, login, isolation and logout',async()=>{
+ const post=(path,body,cookie='',extra={})=>fetch(base+'/api/neuria/auth/'+path,{method:'POST',headers:{'content-type':'application/json',cookie,...extra},body:JSON.stringify(body)});
+ const credentials={email:'test@example.com',password:'phrase-longue-et-sure'};
+ const signup=await post('signup',credentials);expect(signup.status).toBe(200);
+ const cookie=signup.headers.get('set-cookie')!.split(';')[0];expect(signup.headers.get('set-cookie')).toContain('HttpOnly');expect(signup.headers.get('set-cookie')).toContain('SameSite=Lax');
+ const result=await signup.json();expect(result.user.emailVerified).toBe(false);expect(result.user.password_hash).toBeUndefined();
+ const session=await fetch(base+'/api/neuria/auth/session',{headers:{cookie}});expect((await session.json()).user.email).toBe(credentials.email);
+ const anon=await fetch(base+'/api/neuria/auth/session');expect((await anon.json()).user).toBeNull();
+ const {quotaDatabase}=await import('./neuria-generation-quota.ts');const db=quotaDatabase();
+ const stored=db.query('SELECT password_hash FROM neuria_accounts WHERE email=?').get(credentials.email);expect(stored.password_hash).not.toBe(credentials.password);
+ const tokens=db.query('SELECT token_hash FROM neuria_sessions').all();expect(tokens.some(t=>cookie.includes(t.token_hash))).toBe(false);
+ const persisted=Bun.spawnSync([process.execPath,'-e',`import {accountForRequest} from './neuria-accounts.ts'; console.log(JSON.stringify(await accountForRequest(new Request('http://localhost/',{headers:{cookie:${JSON.stringify(cookie)}}}))));`],{cwd:import.meta.dir,env:{...process.env,NEURIA_QUOTA_DB_PATH:Bun.env.NEURIA_QUOTA_DB_PATH},stdout:'pipe'});
+ expect(persisted.exitCode).toBe(0);expect(JSON.parse(persisted.stdout.toString()).id).toBe(result.user.id);
+ expect((await post('signup',credentials)).status).toBe(409);
+ expect((await post('login',{...credentials,password:'mauvaise-phrase-longue'})).status).toBe(401);
+ expect((await post('login',credentials)).status).toBe(200);
+ expect((await post('logout',{},cookie,{origin:'https://evil.example'})).status).toBe(403);
+ expect((await post('logout',{},cookie)).status).toBe(200);
+ const after=await fetch(base+'/api/neuria/auth/session',{headers:{cookie}});expect((await after.json()).user).toBeNull();
+});
+test('email authentication throttles repeated guesses',async()=>{
+ const {handleAccountRequest}=await import('./neuria-accounts.ts');
+ const request=()=>new Request('https://neuria.example/api/neuria/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+ for(let i=0;i<10;i++)expect((await handleAccountRequest(request(),'throttle-test'))!.status).toBe(400);
+ expect((await handleAccountRequest(request(),'throttle-test'))!.status).toBe(429);
+});
+test('account deletion requires its password and invalidates all sessions',async()=>{
+ const credentials={email:'delete@example.com',password:'phrase-longue-et-sure'};
+ const signup=await fetch(base+'/api/neuria/auth/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(credentials)});expect(signup.status).toBe(200);
+ const cookie=signup.headers.get('set-cookie')!.split(';')[0];
+ const remove=password=>fetch(base+'/api/neuria/auth/account',{method:'DELETE',headers:{'content-type':'application/json',cookie},body:JSON.stringify({password})});
+ expect((await remove('mauvaise-phrase-longue')).status).toBe(401);
+ expect((await remove(credentials.password)).status).toBe(200);
+ expect((await (await fetch(base+'/api/neuria/auth/session',{headers:{cookie}})).json()).user).toBeNull();
+ const {quotaDatabase}=await import('./neuria-generation-quota.ts');expect(quotaDatabase().query('SELECT id FROM neuria_accounts WHERE email=?').get(credentials.email)).toBeNull();
+ expect(quotaDatabase().query('SELECT id FROM neuria_accounts WHERE email=?').get('test@example.com')).not.toBeNull();
+});
