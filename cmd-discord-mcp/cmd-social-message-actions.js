@@ -211,6 +211,14 @@ compactCss.textContent=`
 #messages .bubble.cmd-chat-framed{width:fit-content!important;max-width:min(88%,600px)!important;border-width:5px!important;border-image-width:5px!important}
 @media(max-width:550px){#channelMessages article.discord-message{max-width:94%}#channelMessages article.discord-message.cmd-message-cosmetic{max-width:94%!important}#channelMessages article.discord-message .cmd-message-nameplate{max-width:150px}#messages .bubble{max-width:90%}}
 `;
+compactCss.textContent+=`
+/* Fine scalable contour; no wide decorative photo occupying the bubble */
+#channelMessages article.discord-message.cmd-message-cosmetic{border-width:3px!important;border-image-width:3px!important;border-image-slice:28% 20% 28% 20%!important;width:fit-content!important;max-width:94%!important}
+#channelMessages article.discord-message.cmd-message-cosmetic>.cmd-message-frame-art{display:none!important}
+#channelMessages article.discord-message .cmd-message-nameplate{display:none!important}
+#messages .bubble.cmd-chat-framed{border-width:3px!important;border-image-width:3px!important;width:fit-content!important}
+@media(max-width:550px){#channelMessages article.discord-message.cmd-message-cosmetic{border-width:2px!important;border-image-width:2px!important}#messages .bubble.cmd-chat-framed{border-width:2px!important;border-image-width:2px!important}}
+`;
 document.head.append(compactCss);
 let compactMenu=null,compactTimer=null,compactOrigin=null;
 function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
