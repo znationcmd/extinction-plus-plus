@@ -280,3 +280,13 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 
 /* Align upper crystal rail with the start of the banner, and lower rail slightly below the profile card. Keep width and ornament unchanged. */
 .cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{top:-1%!important;bottom:-19%!important;left:-11%!important;right:-11%!important;width:122%!important;height:120%!important}
+
+/* Raise ONLY the amethyst frame's upper rail to the beginning of the violet crystal crown,
+   immediately beneath “CMD SPHERE · MON PROFIL”. Preserve left/right width and bottom edge. */
+.cmd-premium-profile .hero.cmd-pm-hero>img.cmd-profile-art-frame{
+ top:calc(-1% - 110px)!important;
+ bottom:-19%!important;
+ height:calc(120% + 110px)!important;
+ left:-11%!important;right:-11%!important;width:122%!important;
+ z-index:30!important;pointer-events:none!important;
+}
