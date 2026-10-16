@@ -145,6 +145,17 @@ function cmdExtras(){
  function updatePreview(){const p=$("#cmdNamePreview");if(!p)return;p.style.fontFamily=$("#cmdNameFont").value;p.style.backgroundImage="linear-gradient(90deg,"+[1,2,3].map(i=>$("#cmdNameC"+i).value).join(",")+")";p.style.textShadow=$("#cmdNameEffect").value==="neon"?"0 0 12px #a35bff":"none"}
 
  // Message actions are owned by cmd-social-message-actions.js.
+ const authorFrames=new Map(),pendingFrames=new Set();
+ async function loadFrame(id){
+   if(!id||authorFrames.has(id)||pendingFrames.has(id))return;
+   pendingFrames.add(id);
+   try{
+     const response=await fetch("/api/person/profile?userId="+encodeURIComponent(id),{credentials:"same-origin"});
+     if(response.ok){const data=await response.json(),value=String(data.profile?.profileFrame||"");authorFrames.set(id,/^[a-z0-9-]{1,60}$/.test(value)&&value!=="none"?value:"");}
+     else authorFrames.set(id,"");
+   }catch{authorFrames.set(id,"");}
+   finally{pendingFrames.delete(id);queueMessageDecorations();}
+ }
  function decorateMessages(){
    const own=mine();let idsToLoad=[];
    for(const msg of document.querySelectorAll("#channelMessages .discord-message")){
@@ -155,6 +166,9 @@ function cmdExtras(){
      }
      if(userId&&userId===own)msg.classList.add("cmd-own-message");else msg.classList.remove("cmd-own-message");
      msg.style.setProperty("--cmd-message-bubble",colors[userId]||(userId===own?PALETTE[0]:"#40424c"));
+     const bubble=msg.querySelector(".msg-main");
+     if(bubble){const frame=authorFrames.get(userId)||"";bubble.classList.toggle("cmd-equipped-profile-frame",!!frame);if(frame)bubble.style.setProperty("--cmd-equipped-frame-url",'url("/cmd-art/frame/'+encodeURIComponent(frame)+'.svg")');else bubble.style.removeProperty("--cmd-equipped-frame-url");}
+     if(userId&&!authorFrames.has(userId))loadFrame(userId);
      if(userId&&!Object.hasOwn(colors,userId))idsToLoad.push(userId);
    }
    applyNameStyle();
