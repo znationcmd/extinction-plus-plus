@@ -1,3 +1,4 @@
+import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
 import {dressingPage,validDress} from "./avatar-dressing.js";
 import { createServer } from "node:http";
@@ -3573,7 +3574,8 @@ async function sendNativeChannelMessage(auth,input){
       body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
     });
   }
-  return {ok:true,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
+  let xpReward=null;try{if(!metadata.bot&&!metadata.webhook)xpReward=await awardMessageXp(pool,String(auth.user.id),body)}catch(e){console.error("level XP",e.message)}
+  return {ok:true,xpReward,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
 async function updateNativeOverview(auth,input){
@@ -4615,6 +4617,14 @@ const httpServer=createServer(async(req,res)=>{
         await pool.query("INSERT INTO cmd_avatar_dressing(user_id,dress) VALUES($1,$2::jsonb) ON CONFLICT(user_id) DO UPDATE SET dress=EXCLUDED.dress,updated_at=NOW()",[uid,JSON.stringify(dress)]);
         sendJson(res,200,{ok:true,dress});return;
       }catch(e){sendJson(res,500,{error:"Dressing indisponible"});return}
+    }
+    if(req.method==="GET"&&url.pathname==="/api/levels/me"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,200,await levelStatus(pool,String(auth.user.id)))}catch(e){sendJson(res,500,{error:"Niveaux indisponibles"})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/levels/chest/open"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{const input=await readFormBodyJson(req);sendJson(res,200,await openLevelChest(pool,String(auth.user.id),input.level))}catch(e){sendJson(res,400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/season-pass/status"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
