@@ -234,6 +234,7 @@ function openCompactMenu(article,x,y){
  if(original&&!original.hidden)action('Voir l’original',()=>original.click());
  const content=article.querySelector('.msg-text')?.innerText||article.querySelector('.msg-text')?.textContent||'';
  if(content)action('Copier le texte',()=>navigator.clipboard?.writeText(content).catch(()=>{}));
+ if(window.cmdSphereProductivity?.saveMessage)action('⭐ Ajouter aux favoris',()=>window.cmdSphereProductivity.saveMessage(article));
  const edit=article.querySelector('.cmd-message-edit');if(own&&edit)action('✎ Modifier',()=>edit.click());
  const del=article.querySelector('.cmd-message-delete');if(del)action('🗑 Supprimer',()=>del.click(),true);
  if(source==='discord_archive'||source==='discord')action('Ouvrir le profil',()=>showProfile(article));
