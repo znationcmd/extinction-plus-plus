@@ -5,6 +5,9 @@ const mode=area();if(!mode)return;
 const safe=v=>/^[a-z0-9-]{1,60}$/.test(v||'')?v:'none';
 const defaults=['none','amethystspire','amethyst','glacialcrown','midnightrose','rubysurge','sapphirearcane','emeraldgeode','celestialgold','moonstone','starforged'];
 const stateKey='cmd:chat-border:'+mode;
+// Reuse the actual selected profile frame rather than a separate stale message-only choice.
+function activeProfileFrame(){try{const keys=['cmd:profile:frame','cmd:profile-frame','cmd:premium:frame','cmd:profile-decoration-frame'];for(const k of keys){const v=localStorage.getItem(k);if(v&&defaults.includes(v)&&v!=='none')return v}}catch{}return null}
+
 let selection='none';
 try{selection=safe(localStorage.getItem(stateKey))}catch{}
 const css=document.createElement('style');
@@ -14,7 +17,7 @@ css.textContent+=' #msgs .bubble.cmd-chat-framed,#messages .bubble.cmd-chat-fram
 document.head.append(css);
 const image=v=>'url("/cmd-art/frame/'+encodeURIComponent(v)+'.svg?v=20261016conversation")';
 function paint(){
- const chosen=safe(selection);
+ const chosen=safe(activeProfileFrame()||selection);
  const target=mode==='server'?'#channelMessages article.discord-message[data-cmd-source="cmd"]':'#msgs .bubble,#messages .bubble';
  document.querySelectorAll(target).forEach(node=>{
   const enabled=chosen!=='none'&&(mode==='private'||node.classList.contains('cmd-own-message'));
@@ -28,7 +31,7 @@ function paint(){
 const host=document.querySelector(mode==='server'?'#channelMessages':'#msgs,#messages');
 const picker=document.createElement('dialog');picker.className='cmd-frame-dialog';picker.innerHTML='<header><h2>Cadre des messages</h2><button type="button" aria-label="Fermer les cadres">×</button></header><label for="cmdChatFramePicker">Cadre '+(mode==='server'?'des messages serveur':'des messages privés')+'</label><select id="cmdChatFramePicker" aria-label="Choisir le cadre des conversations"></select>';
 const select=picker.querySelector('select');for(const id of defaults){const option=document.createElement('option');option.value=id;option.textContent=id==='none'?'Aucun cadre':({amethyst:"Améthyste",amethystspire:"Cathédrale d’améthyste",glacialcrown:"Givre",midnightrose:"Roses",rubysurge:"Rubis",sapphirearcane:"Saphir",emeraldgeode:"Émeraude",celestialgold:"Or",moonstone:"Pierre de lune",starforged:"Étoiles"})[id]||id;select.append(option)}
-if(!defaults.includes(selection))selection='none';select.value=selection;
+if(!defaults.includes(selection))selection='none';select.value=activeProfileFrame()||selection;
 select.addEventListener('change',()=>{selection=safe(select.value);try{localStorage.setItem(stateKey,selection)}catch{}paint()});
 document.body.append(picker);
 const close=()=>picker.close();picker.querySelector('button').onclick=close;
