@@ -196,6 +196,18 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
  }
  // Provider-backed image editing. Requires a configured image editing API key.
  if(req.method==="GET"&&path==="/api/image/capabilities")return response(JSON.stringify({textToImage:true,native4k:!!Bun.env.NEURIA_IMAGE_4K_ENDPOINT,photoEdit:!!Bun.env.NEURIA_IMAGE_EDIT_API_KEY,upscale4k:true,photoEditProvider:"openai-compatible",note:"Native 4K and editing require separately configured providers."}),"application/json");
+ // Native 4K generation via an explicitly configured provider that supports 3840x2160 output.
+ if(req.method==="POST"&&path==="/api/image/generate-4k"){
+  const endpoint=Bun.env.NEURIA_IMAGE_4K_ENDPOINT||"",key=Bun.env.NEURIA_IMAGE_4K_API_KEY||"";
+  if(!endpoint||!key)return response(JSON.stringify({error:"Moteur natif 4K non configuré sur Railway."}),"application/json",503);
+  try{const data=await req.json(),prompt=String(data?.prompt||"").trim();if(!prompt||prompt.length>1200)return response(JSON.stringify({error:"Description invalide."}),"application/json",400);
+   const upstream=await fetch(endpoint,{method:"POST",headers:{"authorization":"Bearer "+key,"content-type":"application/json"},body:JSON.stringify({prompt,width:3840,height:2160,output_format:"png"}),signal:AbortSignal.timeout(120000)});
+   if(!upstream.ok){console.error("[NEURIA_4K] provider status",upstream.status);return response(JSON.stringify({error:"Le fournisseur 4K a refusé la génération.",providerStatus:upstream.status}),"application/json",502)}
+   const ct=upstream.headers.get("content-type")||"";let bytes;if(ct.startsWith("image/"))bytes=Buffer.from(await upstream.arrayBuffer());else{const result=await upstream.json();const raw=result?.image||result?.data?.[0]?.b64_json||result?.result?.image;if(typeof raw!=="string")throw Error("missing image");bytes=Buffer.from(raw.replace(/^data:image\\/[^;]+;base64,/,""),"base64")}
+   const meta=await sharp(bytes).metadata();if((meta.width||0)<3840||(meta.height||0)<2160)return response(JSON.stringify({error:"Le fournisseur n'a pas produit une image native 4K.",receivedWidth:meta.width,receivedHeight:meta.height}),"application/json",502);
+   return new Response(bytes,{headers:{"content-type":ct.startsWith("image/")?ct:"image/png","cache-control":"no-store"}})
+  }catch(e){console.error("[NEURIA_4K]",e?.name||"error");return response(JSON.stringify({error:"Génération 4K indisponible."}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/image/edit"){
   const key=Bun.env.NEURIA_IMAGE_EDIT_API_KEY||"";
   if(!key)return response(JSON.stringify({error:"Moteur de retouche IA non configuré. Ajoutez NEURIA_IMAGE_EDIT_API_KEY dans Railway."}),"application/json",503);
