@@ -280,9 +280,3 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 .cmd-premium-profile .hero.cmd-pm-hero{position:relative!important;isolation:isolate!important}
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;border-width:clamp(23px,6vw,38px)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;pointer-events:none!important;z-index:3!important}
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame.frame-amethyst{filter:drop-shadow(0 0 3px #b65affaa)!important}
-
-/* Reference artwork scale: prominent crystal corners (mobile ~48px) on the existing profile perimeter. */
-.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{inset:0!important;width:100%!important;height:100%!important;border-width:clamp(42px,12vw,72px)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;border-image-outset:0!important;filter:drop-shadow(0 0 5px #b54affbb)!important}
-
-/* Boutique frame standard: fixed ornament geometry for every equipped frame. */
-.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{--cmd-shop-frame-border:32px;--cmd-shop-crystal-corner:48px;border-width:var(--cmd-shop-frame-border)!important;border-image-width:1!important;border-image-repeat:stretch!important;min-width:0!important;box-sizing:border-box!important}
