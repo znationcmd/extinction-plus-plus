@@ -189,6 +189,11 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
    return new Response(converted,{headers:{"content-type":format==="webp"?"image/webp":"image/avif","content-disposition":"attachment; filename=neuria-decoration."+format,"cache-control":"no-store"}});
   }catch{return response(JSON.stringify({error:"Image invalide ou trop volumineuse"}),"application/json",400)}
  }
+ // 4K export: high-resolution resize only; does not invent AI details.
+ if(req.method==="POST"&&path==="/api/image/upscale-4k"){
+  if(Number(req.headers.get("content-length")||0)>12582912)return response(JSON.stringify({error:"Fichier supérieur à 12 Mo"}),"application/json",413);
+  try{const input=Buffer.from(await req.arrayBuffer());if(input.length>12582912)throw Error("size");const meta=await sharp(input,{limitInputPixels:30000000}).metadata();if(!meta.width||!meta.height)throw Error("invalid");const landscape=meta.width>=meta.height;const w=landscape?3840:2160,h=landscape?2160:3840;const output=await sharp(input).rotate().resize(w,h,{fit:"inside",withoutEnlargement:false,kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer();return new Response(output,{headers:{"content-type":"image/png","content-disposition":"attachment; filename=neuria-4k.png","cache-control":"no-store"}})}catch{return response(JSON.stringify({error:"Image invalide pour l'export 4K"}),"application/json",400)}
+ }
  if(req.method==="POST"&&path==="/api/image/generate"){
   if(Number(req.headers.get("content-length")||0)>3000)return response(JSON.stringify({error:"Description trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
