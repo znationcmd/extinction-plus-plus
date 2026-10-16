@@ -213,6 +213,9 @@ function html(res,body,status=200,headers={}){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261016personal1"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
+  if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
+    body=body.replace(/<\/body>/i,'<script defer src="/cmd-productivity.js?v=20261016lot4"></script></body>');
+  }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
     body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
@@ -4506,6 +4509,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCmdStudioMusic(req,res,url,{auth:emojiAuth}))return;
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
+    if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
