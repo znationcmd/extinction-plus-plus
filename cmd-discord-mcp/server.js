@@ -1,5 +1,6 @@
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
+import {cmdGapStatus,cmdGapList} from "./cmd-parity-37.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
 import {dressingPage,validDress} from "./avatar-dressing.js";
@@ -4514,6 +4515,12 @@ const httpServer=createServer(async(req,res)=>{
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-chat-navigation.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-navigation.js",import.meta.url),"utf8"));return}
+    if(url.pathname==="/api/cmd/parity/status"){
+      if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
+      const session=dashboardAuth(req);
+      if(!session){sendJson(res,401,{error:"Connexion requise"});return}
+      sendJson(res,200,{catalogue:"CMD Sphere vs Discord",auditDate:"2026-10-16",status:cmdGapStatus(),features:cmdGapList(),note:"Préinstallé signifie uniquement contrat préparatoire; non activé, non vérifié."});return;
+    }
     if(await handleCmdHistorySearch(req,res,url,{pool,auth:dashboardAuth(req),sendJson,checkGuildPermissions:effectiveNativePermissions}))return;
     if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
