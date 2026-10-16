@@ -110,7 +110,7 @@ function decorateMessage(article,ctx){
      plate.append(title);main.prepend(plate);article.classList.add('cmd-message-cosmetic');
    }
    if(good(p.profileFrame)&&!article.querySelector('.cmd-message-frame-art')){
-     const image=elem('img','cmd-message-frame-art');image.src='/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016member';image.alt='';article.prepend(image);article.classList.add('cmd-message-cosmetic');
+     const image=elem('img','cmd-message-frame-art');image.src='/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016member';image.alt='';article.prepend(image);article.style.setProperty('--cmd-message-frame-source','url("/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016bubble")');article.classList.add('cmd-message-cosmetic');
    }
  }).catch(()=>{});
 }
