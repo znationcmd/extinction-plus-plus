@@ -385,4 +385,11 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
  .page .hero .avatarWrap>img.cmd-profile-art-avatar{left:12px!important;top:-86px!important;width:174px!important;height:174px!important}
 }
 
+/* Premium profile uses a 106px photo, centered at (70px, 0px). */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap>img.cmd-profile-art-avatar,
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap>.cmd-profile-avatar-sheen{
+ left:6px!important;top:-64px!important;width:128px!important;height:128px!important;
+ max-width:none!important;max-height:none!important;
+}
+
 `;

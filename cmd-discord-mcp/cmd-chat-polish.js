@@ -110,7 +110,7 @@ function cmdExtras(){
        sourcePanel?.classList.remove("open");palette?.classList.toggle("open");markPalette();
      };buttons.prepend(colorButton);
    }
-   improveTools();cmdExtras();setupMessageActions();
+   improveTools();cmdExtras();
 
    let count=0;
    for(const id of ids){
@@ -144,27 +144,7 @@ function cmdExtras(){
  function openNameStyle(){let panel=$("#cmdNameStylePanel");if(!panel){panel=document.createElement("div");panel.id="cmdNameStylePanel";panel.innerHTML='<div class="cmd-name-style-card"><div class="cmd-name-style-head"><strong>Style du pseudonyme</strong><button type="button" id="cmdNameStyleClose" aria-label="Fermer">✕</button></div><label>Police<select id="cmdNameFont"><option value="inherit">Classique</option><option value="Georgia,serif">Journal</option><option value="cursive">Manuscrite</option><option value="monospace">Pixel / Mono</option><option value="fantasy">Fantaisie</option></select></label><label>Effet<select id="cmdNameEffect"><option value="uni">Uni</option><option value="gradient">Dégradé</option><option value="neon">Néon</option><option value="cartoon">Cartoon</option><option value="pop">Pop</option><option value="gelatine">Gélatine</option><option value="prisme">Prisme</option></select></label><div class="cmd-name-colors"><label>Couleur 1<input type="color" id="cmdNameC1"></label><label>Couleur 2<input type="color" id="cmdNameC2"></label><label>Couleur 3<input type="color" id="cmdNameC3"></label></div><div id="cmdNamePreview">Aperçu du pseudonyme</div><p>Prévisualisation sur cet appareil. Synchronisation des profils entre appareils non encore disponible.</p><div class="cmd-name-style-actions"><button type="button" id="cmdNameRandom">🎲 Surprends-moi</button><button type="button" id="cmdNameReset">Réinitialiser</button><button type="button" id="cmdNameSave">Enregistrer</button></div></div>';document.body.append(panel);$("#cmdNameStyleClose").onclick=()=>panel.classList.remove("on");$("#cmdNameReset").onclick=()=>{localStorage.removeItem(nameStyleKey);panel.classList.remove("on");applyNameStyle()};$("#cmdNameSave").onclick=()=>{const colors=[1,2,3].map(i=>$("#cmdNameC"+i).value);try{localStorage.setItem(nameStyleKey,JSON.stringify({font:$("#cmdNameFont").value,effect:$("#cmdNameEffect").value,colors}))}catch{}panel.classList.remove("on");applyNameStyle()};$("#cmdNameRandom").onclick=()=>{const palette=["#9b00fb","#7ccbff","#f38ad8","#11d3a6","#ffb13d","#ff3687"];for(let i=1;i<=3;i++)$("#cmdNameC"+i).value=palette[Math.floor(Math.random()*palette.length)];updatePreview()};for(const el of panel.querySelectorAll("select,input"))el.addEventListener("input",updatePreview)}const st=readNameStyle();$("#cmdNameFont").value=st.font||"inherit";$("#cmdNameEffect").value=st.effect||"prisme";[1,2,3].forEach((i)=>$("#cmdNameC"+i).value=st.colors?.[i-1]||["#9b00fb","#7ccbff","#f38ad8"][i-1]);updatePreview();panel.classList.add("on")}
  function updatePreview(){const p=$("#cmdNamePreview");if(!p)return;p.style.fontFamily=$("#cmdNameFont").value;p.style.backgroundImage="linear-gradient(90deg,"+[1,2,3].map(i=>$("#cmdNameC"+i).value).join(",")+")";p.style.textShadow=$("#cmdNameEffect").value==="neon"?"0 0 12px #a35bff":"none"}
 
- // Message actions: accessible via tap, long press or right click.
- function setupMessageActions(){if($("#cmdMessageActionSheet"))return;
-  const sheet=document.createElement("div");sheet.id="cmdMessageActionSheet";sheet.innerHTML='<div class="cmd-message-action-panel"><div class="cmd-message-reactions"></div><div class="cmd-message-action-list"></div><button type="button" class="cmd-message-action-cancel">Fermer</button></div>';document.body.append(sheet);
-  const close=()=>{sheet.classList.remove("on");sheet.setAttribute("aria-hidden","true")};sheet.setAttribute("role","dialog");sheet.setAttribute("aria-label","Actions du message");sheet.setAttribute("aria-modal","true");sheet.setAttribute("aria-hidden","true");sheet.addEventListener("click",e=>{if(e.target===sheet||e.target.closest(".cmd-message-action-cancel"))close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheet.classList.contains("on"))close()});
-  function open(msg){const id=msg.dataset.messageId,author=msg.dataset.cmdAuthorId,own=author&&author===mine(),content=msg.querySelector(".msg-text")?.innerText||"";const actions=sheet.querySelector(".cmd-message-action-list");actions.replaceChildren();
-   const add=(label,fn,destructive=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;if(destructive)b.className="destructive";b.onclick=()=>{close();fn()};actions.append(b)};
-   const react=sheet.querySelector(".cmd-message-reactions");react.replaceChildren();for(const emoji of ["✅","👍","❤️","🤣","💯","👎","😊"]){const b=document.createElement("button");b.type="button";b.textContent=emoji;b.onclick=()=>{close();alert("Les réactions doivent être raccordées au service de messages.")};react.append(b)}
-   if(own&&window.cmdSphereMessageActions?.mode()==="native")add("✏️ Modifier le message",async()=>{const next=prompt("Modifier ton message :",content);if(next===null||next===content)return;try{await window.cmdSphereMessageActions.edit(id,next)}catch(e){alert(e.message)}});
-   add("↩ Répondre",()=>{try{window.cmdSphereMessageActions?.reply(id)}catch(e){const btn=msg.querySelector("[data-reply-message]");if(btn)btn.click();else alert(e.message||"Réponse indisponible")}});
-   add("➦ Transférer",()=>{if(navigator.share)navigator.share({text:content}).catch(()=>{});else navigator.clipboard?.writeText(content)});
-   add("▣ Copier le texte",()=>navigator.clipboard?.writeText(content));
-   add("🔗 Copier le lien du message",()=>navigator.clipboard?.writeText(location.href.split("#")[0]+"#message-"+encodeURIComponent(id)));
-   add("📌 Épingler",()=>alert("L’épinglage nécessite les permissions du serveur et une API dédiée."));
-   if(own&&window.cmdSphereMessageActions?.mode()==="native")add("🗑 Supprimer le message",async()=>{if(!confirm("Supprimer définitivement ce message ?"))return;try{await window.cmdSphereMessageActions.delete(id)}catch(e){alert(e.message)}},true);
-   sheet.classList.add("on");sheet.setAttribute("aria-hidden","false");sheet.querySelector(".cmd-message-action-cancel")?.focus()}
-  let touchTimer=0,started=null,suppressClickUntil=0;const area=$("#channelMessages");if(!area)return;
-  area.addEventListener("contextmenu",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;e.preventDefault();open(msg)});
-  area.addEventListener("click",e=>{if(Date.now()<suppressClickUntil)return;if(e.target.closest("button,a,input,textarea,video,audio"))return;const msg=e.target.closest(".discord-message");if(msg)open(msg)});
-  area.addEventListener("touchstart",e=>{const msg=e.target.closest(".discord-message");if(!msg)return;started=msg;touchTimer=setTimeout(()=>{if(started){suppressClickUntil=Date.now()+900;open(started)}},550)},{passive:true});
-  for(const event of ["touchend","touchcancel","touchmove"])area.addEventListener(event,()=>{clearTimeout(touchTimer);started=null},{passive:true});
- }
+ // Message actions are owned by cmd-social-message-actions.js.
  function decorateMessages(){
    const own=mine();let idsToLoad=[];
    for(const msg of document.querySelectorAll("#channelMessages .discord-message")){

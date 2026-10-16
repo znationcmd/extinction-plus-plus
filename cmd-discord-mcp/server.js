@@ -201,7 +201,7 @@ function html(res,body,status=200,headers={}){
       body=body.replace(/<\/body>/i,'<script defer src="/hd-secours/v1/catalogue-resolver.js?v=1"></script><script defer src="/hd-secours/v1/catalogue-enable.js?v=1"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-pull-refresh.js?v=20261009polished7"></script></body>');
-    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009media9"><link rel="stylesheet" href="/cmd-chat-polish.css?v=20261009chatfix9"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261012-studio-free-catalog-v9"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009media9"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009media9"></script><script defer src="/cmd-emoji-uploader.js?v=20261009media9"></script><script defer src="/cmd-chat-polish.js?v=20261009chatfix9"></script><script defer src="/cmd-gif-encoder.js?v=20261009music5"></script><script defer src="/cmd-promo-studio.js?v=20261012-studio-free-catalog-v9"></script></body>');
+    if(typeof body==="string"&&body.includes('id="channelEmojiSheet"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-emoji-picker-v2.css?v=20261009media9"><link rel="stylesheet" href="/cmd-chat-polish.css?v=20261009chatfix9"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261012-studio-free-catalog-v9"></head>').replace(/<\/body>/i,'<script defer src="/cmd-unicode-emojis.js?v=20261009media9"></script><script defer src="/cmd-emoji-picker-v2.js?v=20261009media9"></script><script defer src="/cmd-emoji-uploader.js?v=20261009media9"></script><script defer src="/cmd-chat-polish.js?v=20261016menus1"></script><script defer src="/cmd-gif-encoder.js?v=20261009music5"></script><script defer src="/cmd-promo-studio.js?v=20261012-studio-free-catalog-v9"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-server-manager.css?v=20261012-reorder-cross-category-v11"></head>').replace(/<\/body>/i,'<script defer src="/cmd-server-manager.js?v=20261012-reorder-cross-category-v12"></script><script defer src="/cmd-role-wizard.js?v=20261010roleswizard2"></script><script defer src="/bulk-sync.js?v=20261008a"></script><script defer src="/cmd-message-translate.js?v=20261008auto5"></script></body>');
     if(typeof body==="string"&&(body.includes('id="dockProfileMain"')||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<\/body>/i,'<script defer src="/cmd-hosting-panel.js?v=20261010hostingfix1"></script></body>');
@@ -210,7 +210,7 @@ function html(res,body,status=200,headers={}){
   }
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"'))){
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016frames2"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261016personal1"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
@@ -4880,7 +4880,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
         const [threads,prefs,native,discord,folders,layout,friends,profile,groups]=await Promise.all([listDmThreads(auth),getDmPreferences(auth),listNativeGuilds(auth),linkedDiscordGuilds(auth),getServerFolders(auth),getServerLayout(auth),listFriends(auth),getGlobalProfile(auth),listGroupDms(auth)]);
-        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script><script src="/cmd-social-message-actions.js?v=20261011profile1" defer></script></body>'));
+        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script><script src="/cmd-social-message-actions.js?v=20261016menus1" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/person/profile"){
