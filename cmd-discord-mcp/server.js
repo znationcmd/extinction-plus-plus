@@ -1,4 +1,5 @@
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
+import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
 import {dressingPage,validDress} from "./avatar-dressing.js";
@@ -4512,6 +4513,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await cmdBubbleColorsRoute(req,res,url,{pool,auth:emojiAuth}))return;
 
     if(req.method==="GET"&&url.pathname==="/cmd-chat-navigation.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-navigation.js",import.meta.url),"utf8"));return}
+    if(await handleCmdHistorySearch(req,res,url,{pool,auth:dashboardAuth(req),sendJson,checkGuildPermissions:effectiveNativePermissions}))return;
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
