@@ -22,7 +22,7 @@ export const CMD_ART_AVATARS={
   runicorbit:{label:"Cercle runique",icon:"🌀",hue:"#ab94ff",family:"rune"},
   solareclipse:{label:"Éclipse dorée",icon:"☀️",hue:"#ffcb63",family:"celestial"},
   emberwreath:{label:"Couronne de braises",icon:"🔥",hue:"#ff803f",family:"fire"},
-  sakuraring:{label:"Fleurs de cerisier",icon:"🌸",hue:"#ffa3d6",family:"garden"},
+  sakuraring:{label:"Couronne de roses",icon:"🌸",hue:"#ffa3d6",family:"garden"},
   stardust:{label:"Poussière d’étoiles",icon:"✨",hue:"#8cb9ff",family:"celestial"},
   moonpetals:{label:"Pétales lunaires",icon:"🌙",hue:"#dec3ff",family:"garden"},
   magmaring:{label:"Volcan incandescent",icon:"🌋",hue:"#ff5633",family:"fire"},
@@ -244,11 +244,11 @@ export function renderCmdPremiumSvg(type,key){
 export const CMD_PREMIUM_ART_CSS=`
 /* The same artwork is used in the shop, editor and saved profile. */
 .hero:has(.cmd-profile-effect-art):after{content:none!important}
-.hero .cmd-profile-effect-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.38;z-index:1}
-.hero:has(.cmd-profile-effect-art)>.banner{position:relative;z-index:2;opacity:.85}
-.hero:has(.cmd-profile-effect-art)>.avatarWrap,.hero:has(.cmd-profile-effect-art)>.body{position:relative;z-index:2}
+.hero .cmd-profile-effect-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.6;z-index:2}
+.hero:has(.cmd-profile-effect-art)>.banner{position:relative;z-index:1;opacity:1}
+.hero:has(.cmd-profile-effect-art)>.avatarWrap,.hero:has(.cmd-profile-effect-art)>.body{position:relative;z-index:3}
 .hero:has(.cmd-profile-art-avatar) .avatarDeco,.hero:has(.cmd-profile-art-avatar) .avatarRing{display:none!important}
-.hero .cmd-profile-art-frame{object-fit:fill;filter:none}
+.hero .cmd-profile-art-frame{object-fit:fill;filter:none}.hero:has(.cmd-profile-art-frame) .profileFrame{display:none}
 
 .cmd-empty-art{display:grid;place-items:center;width:100%;height:100%;font-size:32px;color:#b1abc2}
 

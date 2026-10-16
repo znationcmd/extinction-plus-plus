@@ -6,9 +6,9 @@ const path=require("node:path");
 const vm=require("node:vm");
 const art=fs.readFileSync(path.join(__dirname,"..","cmd-premium-art.js"),"utf8");
 const server=fs.readFileSync(path.join(__dirname,"..","server.js"),"utf8");
-const clean=art.replace(/^export /gm,"");
+const clean=art.replace(/^import .*;$/gm,"").replace(/import\.meta\.url/g,JSON.stringify(require("node:url").pathToFileURL(path.join(__dirname,"..","cmd-premium-art.js")).href)).replace(/^export /gm,"");
 const {renderCmdPremiumSvg,CMD_EFFECT_ART,CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS}=
- vm.runInNewContext(clean+"\n({renderCmdPremiumSvg,CMD_EFFECT_ART,CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS});",{});
+ vm.runInNewContext(clean+"\n({renderCmdPremiumSvg,CMD_EFFECT_ART,CMD_ART_FRAMES,CMD_ART_AVATARS,CMD_PREMIUM_ART_CSS});",{readFileSync:fs.readFileSync,URL});
 test("10 effect IDs are preserved and mapped to original Retina SVG illustrations",()=>{
  const required=["zombie","ghostship","purplelightning","moonmist","shadow","apocalypse","stars","pulse","aurora","sparkle"];
  assert.equal(Object.keys(CMD_EFFECT_ART).length,required.length);
@@ -45,5 +45,5 @@ test("Effect catalog uses vector art, not emoji-only thumbnails",()=>{
  assert.match(server,/if\(cls==="\.effectTile"\)updateEffectDemo/);
  assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-preview img/);
  assert.match(CMD_PREMIUM_ART_CSS,/cmd-effect-live-image/);
- assert.match(server,/cmd-premium-art\.css\?v=20261014atelier2/);
+ assert.match(server,/cmd-premium-art\.css\?v=20261016photo1/);
 });
