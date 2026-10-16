@@ -177,6 +177,17 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   if(path==="/sw.js")return response(sw,"application/javascript");
   if(path==="/health")return response(JSON.stringify({ok:true,app:"CMD NEURIA",engineConfigured:!!(Bun.env.NEURIA_AI_ENDPOINT&&Bun.env.NEURIA_AI_API_KEY&&Bun.env.NEURIA_AI_MODEL),engineTokenReferenceUnresolved:(Bun.env.NEURIA_AI_API_KEY||"").startsWith("\u0024{{"),features:{chat:true,wikipediaSearch:true,textAttachment:true,workPlanning:true,autonomousWork:false,imageGeneration:true,persistentMemory:false}}),"application/json");
  }
+ if(req.method==="POST"&&path==="/api/artwork/convert"){
+  const format=new URL(req.url).searchParams.get("format");
+  if(format!=="webp"&&format!=="avif")return response(JSON.stringify({error:"Format attendu : webp ou avif"}),"application/json",400);
+  if(Number(req.headers.get("content-length")||0)>8388608)return response(JSON.stringify({error:"Image trop volumineuse (8 Mo max)"}),"application/json",413);
+  try{
+   const bytes=Buffer.from(await req.arrayBuffer());if(bytes.length>8388608)throw Error("too-large");
+   const img=sharp(bytes,{limitInputPixels:24000000,failOn:"error"}).rotate().ensureAlpha();
+   const converted=await (format==="webp"?img.webp({quality:92,effort:4}):img.avif({quality:82,effort:4})).toBuffer();
+   return new Response(converted,{headers:{"content-type":format==="webp"?"image/webp":"image/avif","content-disposition":"attachment; filename=neuria-decoration."+format,"cache-control":"no-store"}});
+  }catch{return response(JSON.stringify({error:"Image invalide ou trop volumineuse"}),"application/json",400)}
+ }
  if(req.method==="POST"&&path==="/api/image/generate"){
   if(Number(req.headers.get("content-length")||0)>3000)return response(JSON.stringify({error:"Description trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
