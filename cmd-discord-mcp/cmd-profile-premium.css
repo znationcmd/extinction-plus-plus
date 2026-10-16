@@ -243,3 +243,9 @@ body.cmd-premium-body #cmdHostingLaunch{box-sizing:border-box!important;max-widt
 body.cmd-premium-body .cmd-hosting-quick-access{margin:12px 0 20px;max-width:100%;min-width:0}
 body.cmd-premium-body .cmd-hosting-quick-access .cmd-pm-card{display:block!important;min-width:0!important;max-width:100%!important;overflow-wrap:anywhere}
 body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!important;min-height:52px!important;text-align:center!important;font-size:15px!important}
+
+
+/* 2026-10-16 — center profile avatar artwork on the actual avatar, including iOS. */
+.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap{position:relative!important;isolation:isolate}
+.cmd-premium-profile .hero.cmd-pm-hero .avatarRing{box-sizing:border-box!important;left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;width:116px!important;height:116px!important;transform-origin:center center!important}
+.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{box-sizing:border-box!important;position:absolute!important;left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;transform-origin:center center!important;width:125px!important;height:125px!important;object-fit:contain!important;pointer-events:none!important}
