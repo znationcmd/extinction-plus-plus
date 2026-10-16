@@ -254,3 +254,6 @@
 
 /* Reference scale: larger crystal corners while the message frame grows vertically with its text. */
 #channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border-width:clamp(23px,7vw,39px)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;border-image-outset:0!important;padding:9px 11px!important;height:auto!important;max-height:none!important;filter:drop-shadow(0 0 5px #b54affbb)!important}
+
+/* Boutique frame standard: same border thickness on every message; bubble follows its text. */
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{--cmd-shop-frame-border:32px;--cmd-shop-crystal-corner:48px;border-width:var(--cmd-shop-frame-border)!important;border-image-width:1!important;box-sizing:border-box!important;width:fit-content!important;max-width:90%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow-wrap:anywhere!important}
