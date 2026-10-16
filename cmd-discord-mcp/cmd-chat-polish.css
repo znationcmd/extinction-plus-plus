@@ -239,3 +239,6 @@
 
 /* 2026-10-16: larger crystal corners, with artwork contained inside bubble boundary. */
 #channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border-width:clamp(23px,6.5vw,38px)!important;border-image-width:1!important;border-image-slice:29% 22% 29% 22%!important;padding:10px 12px!important;box-sizing:border-box!important;max-width:min(90%,620px)!important;min-height:fit-content!important}
+
+/* Crystal artwork hugs the bubble instead of creating a large empty gutter. */
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border-width:clamp(13px,3.5vw,22px)!important;border-image-width:1!important;border-image-slice:29% 22% 29% 22%!important;padding:10px 12px!important;max-width:min(90%,620px)!important}
