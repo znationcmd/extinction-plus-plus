@@ -1,5 +1,16 @@
 // Shared, scoped storefront presentation. No payments or profile writes on preview.
 export const CMD_SHOP_ATELIER_CSS = `
+/* CMD Sphere boutique 4K: responsive gallery, high-resolution assets, immersive premium lighting */
+.wrap .item .art img{image-rendering:auto;object-fit:contain;max-width:100%;max-height:100%;filter:none!important}
+.wrap .item .art{overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 50% 18%,#6e3c9b44,transparent 60%),linear-gradient(155deg,#231331,#09080e 80%)}
+.wrap .item{overflow:hidden;box-shadow:0 12px 36px #05030b66;transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease}
+.wrap .item:hover{transform:translateY(-4px);border-color:#b58bff;box-shadow:0 18px 45px #6b28a733}
+.wrap .item .art:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,transparent 15%,#ffffff09 48%,transparent 75%);transform:translateX(-110%);transition:transform .65s ease}
+.wrap .item:hover .art:after{transform:translateX(110%)}
+.cmd-shop-preview-dialog{box-shadow:0 30px 110px #000b,0 0 65px #8e4ed52b}
+.cmd-shop-preview-art img{object-fit:contain!important;image-rendering:auto}
+@media(prefers-reduced-motion:reduce){.wrap .item,.wrap .item .art:after{transition:none!important;transform:none!important}}
+
 body:has(.cmd-shop-group){background:#0b0911;color:#f3efff}
 .wrap:has(.cmd-shop-group){max-width:1480px!important;padding:28px clamp(14px,3vw,48px) 80px}
 .wrap .hero{min-height:245px;display:flex;flex-direction:column;justify-content:center;padding:38px!important;background:radial-gradient(ellipse at 90% 0%,#6d28d944,transparent 60%),linear-gradient(120deg,#201431,#11121e)!important;box-shadow:none!important}
