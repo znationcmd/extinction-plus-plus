@@ -19,21 +19,21 @@ css.textContent+=' /* Full-size cathedral frame on chat bubbles: same source and
 document.head.append(css);
 const image=v=>'url("/cmd-art/frame/'+encodeURIComponent(v)+'.svg?v=20261016conversation")';
 function paint(){
- const chosen=safe(activeProfileFrame()||selection);
+ const chosen=safe(selection!=='none'?selection:(activeProfileFrame()||'none'));
  const target=mode==='server'?'#channelMessages article.discord-message[data-cmd-source="cmd"]':'#msgs .bubble,#messages .bubble';
  document.querySelectorAll(target).forEach(node=>{
   const enabled=chosen!=='none'&&(mode==='private'||node.classList.contains('cmd-own-message'));
   const bubble=mode==='server'?(node.querySelector('.msg-main')||node):node;
   node.classList.remove('cmd-chat-framed');
   bubble.classList.toggle('cmd-chat-framed',enabled);
-  if(enabled)bubble.style.setProperty('--cmd-chat-border-image',image(chosen));
-  else bubble.style.removeProperty('--cmd-chat-border-image');
+  if(enabled){bubble.style.setProperty('--cmd-chat-border-image',image(chosen));bubble.dataset.cmdFrameSelected=chosen;node.querySelectorAll('.cmd-message-frame-art').forEach(el=>{el.style.display='none'});}
+  else {bubble.style.removeProperty('--cmd-chat-border-image');delete bubble.dataset.cmdFrameSelected;}
  });
 }
 const host=document.querySelector(mode==='server'?'#channelMessages':'#msgs,#messages');
 const picker=document.createElement('dialog');picker.className='cmd-frame-dialog';picker.innerHTML='<header><h2>Cadre des messages</h2><button type="button" aria-label="Fermer les cadres">×</button></header><label for="cmdChatFramePicker">Cadre '+(mode==='server'?'des messages serveur':'des messages privés')+'</label><select id="cmdChatFramePicker" aria-label="Choisir le cadre des conversations"></select>';
 const select=picker.querySelector('select');for(const id of defaults){const option=document.createElement('option');option.value=id;option.textContent=id==='none'?'Aucun cadre':({amethyst:"Améthyste",amethystspire:"Cathédrale d’améthyste",glacialcrown:"Givre",midnightrose:"Roses",rubysurge:"Rubis",sapphirearcane:"Saphir",emeraldgeode:"Émeraude",celestialgold:"Or",moonstone:"Pierre de lune",starforged:"Étoiles"})[id]||id;select.append(option)}
-if(!defaults.includes(selection))selection='none';select.value=activeProfileFrame()||selection;
+if(!defaults.includes(selection))selection='none';select.value=selection!=='none'?selection:(activeProfileFrame()||'none');
 select.addEventListener('change',()=>{selection=safe(select.value);try{localStorage.setItem(stateKey,selection)}catch{}paint()});
 document.body.append(picker);
 const close=()=>picker.close();picker.querySelector('button').onclick=close;
