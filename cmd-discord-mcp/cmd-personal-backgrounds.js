@@ -26,10 +26,25 @@ const state=document.createElement('span');state.className='cmd-bg-state';state.
 tools.append(mode,label,reset,state);tools.hidden=true;tools.style.display='none';document.body.append(tools);
 const dbPromise=new Promise((resolve,reject)=>{if(!indexedDB){reject(Error('Stockage local indisponible'));return}const r=indexedDB.open('cmd-personal-scenes',1);r.onupgradeneeded=()=>r.result.createObjectStore('backgrounds');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
 const op=async(method,key,value)=>{const db=await dbPromise;return new Promise((resolve,reject)=>{const tx=db.transaction('backgrounds','readwrite'),store=tx.objectStore('backgrounds');const req=method==='put'?store.put(value,key):method==='delete'?store.delete(key):store.get(key);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})};
-let lastScope='',activeUrl='';
+let lastScope='',activeUrl='',paintVersion=0;
 const surfaces=()=>[host,host.parentElement,...document.querySelectorAll('.cmd-server-sidebar,.cmd-server-panel,.server-sidebar,.channel-sidebar,.guild-sidebar,#guildSidebar,#channelSidebar,#serverSidebar,#channelsSidebar,.discord-sidebar,.discord-channels,.server-list,.channels-list,.guild-list,.channel-list,.sidebar,.app-sidebar')].filter(Boolean);
-function clearSurfaces(){for(const el of surfaces()){el.classList.remove('cmd-custom-background');el.style.removeProperty('background-image')}}
-async function paint(){const k=scope();if(k===lastScope&&document.querySelectorAll('.cmd-custom-background').length)return;lastScope=k;if(activeUrl)URL.revokeObjectURL(activeUrl);activeUrl='';clearSurfaces();try{const cloudSpecific=await cloudGet(k).catch(()=>null);const cloudGlobal=k==='global'?null:await cloudGet('global').catch(()=>null);const blob=cloudSpecific||cloudGlobal||await op('get',k)||await op('get','global');if(k!==scope())return;if(blob){activeUrl=URL.createObjectURL(blob);for(const el of surfaces()){el.style.backgroundImage='linear-gradient(#100a1b77,#100a1b77),url('+JSON.stringify(activeUrl)+')';el.classList.add('cmd-custom-background')}}}catch{state.textContent='Stockage local indisponible'}}
+function clearSurfaces(){for(const el of document.querySelectorAll('.cmd-custom-background')){el.classList.remove('cmd-custom-background');el.style.removeProperty('background-image')}}
+async function paint(){
+ const k=scope();
+ if(k===lastScope&&activeUrl){const missing=surfaces().filter(el=>!el.classList.contains('cmd-custom-background'));for(const el of missing){el.style.backgroundImage='linear-gradient(#100a1b77,#100a1b77),url('+JSON.stringify(activeUrl)+')';el.classList.add('cmd-custom-background')}return}
+ if(k===lastScope)return;
+ lastScope=k;const version=++paintVersion;
+ try{
+  const cloudSpecific=await cloudGet(k).catch(()=>null);
+  const cloudGlobal=k==='global'?null:await cloudGet('global').catch(()=>null);
+  const blob=cloudSpecific||cloudGlobal||await op('get',k)||await op('get','global');
+  if(version!==paintVersion||k!==scope())return;
+  if(!blob){clearSurfaces();if(activeUrl){URL.revokeObjectURL(activeUrl);activeUrl=''}return}
+  const nextUrl=URL.createObjectURL(blob);
+  for(const el of surfaces()){el.style.backgroundImage='linear-gradient(#100a1b77,#100a1b77),url('+JSON.stringify(nextUrl)+')';el.classList.add('cmd-custom-background')}
+  const previous=activeUrl;activeUrl=nextUrl;if(previous)URL.revokeObjectURL(previous);
+ }catch{state.textContent='Stockage local indisponible'}
+}
 picker.addEventListener('change',async()=>{const file=picker.files?.[0];if(!file)return;if(file.size>8*1024*1024){alert('Image trop volumineuse (maximum 8 Mo).');return}if(!['image/jpeg','image/png','image/webp'].includes(file.type)){alert('Format non accepté.');return}try{const bitmap=await createImageBitmap(file);if(bitmap.width>8000||bitmap.height>8000)throw Error('Dimensions trop grandes');const canvas=document.createElement('canvas');const ratio=Math.min(1,1280/bitmap.width,720/bitmap.height);canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const blob=await new Promise(ok=>canvas.toBlob(ok,'image/webp',.68));if(!blob)throw Error('Image impossible à traiter');await op('put',selectedKey(),blob);try{await cloudPut(selectedKey(),blob);state.textContent='Fond synchronisé avec ton compte'}catch(e){state.textContent='Fond enregistré ici, synchronisation indisponible'}lastScope='';await paint();}catch(e){alert('Import impossible : '+e.message)}finally{picker.value=''}});
 reset.onclick=async()=>{try{await op('delete',selectedKey());await cloudDelete(selectedKey());lastScope='';await paint();state.textContent='Fond supprimé'}catch(e){alert(e.message)}};
 function mountInPlus(){const grid=document.querySelector('#channelToolSheet .compose-sheet-grid,#cmdDmToolSheet .compose-sheet-grid');if(!grid||grid.querySelector('[data-cmd-background-tool]'))return;const b=document.createElement('button');b.type='button';b.className='compose-tool';b.dataset.cmdBackgroundTool='1';b.innerHTML='<b aria-hidden="true">🌌</b><span>Fond personnel</span>';b.onclick=()=>{const panel=document.querySelector('#cmdPersonalBackgroundPanel');if(panel){panel.hidden=!panel.hidden;panel.style.display=panel.hidden?'none':'flex'};mode.value=native?'server':'global'};grid.append(b)}
