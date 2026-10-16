@@ -66,6 +66,7 @@ const $=s=>document.querySelector(s);
 const peerId=crypto.randomUUID();
 let localStream=null,connected=false,wantsVideo=false,muted=false,after=0,poller=null,polling=false;
 const pcs=new Map(),candidates=new Map(),known=new Set(),peerNames=new Map();
+let activeScreenTrack=null;
 const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const safe=s=>String(s||"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 function say(s){$("#notice").textContent=s}
@@ -89,7 +90,8 @@ async function send(to,type,payload){return post("/api/calls/signal",{room:ROOM,
 function connection(id){
  if(pcs.has(id))return pcs.get(id);
  const pc=new RTCPeerConnection(config);pcs.set(id,pc);
- if(localStream)localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+ if(localStream)localStream.getTracks().forEach(t=>{if(t.kind!=="video"||!activeScreenTrack)pc.addTrack(t,localStream)});
+ if(activeScreenTrack&&activeScreenTrack.readyState==="live")pc.addTrack(activeScreenTrack,new MediaStream([activeScreenTrack]));
  pc.onicecandidate=e=>{if(e.candidate)send(id,"ice",e.candidate.toJSON()).catch(()=>{})};
  pc.ontrack=e=>{const stream=e.streams?.[0]||new MediaStream([e.track]);tile(id,peerNames.get(id)||"Participant",stream);e.track.onmute=()=>{}};
  pc.onconnectionstatechange=()=>{if(pc.connectionState==="failed"){say("Connexion réseau difficile. Vérifie ton accès Internet.");}if(pc.connectionState==="disconnected"){say("Reconnexion d'un participant…");}};
@@ -144,6 +146,7 @@ async function join(video){
   await tick();poller=setInterval(tick,1600);
  }catch(e){localStream?.getTracks().forEach(t=>t.stop());localStream=null;say("Impossible de rejoindre : "+e.message)}
 }
+window.addEventListener("pagehide",()=>{if(!connected)return;try{navigator.sendBeacon("/api/calls/leave",new Blob([JSON.stringify({room:ROOM,peerId})],{type:"application/json"}))}catch{};localStream?.getTracks().forEach(t=>t.stop());activeScreenTrack?.stop()});
 async function leave(){
  if(!connected){location.href="/messages";return}
  connected=false;clearInterval(poller);for(const pc of pcs.values())pc.close();pcs.clear();known.clear();
@@ -173,9 +176,10 @@ $("#share").onclick=async()=>{
  if(!navigator.mediaDevices?.getDisplayMedia){say("Partage d'écran indisponible sur cet appareil.");return}
  try{const captured=await navigator.mediaDevices.getDisplayMedia({video:true}),track=captured.getVideoTracks()[0];
   const current=localStream?.getVideoTracks()[0];
-  for(const pc of pcs.values()){const sender=pc.getSenders().find(x=>x.track?.kind==="video");if(sender)await sender.replaceTrack(track)}
+  activeScreenTrack=track;
+  for(const [id,pc] of pcs){const sender=pc.getSenders().find(x=>x.track?.kind==="video");if(sender)await sender.replaceTrack(track);else {pc.addTrack(track,captured);if(pc.signalingState==="stable"&&peerId<id)await makeOffer(id)}}
   tile("local","Toi · écran",captured,true);
-  track.onended=async()=>{for(const pc of pcs.values()){const sender=pc.getSenders().find(x=>x.track?.kind==="video");if(sender)await sender.replaceTrack(current||null)}tile("local","Toi",localStream,true)};
+  track.onended=async()=>{activeScreenTrack=null;for(const [id,pc] of pcs){const sender=pc.getSenders().find(x=>x.track?.kind==="video");if(sender){await sender.replaceTrack(current||null);if(!current&&pc.signalingState==="stable"&&peerId<id)await makeOffer(id)}}tile("local","Toi",localStream,true)};
  }catch(e){say("Partage impossible : "+e.message)}
 };
 
