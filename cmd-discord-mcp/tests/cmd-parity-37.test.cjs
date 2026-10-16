@@ -41,8 +41,8 @@ test('new safety functions remain explicitly disabled',async()=>{
 
 test('read-only progress endpoint rejects anonymous clients and exposes only status',()=>{
  const server=fs.readFileSync(path.join(base,'server.js'),'utf8');
- assert.ok(server.includes('from "./cmd-parity-37.js"'));
+ assert.ok(server.includes('from "./cmd-parity-59.js"'));
  assert.ok(server.includes('"/api/cmd/parity/status"'));
  assert.match(server,/if\(!session\)\{sendJson\(res,401/);
- assert.match(server,/cmdGapStatus\(\).*cmdGapList\(\)/);
+ assert.match(server,/parityStatus\(\).*parityBreakdown\(\).*parityAuditRows\(\)/);
 });
