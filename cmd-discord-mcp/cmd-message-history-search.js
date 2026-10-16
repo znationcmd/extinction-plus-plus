@@ -42,7 +42,7 @@ const commonFilter=[
  'AND ($6::text IS NULL OR m.sender_user_id=$6::text)',
  'ORDER BY m.created_at DESC LIMIT $7'
 ].join(' ');
-export async function searchCmdHistory(pool,auth,params){
+export async function searchCmdHistory(pool,auth,params,{checkGuildPermissions}={}){
  if(!pool)throw error(503,'Base de données indisponible.');
  const uid=String(auth?.user?.id||'');
  if(!uid)throw error(401,'Connexion requise.');
@@ -62,8 +62,13 @@ export async function searchCmdHistory(pool,auth,params){
   if(!ch.rows.length||!['text','forum','announcement'].includes(ch.rows[0].type))throw error(404,'Salon introuvable.');
   const role=member.rows[0].membership_role;
   const admin=role==='owner'||role==='admin';
-  const overwritten=value=>value!=null&&(Array.isArray(value)?value.length>0:true);
-  if(!admin&&(overwritten(ch.rows[0].permission_overwrites)||overwritten(ch.rows[0].parent_overwrites)))throw error(403,'Visibilité du salon non vérifiée.');
+  const overwritten=value=>value!=null&&(Array.isArray(value)?value.length>0:typeof value==='object'?Object.keys(value).length>0:true);
+  if(!admin){
+   if(typeof checkGuildPermissions!=='function')throw error(403,'Permissions du serveur indisponibles.');
+   const perms=await checkGuildPermissions(uid,params.guildId);
+   if(!perms||!perms.viewChannels||!(perms.readHistory||perms.readMessageHistory))throw error(403,'Lecture de ce salon non autorisée.');
+   if(overwritten(ch.rows[0].permission_overwrites)||overwritten(ch.rows[0].parent_overwrites))throw error(403,'Visibilité du salon non vérifiée.');
+  }
   args[2]=ch.rows[0].id;
   const sql=[
    'SELECT m.id::text AS id,m.channel_id::text AS "channelId",c.name AS "channelName",',
@@ -92,7 +97,7 @@ export async function searchCmdHistory(pool,auth,params){
  }
  return {scope:params.scope,results:rows.map(r=>({...r,scope:params.scope})),limit:params.limit,search:'full_stored_history',morePossible:rows.length>=params.limit};
 }
-export async function handleCmdHistorySearch(req,res,url,{pool,auth,sendJson}){
+export async function handleCmdHistorySearch(req,res,url,{pool,auth,sendJson,checkGuildPermissions}){
  if(url.pathname!=='/api/cmd/messages/history-search')return false;
  if(req.method!=='GET'){sendJson(res,405,{error:'Méthode non autorisée.'});return true}
  if(!auth?.user?.id){sendJson(res,401,{error:'Connexion requise.'});return true}
@@ -103,7 +108,7 @@ export async function handleCmdHistorySearch(req,res,url,{pool,auth,sendJson}){
   if(now-previous<750){sendJson(res,429,{error:'Patiente un instant avant une autre recherche.'});return true}
   lastSearch.set(uid,now);
   if(lastSearch.size>5000)lastSearch.clear();
-  sendJson(res,200,await searchCmdHistory(pool,auth,params));
+  sendJson(res,200,await searchCmdHistory(pool,auth,params,{checkGuildPermissions}));
  }catch(e){sendJson(res,e.status||500,{error:e.status?e.message:'Recherche indisponible.'})}
  return true;
 }
