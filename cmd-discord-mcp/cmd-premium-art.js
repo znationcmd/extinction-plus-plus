@@ -348,4 +348,18 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
  .hero > .avatarWrap > img.cmd-profile-art-avatar{width:124%;height:124%}
 }
 
+/* PROFILE_PERIMETER_20261016 — slice photographic edges, never cover biography */
+.hero{position:relative;isolation:isolate;overflow:visible}
+.hero > img.cmd-profile-art-frame{display:none!important}
+.hero > .profileFrame{position:absolute!important;inset:0!important;z-index:7!important;pointer-events:none!important;border:26px solid transparent!important;border-radius:20px!important;box-shadow:none!important;opacity:1!important}
+.hero:has(>img.cmd-profile-art-frame) > .profileFrame{border-image-source:var(--cmd-profile-frame-image)!important;border-image-slice:28% 20% 28% 20%!important;border-image-width:26px!important;border-image-repeat:stretch!important}
+.hero > .banner,.hero > .avatarWrap,.hero > .body{position:relative;z-index:2}
+.hero > .avatarWrap{isolation:isolate}
+.hero > .avatarWrap > img.cmd-profile-art-avatar{position:absolute!important;left:12px!important;top:-86px!important;width:174px!important;height:174px!important;max-width:none!important;object-fit:contain!important;z-index:8!important;pointer-events:none!important}
+@media(max-width:600px){
+ .hero > .profileFrame{border-width:17px!important}
+ .hero:has(>img.cmd-profile-art-frame) > .profileFrame{border-image-width:17px!important}
+ .hero > .avatarWrap > img.cmd-profile-art-avatar{left:16px!important;top:-82px!important;width:166px!important;height:166px!important}
+}
+
 `;
