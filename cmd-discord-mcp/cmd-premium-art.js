@@ -177,6 +177,12 @@ function frameArt(key,meta){
  }
  o.push('<rect x="38" y="38" width="564" height="364" rx="32" stroke="'+hue+'" stroke-opacity=".15" stroke-width="12"/>');
  o.push('<rect x="42" y="42" width="556" height="356" rx="28" stroke="url(#gold)" stroke-width="3"/><rect x="50" y="50" width="540" height="340" rx="22" stroke="'+hue+'" stroke-opacity=".5" stroke-width="1"/>');
+ // Material-native SVG detail: luminous rails and fixed, prominent ornaments for every shop frame.
+ o.push('<rect x="39" y="39" width="562" height="362" rx="29" fill="none" stroke="'+hue+'" stroke-opacity=".30" stroke-width="16" filter="url(#cmdOrnamentGlow)"/>');
+ for(const [cx,cy] of [[54,54],[586,54],[586,386],[54,386]]){
+  o.push('<circle cx="'+cx+'" cy="'+cy+'" r="38" fill="'+hue+'" fill-opacity=".13" filter="url(#cmdOrnamentGlow)"/>');
+  o.push('<circle cx="'+cx+'" cy="'+cy+'" r="25" fill="none" stroke="'+hue+'" stroke-opacity=".62" stroke-width="2"/>');
+ }
  // Symmetric corner jewellery: the central profile and its text remain unobstructed.
  for(const [x,y,angle] of [[54,54,-45],[586,54,45],[586,386,135],[54,386,225]]){
   o.push('<g transform="translate('+x+' '+y+') rotate('+angle+') scale(1.35)"><path d="M-27 40 Q-42 0 0 -32 Q42 0 27 40 M-18 27 Q-27 0 0 -22 Q27 0 18 27" stroke="url(#gold)" stroke-width="2"/>');
@@ -233,7 +239,7 @@ export function renderCmdPremiumSvg(type,key){
  meta={...meta,family:families[key]||meta.family};
  const isFrame=type==="frame",isEffect=type==="effect",view=isFrame?"0 0 640 440":isEffect?"0 0 640 360":"0 0 400 400",content=isFrame?frameArt(key,meta):isEffect?effectArt(key,meta):avatarArt(key,meta);
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+view+'" width="'+(isFrame?3840:isEffect?3840:4096)+'" height="'+(isFrame?2640:isEffect?2160:4096)+'" preserveAspectRatio="xMidYMid meet" fill="none" aria-hidden="true"><defs>'+
- '<linearGradient id="gem" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
+ '<filter id="cmdOrnamentGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter><linearGradient id="gem" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#fff6" offset="0"/><stop stop-color="'+meta.hue+'" offset=".4"/><stop stop-color="'+meta.hue+'" offset=".7"/><stop stop-color="#130824" offset="1"/></linearGradient>'+
  '<linearGradient id="metal" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="#30233d"/><stop offset=".18" stop-color="'+meta.hue+'"/><stop offset=".3" stop-color="#fff2e8"/><stop offset=".34" stop-color="#706276"/><stop offset=".65" stop-color="'+meta.hue+'"/><stop offset=".8" stop-color="#211526"/><stop offset=".93" stop-color="#e9daff"/><stop offset="1" stop-color="'+meta.hue+'"/></linearGradient>'+
  '<linearGradient id="gold" x1="0" y1="0" x2="100%" y2="100%"><stop stop-color="'+meta.hue+'" offset="0"/><stop stop-color="#fff" offset=".4"/><stop stop-color="'+meta.hue+'" offset="1"/></linearGradient><radialGradient id="pearl" cx="30%" cy="25%"><stop stop-color="#fff"/><stop offset=".35" stop-color="#e9e6f5"/><stop offset=".7" stop-color="#b5a5cb"/><stop offset="1" stop-color="#57516f"/></radialGradient>'+
  '<filter id="materialTexture" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".085" numOctaves="4" seed="8" result="grain"/><feColorMatrix in="grain" type="saturate" values="0" result="mono"/><feComponentTransfer in="mono"><feFuncA type="linear" slope=".12"/></feComponentTransfer></filter>'+ 
