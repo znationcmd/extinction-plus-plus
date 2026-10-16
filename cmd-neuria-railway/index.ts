@@ -319,6 +319,17 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   });
   const braveKey=Bun.env.NEURIA_BRAVE_SEARCH_API_KEY;
   if(braveKey)providers.push(async()=>{const url="https://api.search.brave.com/res/v1/web/search?"+new URLSearchParams({q,count:"5",search_lang:"fr"});const res=await fetch(url,{headers:{"accept":"application/json","x-subscription-token":braveKey},signal:AbortSignal.timeout(6500)});if(!res.ok)throw Error("Brave unavailable");const data=await res.json();return {provider:"Brave Search",results:(data.web?.results||[]).map(x=>({title:x.title,description:String(x.description||"").slice(0,400),url:x.url})).filter(x=>x.url?.startsWith("https://"))}});
+  const cmdBrowserSearch=Bun.env.NEURIA_CMD_BROWSER_SEARCH_URL;
+  if(cmdBrowserSearch)providers.push(async()=>{
+   const base=new URL(cmdBrowserSearch);
+   if(base.protocol!=="https:")throw Error("CMD Browser HTTPS required");
+   const url=new URL("/api/search",base);
+   url.search=new URLSearchParams({q,category:"web",lang:"fr"}).toString();
+   const res=await fetch(url,{headers:{accept:"application/json"},signal:AbortSignal.timeout(10000)});
+   if(!res.ok)throw Error("CMD Browser search HTTP "+res.status);
+   const data=await res.json();
+   return {provider:"CMD Browser / SearXNG",results:(Array.isArray(data.results)?data.results:[]).slice(0,8).map(x=>({title:String(x.title||""),description:String(x.description||"").slice(0,400),url:x.url})).filter(x=>typeof x.url==="string"&&x.url.startsWith("https://"))};
+  });
   const searx=Bun.env.NEURIA_SEARXNG_URL;
   if(searx)providers.push(async()=>{const base=new URL(searx);if(base.protocol!=="https:")throw Error("HTTPS required");const url=new URL("/search",base);url.search=new URLSearchParams({q,format:"json"}).toString();const res=await fetch(url,{signal:AbortSignal.timeout(6500)});if(!res.ok)throw Error("SearXNG unavailable");const data=await res.json();return {provider:"SearXNG",results:(data.results||[]).slice(0,6).map(x=>({title:x.title,description:String(x.content||"").slice(0,400),url:x.url})).filter(x=>x.url?.startsWith("https://"))}});
   providers.push(async()=>{const url="https://fr.wikipedia.org/w/api.php?"+new URLSearchParams({action:"opensearch",search:q,limit:"6",namespace:"0",format:"json"});const res=await fetch(url,{signal:AbortSignal.timeout(6500)});if(!res.ok)throw Error("Wikipedia unavailable");const data=await res.json();return {provider:"Wikipedia",results:(data[1]||[]).map((title,i)=>({title,description:data[2]?.[i]||"",url:data[3]?.[i]})).filter(x=>x.url?.startsWith("https://"))}});
