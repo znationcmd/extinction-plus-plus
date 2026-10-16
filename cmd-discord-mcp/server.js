@@ -4524,7 +4524,7 @@ const httpServer=createServer(async(req,res)=>{
       }
       const body=await readFormBodyJson(req);
       const image=String(body.image||"");
-      if(image.length>850000||!/^data:image\\/webp;base64,[A-Za-z0-9+/=]+$/.test(image)){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
+      if(image.length>850000||!image.startsWith('data:image/webp;base64,')){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
       await pool.query("INSERT INTO cmd_personal_wallpapers(user_id,scope,image_data) VALUES($1,$2,$3) ON CONFLICT(user_id,scope) DO UPDATE SET image_data=EXCLUDED.image_data,updated_at=NOW()",[userId,key,image]);
       sendJson(res,200,{ok:true});return;
     }
