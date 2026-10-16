@@ -194,6 +194,24 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   if(Number(req.headers.get("content-length")||0)>12582912)return response(JSON.stringify({error:"Fichier supérieur à 12 Mo"}),"application/json",413);
   try{const input=Buffer.from(await req.arrayBuffer());if(input.length>12582912)throw Error("size");const meta=await sharp(input,{limitInputPixels:30000000}).metadata();if(!meta.width||!meta.height)throw Error("invalid");const landscape=meta.width>=meta.height;const w=landscape?3840:2160,h=landscape?2160:3840;const output=await sharp(input).rotate().resize(w,h,{fit:"inside",withoutEnlargement:false,kernel:"lanczos3"}).png({compressionLevel:8}).toBuffer();return new Response(output,{headers:{"content-type":"image/png","content-disposition":"attachment; filename=neuria-4k.png","cache-control":"no-store"}})}catch{return response(JSON.stringify({error:"Image invalide pour l'export 4K"}),"application/json",400)}
  }
+ // Provider-backed image editing. Requires a configured image editing API key.
+ if(req.method==="GET"&&path==="/api/image/capabilities")return response(JSON.stringify({textToImage:true,native4k:!!Bun.env.NEURIA_IMAGE_4K_ENDPOINT,photoEdit:!!Bun.env.NEURIA_IMAGE_EDIT_API_KEY,upscale4k:true,photoEditProvider:"openai-compatible",note:"Native 4K and editing require separately configured providers."}),"application/json");
+ if(req.method==="POST"&&path==="/api/image/edit"){
+  const key=Bun.env.NEURIA_IMAGE_EDIT_API_KEY||"";
+  if(!key)return response(JSON.stringify({error:"Moteur de retouche IA non configuré. Ajoutez NEURIA_IMAGE_EDIT_API_KEY dans Railway."}),"application/json",503);
+  if(Number(req.headers.get("content-length")||0)>12582912)return response(JSON.stringify({error:"Fichier trop volumineux"}),"application/json",413);
+  try{
+   const data=await req.formData();const file=data.get("image"),prompt=String(data.get("prompt")||"").trim();
+   if(!(file instanceof File)||!prompt||prompt.length>1000||file.size>10000000)return response(JSON.stringify({error:"Image ou description invalide (10 Mo max)."}),"application/json",400);
+   const png=await sharp(Buffer.from(await file.arrayBuffer()),{limitInputPixels:25000000}).rotate().resize(1536,1536,{fit:"inside",withoutEnlargement:true}).png().toBuffer();
+   const body=new FormData();body.set("model",Bun.env.NEURIA_IMAGE_EDIT_MODEL||"gpt-image-1");body.set("prompt",prompt);body.set("image",new Blob([png],{type:"image/png"}),"photo.png");body.set("size","auto");
+   const endpoint=Bun.env.NEURIA_IMAGE_EDIT_ENDPOINT||"https://api.openai.com/v1/images/edits";
+   const upstream=await fetch(endpoint,{method:"POST",headers:{Authorization:"Bearer "+key},body,signal:AbortSignal.timeout(110000)});
+   if(!upstream.ok){console.error("[NEURIA_EDIT] provider status",upstream.status);return response(JSON.stringify({error:"Le moteur IA a refusé la retouche.",providerStatus:upstream.status}),"application/json",502)}
+   const result=await upstream.json();const base64=result?.data?.[0]?.b64_json;if(!base64)return response(JSON.stringify({error:"Aucune image retournée par le moteur."}),"application/json",502);
+   return response(JSON.stringify({image:"data:image/png;base64,"+base64,model:Bun.env.NEURIA_IMAGE_EDIT_MODEL||"gpt-image-1"}),"application/json");
+  }catch(e){console.error("[NEURIA_EDIT]",e?.name||"error");return response(JSON.stringify({error:"La retouche IA a échoué."}),"application/json",502)}
+ }
  if(req.method==="POST"&&path==="/api/image/generate"){
   if(Number(req.headers.get("content-length")||0)>3000)return response(JSON.stringify({error:"Description trop longue"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
