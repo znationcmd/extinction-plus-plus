@@ -233,3 +233,6 @@
 
 /* Keep crystal corners stable as message height grows; no stretched image overlay. */
 #channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border:clamp(10px,3vw,18px) solid transparent!important;border-image-source:var(--cmd-equipped-frame-url)!important;border-image-slice:24!important;border-image-width:1!important;border-image-repeat:stretch!important;padding:12px 14px!important;box-sizing:border-box!important;min-width:0!important;max-width:min(84%,620px)!important;width:fit-content!important;height:auto!important;max-height:none!important;background-color:var(--cmd-message-bubble,#40424c)!important}
+
+/* Match the artwork's true corner zones instead of slicing away the crystals. */
+#channelOverlay .discord-message .msg-main.cmd-equipped-profile-frame{border:clamp(15px,5vw,30px) solid transparent!important;border-image-source:var(--cmd-equipped-frame-url)!important;border-image-slice:29% 22% 29% 22%!important;border-image-width:1!important;border-image-repeat:stretch!important;padding:12px 14px!important;overflow:visible!important}
