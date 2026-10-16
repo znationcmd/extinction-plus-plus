@@ -362,4 +362,13 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
  .hero > .avatarWrap > img.cmd-profile-art-avatar{left:16px!important;top:-82px!important;width:166px!important;height:166px!important}
 }
 
+/* PROFILE_FRAME_PERIMETER_V2: show actual photographic corners, not hairline slices */
+.page .hero{position:relative!important;isolation:isolate!important;overflow:visible!important}
+.page .hero>.profileFrame{position:absolute!important;inset:0!important;display:block!important;pointer-events:none!important;z-index:6!important;border:clamp(34px,9vw,66px) solid transparent!important;border-radius:20px!important;box-shadow:none!important;background:none!important;box-sizing:border-box!important}
+.page .hero:has(>img.cmd-profile-art-frame)>.profileFrame{border-image-source:var(--cmd-profile-frame-image)!important;border-image-slice:29% 24% 29% 24% fill!important;border-image-width:clamp(34px,9vw,66px)!important;border-image-outset:0!important;border-image-repeat:stretch!important}
+.page .hero>.profileFrame::before{content:none!important}
+.page .hero>img.cmd-profile-art-frame{display:none!important}
+.page .hero>.banner,.page .hero>.avatarWrap,.page .hero>.body{position:relative!important;z-index:2!important}
+.page .hero>.avatarWrap>img.cmd-profile-art-avatar{z-index:8!important}
+
 `;
