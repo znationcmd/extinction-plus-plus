@@ -79,7 +79,7 @@ export async function searchCmdHistory(pool,auth,params){
    'FROM cmd_dm_messages m JOIN cmd_dm_threads t ON t.id=m.thread_id',
    'WHERE m.thread_id=$3::uuid AND (t.user_low=$1 OR t.user_high=$1)',commonFilter
   ].join(' ');
-  rows=(await pool.query(sql,args)).rows;
+  rows=(await pool.query(sql,args.slice(0,7))).rows;
  }else{
   const sql=[
    'SELECT m.id::text AS id,m.group_id::text AS "groupId",',
@@ -88,7 +88,7 @@ export async function searchCmdHistory(pool,auth,params){
    'WHERE m.group_id=$3::uuid AND EXISTS (SELECT 1 FROM cmd_group_dm_members gm',
    'WHERE gm.group_id=m.group_id AND gm.user_id=$1)',commonFilter
   ].join(' ');
-  rows=(await pool.query(sql,args)).rows;
+  rows=(await pool.query(sql,args.slice(0,7))).rows;
  }
  return {scope:params.scope,results:rows.map(r=>({...r,scope:params.scope})),limit:params.limit,search:'full_stored_history',morePossible:rows.length>=params.limit};
 }
