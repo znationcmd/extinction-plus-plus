@@ -2751,7 +2751,8 @@ async function joinCallRoom(auth,input){
   await pool.query("DELETE FROM cmd_call_presence WHERE last_seen<NOW()-INTERVAL '45 seconds'");
   await pool.query("DELETE FROM cmd_call_signals WHERE created_at<NOW()-INTERVAL '10 minutes'");
   const before=await callPresenceList(room);
-  await pool.query("INSERT INTO cmd_call_presence(room_key,peer_id,user_id,display_name,video_on) VALUES($1,$2,$3,$4,$5) ON CONFLICT(room_key,peer_id) DO UPDATE SET user_id=EXCLUDED.user_id,display_name=EXCLUDED.display_name,video_on=EXCLUDED.video_on,last_seen=NOW()",[room,peer,String(auth.user.id),name,Boolean(input.video)]);
+  const joined=await pool.query("INSERT INTO cmd_call_presence(room_key,peer_id,user_id,display_name,video_on) VALUES($1,$2,$3,$4,$5) ON CONFLICT(room_key,peer_id) DO UPDATE SET display_name=EXCLUDED.display_name,video_on=EXCLUDED.video_on,last_seen=NOW() WHERE cmd_call_presence.user_id=EXCLUDED.user_id RETURNING user_id",[room,peer,String(auth.user.id),name,Boolean(input.video)]);
+  if(!joined.rowCount)throw new Error("Identifiant de participant déjà utilisé dans cet appel.");
   if(!before.some(p=>String(p.userId)===String(auth.user.id))){
     const parsed=parseCallRoom(room),uid=String(auth.user.id);
     let ids=[];
@@ -2777,6 +2778,7 @@ async function pollCallRoom(auth,input){
 async function signalCallRoom(auth,input){
   const room=(await requireCallRoom(auth,input.room)).key,from=validCmdUuid(input.peerId),to=validCmdUuid(input.toPeer),uid=String(auth.user.id),type=String(input.type||"");
   if(!["offer","answer","ice"].includes(type))throw new Error("Signal inconnu.");
+  if(from===to)throw new Error("Impossible de transmettre un signal à soi-même.");
   const json=JSON.stringify(input.payload||{});if(json.length>30000)throw new Error("Signal WebRTC trop volumineux.");
   const active=await pool.query("SELECT peer_id::text FROM cmd_call_presence WHERE room_key=$1 AND ((peer_id=$2 AND user_id=$4) OR peer_id=$3) AND last_seen>NOW()-INTERVAL '30 seconds'",[room,from,to,uid]);
   if(!active.rows.some(x=>x.peer_id===from)||!active.rows.some(x=>x.peer_id===to))throw new Error("Participant indisponible.");
