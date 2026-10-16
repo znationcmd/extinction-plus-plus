@@ -2308,6 +2308,19 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   if(Number(req.headers.get("content-length")||0)>16384)return response(JSON.stringify({error:"Message trop long"}),"application/json",413);
   let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   if(typeof data?.message!=="string"||data.message.trim().length<1||data.message.length>1000)return response(JSON.stringify({error:"Message de 1 à 1000 caractères requis"}),"application/json",400);
+  // Direct live weather handling in CHAT (not only Work), before LLM fallback.
+  const weatherQuery=data.message.trim();
+  if(/météo|meteo|quel temps|temps fait|weather|température|temperature/i.test(weatherQuery)){
+   try{
+    const tavaco=/tavaco/i.test(weatherQuery);
+    let name="Tavaco",latitude=42.02,longitude=8.90;
+    if(!tavaco){const match=weatherQuery.match(/(?:à|pour|in) +([A-Za-zÀ-ÿ' -]{2,45})/i);name=(match?.[1]||"Ajaccio").replace(/ +(aujourd'hui|demain|maintenant|en corse|corse|france).*$/i,"").trim();const geo=await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(name)+"&count=5&language=fr&format=json",{signal:AbortSignal.timeout(7000)});if(!geo.ok)throw Error("geo");const choices=(await geo.json()).results||[];const loc=choices.find((x:any)=>x.country_code==="FR")||choices[0];if(!loc)throw Error("lieu");name=loc.name;latitude=loc.latitude;longitude=loc.longitude}
+    const url="https://api.open-meteo.com/v1/forecast?latitude="+latitude+"&longitude="+longitude+"&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Europe%2FParis";
+    const res=await fetch(url,{signal:AbortSignal.timeout(9000)});if(!res.ok)throw Error("forecast");const current=(await res.json()).current;if(!current)throw Error("empty");
+    const codes:any={0:"ciel dégagé",1:"plutôt dégagé",2:"partiellement nuageux",3:"couvert",45:"brouillard",51:"bruine",61:"pluie légère",63:"pluie",65:"forte pluie",71:"neige",80:"averses",95:"orage"};
+    return response(JSON.stringify({reply:"Météo actuelle à "+name+" : "+current.temperature_2m+" °C, ressenti "+current.apparent_temperature+" °C, "+(codes[current.weather_code]||"conditions variables")+". Vent : "+current.wind_speed_10m+" km/h. Humidité : "+current.relative_humidity_2m+" %. Précipitations : "+current.precipitation+" mm. Mise à jour : "+current.time+". Source : Open-Meteo.",engine:"open-meteo"}),"application/json");
+   }catch(e){console.error("[NEURIA_WEATHER_CHAT]",e?.message||"unavailable");return response(JSON.stringify({reply:"La météo en direct est momentanément indisponible. Réessaie dans quelques instants.",engine:"weather-unavailable"}),"application/json")}
+  }
   const endpoint=Bun.env.NEURIA_AI_ENDPOINT,token=Bun.env.NEURIA_AI_API_KEY,model=Bun.env.NEURIA_AI_MODEL;
   if(token?.includes("\u0024{{"))return response(JSON.stringify({error:"La référence du jeton Cloudflare ne peut pas être résolue entre projets Railway.",code:"TOKEN_REFERENCE_UNRESOLVED"}),"application/json",503);
   if(endpoint&&token&&model){
