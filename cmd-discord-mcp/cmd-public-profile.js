@@ -3,7 +3,7 @@ export async function publicPersonCard(pool,auth,input={}){
  const viewer=String(auth.user.id),raw=String(input.userId||input.username||"").trim().slice(0,100);
  if(!raw)throw Object.assign(new Error("Compte requis"),{status:400});
  const result=await pool.query(`SELECT a.id,a.username,a.display_name,a.created_at,
-     gp.avatar_data_url,gp.banner_data_url,gp.bio,gp.status,gp.accent_color,gp.avatar_decoration,gp.profile_frame,gp.profile_effect
+     gp.avatar_data_url,gp.banner_data_url,gp.bio,gp.status,gp.accent_color,gp.avatar_decoration,gp.profile_frame,gp.profile_effect,gp.nameplate_style
    FROM cmd_accounts a LEFT JOIN cmd_global_profiles gp ON gp.user_id=a.id::text
    WHERE a.id::text=$1 OR a.username_key=$2 LIMIT 1`,[raw,raw.toLowerCase()]);
  const u=result.rows[0];if(!u)throw Object.assign(new Error("Profil introuvable"),{status:404});
@@ -38,7 +38,7 @@ export async function publicPersonCard(pool,auth,input={}){
    banner:guildProfile?.profile_banner_data_url||u.banner_data_url||null,
    bio:guildProfile?.profile_bio||u.bio||"",status:guildProfile?.profile_status||u.status||"",
    accentColor:/^#[0-9a-f]{6}$/i.test(u.accent_color||"")?u.accent_color:"#7c3aed",
-   avatarDecoration:/^[a-z0-9-]{1,60}$/.test(u.avatar_decoration||'')?u.avatar_decoration:null,profileFrame:/^[a-z0-9-]{1,60}$/.test(u.profile_frame||'')?u.profile_frame:null,profileEffect:/^[a-z0-9-]{1,60}$/.test(u.profile_effect||'')?u.profile_effect:null,
+   avatarDecoration:/^[a-z0-9-]{1,60}$/.test(u.avatar_decoration||'')?u.avatar_decoration:null,profileFrame:/^[a-z0-9-]{1,60}$/.test(u.profile_frame||'')?u.profile_frame:null,profileEffect:/^[a-z0-9-]{1,60}$/.test(u.profile_effect||'')?u.profile_effect:null,nameplateStyle:/^[a-z0-9-]{1,60}$/.test(u.nameplate_style||'')?u.nameplate_style:null,
    createdAt:u.created_at,friendStatus,friendRequestId:friendStatus==="received"?requests.rows[0]?.id:null,
    friendshipSince:friends.rows[0]?.created_at||null,commonServerCount:common.rows.length,
    commonServers:common.rows.map(g=>({id:String(g.id),name:String(g.name)})),
