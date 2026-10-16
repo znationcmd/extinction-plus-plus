@@ -258,17 +258,3 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 .cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;z-index:6!important;object-fit:contain!important}
 .cmd-premium-profile .hero.cmd-pm-hero .avatar{z-index:5!important}
 
-/* Premium boutique artwork: show the complete original SVG instead of repeatedly slicing its corners.
-   The original artwork is drawn on a transparent layer, leaving content and controls accessible. */
-.cmd-premium-profile .hero.cmd-pm-hero{position:relative!important;isolation:isolate!important}
-.cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{display:none!important}
-.cmd-premium-profile .hero.cmd-pm-hero>.cmd-profile-art-frame{
- display:block!important;position:absolute!important;inset:0!important;
- width:100%!important;height:100%!important;object-fit:fill!important;
- max-width:none!important;pointer-events:none!important;z-index:3!important;
- opacity:1!important;visibility:visible!important
-}
-.cmd-premium-profile .hero.cmd-pm-hero .avatarRing,
-.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:10!important}
-.cmd-premium-profile .hero.cmd-pm-hero button,
-.cmd-premium-profile .hero.cmd-pm-hero a{position:relative;z-index:11!important}
