@@ -110,7 +110,7 @@ function decorateMessage(article,ctx){
      plate.append(title);main.prepend(plate);article.classList.add('cmd-message-cosmetic');
    }
    if(good(p.profileFrame)&&!article.querySelector('.cmd-message-frame-art')){
-     const image=elem('img','cmd-message-frame-art');image.src='/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016member';image.alt='';article.prepend(image);article.style.setProperty('--cmd-message-frame-source','url("/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016bubble")');article.classList.add('cmd-message-cosmetic');
+     const image=elem('img','cmd-message-frame-art');image.src='/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016member';image.alt='';article.prepend(image);main.style.setProperty('--cmd-message-frame-source','url("/cmd-art/frame/'+p.profileFrame+'.svg?v=20261016bubble")');main.classList.add('cmd-default-message-frame');article.classList.add('cmd-message-cosmetic');
    }
  }).catch(()=>{});
 }
@@ -219,7 +219,7 @@ compactCss.textContent+=`
 #messages .bubble.cmd-chat-framed{border-width:3px!important;border-image-width:3px!important;width:fit-content!important}
 @media(max-width:550px){#channelMessages article.discord-message.cmd-message-cosmetic{border-width:2px!important;border-image-width:2px!important}#messages .bubble.cmd-chat-framed{border-width:2px!important;border-image-width:2px!important}}
 `;
-document.head.append(compactCss);
+compactCss.textContent+="#channelMessages article.discord-message.cmd-message-cosmetic{border:0!important;border-image:none!important;overflow:visible!important}#channelMessages article.discord-message .msg-main.cmd-default-message-frame:not(.cmd-chat-framed){border:2px solid transparent!important;border-image-source:var(--cmd-message-frame-source)!important;border-image-slice:28% 20% 28% 20%!important;border-image-width:2px!important;border-image-repeat:stretch!important;padding:7px 9px;width:fit-content;max-width:100%;box-sizing:border-box}";document.head.append(compactCss);
 let compactMenu=null,compactTimer=null,compactOrigin=null;
 function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
 function onCompactEscape(e){if(e.key==='Escape')dismissCompactMenu()}
