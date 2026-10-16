@@ -1,5 +1,22 @@
 // Shared, scoped storefront presentation. No payments or profile writes on preview.
 export const CMD_SHOP_ATELIER_CSS = `
+/* CMD_SHOP_URGENT_MOTION_20261016 — lightweight, accessible effects, no purchased asset changes */
+.wrap .item .art{isolation:isolate;contain:paint;background:radial-gradient(ellipse at 30% 12%,#75459a30,transparent 62%),linear-gradient(145deg,#24172d,#100d17 83%)}
+.wrap .item .art img{image-rendering:auto;object-fit:contain;backface-visibility:hidden}
+.wrap .item .itemLine b{overflow-wrap:anywhere}
+.wrap .item:focus-within{outline:2px solid #72e3f7;outline-offset:3px}
+.cmd-shop-preview-art img{image-rendering:auto;filter:none!important}
+.cmd-shop-motion-toggle{margin-left:auto;border:1px solid #78d5ea;border-radius:15px;padding:11px 16px;background:#121323;color:#b8f2ff;font:inherit;font-weight:600;cursor:pointer;min-height:44px}
+.cmd-shop-motion-toggle:focus-visible{outline:3px solid #c0ecff;outline-offset:2px}
+@keyframes cmdShopSoftGleam{0%,22%{transform:translateX(-150%);opacity:0}35%{opacity:.48}65%,100%{transform:translateX(150%);opacity:0}}
+@keyframes cmdShopGentleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+body:not(.cmd-shop-motion-off) .cmd-shop-group .item .art:after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;background:linear-gradient(108deg,transparent 24%,#9deeff0c 40%,#e9d2ff40 50%,#9deeff0c 60%,transparent 76%);animation:cmdShopSoftGleam 11s ease-in-out infinite}
+body:not(.cmd-shop-motion-off) .cmd-shop-group .item:nth-child(3n+2) .art:after{animation-delay:-4s}
+body:not(.cmd-shop-motion-off) .cmd-shop-preview-art .art>img{animation:cmdShopGentleFloat 8s ease-in-out infinite}
+body.cmd-shop-motion-off .cmd-shop-group .item .art:after{animation:none!important;content:none!important}
+body.cmd-shop-motion-off .cmd-shop-preview-art img{animation:none!important}
+@media(prefers-reduced-motion:reduce){body .cmd-shop-group .item .art:after{animation:none!important;content:none!important}body .cmd-shop-preview-art img{animation:none!important}}
+
 /* CMD Sphere boutique 4K: responsive gallery, high-resolution assets, immersive premium lighting */
 .wrap .item .art img{image-rendering:auto;object-fit:contain;max-width:100%;max-height:100%;filter:none!important}
 .wrap .item .art{overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 50% 18%,#6e3c9b44,transparent 60%),linear-gradient(155deg,#231331,#09080e 80%)}
@@ -50,6 +67,14 @@ export function shopAtelierClient(){
  'use strict';
  const $=(s,r=document)=>r.querySelector(s),all=(s,r=document)=>[...r.querySelectorAll(s)];
  const groups=all('.cmd-shop-group');if(!groups.length)return;
+
+ const media=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+ let motionEnabled=!media?.matches;
+ try{if(localStorage.getItem('cmd-shop-motion')==='off')motionEnabled=false}catch{}
+ function syncMotion(){document.body.classList.toggle('cmd-shop-motion-off',!motionEnabled||Boolean(media?.matches));const b=document.querySelector('.cmd-shop-motion-toggle');if(b){b.textContent=motionEnabled&&!media?.matches?'Animations : actives':'Animations : désactivées';b.setAttribute('aria-pressed',String(motionEnabled&&!media?.matches))}}
+ const motionToggle=document.createElement('button');motionToggle.type='button';motionToggle.className='cmd-shop-motion-toggle';motionToggle.textContent='Animations';motionToggle.addEventListener('click',()=>{motionEnabled=!motionEnabled;try{localStorage.setItem('cmd-shop-motion',motionEnabled?'on':'off')}catch{}syncMotion()});
+ media?.addEventListener?.('change',syncMotion);
+
  const fold=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
  const nav=document.createElement('nav');nav.className='cmd-shop-categories';nav.setAttribute('aria-label','Types de personnalisation');
  let category='all';
@@ -63,6 +88,7 @@ export function shopAtelierClient(){
   groups.forEach(g=>{let n=0;all('.item',g).forEach(c=>{const match=(!q||fold(c.dataset.search).includes(q))&&(tier==='all'||c.dataset.tier===tier)&&(category==='all'||g.dataset.group===category);c.hidden=!match;if(match){n++;count++}});g.hidden=!n});
   $('#cmdShopCount').textContent=count+' décoration'+(count>1?'s':'')+' disponible'+(count>1?'s':'');empty.hidden=count>0;
  }
+ nav.append(motionToggle);syncMotion();
  $('#cmdShopSearch').addEventListener('input',filter);$('#cmdShopTier').addEventListener('change',filter);filter();
  let overlay=null,lastFocus=null,currentCard=null,avatar='';
  function close(){if(!overlay)return;overlay.hidden=true;$('.cmd-shop-preview-art',overlay).replaceChildren();document.body.classList.remove('cmd-shop-modal-open');lastFocus?.focus()}
