@@ -26,13 +26,13 @@ function init(){
  '#cmdProfileEditPreview .cmd-live-name[data-style=glow]{text-shadow:0 0 11px var(--cmd-live-accent)}'+
  '#cmdProfileEditPreview .cmd-live-name[data-style=prism]{background:linear-gradient(110deg,#c390ff,#fff,#e397fc);-webkit-background-clip:text;background-clip:text;color:transparent}'+
  '@media(max-width:430px){#cmdProfileEditPreview .cmd-live-cover{height:54px}#cmdProfileEditPreview .cmd-live-avatar,#cmdProfileEditPreview .cmd-live-avatar-box{width:56px;height:56px}#cmdProfileEditPreview .cmd-live-decoration,#cmdProfileEditPreview .cmd-live-avatar-frame{width:70px;height:70px;inset:-7px}#cmdProfileEditPreview .cmd-live-card{min-height:71px}}';
- css.textContent+='#cmdProfileEditPreview>.cmd-live-avatar-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:4;pointer-events:none}';
+ // Avatar ring must stay inside the bounded avatar box; never overlay the entire preview.
  document.head.append(css);
  preview=document.createElement("section");preview.id="cmdProfileEditPreview";preview.setAttribute("aria-label","Aperçu du profil avant enregistrement");
  preview.innerHTML='<div class="cmd-live-profile-head"><span>👁 Aperçu en direct</span><span class="cmd-live-profile-hint">Non enregistré</span></div>'+
  '<div class="cmd-live-cover"></div><div class="cmd-live-card"><div class="cmd-live-avatar-box"><img class="cmd-live-avatar" alt="Aperçu de mon avatar"><img class="cmd-live-avatar-frame" alt="" hidden><img class="cmd-live-decoration" alt="" hidden></div>'+
  '<div class="cmd-live-info"><div class="cmd-live-name"></div><div class="cmd-live-detail"></div><div class="cmd-live-badges"></div></div></div><div class="cmd-live-bio"></div>';
- preview.append($(".cmd-live-avatar-frame",preview));
+ // Keep .cmd-live-avatar-frame in .cmd-live-avatar-box.
  const title=$("h2",form);if(title)title.insertAdjacentElement("afterend",preview);else form.prepend(preview);
  const fileChange=(id,type)=>{
   const file=$("#"+id)?.files?.[0];
