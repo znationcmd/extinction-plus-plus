@@ -209,9 +209,9 @@ function html(res,body,status=200,headers={}){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
 
-    if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"'))){
+    if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016frames2"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016plus3"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261016personal1"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
@@ -224,6 +224,9 @@ function html(res,body,status=200,headers={}){
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
     body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
+  }
+  if(typeof body==="string"&&/<html\b/i.test(body)){
+    body=body.replace(/<html\b/i,'<html class="cmd-depth-ui"').replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-ui-depth.css?v=20261016relief1"></head>').replace(/<\/body>/i,'<script defer src="/cmd-ui-depth.js?v=20261016relief1"></script></body>');
   }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
@@ -712,9 +715,9 @@ function dashboardPage(auth,initialNativeGuilds=[]){
         const fetched=await Promise.allSettled(modes.map(mode=>api('/api/native/'+(mode==='native'?'messages':'history')+
           '?guildId='+encodeURIComponent(CHAT.guildId)+'&channelId='+encodeURIComponent(CHAT.channelId)+'&limit=100')));
         if(version!==CHAT.version||!CHAT.open)return;
-        const previous=CHAT.messages.length;
+        const previous=JSON.stringify(CHAT.messages);
         fetched.forEach((out,i)=>{if(out.status==='fulfilled'){const list=(out.value.messages||[]).map(m=>({...m,source:modes[i]==='native'?'cmd':'discord_archive'}));if(modes[i]==='native')reconcileNativeRecentMessages(list);mergeChannelMessages(list)}});
-        if(previous!==CHAT.messages.length)renderChannelMessages(false);
+        if(previous!==JSON.stringify(CHAT.messages))renderChannelMessages(false);
       }catch{}
       return;
     }
@@ -744,7 +747,8 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     const box=qs('#emojiContent');if(!box)return;
     if(tab==='gif'){box.innerHTML='<div class="row"><b>GIF</b><p class="muted">Colle un lien GIF dans le message ou utilise une application GIF connectée.</p></div>';return}
     const set=tab==='sticker'?['🦖','☣️','🛡️','⚔️','👑','🔥','★','🪓','🎮','🚨','🏆','🌌','💜','💀','🧟','🚀']:['😀','😂','😍','🥳','😎','😭','😡','👍','👎','❤️','🔥','✅','❌','🎉','💯','🤝','👀','🙏','💪','⚔️','🛡️','☣️','🦖','🎮','🚨','🏆','★','👑','🪓','🌙','⭐','⚡'];
-    box.innerHTML='<div class="emoji-grid">'+set.map(x=>'<button type="button" onclick="insertChannelEmoji('+JSON.stringify(x)+')">'+x+'</button>').join('')+'</div>';
+    box.innerHTML='<div class="emoji-grid">'+set.map(x=>'<button type="button" data-insert-emoji="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>';
+    box.querySelectorAll('[data-insert-emoji]').forEach(button=>button.addEventListener('click',()=>insertChannelEmoji(button.dataset.insertEmoji)));
   }
   function insertChannelEmoji(v){const input=qs('#channelInput');input.value=(input.value||'')+String(v||'');input.focus()}
   function createChannelPoll(){
@@ -4531,6 +4535,9 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-shop-motion.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-motion.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-3d.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-3d.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&/^\/vendor\/three\.(module|core)\.js$/.test(url.pathname)){const name=url.pathname.split("/").pop();res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=31536000,immutable","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./node_modules/three/build/"+name,import.meta.url),"utf8"));return}
+    if(req.method==="GET"&&["/cmd-ui-depth.css","/cmd-ui-depth.js"].includes(url.pathname)){
+      res.writeHead(200,{"content-type":url.pathname.endsWith('.css')?"text/css; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL('.'+url.pathname,import.meta.url),'utf8'));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-premium-art.css"){res.writeHead(200,{"content-type":"text/css; charset=utf-8","cache-control":"public, max-age=3600"});res.end(CMD_PREMIUM_ART_CSS);return}
     if(req.method==="GET"&&(url.pathname==="/cmd-message-compose.js"||url.pathname==="/cmd-message-compose.css")){
       const js=url.pathname.endsWith(".js");

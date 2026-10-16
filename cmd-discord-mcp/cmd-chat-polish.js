@@ -52,7 +52,7 @@
   const grid=$("#channelToolSheet .compose-sheet-grid");if(!grid||$("#"+id))return;
   const b=document.createElement("button");b.type="button";b.className="compose-tool";b.id=id;
   const ico=document.createElement("b");ico.textContent=emoji;const txt=document.createElement("span");txt.textContent=label;b.append(ico,txt);
-  b.onclick=fn;grid.append(b)
+  b.onclick=()=>{$("#channelToolSheet")?.classList.remove("on");fn()};grid.append(b)
  }
  function cmdCopyText(value){const text=String(value||'');if(!text)return;const done=()=>{const b=$('#cmdToolShare');if(b){const label=b.querySelector('span');if(label){label.textContent='Lien copié ✓';setTimeout(()=>{if(label.isConnected)label.textContent='Partager le salon'},1800)}}};if(navigator.clipboard?.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>window.prompt('Copie ce lien :',text))}else window.prompt('Copie ce lien :',text)}
 function cmdShareChannel(){const url=location.href;const title='Salon CMD Sphere';if(navigator.share){navigator.share({title,url}).catch(e=>{if(e.name!=='AbortError')cmdCopyText(url)})}else cmdCopyText(url)}

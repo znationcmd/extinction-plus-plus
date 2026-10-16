@@ -1,0 +1,33 @@
+/* CMD Sphere shared vector UI: crisp at every pixel density, no bitmap text. */
+:root{--cmd-ui-edge:#bca4ef55;--cmd-ui-focus:#70e5ff;--cmd-ui-panel:#191322;--cmd-ui-shadow:0 4px 0 #07040d,0 9px 20px #0005,inset 0 1px 0 #ffffff38,inset 0 -1px 0 #0005}
+html.cmd-depth-ui{color-scheme:dark}
+.cmd-depth-ui body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+.cmd-depth-ui :is(button,input[type=submit],input[type=button],a.btn,a.button,[role=button],summary){box-shadow:var(--cmd-ui-shadow)!important;border-color:var(--cmd-ui-edge);touch-action:manipulation;transition:box-shadow .15s ease,filter .15s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cmd-depth-ui :is(button,input[type=submit],input[type=button],a.btn,a.button):not(.banner):not(.profileMediaTrigger):not(.avatarEditTap):not(:has(img)):not([data-color]){background-image:linear-gradient(180deg,#ffffff18,transparent 52%,#00000024);text-shadow:0 1px 2px #0006}
+.cmd-depth-ui :is(button,a.btn,[role=button],summary):active:not(:disabled){box-shadow:0 1px 0 #08050e,inset 0 2px 6px #0006!important}
+@media(hover:hover){.cmd-depth-ui :is(button,a.btn,[role=button],summary):hover:not(:disabled){filter:brightness(1.12)}}
+.cmd-depth-ui :is(button,a,input,select,textarea,[tabindex],summary):focus-visible{outline:2px solid var(--cmd-ui-focus)!important;outline-offset:3px!important}
+.cmd-depth-ui :is(button,input):disabled,.cmd-depth-ui [aria-disabled=true]{opacity:.48;cursor:not-allowed;box-shadow:inset 0 1px 3px #0005!important;filter:none}
+.cmd-depth-ui :is(dialog,.cmd-settings-panel,.cmd-person-card,.cmd-newdm-sheet,.compose-sheet,.cmd-compact-action-menu,.cmd-compose-panel,.csm-panel,.cmd-studio-card,.cmd-studio-controls,.cmd-settings-detail,.cmd-settings-group){border:1px solid var(--cmd-ui-edge);background-color:var(--cmd-ui-panel);background-image:linear-gradient(135deg,#a479df15,transparent 46%,#5ecbff08);box-shadow:0 24px 70px #0009,inset 0 1px 0 #ffffff24,inset 0 -1px 0 #0009}
+.cmd-depth-ui :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),textarea,select){box-shadow:inset 0 2px 5px #0005;border-color:#a68bc44d}
+.cmd-depth-ui :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:#a579ef}
+.cmd-depth-ui .compose-sheet-grid{gap:12px;padding:8px 4px 12px}
+.cmd-depth-ui .compose-sheet-grid .compose-tool{min-width:0;min-height:82px;border:1px solid #bda2ef4d;border-radius:16px;background-color:#2a1e3b;color:#f6efff;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.cmd-depth-ui .compose-tool>span{font:650 12px/1.35 system-ui;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.cmd-depth-ui .compose-tool>b{display:grid;place-items:center;width:34px;height:34px;color:#d6bdff}
+.cmd-tool-icon{width:28px;height:28px;display:block;flex:none;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 2px #0006);pointer-events:none}
+.cmd-frame-dialog{width:min(420px,calc(100vw - 28px));max-height:80dvh;overflow:auto;padding:22px;border-radius:22px;color:#f5eeff;background:#191322}
+.cmd-frame-dialog::backdrop{background:#080511ba}
+.cmd-frame-dialog header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+.cmd-frame-dialog h2{font:750 20px/1.3 system-ui;margin:0}
+.cmd-frame-dialog button{min-height:44px;min-width:44px;border-radius:12px;background:#39264e;color:white;border:1px solid #bfa0eb55}
+.cmd-frame-dialog select{width:100%;min-height:48px;padding:10px;border-radius:12px;background:#251a34;color:white;margin:12px 0}
+.cmd-frame-dialog p{font:14px/1.5 system-ui;color:#c7b9d6}
+#cmdDmToolSheet{position:absolute;bottom:calc(100% + 10px);left:8px;right:8px;padding:16px;border-radius:22px;background:#1d1429;z-index:30;max-height:60dvh;overflow:auto}
+#cmdDmToolSheet[hidden]{display:none!important}
+#cmdDmToolSheet .compose-sheet-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+#cmdDmPlus{flex:none;width:44px;height:44px;border:1px solid #b99ada66;border-radius:14px;background:#3a2652;color:white;font-size:26px}
+@media(max-width:600px){.cmd-depth-ui :is(input,textarea,select){font-size:16px}.cmd-depth-ui .compose-sheet-grid{gap:10px}.cmd-depth-ui .compose-tool{min-height:78px}.cmd-frame-dialog{padding:18px}}
+@media(prefers-reduced-motion:reduce){.cmd-depth-ui :is(button,a.btn,[role=button],summary){transition:none!important}}
+.cmd-depth-ui #channelToolSheet .compose-sheet-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;max-height:min(58dvh,600px);overflow-y:auto;overscroll-behavior:contain}
+@media(min-width:700px){.cmd-depth-ui #channelToolSheet .compose-sheet-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
