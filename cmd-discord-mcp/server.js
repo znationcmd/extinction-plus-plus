@@ -207,7 +207,7 @@ function html(res,body,status=200,headers={}){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
 
-    if(typeof body==="string"&&(body.includes('id="channelMessages"')||(body.includes('id="messages"')&&body.includes('CMD Sphere · sans bot')))){
+    if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261010profiles-delete1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016frames2"></script></body>');
     }
