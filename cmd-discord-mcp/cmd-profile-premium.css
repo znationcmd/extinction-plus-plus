@@ -283,3 +283,11 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
 
 /* Nine-slice boutique frames: SVG source 640x440, 76px corner regions. Never scale corners with profile height. */
 .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{border:36px solid transparent!important;border-image-source:var(--cmd-profile-frame-image)!important;border-image-slice:76 76 76 76!important;border-image-width:36px!important;border-image-repeat:stretch!important;border-image-outset:0!important;inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;pointer-events:none!important}
+
+/* 2026-10-16 mobile profile frame: keep crystals at perimeter; preserve avatar, banner controls and profile text. */
+@media(max-width:650px){
+ .cmd-premium-profile .hero.cmd-pm-hero>.profileFrame{border-width:clamp(20px,5vw,32px)!important;border-image-width:1!important;border-image-outset:0!important;inset:0!important;z-index:2!important;pointer-events:none!important}
+ .cmd-premium-profile .hero.cmd-pm-hero .avatarRing,.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{z-index:10!important}
+ .cmd-premium-profile .hero.cmd-pm-hero .avatar{z-index:9!important}
+ .cmd-premium-profile .hero.cmd-pm-hero button,.cmd-premium-profile .hero.cmd-pm-hero a{position:relative;z-index:11!important}
+}
