@@ -245,17 +245,9 @@ body.cmd-premium-body .cmd-hosting-quick-access .cmd-pm-card{display:block!impor
 body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!important;min-height:52px!important;text-align:center!important;font-size:15px!important}
 
 
-/* 2026-10-16 — center profile avatar artwork on the actual avatar, including iOS. */
-.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap{position:relative!important;isolation:isolate}
-.cmd-premium-profile .hero.cmd-pm-hero .avatarRing{box-sizing:border-box!important;left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;width:116px!important;height:116px!important;transform-origin:center center!important}
-.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{box-sizing:border-box!important;position:absolute!important;left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;transform-origin:center center!important;width:125px!important;height:125px!important;object-fit:contain!important;pointer-events:none!important}
-
-
 /* Full-height selected profile artwork and pixel-aligned avatar ring. */
 .cmd-premium-profile .hero.cmd-pm-hero .profileFrame,
 .cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-frame{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important;pointer-events:none!important;z-index:8!important;border-radius:inherit!important;object-fit:fill!important;background-size:100% 100%!important}
-.cmd-premium-profile .hero.cmd-pm-hero .avatarRing{left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;z-index:6!important}
-.cmd-premium-profile .hero.cmd-pm-hero .cmd-profile-art-avatar{left:70px!important;top:0!important;transform:translate(-50%,-50%)!important;z-index:6!important;object-fit:contain!important}
 .cmd-premium-profile .hero.cmd-pm-hero .avatar{z-index:5!important}
 
 
@@ -291,26 +283,27 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
  z-index:30!important;pointer-events:none!important;
 }
 
-/* 2026-10-17 — Profile/avatar decoration alignment on installed PWA and mobile Safari.
-   Earlier artwork and premium CSS used TWO incompatible coordinate systems:
-   (6px,-64px) for a top-left corner AND translate(-50%,-50%) for its center.
-   Every decoration now shares the photo's actual center (70px, 0px).
-   Scope deliberately excludes the full-card crystal frame and store previews. */
+/* ONE alignment source for the selected profile avatar and its animated shine.
+   The avatar image is 106x106 at (17,-53), thus its true center is (70,0).
+   Preserve the large crystal card frame and all user-uploaded images. */
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap{
-  --cmd-profile-avatar-center-x:70px;
-  --cmd-profile-avatar-center-y:0px;
+  --cmd-avatar-center-x:70px;
+  --cmd-avatar-center-y:0px;
   position:relative!important;
   overflow:visible!important;
+  isolation:isolate!important;
 }
-.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar,
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .cmd-profile-avatar-sheen{
   position:absolute!important;
+  box-sizing:border-box!important;
   inset:auto!important;
-  left:var(--cmd-profile-avatar-center-x)!important;
-  top:var(--cmd-profile-avatar-center-y)!important;
+  left:var(--cmd-avatar-center-x)!important;
+  top:var(--cmd-avatar-center-y)!important;
   right:auto!important;
   bottom:auto!important;
-  width:132px!important;
-  height:132px!important;
+  width:128px!important;
+  height:128px!important;
   max-width:none!important;
   max-height:none!important;
   aspect-ratio:1/1!important;
@@ -318,13 +311,20 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   transform:translate(-50%,-50%)!important;
   transform-origin:center center!important;
   pointer-events:none!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
   z-index:32!important;
 }
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .cmd-profile-avatar-sheen{
+  z-index:33!important;
+  mask-position:center center!important;
+  -webkit-mask-position:center center!important;
+}
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatarRing{
-  left:var(--cmd-profile-avatar-center-x)!important;
-  top:var(--cmd-profile-avatar-center-y)!important;
-  transform:translate(-50%,-50%)!important;
-  transform-origin:center center!important;
+  left:var(--cmd-avatar-center-x)!important;
+  top:var(--cmd-avatar-center-y)!important;
   width:116px!important;
   height:116px!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center center!important;
 }
