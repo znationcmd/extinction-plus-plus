@@ -72,35 +72,71 @@ async function stored(key){
 }
 let last="",current=null,objectUrl="",sequence=0;const touched=new Set();
 function targets(){
- const msg=$("#channelMessages")||$("#msgs")||$("#messages");
- const els=[msg,msg?.parentElement,$(".sphere-app:not(.cmd-chat-mobile-portal)"),$(".cmd-app"),$(".cmd-server-panel"),$(".cmd-server-channels"),$(".discord-layout")];
- if(!els.some(Boolean))els.push(document.body);
- return [...new Set(els.filter(Boolean))];
+ // One background per visible *screen*, never on nested ancestors. This avoids
+ // repeated/scaled copies and works after the iPhone chat moves into its body portal.
+ const channel=$("#channelOverlay.on #channelMessages")||$("#channelMessages");
+ const dm=$("#msgs")||$("#messages");
+ const workspace=$("#workspace");
+ const server=workspace?.querySelector(".cmd-server-panel")?workspace:null;
+ const other=$(".cmd-app")||$(".sphere-app:not(.cmd-chat-mobile-portal)")||document.body;
+ return [...new Set([channel,dm,server,other].filter(Boolean).filter(el=>{
+   // Do not wallpaper the dashboard shell behind an open iPhone conversation;
+   // its own message area is the foreground wallpaper.
+   if(el===other&&(channel||server))return false;
+   return true;
+ }))];
 }
 function clear(){
- for(const el of touched){if(el.isConnected){el.classList.remove("cmd-unified-background");el.style.removeProperty("background-image");el.style.removeProperty("background-size");el.style.removeProperty("background-position")}}
- touched.clear();if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=""}
+ for(const el of touched){
+   if(!el.isConnected)continue;
+   el.classList.remove("cmd-unified-background");
+   for(const prop of ["background-image","background-size","background-position","background-repeat","background-attachment","background-color"])el.style.removeProperty(prop);
+ }
+ touched.clear();
+ if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=""}
 }
+function wallpaperStyle(value){
+ if(validPreset(value))return {image:PRESETS[value.slice(7)][2],size:"cover",position:"center",repeat:"no-repeat"};
+ if(value instanceof Blob){
+  if(!objectUrl)objectUrl=URL.createObjectURL(value);
+  const url="url("+JSON.stringify(objectUrl)+")";
+  // On portrait iPhone, preserve 100% of a landscape artwork without distortion.
+  // The same photo fills the unused margins underneath the uncropped foreground.
+  return {image:"linear-gradient(#0b071a55,#0b071a55),"+url+","+url,
+          size:"100% 100%,contain,cover",position:"center,center,center",
+          repeat:"no-repeat,no-repeat,no-repeat"};
+ }
+ return null;
+}
+function setSurface(el,style){
+ for(const [key,value] of [["background-image",style.image],["background-size",style.size],
+  ["background-position",style.position],["background-repeat",style.repeat],
+  ["background-attachment","scroll"],["background-color","#130e22"]])
+   el.style.setProperty(key,value,"important");
+ el.classList.add("cmd-unified-background");
+ touched.add(el);
+}
+let renderedStyle=null;
 function render(value){
  clear();current=value;
- let image="";
- if(validPreset(value))image=PRESETS[value.slice(7)][2];
- else if(value instanceof Blob){objectUrl=URL.createObjectURL(value);image="linear-gradient(#100a1b77,#100a1b77),url("+JSON.stringify(objectUrl)+")"}
- if(!image)return;
- for(const el of targets()){
-  el.style.setProperty("background-image",image,"important");
-  el.style.setProperty("background-size","cover","important");
-  el.style.setProperty("background-position","center","important");
-  el.classList.add("cmd-unified-background");touched.add(el);
- }
+ renderedStyle=wallpaperStyle(value);
+ if(!renderedStyle)return;
+ for(const el of targets())setSurface(el,renderedStyle);
 }
 async function paint(force=false){
  const key=scope();
  if(!force&&last===key){
-  if(current){const old=[...touched].find(x=>x.isConnected);if(old)for(const el of targets())if(!touched.has(el)){
-    el.style.setProperty("background-image",old.style.backgroundImage,"important");
-    el.style.setProperty("background-size","cover","important");el.classList.add("cmd-unified-background");touched.add(el)
-  }}return;
+  if(renderedStyle){
+   const next=new Set(targets());
+   for(const old of [...touched]){
+    if(!next.has(old)){
+      for(const prop of ["background-image","background-size","background-position","background-repeat","background-attachment","background-color"])old.style.removeProperty(prop);
+      old.classList.remove("cmd-unified-background");touched.delete(old);
+    }
+   }
+   for(const el of next)if(!touched.has(el))setSurface(el,renderedStyle);
+  }
+  return;
  }
  last=key;const version=++sequence;
  const own=await stored(key),fallback=key==="global"?null:await stored("global");
@@ -123,6 +159,12 @@ css.textContent=[
  '#cmdWallpaperPanel .cmd-wallpaper-state{display:block;margin:11px 0;color:#d3bcf0;font:12px/1.5 system-ui;overflow-wrap:anywhere}',
  '#cmdWallpaperPanel .cmd-wallpaper-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}',
  '#cmdWallpaperPanel :is(button,select,label):focus-visible{outline:3px solid #8adfff;outline-offset:2px}',
+ // Keep the user's chosen image visible in the native chat, DM and server list.
+ '#channelMessages.cmd-unified-background,#msgs.cmd-unified-background,#messages.cmd-unified-background,#workspace.cmd-unified-background{background-origin:border-box!important;background-clip:border-box!important}',
+ '#channelMessages.cmd-unified-background{min-width:0!important;width:100%!important}',
+ '#workspace.cmd-unified-background>.cmd-server-panel{background-color:transparent!important}',
+ '#cmdWallpaperPanel .cmd-wallpaper-state{min-height:18px}',
+
  '@media(max-width:480px){#cmdWallpaperPanel{padding:16px!important}#cmdWallpaperPanel .cmd-wallpaper-grid{gap:7px}#cmdWallpaperPanel .cmd-wallpaper-preset{min-height:66px;font-size:12px}}'
 ].join("\n");
 document.head.append(css);
@@ -167,7 +209,7 @@ reset.addEventListener("click",async()=>{
 picker.addEventListener("change",async()=>{
  const file=picker.files?.[0];if(!file)return;
  try{
-  if(file.size>8*1024*1024)throw Error("Image trop volumineuse (maximum 8 Mo)");
+  if(file.size>25*1024*1024)throw Error("Image trop volumineuse (maximum 25 Mo)");
   if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw Error("Format non pris en charge");
   const image=window.createImageBitmap?await createImageBitmap(file):await new Promise((resolve,reject)=>{
    const img=new Image(),url=URL.createObjectURL(file);
@@ -176,12 +218,29 @@ picker.addEventListener("change",async()=>{
    img.src=url;
   });
   const w=image.width||image.naturalWidth,h=image.height||image.naturalHeight;
-  if(w>8000||h>8000)throw Error("Dimensions trop grandes");
-  const ratio=Math.min(1,1400/w,900/h),canvas=document.createElement("canvas");
+  if(!w||!h||w>16000||h>16000)throw Error("Dimensions non prises en charge");
+  const ratio=Math.min(1,1800/w,1800/h),canvas=document.createElement("canvas");
   canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));
-  canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+  const context=canvas.getContext("2d");if(!context)throw Error("Impossible de préparer l'image");
+  context.drawImage(image,0,0,canvas.width,canvas.height);
   if(typeof image.close==="function")image.close();
-  const blob=await new Promise(done=>canvas.toBlob(done,"image/webp",.68));if(!blob)throw Error("Conversion impossible");
+  // Preserve the original orientation: no squashing or forced 16:9 crop.
+  // Ensure account sync stays below the server's ~625 KB WebP limit.
+  let blob=null;
+  for(let attempt=0;attempt<9;attempt++){
+    const quality=Math.max(.46,.86-attempt*.055);
+    blob=await new Promise(done=>canvas.toBlob(done,"image/webp",quality));
+    if(!blob)throw Error("Conversion impossible");
+    if(blob.size<=600000)break;
+    if(attempt%2===1){
+      const w2=Math.max(1,Math.round(canvas.width*.83)),h2=Math.max(1,Math.round(canvas.height*.83));
+      const tmp=document.createElement("canvas");tmp.width=w2;tmp.height=h2;
+      const ctx=tmp.getContext("2d");if(!ctx)throw Error("Redimensionnement impossible");
+      ctx.drawImage(canvas,0,0,w2,h2);canvas.width=w2;canvas.height=h2;
+      context.drawImage(tmp,0,0);
+    }
+  }
+  if(!blob||blob.size>600000)throw Error("Photo impossible à synchroniser sous 600 Ko");
   const key=selected();pending[key]=blob;await disk("put",key,blob);try{localStorage.removeItem(localKey(key))}catch{}
   refresh();
   try{await saveAccount(key,blob);delete pending[key];refresh();state.textContent="Photo synchronisée avec ton compte"}catch{state.textContent="Photo enregistrée ici ; synchronisation indisponible"}
@@ -208,5 +267,7 @@ setInterval(()=>{mount();void paint()},1800);
 window.addEventListener("focus",refresh);window.addEventListener("pageshow",refresh);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 window.addEventListener("popstate",refresh);
+window.addEventListener("resize",()=>{void paint()},{passive:true});
+window.addEventListener("orientationchange",()=>{void paint()},{passive:true});
 window.addEventListener("storage",e=>{if(e.key?.startsWith("cmd-personal-wallpaper:"))refresh()});
 })();
