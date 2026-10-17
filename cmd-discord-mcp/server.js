@@ -188,7 +188,12 @@ function clearDashboardCookies(){
     "cmd_discord_dashboard=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
   ];
 }
+const CMD_APP_RELEASE=String(process.env.RAILWAY_GIT_COMMIT_SHA||process.env.GIT_COMMIT_SHA||"20261017-unified").slice(0,40);
 function html(res,body,status=200,headers={}){
+    if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
+      body=body.replace(/<\/head>/i,'<meta name="cmd-sphere-release" content="'+CMD_APP_RELEASE+'"></head>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-app-update.js?v=20261017pwa2"></script></body>');
+    }
     if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>"))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-profile-scene.css?v=20261010-sharp8"><link rel="stylesheet" href="/cmd-profile-premium.css?v=20261010layout2"><link rel="stylesheet" href="/cmd-promo-studio.css?v=20261012-studio-free-catalog-v9"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>').replace(/<\/body>/i,'<script src="/cmd-profile-draft.js?v=20261009keep2" defer></script><script defer src="/cmd-profile-live-preview.js?v=20261010live1"></script><script src="/cmd-profile-scene.js?v=20261014-full-preview" defer></script><script src="/cmd-profile-premium.js?v=20261012-studio-free-catalog-v9" defer></script><script defer src="/cmd-gif-encoder.js?v=20261010studio2"></script><script defer src="/cmd-promo-studio.js?v=20261012-studio-free-catalog-v9"></script><script type="module" src="/cmd-profile-3d.js?v=20261010avatarcard1"></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script><script defer src="/cmd-message-polish.js?v=20261010uifix8"></script></body>');
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-touch-organizer.js?v=20261010uifix8"></script></body>');
@@ -4559,6 +4564,13 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
+    if(req.method==="GET"&&url.pathname==="/api/cmd/app-version"){
+      sendJson(res,200,{release:CMD_APP_RELEASE});return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-app-update.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-app-update.js",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
