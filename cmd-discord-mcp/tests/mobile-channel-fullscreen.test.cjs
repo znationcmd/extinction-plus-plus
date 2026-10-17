@@ -11,7 +11,7 @@ const portalCode=script.slice(i);
 const css=fs.readFileSync(path.join(__dirname,"../discord-native-layout.css"),"utf8");
 
 function setup(isMobile=true){
- const dom=new JSDOM('<!doctype html><html><body><div class="sphere-app cmd-native-selected"><nav id="cmdServerChannels"></nav><section id="channelOverlay" class="channel-overlay"><header class="channel-head"><button class="channel-back">Retour</button><b id="channelTitle"># général</b></header><div id="channelMessages">Messages existants</div><form class="channel-composer"><textarea id="channelInput"></textarea></form></section><footer id="after">Liste salons</footer></div></body></html>',{url:"https://cmd-sphere.up.railway.app/dashboard",runScripts:"outside-only"});
+ const dom=new JSDOM('<!doctype html><html><body><div class="sphere-app cmd-native-selected"><nav id="cmdServerChannels"></nav></div><div id="serverSettingsModal"></div><section id="channelOverlay" class="channel-overlay"><header class="channel-head"><button class="channel-back">Retour</button><b id="channelTitle"># général</b></header><div id="channelMessages">Messages existants</div><form class="channel-composer"><textarea id="channelInput"></textarea></form></section><footer id="after">Liste salons</footer></body></html>',{url:"https://cmd-sphere.up.railway.app/dashboard",runScripts:"outside-only"});
  dom.window.matchMedia=()=>({matches:isMobile,addListener(){},removeListener(){}});
  dom.window.eval(portalCode);
  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
@@ -23,6 +23,8 @@ test("iPhone tap opens exactly the existing messages full-screen and back restor
  assert.notEqual(i,-1);
  const {dom,document,overlay}=setup(true);
  const initialParent=overlay.parentNode;
+ assert.equal(initialParent,document.body,"Production dashboard mounts channel overlay as sibling of .sphere-app");
+ assert.equal(overlay.closest(".sphere-app"),null);
  const input=document.getElementById("channelInput");
  const messages=document.getElementById("channelMessages");
  overlay.classList.add("on");
@@ -32,6 +34,8 @@ test("iPhone tap opens exactly the existing messages full-screen and back restor
  assert.equal(portal.parentElement,document.body);
  assert.equal(portal.classList.contains("cmd-native-selected"),true);
  assert.equal(portal.hidden,false);
+ assert.equal(portal.querySelectorAll("#channelMessages").length,1);
+ assert.equal(document.querySelectorAll("#channelOverlay").length,1);
  assert.equal(document.documentElement.classList.contains("cmd-channel-screen-open"),true);
  assert.equal(overlay.contains(messages),true);
  assert.equal(overlay.contains(input),true);
