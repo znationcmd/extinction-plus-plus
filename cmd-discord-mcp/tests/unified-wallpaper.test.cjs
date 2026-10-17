@@ -119,7 +119,7 @@ test("custom photos fill portrait mobile and server wallpaper seamlessly without
   assert.match(el.style.backgroundImage,/blob:cmd-photo/);
   assert.equal(el.style.backgroundSize.replace(/\s/g,""),"100% 100%, cover".replace(/\s/g,""));
   assert.match(el.style.backgroundSize,/cover/);
-  assert.equal(el.style.backgroundRepeat.replace(/\s/g,""),"no-repeat,no-repeat");
+  assert.match(script,/repeat:"no-repeat,no-repeat"/,"Each wallpaper layer must not tile");
   assert.equal((el.style.backgroundImage.match(/url\(/g)||[]).length,1,"No separate cropped and contained image layers");
  }
  window.dispatchEvent(new window.Event("resize"));
