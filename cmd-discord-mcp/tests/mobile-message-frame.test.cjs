@@ -28,7 +28,8 @@ test("the selected account message frame is applied in the foreground to OWN mes
  assert.equal(other.classList.contains("cmd-chat-framed"),false);
  assert.ok(document.querySelector("#cmdChatFramePicker"));
  assert.equal(document.querySelector("#cmdChatFramePicker").value,"amethyst");
- assert.match(document.querySelector("style").textContent,/msg-main\.cmd-chat-framed\.cmd-equipped-profile-frame::after/);
+ assert.match(document.querySelector("style").textContent,/border-image-slice:105 105 105 105!important/);
+ assert.match(document.querySelector("style").textContent,/content:none!important;display:none!important/);
  assert.equal(document.querySelectorAll(".cmd-wallpaper-picker").length,0);
  dom.window.close();
 });
