@@ -262,7 +262,9 @@ if(window.__cmdMobileChannelPortalFix)return;
 window.__cmdMobileChannelPortalFix=true;
 function start(){
  const channel=document.getElementById("channelOverlay");
- const shell=channel?.closest(".sphere-app");
+ // The real dashboard renders #channelOverlay AFTER the closing .sphere-app.
+ // Look up its sibling shell so iOS can always create the full-screen portal.
+ const shell=channel?.closest(".sphere-app")||document.querySelector(".sphere-app:not(.cmd-chat-mobile-portal)");
  if(!channel||!shell)return;
  const originalParent=channel.parentNode;
  const nextSibling=channel.nextSibling;
