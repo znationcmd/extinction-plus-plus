@@ -231,7 +231,7 @@ function html(res,body,status=200,headers={}){
        body.includes('id="channelMessages"')||body.includes('id="messages"')||
        body.includes('id="msgs"')||body.includes('class="sphere-app"')||
        body.includes('<title>Profil · CMD Sphere</title>'))){
-    body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261017-unified2"></script></body>');
+    body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261017-adaptive3"></script></body>');
   }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
