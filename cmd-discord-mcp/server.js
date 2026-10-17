@@ -212,7 +212,6 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016plus3"></script></body>');
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261016personal1"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
@@ -220,6 +219,14 @@ function html(res,body,status=200,headers={}){
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-search.js?v=20261016lot5"></script></body>');
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-history-ui.js?v=20261016fullhistory"></script></body>');
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-navigation.js?v=20261016lot6"></script></body>');
+  }
+  // All CMD Sphere application views and the installed PWA share the same wallpaper controls.
+  // The native + menu and direct messages must never create a second wallpaper dialog.
+  if(typeof body==="string"&&/</.test(body)&&(
+       body.includes('id="channelMessages"')||body.includes('id="messages"')||
+       body.includes('id="msgs"')||body.includes('class="sphere-app"')||
+       body.includes('<title>Profil · CMD Sphere</title>'))){
+    body=body.replace(/<\/body>/i,'<script defer src="/cmd-personal-backgrounds.js?v=20261017-unified2"></script></body>');
   }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
@@ -4524,7 +4531,8 @@ const httpServer=createServer(async(req,res)=>{
       }
       const body=await readFormBodyJson(req);
       const image=String(body.image||"");
-      if(image.length>850000||!image.startsWith('data:image/webp;base64,')){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
+      const isPreset=/^preset:(aurora|violet|ocean|forest|sunset|midnight|rose)$/.test(image);
+      if(!isPreset&&(image.length>850000||!image.startsWith('data:image/webp;base64,'))){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
       await pool.query("INSERT INTO cmd_personal_wallpapers(user_id,scope,image_data) VALUES($1,$2,$3) ON CONFLICT(user_id,scope) DO UPDATE SET image_data=EXCLUDED.image_data,updated_at=NOW()",[userId,key,image]);
       sendJson(res,200,{ok:true});return;
     }
@@ -4551,7 +4559,7 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
-    if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
+    if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-motion.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-motion.js",import.meta.url),"utf8"));return}
