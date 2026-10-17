@@ -72,7 +72,7 @@ test("private messages get only one unified launcher and main/global scope",asyn
 });
 test("PWA/app uses single synced wallpaper asset with no-store cache and validated preset API",()=>{
  assert.equal((server.match(/cmd-personal-backgrounds\.js\?v=/g)||[]).length,1);
- assert.match(server,/20261017-adaptive3/);
+ assert.match(server,/20261017-seamless4/);
  assert.match(server,/const isPreset=\/\^preset:/);
  assert.match(server,/cmd-personal-backgrounds\.js"\)\{res\.writeHead\(200,[^\n]*"cache-control":"no-store"/);
  assert.match(chat,/window\.cmdPersonalBackgrounds\?\.open/);
@@ -102,7 +102,7 @@ test("same artwork follows chat AND selected server without layering it on the p
  dom.window.close();
 });
 
-test("custom photos keep the ENTIRE uncropped image on portrait mobile and server wallpaper",async t=>{
+test("custom photos fill portrait mobile and server wallpaper seamlessly without distortion",async t=>{
  const {dom,window,document}=app(true);
  t.after(()=>dom.window.close());
  window.URL.createObjectURL=()=> "blob:cmd-photo";
@@ -117,13 +117,14 @@ test("custom photos keep the ENTIRE uncropped image on portrait mobile and serve
   const el=document.getElementById(target);
   assert.equal(el.classList.contains("cmd-unified-background"),true,target);
   assert.match(el.style.backgroundImage,/blob:cmd-photo/);
-  assert.match(el.style.backgroundSize,/contain/);
+  assert.equal(el.style.backgroundSize.replace(/\s/g,""),"100% 100%, cover".replace(/\s/g,""));
   assert.match(el.style.backgroundSize,/cover/);
-  assert.match(el.style.backgroundRepeat,/no-repeat/);
+  assert.equal(el.style.backgroundRepeat.replace(/\s/g,""),"no-repeat,no-repeat");
+  assert.equal((el.style.backgroundImage.match(/url\(/g)||[]).length,1,"No separate cropped and contained image layers");
  }
  window.dispatchEvent(new window.Event("resize"));
  await wait();
- assert.match(document.getElementById("channelMessages").style.backgroundSize,/contain/);
+ assert.equal(document.getElementById("channelMessages").style.backgroundSize.replace(/\s/g,""),"100%100%,cover");
  dom.window.close();
 });
 
@@ -133,4 +134,11 @@ test("import preserves aspect ratio and compresses enough for account sync limit
  assert.match(script,/ratio/);
  assert.match(script,/canvas\.toBlob/);
  assert.match(script,/image\/webp/);
+});
+
+test("gallery images use seamless backgrounds with no secondary image edge",()=>{
+ assert.match(script,/function wallpaperStyle/);
+ assert.match(script,/const isIllustration=validGallery\(value\)/);
+ assert.match(script,/size:"100% 100%,cover"/);
+ assert.doesNotMatch(script,/size:"100% 100%,contain,cover"/);
 });
