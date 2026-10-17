@@ -806,3 +806,25 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
     display:none!important;
   }
 }
+
+
+/* CMD Sphere PWA fallback (2026-10-17): the dashboard creates its chat as a
+   sibling of .sphere-app, not a descendant. Do not scope fullscreen rules
+   exclusively to '.sphere-app #channelOverlay' or they will never match. */
+@media (max-width:850px) {
+  body.cmd-channel-screen-open{
+    transform:none!important;filter:none!important;perspective:none!important;
+  }
+  body>#channelOverlay.on{
+    display:grid!important;position:fixed!important;inset:0!important;
+    top:0!important;left:0!important;width:100dvw!important;height:100dvh!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    z-index:12000!important;max-height:100dvh!important;overflow:hidden!important;
+    padding:0!important;margin:0!important;transform:none!important;
+    background:#110b1c!important;
+  }
+  body>#channelOverlay.on>#channelMessages{
+    min-height:0!important;overflow-y:auto!important;
+  }
+}
