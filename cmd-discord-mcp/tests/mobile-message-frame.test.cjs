@@ -52,19 +52,19 @@ test("iPhone composer retains framed textarea and practical send controls",()=>{
 });
 
 
-test("long messages use one nine-slice SVG border instead of stretching crystal art across the text",async()=>{
- const {dom,document,window}=app("amethyst");
+test("restore the earlier complete amethyst border from user's reference screenshot",async()=>{
+ const {dom,document}=app("amethyst");
  const own=document.getElementById("own");
  own.querySelector(".msg-text").textContent="Message long ".repeat(80);
  await tick();
  assert.equal(own.classList.contains("cmd-chat-framed"),true);
- const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
- assert.match(style,/border-image-slice:105 122 105 122!important/);
- assert.match(style,/background-image:none!important/);
- assert.match(style,/--cmd-frame-clear-x/);
- assert.match(style,/--cmd-frame-clear-y/);
- assert.doesNotMatch(style,/background-size:100% 100%/);
  assert.equal(own.dataset.cmdFrameSelected,"amethyst");
+ assert.match(own.style.getPropertyValue("--cmd-chat-border-image"),/amethyst\.svg/);
+ const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
+ assert.match(style,/Full four-sided frame: paint the SAME chosen asset/);
+ assert.match(style,/background-size:100% 100%/);
+ assert.match(style,/background-image:var\(--cmd-chat-border-image\)/);
+ assert.doesNotMatch(style,/--cmd-frame-clear-x/);
  assert.equal(document.querySelectorAll("#channelMessages .msg-main.cmd-chat-framed").length,1);
  dom.window.close();
 });
