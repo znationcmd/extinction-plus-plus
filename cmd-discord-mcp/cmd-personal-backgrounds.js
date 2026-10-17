@@ -102,7 +102,7 @@ function wallpaperStyle(value){
   // The same photo fills the unused margins underneath the uncropped foreground.
   return {image:"linear-gradient(#0b071a55,#0b071a55),"+url+","+url,
           size:"100% 100%,contain,cover",position:"center,center,center",
-          repeat:"no-repeat,no-repeat,no-repeat"};
+          repeat:"no-repeat"};
  }
  return null;
 }
