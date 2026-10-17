@@ -52,19 +52,45 @@ test("iPhone composer retains framed textarea and practical send controls",()=>{
 });
 
 
-test("restore the earlier complete amethyst border from user's reference screenshot",async()=>{
+test("short and long messages keep the same amethyst frame without stretched crystals over text",async()=>{
  const {dom,document}=app("amethyst");
- const own=document.getElementById("own");
- own.querySelector(".msg-text").textContent="Message long ".repeat(80);
  await tick();
+ const own=document.getElementById("own");
+ const other=document.getElementById("other");
+ const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
  assert.equal(own.classList.contains("cmd-chat-framed"),true);
  assert.equal(own.dataset.cmdFrameSelected,"amethyst");
  assert.match(own.style.getPropertyValue("--cmd-chat-border-image"),/amethyst\.svg/);
+ assert.match(style,/border-image-slice:138 138 138 138!important/);
+ assert.match(style,/border-image-source:var\(--cmd-chat-border-image\)!important/);
+ assert.match(style,/--cmd-frame-gutter-x/);
+ assert.match(style,/--cmd-frame-gutter-y/);
+ assert.match(style,/--cmd-frame-crystal-width/);
+ assert.match(style,/background-image:none!important/);
+ assert.doesNotMatch(style,/background-size:100% 100%/);
+ const bubble=own.querySelector(".msg-text");
+ const sample="Un message plus long : ".repeat(50);
+ bubble.textContent=sample;
+ assert.equal(bubble.textContent,sample);
+ assert.equal(own.classList.contains("cmd-chat-framed"),true);
+ assert.equal(own.style.getPropertyValue("--cmd-chat-border-image").includes("amethyst.svg"),true);
+ assert.equal(other.classList.contains("cmd-chat-framed"),false);
+ dom.window.close();
+});
+
+test("message length changes do not alter the composer or duplicate decorative overlays",async()=>{
+ const {dom,document}=app("amethyst");
+ await tick();
+ const own=document.getElementById("own");
+ own.querySelector(".msg-text").textContent="Une phrase assez longue. ".repeat(90);
  const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
- assert.match(script,/Full four-sided frame: paint the SAME chosen asset/);
- assert.match(style,/background-size:100% 100%/);
- assert.match(style,/background-image:var\(--cmd-chat-border-image\)/);
- assert.doesNotMatch(style,/--cmd-frame-clear-x/);
- assert.equal(document.querySelectorAll("#channelMessages .msg-main.cmd-chat-framed").length,1);
+ assert.equal((style.match(/border-image-slice:138 138 138 138!important/g)||[]).length,1);
+ assert.match(style,/word-break:normal!important/);
+ assert.match(style,/height:auto!important/);
+ assert.match(style,/max-height:none!important/);
+ assert.equal(document.querySelectorAll("#channelMessages .cmd-chat-framed").length,1);
+ assert.equal(document.querySelectorAll("#channelMessages .cmd-message-frame-art").length,0);
+ assert.equal(document.querySelector("#channelInput").tagName,"TEXTAREA");
+ assert.equal(document.querySelector("#channelSend").textContent,"Envoyer");
  dom.window.close();
 });
