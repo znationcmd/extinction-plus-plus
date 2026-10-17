@@ -69,7 +69,7 @@ test("private messages get only one unified launcher and main/global scope",asyn
 });
 test("PWA/app uses single synced wallpaper asset with no-store cache and validated preset API",()=>{
  assert.equal((server.match(/cmd-personal-backgrounds\.js\?v=/g)||[]).length,1);
- assert.match(server,/20261017-unified2/);
+ assert.match(server,/20261017-adaptive3/);
  assert.match(server,/const isPreset=\/\^preset:/);
  assert.match(server,/cmd-personal-backgrounds\.js"\)\{res\.writeHead\(200,[^\n]*"cache-control":"no-store"/);
  assert.match(chat,/window\.cmdPersonalBackgrounds\?\.open/);
