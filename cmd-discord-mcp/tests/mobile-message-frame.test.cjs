@@ -52,34 +52,29 @@ test("iPhone composer retains framed textarea and practical send controls",()=>{
 });
 
 
-test("short and long messages keep the same amethyst frame without stretched crystals over text",async()=>{
+test("short and long messages stay inside the same responsive crystal border",async()=>{
  const {dom,document}=app("amethyst");
  await tick();
- const own=document.getElementById("own");
- const other=document.getElementById("other");
+ const own=document.getElementById("own"),other=document.getElementById("other");
  const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
  assert.equal(own.classList.contains("cmd-chat-framed"),true);
  assert.equal(own.dataset.cmdFrameSelected,"amethyst");
  assert.match(own.style.getPropertyValue("--cmd-chat-border-image"),/amethyst\.svg/);
- assert.match(style,/border-image-slice:115 115 115 115!important/);
  assert.match(style,/border-image-source:var\(--cmd-chat-border-image\)!important/);
- assert.match(style,/--cmd-frame-edge-x/);
- assert.match(style,/--cmd-frame-edge-y/);
- assert.match(style,/background:transparent!important/);
- assert.match(style,/#channelMessages \.discord-message \.msg-main\.cmd-chat-framed::before/);
- assert.match(style,/border-radius:15px!important/);
- assert.match(style,/inset:calc\(var\(--cmd-frame-edge-y\) \* \.62\)/);
- assert.match(style,/background-image:none!important/);
+ assert.match(style,/border-image-slice:105 105 105 105!important/);
+ assert.match(style,/border-width:clamp\(22px,6vw,30px\)!important/);
+ assert.match(style,/background-clip:padding-box!important/);
+ assert.match(style,/width:fit-content!important/);
+ assert.match(style,/height:auto!important/);
+ assert.match(style,/min-height:0!important/);
+ assert.match(style,/content:none!important;display:none!important/);
+ assert.doesNotMatch(style,/inset:calc\(var\(--cmd-frame-edge/);
  assert.doesNotMatch(style,/background-size:100% 100%/);
- assert.equal((style.match(/border-image-slice:115 115 115 115!important/g)||[]).length,1);
- assert.equal((style.match(/linear-gradient\(145deg,#773caf,#57258d\)/g)||[]).length,1,"A single interior purple bubble, not stacked solid rectangles");
- const bubble=own.querySelector(".msg-text");
- const sample="Un message plus long : ".repeat(50);
- bubble.textContent=sample;
- assert.equal(bubble.textContent,sample);
+ const msg=own.querySelector(".msg-text");
+ msg.textContent="Message long avec beaucoup de texte et des retours.\n".repeat(50);
  assert.equal(own.classList.contains("cmd-chat-framed"),true);
- assert.equal(own.style.getPropertyValue("--cmd-chat-border-image").includes("amethyst.svg"),true);
  assert.equal(other.classList.contains("cmd-chat-framed"),false);
+ assert.equal(own.style.getPropertyValue("--cmd-chat-border-image").includes("amethyst.svg"),true);
  dom.window.close();
 });
 
@@ -89,8 +84,9 @@ test("message length changes do not alter the composer or duplicate decorative o
  const own=document.getElementById("own");
  own.querySelector(".msg-text").textContent="Une phrase assez longue. ".repeat(90);
  const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
- assert.equal((style.match(/border-image-slice:115 115 115 115!important/g)||[]).length,1);
+ assert.equal((style.match(/border-image-slice:105 105 105 105!important/g)||[]).length,1);
  assert.match(style,/word-break:normal!important/);
+ assert.match(style,/border-width:23px!important/);
  assert.match(style,/height:auto!important/);
  assert.match(style,/max-height:none!important/);
  assert.equal(document.querySelectorAll("#channelMessages .cmd-chat-framed").length,1);
