@@ -9,7 +9,7 @@ const server=fs.readFileSync(path.join(__dirname,"../server.js"),"utf8");
 const wait=()=>new Promise(resolve=>setTimeout(resolve,35));
 function app(native=true){
  const content=native?
-  '<div class="sphere-app"><section id="channelOverlay"><div id="channelMessages"></div><div id="channelToolSheet"><div class="compose-sheet-grid"><button id="toolFiles" type="button"><b>▧</b><span>Fond</span></button></div></div></section></div>':
+  '<div class="sphere-app"><div id="workspace"><div class="cmd-server-panel">Serveur</div></div><section id="channelOverlay" class="on"><div id="channelMessages"></div><div id="channelToolSheet"><div class="compose-sheet-grid"><button id="toolFiles" type="button"><b>▧</b><span>Fond</span></button></div></div></section></div>':
   '<div id="msgs"></div><div id="cmdDmToolSheet"><div class="compose-sheet-grid"></div></div>';
  const dom=new JSDOM('<!doctype html><html><head></head><body>'+content+'</body></html>',{url:"https://cmd-sphere.up.railway.app/dashboard",runScripts:"outside-only"});
  const {window}=dom;
@@ -74,4 +74,58 @@ test("PWA/app uses single synced wallpaper asset with no-store cache and validat
  assert.match(server,/cmd-personal-backgrounds\.js"\)\{res\.writeHead\(200,[^\n]*"cache-control":"no-store"/);
  assert.match(chat,/window\.cmdPersonalBackgrounds\?\.open/);
  assert.doesNotMatch(script,/createElement\("div"\);panel\.id="cmdPersonalBackgroundPanel"/);
+});
+
+
+test("same artwork follows chat AND selected server without layering it on the parent shell",async()=>{
+ const {dom,document,window}=app(true);
+ await wait();
+ window.cmdPersonalBackgrounds.open();
+ [...document.querySelectorAll(".cmd-wallpaper-preset")].find(x=>x.textContent==="aurora").click();
+ await wait();
+ const chat=document.getElementById("channelMessages");
+ const server=document.getElementById("workspace");
+ const shell=document.querySelector(".sphere-app");
+ assert.equal(chat.classList.contains("cmd-unified-background"),true);
+ assert.equal(server.classList.contains("cmd-unified-background"),true);
+ assert.equal(shell.classList.contains("cmd-unified-background"),false);
+ assert.match(chat.style.backgroundImage,/gradient/);
+ assert.match(server.style.backgroundImage,/gradient/);
+ document.getElementById("channelOverlay").classList.remove("on");
+ await wait();
+ assert.equal(chat.classList.contains("cmd-unified-background"),false);
+ assert.equal(server.classList.contains("cmd-unified-background"),true);
+ dom.window.close();
+});
+
+test("custom photos keep the ENTIRE uncropped image on portrait mobile and server wallpaper",async()=>{
+ const {dom,window,document}=app(true);
+ window.URL.createObjectURL=()=> "blob:cmd-photo";
+ window.URL.revokeObjectURL=()=>{};
+ const image=new window.Blob(["webp"],{type:"image/webp"});
+ window.fetch=async url=>String(url).startsWith("data:")
+    ?{ok:true,blob:async()=>image}
+    :{ok:true,json:async()=>({image:"data:image/webp;base64,YWJj"})};
+ window.cmdPersonalBackgrounds.refresh();
+ await wait();
+ for(const target of ["channelMessages","workspace"]){
+  const el=document.getElementById(target);
+  assert.equal(el.classList.contains("cmd-unified-background"),true,target);
+  assert.match(el.style.backgroundImage,/blob:cmd-photo/);
+  assert.match(el.style.backgroundSize,/contain/);
+  assert.match(el.style.backgroundSize,/cover/);
+  assert.match(el.style.backgroundRepeat,/no-repeat/);
+ }
+ window.dispatchEvent(new window.Event("resize"));
+ await wait();
+ assert.match(document.getElementById("channelMessages").style.backgroundSize,/contain/);
+ dom.window.close();
+});
+
+test("import preserves aspect ratio and compresses enough for account sync limits",()=>{
+ assert.match(script,/Math\.min\(1,1800\/w,1800\/h\)/);
+ assert.match(script,/blob\.size<=600000/);
+ assert.match(script,/ratio/);
+ assert.match(script,/canvas\.toBlob/);
+ assert.match(script,/image\/webp/);
 });
