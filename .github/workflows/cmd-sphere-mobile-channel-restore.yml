@@ -6,6 +6,8 @@ on:
       - cmd-sphere/boutique-4k-refonte-20261016
     paths:
       - cmd-discord-mcp/cmd-chat-polish.js
+      - cmd-discord-mcp/cmd-conversation-frames.js
+      - cmd-discord-mcp/tests/mobile-message-frame.test.cjs
       - cmd-discord-mcp/cmd-personal-backgrounds.js
       - cmd-discord-mcp/cmd-app-update.js
       - cmd-discord-mcp/server.js
@@ -28,8 +30,8 @@ jobs:
         with:
           node-version: "22"
       - name: Verify syntax
-        run: node --check cmd-chat-polish.js && node --check cmd-personal-backgrounds.js && node --check cmd-app-update.js && node --check server.js
+        run: node --check cmd-chat-polish.js && node --check cmd-conversation-frames.js && node --check cmd-personal-backgrounds.js && node --check cmd-app-update.js && node --check server.js
       - name: Install test dependencies only
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Test original full screen behavior and back navigation
-        run: node --test tests/mobile-channel-fullscreen.test.cjs tests/unified-wallpaper.test.cjs
+        run: node --test tests/mobile-channel-fullscreen.test.cjs tests/unified-wallpaper.test.cjs tests/mobile-message-frame.test.cjs
