@@ -74,17 +74,15 @@ let last="",current=null,objectUrl="",sequence=0;const touched=new Set();
 function targets(){
  // One background per visible *screen*, never on nested ancestors. This avoids
  // repeated/scaled copies and works after the iPhone chat moves into its body portal.
- const channel=$("#channelOverlay.on #channelMessages")||$("#channelMessages");
+ const overlay=$("#channelOverlay");
+ const channel=overlay?.classList.contains("on")?overlay.querySelector("#channelMessages"):null;
  const dm=$("#msgs")||$("#messages");
  const workspace=$("#workspace");
  const server=workspace?.querySelector(".cmd-server-panel")?workspace:null;
  const other=$(".cmd-app")||$(".sphere-app:not(.cmd-chat-mobile-portal)")||document.body;
- return [...new Set([channel,dm,server,other].filter(Boolean).filter(el=>{
-   // Do not wallpaper the dashboard shell behind an open iPhone conversation;
-   // its own message area is the foreground wallpaper.
-   if(el===other&&(channel||server))return false;
-   return true;
- }))];
+ // Only paint the visible context. Inactive chat overlays are often still in
+ // the DOM and must not swallow the general background applied to the app.
+ return [...new Set([channel,dm,server,(!channel&&!dm&&!server)?other:null].filter(Boolean))];
 }
 function clear(){
  for(const el of touched){
@@ -241,7 +239,7 @@ picker.addEventListener("change",async()=>{
     }
   }
   if(!blob||blob.size>600000)throw Error("Photo impossible à synchroniser sous 600 Ko");
-  const key=selected();pending[key]=blob;await disk("put",key,blob);try{localStorage.removeItem(localKey(key))}catch{}
+  const key=selected();pending[key]=blob;await disk("put",key,blob).catch(()=>{});try{localStorage.removeItem(localKey(key))}catch{}
   refresh();
   try{await saveAccount(key,blob);delete pending[key];refresh();state.textContent="Photo synchronisée avec ton compte"}catch{state.textContent="Photo enregistrée ici ; synchronisation indisponible"}
  }catch(e){state.textContent="Import impossible : "+e.message}finally{picker.value=""}
@@ -263,6 +261,10 @@ function mount(){
 }
 window.cmdPersonalBackgrounds={open:openPanel,close:closePanel,refresh,scope};
 mount();refresh();
+const overlay=$("#channelOverlay");
+if(overlay&&window.MutationObserver){
+ new MutationObserver(()=>{void paint()}).observe(overlay,{attributes:true,attributeFilter:["class"]});
+}
 setInterval(()=>{mount();void paint()},1800);
 window.addEventListener("focus",refresh);window.addEventListener("pageshow",refresh);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
