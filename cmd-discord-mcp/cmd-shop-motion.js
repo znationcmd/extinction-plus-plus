@@ -7,7 +7,7 @@ const style=document.createElement('style');style.textContent=`
 .cmd-motion-visible .cmd-photo-sheen,.cmd-motion-visible.cmd-photo-sheen{animation-play-state:running}
 .cmd-photo-scene .art{overflow:hidden}.cmd-photo-scene.cmd-motion-visible .art>img{animation:cmdRealSceneDrift 24s ease-in-out infinite alternate!important;transform-origin:50% 45%;will-change:transform}
 .cmd-photo-lightning.cmd-motion-visible .art:after{content:'';position:absolute;inset:0;background:#dfd0ff;pointer-events:none;opacity:0;animation:cmdRealLightning 11s linear infinite}
-.cmd-profile-art-avatar.cmd-motion-visible{animation:cmdRealAvatarBreathe 7s ease-in-out infinite!important}
+/* The saved avatar ornament must remain anchored to its photo. */
 .cmd-profile-effect-art.cmd-motion-visible{animation:cmdRealSceneDrift 28s ease-in-out infinite alternate!important;transform-origin:50% 40%}
 .cmd-profile-photo-sheen{position:absolute;inset:0;pointer-events:none;z-index:7;mask-size:100% 100%;-webkit-mask-size:100% 100%}
 .cmd-profile-avatar-sheen{position:absolute;left:9px;top:-89px;width:180px;height:180px;pointer-events:none;z-index:8}
@@ -25,11 +25,12 @@ function activate(el){for(const s of (el.matches('.cmd-photo-sheen')?[el]:el.que
 function observe(el){if(observed.has(el))return;observed.add(el);if(observer)observer.observe(el);else el.classList.add('cmd-motion-visible')}
 function refresh(){for(const img of document.querySelectorAll('.art>img,.cmd-profile-art-frame,.cmd-profile-art-avatar,.cmd-profile-effect-art')){
  const src=img.getAttribute('src')||'';if(!src.startsWith('/cmd-art/')&&!src.startsWith('/cmd-realistic/'))continue;
+ if(img.matches('.cmd-profile-art-avatar')){img.dataset.photoSheen='1';img.parentElement?.querySelectorAll('.cmd-profile-avatar-sheen').forEach(s=>s.remove());continue;}
  const parent=img.closest('.item,.diamondCard,.cmd-shop-preview-art')||img;observe(parent);
  const isEffect=src.includes('/effect/')||/-scene-/.test(src);if(isEffect){parent.classList.add('cmd-photo-scene');if(src.includes('purplelightning')||src.includes('lightning-scene'))parent.classList.add('cmd-photo-lightning');continue}
  if(img.dataset.photoSheen)return;img.dataset.photoSheen='1';const sheen=document.createElement('span');sheen.setAttribute('aria-hidden','true');sheen.className='cmd-photo-sheen';sheen.dataset.maskSrc=src;sheen.style.animationDelay='-'+(observed.size%7)+'s';
  if(img.matches('.cmd-profile-art-frame')){sheen.classList.add('cmd-profile-photo-sheen');img.after(sheen);observe(sheen)}
- else if(img.matches('.cmd-profile-art-avatar')){sheen.classList.add('cmd-profile-avatar-sheen');img.after(sheen);observe(sheen);observe(img)}
+
  else {img.parentElement.append(sheen);if(parent.classList.contains('cmd-motion-visible'))activate(parent)}
  }
  for(const el of observed)if(!el.isConnected){observer?.unobserve(el);observed.delete(el)}
