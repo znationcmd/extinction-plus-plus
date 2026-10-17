@@ -110,22 +110,17 @@ function clear(){
 }
 function wallpaperStyle(value){
  if(validPreset(value))return {image:PRESETS[value.slice(7)][2],size:"cover",position:"center",repeat:"no-repeat"};
- if(validGallery(value)){
-  const url="url("+JSON.stringify(wallpaperUrl(value.slice(8)))+")";
-  return {image:"linear-gradient(#0b071a55,#0b071a55),"+url+","+url,
-          size:"100% 100%,contain,cover",position:"center,center,center",
-          repeat:"no-repeat,no-repeat,no-repeat"};
- }
- if(value instanceof Blob){
-  if(!objectUrl)objectUrl=URL.createObjectURL(value);
-  const url="url("+JSON.stringify(objectUrl)+")";
-  // On portrait iPhone, preserve 100% of a landscape artwork without distortion.
-  // The same photo fills the unused margins underneath the uncropped foreground.
-  return {image:"linear-gradient(#0b071a55,#0b071a55),"+url+","+url,
-          size:"100% 100%,contain,cover",position:"center,center,center",
-          repeat:"no-repeat"};
- }
- return null;
+ const isIllustration=validGallery(value),isPhoto=value instanceof Blob;
+ if(!isIllustration&&!isPhoto)return null;
+ if(isPhoto&&!objectUrl)objectUrl=URL.createObjectURL(value);
+ const url="url("+JSON.stringify(isIllustration?wallpaperUrl(value.slice(8)):objectUrl)+")";
+ // One image layer, never a stacked 'contain' image over a 'cover' copy.
+ // On portrait screens the wallpaper crops naturally instead of stretching;
+ // the user can always see the full original in the gallery thumbnail.
+ // This removes horizontal seams at the two edges of the centered copy.
+ return {image:"linear-gradient(#0b071a55,#0b071a55),"+url,
+         size:"100% 100%,cover",position:"center,center",
+         repeat:"no-repeat,no-repeat"};
 }
 function setSurface(el,style){
  for(const [key,value] of [["background-image",style.image],["background-size",style.size],
