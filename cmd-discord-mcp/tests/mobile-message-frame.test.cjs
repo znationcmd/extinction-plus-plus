@@ -62,8 +62,8 @@ test("short and long messages stay inside the same responsive crystal border",as
  assert.match(own.style.getPropertyValue("--cmd-chat-border-image"),/amethyst\.svg/);
  assert.match(style,/border-image-source:var\(--cmd-chat-border-image\)!important/);
  assert.match(style,/border-image-slice:105 105 105 105!important/);
- assert.match(style,/border-width:clamp\(22px,6vw,30px\)!important/);
- assert.match(style,/background-clip:padding-box!important/);
+ assert.match(style,/border:clamp\(26px,7vw,36px\) solid transparent!important/);
+ assert.match(style,/background:linear-gradient\(150deg,#753ab0,#633097\) padding-box!important/);
  assert.match(style,/width:fit-content!important/);
  assert.match(style,/height:auto!important/);
  assert.match(style,/min-height:0!important/);
@@ -86,12 +86,31 @@ test("message length changes do not alter the composer or duplicate decorative o
  const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
  assert.equal((style.match(/border-image-slice:105 105 105 105!important/g)||[]).length,1);
  assert.match(style,/word-break:normal!important/);
- assert.match(style,/border-width:23px!important/);
+ assert.match(style,/border-width:29px!important/);
  assert.match(style,/height:auto!important/);
  assert.match(style,/max-height:none!important/);
  assert.equal(document.querySelectorAll("#channelMessages .cmd-chat-framed").length,1);
  assert.equal(document.querySelectorAll("#channelMessages .cmd-message-frame-art").length,0);
  assert.equal(document.querySelector("#channelInput").tagName,"TEXTAREA");
  assert.equal(document.querySelector("#channelSend").textContent,"Envoyer");
+ dom.window.close();
+});
+
+
+test("crystal border never hides the message content or paints a second card",async()=>{
+ const {dom,document}=app("amethyst");
+ await tick();
+ const main=document.getElementById("own");
+ const cssText=[...document.querySelectorAll("style")].map(el=>el.textContent).join("\n");
+ assert.equal(main.classList.contains("cmd-chat-framed"),true);
+ assert.match(cssText,/border-image-slice:105 105 105 105!important/);
+ assert.match(cssText,/flex:0 1 auto!important/);
+ assert.match(cssText,/height:auto!important/);
+ assert.match(cssText,/max-height:none!important/);
+ assert.match(cssText,/background:transparent!important/);
+ assert.match(cssText,/background:none!important;border:0!important;border-image:none!important/);
+ assert.doesNotMatch(cssText,/background-size:100% 100%/);
+ assert.doesNotMatch(cssText,/border-image-slice:105 105 105 105 fill/);
+ assert.equal(main.querySelector(".msg-text").textContent,"Test");
  dom.window.close();
 });
