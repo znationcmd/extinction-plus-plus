@@ -291,7 +291,8 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   --cmd-avatar-center-y:0px;
   position:relative!important;
   overflow:visible!important;
-  isolation:isolate!important;
+  isolation:auto!important;
+  z-index:auto!important; /* Unstack the avatar row so the connection dot can sit above the crystal card frame. */
 }
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar,
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .cmd-profile-avatar-sheen{
@@ -316,9 +317,7 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   z-index:32!important;
 }
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .cmd-profile-avatar-sheen{
-  z-index:33!important;
-  mask-position:center center!important;
-  -webkit-mask-position:center center!important;
+  display:none!important; /* Do not render a second masked silhouette behind the saved ornament. */
 }
 .page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatarRing{
   left:var(--cmd-avatar-center-x)!important;
@@ -327,4 +326,56 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   height:116px!important;
   transform:translate(-50%,-50%)!important;
   transform-origin:center center!important;
+}
+
+/* Connection presence always sits above the avatar jewellery and the card frame.
+   Edit-pencil indicator moves to the opposite corner so it does not conceal the crescent. */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatar{
+  z-index:31!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+  animation:none!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .statusDot{
+  position:absolute!important;
+  box-sizing:border-box!important;
+  left:93px!important;
+  top:19px!important;
+  width:30px!important;
+  height:30px!important;
+  border:4px solid #24122d!important;
+  border-radius:50%!important;
+  display:grid!important;
+  place-items:center!important;
+  box-shadow:0 2px 11px #000a,0 0 0 1px #d1a5ff66!important;
+  z-index:60!important;
+  pointer-events:none!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .statusDot[data-presence="idle"]::after{
+  content:"☾";
+  color:#26152b;
+  font:900 18px/1 system-ui,sans-serif;
+  transform:translateY(-1px);
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .statusDot[data-presence="dnd"]::after{
+  content:"";
+  width:12px;
+  height:4px;
+  border-radius:2px;
+  background:#fff;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .statusDot[data-presence="invisible"]::after{
+  content:"";
+  width:11px;
+  height:11px;
+  border:2px solid #343039;
+  border-radius:50%;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatarEditTap{
+  z-index:43!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatarEditTap::after{
+  left:-4px!important;
+  right:auto!important;
+  bottom:0!important;
 }
