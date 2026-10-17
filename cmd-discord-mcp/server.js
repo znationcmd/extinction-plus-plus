@@ -200,7 +200,7 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-page-position.js?v=20261010keep1"></script></body>');
 
     if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-settings.js?v=20261008settingsfix6"></script><script defer src="/cmd-ai-ui.js?v=20261008b"></script></body>');
-    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261017pwa-dom-sibling2"></head>');
+    if(typeof body==="string"&&body.includes('id="dockProfileMain"'))body=body.replace(/<\/head>/i,'<link rel="stylesheet" href="/discord-native-layout.css?v=20261017message-composer-frame1"></head>');
     // HD emergency catalogue: staged, reversible, loaded only in CMD Sphere HTML pages.
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes('id="dockProfileMain"')))
       body=body.replace(/<\/body>/i,'<script defer src="/hd-secours/v1/catalogue-resolver.js?v=1"></script><script defer src="/hd-secours/v1/catalogue-enable.js?v=1"></script></body>');
@@ -216,7 +216,7 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261016plus3"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017messageframes-restored1"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
