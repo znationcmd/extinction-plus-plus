@@ -216,7 +216,7 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017messageframes-restored1"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017ninesliceadaptive2"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
@@ -4584,7 +4584,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
-    if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
+    if(req.method==="GET"&&url.pathname==="/cmd-conversation-frames.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-conversation-frames.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-motion.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-motion.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-shop-3d.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-shop-3d.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&/^\/vendor\/three\.(module|core)\.js$/.test(url.pathname)){const name=url.pathname.split("/").pop();res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=31536000,immutable","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./node_modules/three/build/"+name,import.meta.url),"utf8"));return}
