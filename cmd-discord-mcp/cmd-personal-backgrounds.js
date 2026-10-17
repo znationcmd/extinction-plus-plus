@@ -62,7 +62,9 @@ async function eraseAccount(key){
  const r=await fetch(endpoint(key),{method:"DELETE",credentials:"same-origin"});
  if(!r.ok)throw Error("Suppression distante indisponible");
 }
+const pending=Object.create(null);
 async function stored(key){
+ if(Object.prototype.hasOwnProperty.call(pending,key))return pending[key];
  const cloud=await fetchAccount(key).catch(()=>null);if(cloud)return cloud;
  let preset=null;try{preset=localStorage.getItem(localKey(key))}catch{}
  if(validPreset(preset))return preset;
@@ -145,8 +147,8 @@ for(const [name,config] of Object.entries(PRESETS)){
  button.addEventListener("click",async()=>{
   const key=selected(),value="preset:"+name;
   try{localStorage.setItem(localKey(key),value)}catch{}
-  await disk("delete",key).catch(()=>{});refresh();
-  try{await saveAccount(key,value);state.textContent="Fond synchronisé avec ton compte"}catch{state.textContent="Fond enregistré ici, synchronisation indisponible"}
+  pending[key]=value;await disk("delete",key).catch(()=>{});refresh();
+  try{await saveAccount(key,value);delete pending[key];refresh();state.textContent="Fond synchronisé avec ton compte"}catch{state.textContent="Fond enregistré ici, synchronisation indisponible"}
  });grid.append(button);
 }
 function closePanel(){panel.hidden=true;backdrop.hidden=true;backdrop.classList.remove("on")}
@@ -159,8 +161,8 @@ backdrop.addEventListener("click",closePanel);close.addEventListener("click",clo
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!panel.hidden)closePanel()});
 reset.addEventListener("click",async()=>{
  const key=selected();try{localStorage.removeItem(localKey(key))}catch{}
- await disk("delete",key).catch(()=>{});refresh();
- try{await eraseAccount(key);refresh();state.textContent="Fond supprimé et synchronisé"}catch{state.textContent="Fond supprimé ici ; synchronisation indisponible"}
+ pending[key]=null;await disk("delete",key).catch(()=>{});refresh();
+ try{await eraseAccount(key);delete pending[key];refresh();state.textContent="Fond supprimé et synchronisé"}catch{state.textContent="Fond supprimé ici ; synchronisation indisponible"}
 });
 picker.addEventListener("change",async()=>{
  const file=picker.files?.[0];if(!file)return;
@@ -180,9 +182,9 @@ picker.addEventListener("change",async()=>{
   canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
   if(typeof image.close==="function")image.close();
   const blob=await new Promise(done=>canvas.toBlob(done,"image/webp",.68));if(!blob)throw Error("Conversion impossible");
-  const key=selected();await disk("put",key,blob);try{localStorage.removeItem(localKey(key))}catch{}
+  const key=selected();pending[key]=blob;await disk("put",key,blob);try{localStorage.removeItem(localKey(key))}catch{}
   refresh();
-  try{await saveAccount(key,blob);state.textContent="Photo synchronisée avec ton compte"}catch{state.textContent="Photo enregistrée ici ; synchronisation indisponible"}
+  try{await saveAccount(key,blob);delete pending[key];refresh();state.textContent="Photo synchronisée avec ton compte"}catch{state.textContent="Photo enregistrée ici ; synchronisation indisponible"}
  }catch(e){state.textContent="Import impossible : "+e.message}finally{picker.value=""}
 });
 function mount(){
