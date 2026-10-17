@@ -4536,7 +4536,7 @@ const httpServer=createServer(async(req,res)=>{
       }
       const body=await readFormBodyJson(req);
       const image=String(body.image||"");
-      const isPreset=/^preset:(aurora|violet|ocean|forest|sunset|midnight|rose)$/.test(image);
+      const isPreset=/^preset:(aurora|violet|ocean|forest|sunset|midnight|rose)$/.test(image)||/^gallery:(prairie-fleurie|fourrure-sauvage|coeur-obsidienne|emeraudes|nebuleuse-violette|ville-neon|diamant|portail-violet|voie-lactee|navire-fantome)$/.test(image);
       if(!isPreset&&(image.length>850000||!image.startsWith('data:image/webp;base64,'))){sendJson(res,400,{error:"Image WebP invalide ou trop volumineuse (625 Ko max)"});return}
       await pool.query("INSERT INTO cmd_personal_wallpapers(user_id,scope,image_data) VALUES($1,$2,$3) ON CONFLICT(user_id,scope) DO UPDATE SET image_data=EXCLUDED.image_data,updated_at=NOW()",[userId,key,image]);
       sendJson(res,200,{ok:true});return;
@@ -4570,6 +4570,17 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-app-update.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-app-update.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname.startsWith("/cmd-wallpapers/")){
+      const match=/^\/cmd-wallpapers\/([a-z0-9-]{2,60})\.webp$/.exec(url.pathname);
+      const known=new Set(["prairie-fleurie","fourrure-sauvage","coeur-obsidienne","emeraudes","nebuleuse-violette","ville-neon","diamant","portail-violet","voie-lactee","navire-fantome"]);
+      if(!match||!known.has(match[1])){res.writeHead(404).end("Wallpaper not found");return}
+      try{
+        const data=readFileSync(new URL("./assets/wallpapers/"+match[1]+".webp",import.meta.url));
+        res.writeHead(200,{"content-type":"image/webp","cache-control":"public,max-age=86400","x-content-type-options":"nosniff"});
+        res.end(data);
+      }catch(e){console.error("[CMD_WALLPAPER_ASSET]",e.message);res.writeHead(404).end("Wallpaper unavailable")}
+      return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-personal-backgrounds.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-personal-backgrounds.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-dm-nameplate.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=300","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-dm-nameplate.js",import.meta.url),"utf8"));return}
