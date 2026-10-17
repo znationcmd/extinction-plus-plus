@@ -22,10 +22,11 @@ function app(native=true){
  window.eval(script);
  return {dom,window,requests,document:window.document};
 }
-test("the second screenshot is THE ONLY wallpaper panel in a native chat",async()=>{
+test("the second screenshot is THE ONLY wallpaper panel in a native chat",async t=>{
  assert.doesNotThrow(()=>new Function(script));
  assert.doesNotMatch(chat,/cmdWallpaperPanel=document\.createElement/);
  const {dom,document,window}=app(true);
+ t.after(()=>dom.window.close());
  assert.equal(document.querySelectorAll("#cmdWallpaperPanel").length,1);
  assert.equal(document.querySelectorAll("#cmdPersonalBackgroundPanel").length,0);
  assert.equal(document.querySelectorAll("#channelToolSheet [data-cmd-background-tool]").length,0);
@@ -43,8 +44,9 @@ test("the second screenshot is THE ONLY wallpaper panel in a native chat",async(
  await wait(); // allow initial async remote wallpaper load to finish before jsdom teardown
  dom.window.close();
 });
-test("wallpaper presets save to SERVER scope and reflect in conversation",async()=>{
+test("wallpaper presets save to SERVER scope and reflect in conversation",async t=>{
  const {dom,document,window,requests}=app(true);
+ t.after(()=>dom.window.close());
  window.cmdPersonalBackgrounds.open();
  const violet=[...document.querySelectorAll(".cmd-wallpaper-preset")].find(x=>x.textContent==="violet");
  violet.click();await wait();
@@ -56,8 +58,9 @@ test("wallpaper presets save to SERVER scope and reflect in conversation",async(
  assert.ok(requests.some(x=>x.method==="PUT"&&x.url.includes("scope=global")&&JSON.parse(x.body).image==="preset:ocean"));
  dom.window.close();
 });
-test("private messages get only one unified launcher and main/global scope",async()=>{
+test("private messages get only one unified launcher and main/global scope",async t=>{
  const {dom,window,document}=app(false);
+ t.after(()=>dom.window.close());
  const grid=document.querySelector("#cmdDmToolSheet .compose-sheet-grid");
  assert.equal(grid.querySelectorAll("[data-cmd-background-tool]").length,1);
  window.cmdPersonalBackgrounds.open();
@@ -77,8 +80,9 @@ test("PWA/app uses single synced wallpaper asset with no-store cache and validat
 });
 
 
-test("same artwork follows chat AND selected server without layering it on the parent shell",async()=>{
+test("same artwork follows chat AND selected server without layering it on the parent shell",async t=>{
  const {dom,document,window}=app(true);
+ t.after(()=>dom.window.close());
  await wait();
  window.cmdPersonalBackgrounds.open();
  [...document.querySelectorAll(".cmd-wallpaper-preset")].find(x=>x.textContent==="aurora").click();
@@ -98,8 +102,9 @@ test("same artwork follows chat AND selected server without layering it on the p
  dom.window.close();
 });
 
-test("custom photos keep the ENTIRE uncropped image on portrait mobile and server wallpaper",async()=>{
+test("custom photos keep the ENTIRE uncropped image on portrait mobile and server wallpaper",async t=>{
  const {dom,window,document}=app(true);
+ t.after(()=>dom.window.close());
  window.URL.createObjectURL=()=> "blob:cmd-photo";
  window.URL.revokeObjectURL=()=>{};
  const image=new window.Blob(["webp"],{type:"image/webp"});
