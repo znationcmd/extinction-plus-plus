@@ -828,3 +828,84 @@ body:has(.sphere-app #channelOverlay.on) #cmd-sphere-tools{
     min-height:0!important;overflow-y:auto!important;
   }
 }
+
+
+/* 2026-10-17 — restore premium message-composer FRAME in installed iPhone PWA.
+   The salon remains a full-screen view; no handler, input ID or form is replaced.
+   Target both the body-level PWA portal and the direct-body fallback. */
+@media(max-width:850px){
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-compose-wrap,
+  body>#channelOverlay.on .channel-compose-wrap{
+    position:relative!important;
+    display:flex!important;flex-direction:column!important;flex:0 0 auto!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    padding:9px max(10px,env(safe-area-inset-right,0px))
+            calc(10px + env(safe-area-inset-bottom,0px))
+            max(10px,env(safe-area-inset-left,0px))!important;
+    background:linear-gradient(180deg,#392748fa,#1a112afc)!important;
+    border-top:1.5px solid #be8ce8!important;
+    box-shadow:inset 0 2px 2px #ffffff35,0 -7px 22px #0009!important;
+    box-sizing:border-box!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer,
+  body>#channelOverlay.on .channel-composer{
+    display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+    gap:6px!important;min-height:64px!important;
+    width:100%!important;max-width:100%!important;min-width:0!important;
+    padding:7px!important;
+    background:linear-gradient(145deg,#3d314a,#292036)!important;
+    border:1.5px solid #ad85d9!important;border-radius:19px!important;
+    box-shadow:inset 0 2px 2px #ffffff56,inset 0 -3px 7px #11091f9c,
+               0 4px 0 #0b0614,0 8px 21px #0008!important;
+    box-sizing:border-box!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer textarea,
+  body>#channelOverlay.on .channel-composer textarea{
+    display:block!important;flex:1 1 0!important;width:0!important;
+    min-width:0!important;max-width:100%!important;
+    min-height:50px!important;max-height:124px!important;
+    padding:13px 11px!important;margin:0!important;
+    background:linear-gradient(155deg,#22192e,#30263a)!important;
+    border:1px solid #846da1!important;border-radius:13px!important;
+    box-shadow:inset 0 2px 8px #0008,inset 0 1px #ffffff25!important;
+    color:#f8f0ff!important;font-size:16px!important;line-height:1.35!important;
+    outline:none;resize:none!important;box-sizing:border-box!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer textarea:focus,
+  body>#channelOverlay.on .channel-composer textarea:focus{
+    border-color:#d9b1ff!important;box-shadow:inset 0 2px 7px #0008,
+      0 0 0 2px #bb8be54d!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer button,
+  body>#channelOverlay.on .channel-composer button{
+    flex:0 0 auto!important;max-width:100%!important;
+    min-width:37px!important;min-height:48px!important;
+    margin:0!important;padding:0 7px!important;
+    border:1px solid #9e80c0!important;border-radius:12px!important;
+    box-shadow:inset 0 2px 2px #ffffff40,0 4px 0 #0b0615,0 6px 14px #0008!important;
+    box-sizing:border-box!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on #channelSend,
+  body>#channelOverlay.on #channelSend{
+    min-width:66px!important;max-width:83px!important;min-height:48px!important;
+    padding:0 8px!important;font-size:12px!important;
+    background:linear-gradient(145deg,#8072ff,#4f45c8)!important;color:#fff!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .send-note,
+  body>#channelOverlay.on .send-note{
+    display:none!important;
+  }
+  .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .reply-bar.on,
+  body>#channelOverlay.on .reply-bar.on{
+    width:100%!important;margin-bottom:7px!important;border-radius:12px!important;
+    background:#21152f!important;border:1px solid #825fa3!important;
+  }
+  @media(max-width:420px){
+    .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer,
+    body>#channelOverlay.on .channel-composer{gap:4px!important;padding:5px!important}
+    .sphere-app.cmd-chat-mobile-portal #channelOverlay.on .channel-composer button,
+    body>#channelOverlay.on .channel-composer button{min-width:31px!important;padding:0 4px!important}
+    .sphere-app.cmd-chat-mobile-portal #channelOverlay.on #channelSend,
+    body>#channelOverlay.on #channelSend{min-width:59px!important;padding:0 5px!important}
+  }
+}
