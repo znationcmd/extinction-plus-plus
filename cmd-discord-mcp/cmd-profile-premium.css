@@ -290,3 +290,41 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
  left:-11%!important;right:-11%!important;width:122%!important;
  z-index:30!important;pointer-events:none!important;
 }
+
+/* 2026-10-17 — Profile/avatar decoration alignment on installed PWA and mobile Safari.
+   Earlier artwork and premium CSS used TWO incompatible coordinate systems:
+   (6px,-64px) for a top-left corner AND translate(-50%,-50%) for its center.
+   Every decoration now shares the photo's actual center (70px, 0px).
+   Scope deliberately excludes the full-card crystal frame and store previews. */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap{
+  --cmd-profile-avatar-center-x:70px;
+  --cmd-profile-avatar-center-y:0px;
+  position:relative!important;
+  overflow:visible!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+  position:absolute!important;
+  inset:auto!important;
+  left:var(--cmd-profile-avatar-center-x)!important;
+  top:var(--cmd-profile-avatar-center-y)!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:132px!important;
+  height:132px!important;
+  max-width:none!important;
+  max-height:none!important;
+  aspect-ratio:1/1!important;
+  object-fit:contain!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center center!important;
+  pointer-events:none!important;
+  z-index:32!important;
+}
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > .avatarRing{
+  left:var(--cmd-profile-avatar-center-x)!important;
+  top:var(--cmd-profile-avatar-center-y)!important;
+  transform:translate(-50%,-50%)!important;
+  transform-origin:center center!important;
+  width:116px!important;
+  height:116px!important;
+}
