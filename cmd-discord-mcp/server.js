@@ -216,7 +216,7 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017-single-bubble5"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017-fit-frame6"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
