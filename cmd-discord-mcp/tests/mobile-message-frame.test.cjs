@@ -61,7 +61,7 @@ test("restore the earlier complete amethyst border from user's reference screens
  assert.equal(own.dataset.cmdFrameSelected,"amethyst");
  assert.match(own.style.getPropertyValue("--cmd-chat-border-image"),/amethyst\.svg/);
  const style=[...document.querySelectorAll("style")].map(n=>n.textContent).join("\n");
- assert.match(style,/Full four-sided frame: paint the SAME chosen asset/);
+ assert.match(script,/Full four-sided frame: paint the SAME chosen asset/);
  assert.match(style,/background-size:100% 100%/);
  assert.match(style,/background-image:var\(--cmd-chat-border-image\)/);
  assert.doesNotMatch(style,/--cmd-frame-clear-x/);
