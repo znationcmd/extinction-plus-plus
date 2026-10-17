@@ -57,7 +57,7 @@ function cmdSphereRoundPwaIcon(input,size){
   const mask=Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="'+size+'" height="'+size+'"><circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="white"/></svg>');
   return sharp(input,{failOn:"error"}).resize(size,size,{fit:"contain",background:{r:0,g:0,b:0,alpha:0}}).composite([{input:mask,blend:"dest-in"}]).png({compressionLevel:8}).toBuffer();
 }
-const cmdPwaSourceB64=iconB64||logoB64; // Prefer the official square application icon, retain the full logo elsewhere.
+const cmdPwaSourceB64=readFileSync(new URL("./cmd-sphere-pwa-icon.webp",import.meta.url)).toString("base64"); // Dedicated PWA icon, leaving existing website logo unchanged.
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
