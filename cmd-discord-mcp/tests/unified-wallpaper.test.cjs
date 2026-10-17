@@ -40,6 +40,7 @@ test("the second screenshot is THE ONLY wallpaper panel in a native chat",async(
  assert.equal(panel.querySelector("select").value,"server");
  assert.match(panel.textContent,/Importer mon image/);
  assert.match(panel.textContent,/Rétablir le fond par défaut/);
+ await wait(); // allow initial async remote wallpaper load to finish before jsdom teardown
  dom.window.close();
 });
 test("wallpaper presets save to SERVER scope and reflect in conversation",async()=>{
@@ -55,7 +56,7 @@ test("wallpaper presets save to SERVER scope and reflect in conversation",async(
  assert.ok(requests.some(x=>x.method==="PUT"&&x.url.includes("scope=global")&&JSON.parse(x.body).image==="preset:ocean"));
  dom.window.close();
 });
-test("private messages get only one unified launcher and main/global scope",()=>{
+test("private messages get only one unified launcher and main/global scope",async()=>{
  const {dom,window,document}=app(false);
  const grid=document.querySelector("#cmdDmToolSheet .compose-sheet-grid");
  assert.equal(grid.querySelectorAll("[data-cmd-background-tool]").length,1);
@@ -63,6 +64,7 @@ test("private messages get only one unified launcher and main/global scope",()=>
  const select=document.querySelector("#cmdWallpaperPanel select");
  assert.equal(select.value,"global");
  assert.equal(select.querySelector('option[value="server"]').disabled,true);
+ await wait(); // allow initial async wallpaper load to settle
  dom.window.close();
 });
 test("PWA/app uses single synced wallpaper asset with no-store cache and validated preset API",()=>{
