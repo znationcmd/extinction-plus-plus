@@ -249,3 +249,58 @@ function cmdExtras(){
    setInterval(()=>{if($("#channelOverlay")?.classList.contains("on")){mountChat();keyboardControl()}},1000);
  }
 })();
+
+
+/* CMD Sphere iPhone chat restoration 2026-10-17.
+   A salon must open the conversation in a dedicated full-screen screen, not
+   below the server list. Preserve the original DOM node and its handlers.
+   Some translucent/transformed server layouts act as the containing block of
+   position:fixed; a body-level portal avoids that iOS Safari limitation. */
+(()=>{
+"use strict";
+if(window.__cmdMobileChannelPortalFix)return;
+window.__cmdMobileChannelPortalFix=true;
+function start(){
+ const channel=document.getElementById("channelOverlay");
+ const shell=channel?.closest(".sphere-app");
+ if(!channel||!shell)return;
+ const originalParent=channel.parentNode;
+ const nextSibling=channel.nextSibling;
+ const portal=document.createElement("div");
+ portal.className="sphere-app cmd-chat-mobile-portal";
+ portal.setAttribute("data-cmd-portal","channel-conversation");
+ portal.hidden=true;
+ document.body.appendChild(portal);
+ let active=false;
+ const narrow=()=>window.matchMedia("(max-width: 850px)").matches;
+ function sync(){
+  const shouldPortal=narrow()&&channel.classList.contains("on");
+  if(shouldPortal){
+   portal.classList.toggle("cmd-native-selected",shell.classList.contains("cmd-native-selected"));
+   if(channel.parentNode!==portal)portal.appendChild(channel);
+   portal.hidden=false;
+   document.documentElement.classList.add("cmd-channel-screen-open");
+   document.body.classList.add("cmd-channel-screen-open");
+   active=true;
+  }else if(active||channel.parentNode===portal){
+   if(channel.parentNode!==originalParent){
+    if(nextSibling&&nextSibling.parentNode===originalParent)originalParent.insertBefore(channel,nextSibling);
+    else originalParent.appendChild(channel);
+   }
+   portal.hidden=true;
+   document.documentElement.classList.remove("cmd-channel-screen-open");
+   document.body.classList.remove("cmd-channel-screen-open");
+   active=false;
+  }
+ }
+ new MutationObserver(sync).observe(channel,{attributes:true,attributeFilter:["class"]});
+ window.addEventListener("resize",sync,{passive:true});
+ window.addEventListener("orientationchange",sync,{passive:true});
+ document.addEventListener("click",event=>{
+  if(event.target.closest?.("a.cmd-channel-row[data-native-channel],.channel-back"))queueMicrotask(sync);
+ },true);
+ sync();
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});
+else start();
+})();
