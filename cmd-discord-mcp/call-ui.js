@@ -16,6 +16,13 @@ export function callPage(auth,room){
 .stage{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:15px;align-items:stretch}
 .tile{border-radius:18px;overflow:hidden;background:#1c1a22;border:1px solid #ffffff22;min-height:220px;aspect-ratio:16/10;position:relative;display:grid;place-items:center}
 .tile video{height:100%;width:100%;object-fit:cover;background:#14121a}
+.tile .peer-volume{position:absolute;z-index:3;bottom:12px;right:12px;display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:11px;background:#14101de8;border:1px solid #a483cf;color:#f3eaff;font:600 12px system-ui;max-width:calc(100% - 24px)}
+.tile .peer-volume input{width:90px;max-width:32vw;accent-color:#9c77ea;touch-action:pan-y;min-height:30px}
+.tile .peer-volume input:focus-visible{outline:2px solid #d0baff;outline-offset:2px}
+.tile .peer-volume output{font-variant-numeric:tabular-nums;min-width:37px;text-align:right}
+.tile .peer-volume input:disabled{opacity:.45}
+.tile .peer-volume[data-unsupported=true]{color:#dfc5ea}
+.tile.has-peer-volume label{top:12px;bottom:auto}
 .tile .noVideo{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle,#42265c,#19131f);font-size:55px;pointer-events:none}
 .tile.hasVideo .noVideo{display:none}.tile label{position:absolute;left:12px;bottom:12px;background:#000b;border-radius:9px;padding:7px 10px;font-size:13px}
 .controls{display:flex;align-items:center;justify-content:center;gap:12px;position:fixed;bottom:0;left:0;right:0;padding:14px 12px calc(18px + env(safe-area-inset-bottom));background:#17121bf2;z-index:20;flex-wrap:wrap}
@@ -66,6 +73,24 @@ const $=s=>document.querySelector(s);
 const peerId=crypto.randomUUID();
 let localStream=null,connected=false,wantsVideo=false,muted=false,after=0,poller=null,polling=false;
 const pcs=new Map(),candidates=new Map(),known=new Set(),peerNames=new Map();
+const peerVolumes=new Map();
+function applyPeerVolume(id,percent){
+ const key=String(id||""),amount=Number(percent);
+ if(!key||!Number.isInteger(amount)||amount<0||amount>100)return false;
+ const el=Array.from($("#stage").children).find(tile=>tile.dataset.peer===key);
+ const video=el?.querySelector("video");
+ if(!video)return false;
+ const volume=amount/100;
+ try{
+  video.volume=volume;
+  if(Math.abs(Number(video.volume)-volume)>.015)return false;
+  video.muted=amount===0;
+  peerVolumes.set(key,amount);
+  const output=el.querySelector("[data-volume-output]");
+  if(output)output.textContent=amount+" %";
+  return true;
+ }catch{return false}
+}
 let activeScreenTrack=null;
 const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 const safe=s=>String(s||"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
@@ -78,10 +103,31 @@ function tile(id,name,stream,self=false){
  const key=self?"local":id;
  let el=document.querySelector('[data-peer="'+key+'"]');
  if(!el){el=document.createElement("div");el.className="tile";el.dataset.peer=key;
-  el.innerHTML='<video playsinline autoplay '+(self?"muted":"")+'></video><div class="noVideo">'+(self?"👤":"🎧")+'</div><label></label>';$("#stage").append(el);}
+  el.innerHTML='<video playsinline autoplay '+(self?"muted":"")+'></video><div class="noVideo">'+(self?"👤":"🎧")+'</div><label></label>'+(
+    self?'':'<div class="peer-volume" role="group" aria-label="Volume individuel"><span>🔊</span><input type="range" min="0" max="100" step="5" value="100" data-peer-volume aria-label="Volume de ce participant"><output data-volume-output>100 %</output></div>');
+  if(!self){
+   el.classList.add("has-peer-volume");
+   const slider=el.querySelector("[data-peer-volume]");
+   slider.addEventListener("input",()=>{
+    if(!applyPeerVolume(key,Number(slider.value))){
+     slider.disabled=true;el.querySelector(".peer-volume").dataset.unsupported="true";
+     slider.title="Le volume individuel n'est pas compatible avec ce navigateur.";
+     say("Le réglage individuel du volume est indisponible sur cet appareil.");
+    }
+   });
+  }
+  $("#stage").append(el);
+ }
  el.querySelector("label").textContent=name;
  const vid=el.querySelector("video");if(vid.srcObject!==stream)vid.srcObject=stream;
  if(self)vid.muted=true;
+ else{
+  const target=peerVolumes.get(key)??100;
+  if(!applyPeerVolume(key,target)){
+   const slider=el.querySelector("[data-peer-volume]");
+   if(slider){slider.disabled=true;slider.title="Le navigateur ne permet pas ce réglage."; }
+  }
+ }
  const hasVideo=Boolean(stream?.getVideoTracks().some(t=>t.readyState==="live"&&t.enabled));
  el.classList.toggle("hasVideo",hasVideo);
  vid.play().catch(()=>{});return el;
@@ -128,7 +174,7 @@ async function tick(){
    available.add(p.peerId);peerNames.set(p.peerId,p.name);
    if(!known.has(p.peerId)){known.add(p.peerId);connection(p.peerId);if(peerId<p.peerId)await makeOffer(p.peerId)}
   }
-  for(const id of [...known])if(!available.has(id)){known.delete(id);pcs.get(id)?.close();pcs.delete(id);document.querySelector('[data-peer="'+id+'"]')?.remove()}
+  for(const id of [...known])if(!available.has(id)){known.delete(id);pcs.get(id)?.close();pcs.delete(id);peerVolumes.delete(id);document.querySelector('[data-peer="'+id+'"]')?.remove()}
   for(const s of data.signals||[]){after=Math.max(after,s.id);try{await handleSignal(s)}catch(err){say("Signal vidéo : "+err.message)}}
   say("Dans l'appel · "+(available.size+1)+" participant(s)");
  }catch(e){say(e.message)}finally{polling=false}
