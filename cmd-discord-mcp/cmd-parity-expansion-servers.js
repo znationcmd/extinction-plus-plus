@@ -71,9 +71,9 @@ export const features=Object.freeze([
       "template_name"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "implemented_pending_deployment",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
