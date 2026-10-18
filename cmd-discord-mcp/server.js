@@ -22,6 +22,7 @@ import {initCmdSlowmode,parseSlowmodeSeconds,saveNativeMessageWithSlowmode} from
 import {initCmdSocialPrivacy,isBlockedPair,assertNotBlocked,assertFriendRequestPermitted,listAccountBlocks,setAccountBlock,getFriendRequestPrivacy,updateFriendRequestPrivacy} from "./cmd-social-privacy.js";
 import {initCmdDmGuildPrivacy,listDmGuildPrivacy,updateDmGuildPrivacy,assertDmGuildPermitted} from "./cmd-dm-guild-privacy.js";
 import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cmd-streamer-mode.js";
+import {initCmdSensitiveMedia,getCmdSensitiveMedia,saveCmdSensitiveMedia} from "./cmd-sensitive-media.js";
 import {initCmdMessageReminders,createCmdMessageReminder,listCmdMessageReminders,cancelCmdMessageReminder,dispatchDueCmdMessageReminders} from "./cmd-message-reminders.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
@@ -5059,6 +5060,14 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId")})})}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/account/sensitive-media"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const userId=String(auth.user.id);
+        if(req.method==="GET"){sendJson(res,200,await getCmdSensitiveMedia(pool,userId));return}
+        sendJson(res,200,await saveCmdSensitiveMedia(pool,userId,await readFormBodyJson(req)));
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}return;
+    }
     if(url.pathname==="/api/account/streamer-mode"&&(req.method==="GET"||req.method==="PATCH")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -6015,7 +6024,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdMessageReminders(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);
     const cmdReminderTimer=setInterval(()=>dispatchDueCmdMessageReminders(pool,notifyUsers).catch(e=>console.warn("[cmd-reminders]",e.message)),60000);
     cmdReminderTimer.unref?.();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
