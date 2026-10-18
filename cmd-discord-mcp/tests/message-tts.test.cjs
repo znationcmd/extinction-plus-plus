@@ -51,3 +51,20 @@ test('Missing browser synthesis yields no inert menu item or automatic fallback'
   assert.ok(!list.some(x=>x.textContent.includes('Lire à voix haute')));
  }finally{f.close()}
 });
+
+test('TTS user chooses a device-local voice language, keeps private text off remote APIs',()=>{
+ const f=fixture();
+ try{
+  assert.equal(f.w.cmdSphereTts.getSettings().language,'');
+  const choices=openMenu(f);
+  button(choices,'Langue vocale').click();
+  assert.equal(f.w.cmdSphereTts.getSettings().language,'fr-FR');
+  button(openMenu(f),'Lire à voix haute').click();
+  assert.equal(f.speech.spoken[0].lang,'fr-FR');
+  assert.equal(f.speech.spoken[0].text,'Bonjour et bienvenue !');
+  assert.equal(f.w.cmdSphereTts.setLanguage('<script>'),false);
+  assert.equal(f.w.cmdSphereTts.getSettings().language,'fr-FR');
+  assert.equal(f.w.cmdSphereTts.setLanguage(''),true);
+  assert.equal(f.w.cmdSphereTts.getSettings().language,'');
+ }finally{f.close()}
+});
