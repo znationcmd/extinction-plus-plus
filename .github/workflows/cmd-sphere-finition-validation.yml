@@ -30,6 +30,7 @@ on:
       - 'cmd-discord-mcp/tests/native-templates-contract.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-servers.js'
       - 'cmd-discord-mcp/cmd-social-message-actions.js'
+      - 'cmd-discord-mcp/cmd-parity-extra-productivity.js'
       - 'cmd-discord-mcp/cmd-message-reminders.js'
       - 'cmd-discord-mcp/cmd-message-reminders-ui.js'
       - 'cmd-discord-mcp/tests/message-reminders-*.test.cjs'
