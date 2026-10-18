@@ -65,6 +65,7 @@ on:
       - 'cmd-discord-mcp/cmd-language-catalog.json'
       - 'cmd-discord-mcp/cmd-country-language-catalog.json'
       - 'cmd-discord-mcp/tests/country-language-navigation.test.cjs'
+      - 'cmd-discord-mcp/tests/language-alphabet-navigation.test.cjs'
       - 'cmd-discord-mcp/cmd-world-language-codes.js'
       - 'cmd-discord-mcp/tests/world-languages.test.cjs'
       - 'cmd-discord-mcp/cmd-language-auto.js'
@@ -625,5 +626,5 @@ jobs:
           node --check settings-ui.js
           node --check server.js
           node --check cmd-language-auto.js
-      - name: Verify A to Z countries, Swiss dialects and 8148-language fallback
+      - name: Verify A to Z language folders, optional countries, Swiss dialects and 8148-language fallback
         run: node --test tests/country-language-navigation.test.cjs tests/language-alphabet-navigation.test.cjs tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
