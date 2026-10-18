@@ -11,6 +11,7 @@ const config=[
  ['Paramètres',['overview|ⓘ|Vue d’ensemble','channels|☰|Salons','integrations|▣|Intégrations','tag|◇|Tag du serveur','template|◉|Modèle de serveur']],
  ['Expression',['emoji|☻|Émoji','stickers|▧|Autocollants']],
  ['Personnes',['members|♟|Membres','roles|♙|Rôles','invites|♧|Invitations']],
+ ['Audio',['voicecfg|🎙|Paramètres vocaux']],
  ['Modération',['moderation|⚒|Modération','automod|◈|AutoMod','audit|▤|Logs du serveur','bans|⚑|Bannissements','security|⬡|Sécurité']],
  ['Communauté',['community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
@@ -126,6 +127,7 @@ function roles(){
  return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier et attribuer</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
+ if(currentTab==='voicecfg')return intro('Paramètres vocaux','Réglages des salons vocaux CMD Sphere.')+(isNative()?'<section id="csm-native-voicecfg" aria-live="polite">'+info('Chargement des salons vocaux…')+'</section>':info('Disponible pour les serveurs CMD Sphere uniquement.'));
  if(currentTab==='tag')return intro('Tag du serveur','Personnalise l’identité du serveur sur CMD Sphere.')+(isNative()?'<a class="csm-btn primary" href="/profile?server='+safe(id())+'">Ouvrir le profil du serveur</a>':info('Option disponible uniquement pour les serveurs CMD Sphere.'));
  if(currentTab==='template')return intro('Modèle de serveur','Crée un nouveau serveur à partir d’un modèle.')+info('Utilise le bouton Créer un serveur et choisis ton modèle. Un modèle ne modifie pas le serveur existant.');
  if(currentTab==='emoji')return intro('Émoji','Gère les émojis du serveur.')+info('Ouvre un salon du serveur puis le sélecteur Émoji pour accéder aux émojis disponibles. Les paramètres spécifiques seront ajoutés dans cette rubrique.');
@@ -379,6 +381,46 @@ const CMD_AUDIT_ACTION_LABELS={
  create_role:'Rôle créé',update_role:'Rôle modifié',delete_role:'Rôle supprimé',
  set_channel_permissions:'Permissions du salon modifiées'
 };
+async function loadNativeVoiceConfig(){
+ const host=$('#csm-native-voicecfg'),guildId=id();
+ if(!host||!isNative())return;
+ if(!canEditChannels()){host.textContent='Accès réservé aux membres disposant de Gérer les salons.';return}
+ const channels=(ctx.data.channels||[]).filter(ch=>String(ch.type||'')==='voice');
+ if(!channels.length){host.textContent='Crée d’abord un salon vocal dans Salons et catégories.';return}
+ const form=document.createElement('form');form.className='csm-form';
+ const field=(title)=>{const label=document.createElement('label');label.className='csm-field';label.textContent=title;
+ const select=document.createElement('select');select.style.cssText='width:100%;min-height:43px;background:#291b3b;color:#fff;border:1px solid #9b78ce;border-radius:10px;padding:8px';
+ label.append(select);form.append(label);return select};
+ const room=field('Salon vocal');
+ for(const ch of channels){const option=document.createElement('option');option.value=String(ch.id);option.textContent=String(ch.name||'Vocal');room.append(option)}
+ const bitrate=field('Débit demandé (kbit/s)');
+ for(const value of [32,48,64,96,128]){const option=document.createElement('option');option.value=String(value);option.textContent=String(value)+' kbit/s';bitrate.append(option)}
+ const capacity=field('Limite prévue de participants');
+ for(let count=0;count<=99;count++){const option=document.createElement('option');option.value=String(count);option.textContent=count===0?'Sans limite définie':String(count);capacity.append(option)}
+ const info=document.createElement('p');info.className='cmd-small';info.textContent='Réglages enregistrés. La limitation effective des appels et du débit WebRTC reste à raccorder et tester.';
+ const status=document.createElement('p');status.setAttribute('role','status');
+ const save=document.createElement('button');save.type='submit';save.className='csm-btn primary';save.textContent='Enregistrer les paramètres vocaux';
+ form.append(info,save,status);host.replaceChildren(form);
+ let generation=0;
+ async function load(){
+  const next=++generation,channelId=room.value;
+  try{const data=await request('/api/native/voice-config?guildId='+safe(guildId)+'&channelId='+safe(channelId));
+   if(next!==generation||!host.isConnected||currentTab!=='voicecfg'||id()!==guildId)return;
+   bitrate.value=String(data.bitrateKbps);capacity.value=String(data.userLimit);
+   status.textContent='Configuration chargée pour ce salon.';
+  }catch(error){status.textContent='Lecture impossible : '+error.message}
+ }
+ room.addEventListener('change',()=>{void load()});
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();save.disabled=true;
+  try{
+   await request('/api/native/voice-config',{guildId,channelId:room.value,bitrateKbps:Number(bitrate.value),userLimit:Number(capacity.value)},'PATCH');
+   status.textContent='Configuration enregistrée pour le salon vocal (application WebRTC à finaliser).';
+  }catch(error){status.textContent='Enregistrement impossible : '+error.message}
+  finally{save.disabled=false}
+ });
+ void load();
+}
 async function loadNativeAutoMod(){
  const host=$('#csm-native-automod'),guildId=id();
  if(!host||!isNative())return;
@@ -499,6 +541,7 @@ function render(){
  if(currentTab==='community')void loadNativeDiscovery();
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
+ if(currentTab==='voicecfg')void loadNativeVoiceConfig();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
