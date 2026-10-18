@@ -1,6 +1,7 @@
 /** CMD Sphere — expanded Discord parity audit: privacy.
- * Safe preinstall ONLY. No routes, tables, payments, credential collection,
- * personal data processing, session changes or privileged behavior.
+ * Two privacy contracts now have real account-scoped UI and API code. This is
+ * not production validation. Remaining contract declarations are preinstall only.
+ * No payment activation, data removal, or external service has been added.
  */
 export const features=Object.freeze([
   {
@@ -16,9 +17,9 @@ export const features=Object.freeze([
       "reason"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "developed_pending_production_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
@@ -71,9 +72,9 @@ export const features=Object.freeze([
       "allow_shared_servers"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "developed_pending_production_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   }
