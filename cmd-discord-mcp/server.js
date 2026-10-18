@@ -7,6 +7,7 @@ import {initCmdNativeAudit,appendCmdNativeAudit,nativeAuditTarget,handleCmdNativ
 import {handleCmdAccountExport} from "./cmd-account-export.js";
 import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {initCmdNativeVoiceConfig,handleCmdNativeVoiceConfig} from "./cmd-native-voice-config.js";
+import {initCmdNativeAfk,handleNativeAfk} from "./cmd-native-afk-config.js";
 import {parityStatus,parityAuditRows,parityBreakdown} from "./cmd-parity-59.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
@@ -1292,6 +1293,7 @@ async function initNativeDb(){
     UNIQUE(guild_id,source_channel_id)
   )`);
   await initCmdNativeVoiceConfig(pool);
+  await initCmdNativeAfk(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_roles(
     id UUID PRIMARY KEY,
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -4731,6 +4733,7 @@ const httpServer=createServer(async(req,res)=>{
       if(!session){sendJson(res,401,{error:"Connexion requise"});return}
       sendJson(res,200,{catalogue:"CMD Sphere vs Discord",auditDate:"2026-10-16",status:parityStatus(),breakdown:parityBreakdown(),features:parityAuditRows(),note:"Préinstallé signifie uniquement contrat préparatoire; non activé, non vérifié."});return;
     }
+    if(await handleNativeAfk(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeVoiceConfig(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativePermission}))return;
     if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdAccountExport(req,res,url,{pool,auth:dashboardAuth(req),sendJson}))return;
