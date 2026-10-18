@@ -311,6 +311,14 @@
     document.addEventListener('change',function(e){
       if(e.target&&e.target.id==='cmd-sphere-language')syncSettingsLanguage(e.target.value);
     });
+    window.addEventListener('cmd-sphere-language-change',function(event){
+      settingsChosenLanguage='';
+      syncSettingsLanguage(event?.detail?.language||'');
+    });
+    window.addEventListener('cmd-world-language-change',function(event){
+      settingsChosenLanguage='';
+      syncSettingsLanguage(event?.detail?.fallback||event?.detail?.language||'');
+    });
     window.addEventListener('cmd-sphere-language-applied',function(){settingsChosenLanguage='';syncSettingsLanguage()});
     window.addEventListener('storage',function(e){if(e.key==='cmd-sphere-language'){settingsChosenLanguage='';syncSettingsLanguage(e.newValue||'fr')}});
 
