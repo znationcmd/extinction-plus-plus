@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const catalog=JSON.parse(readFileSync(new URL('./cmd-language-catalog.json',import.meta.url),'utf8'));
 const codes=new Set(catalog.languages.map(pair=>String(pair[0])));
 const BASE=/^[a-z]{2,3}$/i;
-const LOCALE=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,7}$/i;
+const LOCALE=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i;
 export const WORLD_LANGUAGE_COUNT=catalog.count;
 export function recognizeWorldLanguage(value){
  const input=String(value||'').trim();
