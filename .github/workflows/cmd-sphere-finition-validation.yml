@@ -69,6 +69,9 @@ on:
       - 'cmd-discord-mcp/cmd-message-translate.js'
       - 'cmd-discord-mcp/cmd-native-rules-screening.js'
       - 'cmd-discord-mcp/tests/native-rules-screening.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-raid-protection.js'
+      - 'cmd-discord-mcp/tests/native-raid-protection.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-invites.js'
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
       - 'cmd-discord-mcp/tests/native-automod.test.cjs'
@@ -501,3 +504,23 @@ jobs:
           node --check server.js
       - name: Validate worldwide languages and Swiss German dialect support
         run: node --test tests/world-languages.test.cjs
+
+  validate-native-raid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check opt-in anti-raid native server and invite guards
+        run: |
+          node --check cmd-native-raid-protection.js
+          node --check cmd-native-invites.js
+          node --check server.js
+          node --check cmd-server-manager.js
+      - name: Verify guarded invite flows, owner auth and existing invite regressions
+        run: node --test tests/native-raid-protection.test.cjs tests/native-invites.test.cjs
