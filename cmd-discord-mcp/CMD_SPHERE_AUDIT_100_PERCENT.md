@@ -186,3 +186,12 @@ Le rappel de messages est désormais **développé dans la branche** mais **non 
 - Fichiers : `server.js`, `cmd-social-message-actions.js`, `cmd-message-forward-ui.js`, `tests/native-message-forward.test.cjs`, `cmd-parity-extra-productivity.js`.
 - Preuve CI : [GitHub Actions #39107940968](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39107940968) : **257 tests réussis, 0 échec**, dont 4 scénarios spécifiques au transfert.
 - État : 🟡 code installé sur GitHub, tests locaux/CI réussis, déploiement Railway non entrepris. Sauvegarde/rétablissement PostgreSQL de production non validés. Ne pas afficher ✅.
+
+
+## Lot masquage volontaire des médias — code non déployé
+- API `GET/PATCH /api/account/sensitive-media` authentifiée et indépendante par compte ; table additive `cmd_sensitive_media_preferences` sans suppression de médias, compte ou message.
+- Interface `cmd-sensitive-media-ui.js` chargée sur les salons : option manuelle dans le menu secondaire des messages pour flouter les photos et vidéos, puis révélation individuelle. DÉSACTIVÉ par défaut pour préserver le rendu actuel des utilisateurs.
+- **Limite explicite :** il n'existe pas de classification automatique des médias sensibles. Le réglage floute toutes les pièces jointes photo/vidéo quand il est activé. Le contrat complet `sensitive_media_blur` reste **partiel** et non déclaré fonctionnel à 100 %.
+- Fichiers : `cmd-sensitive-media.js`, `cmd-sensitive-media-ui.js`, `server.js`, `cmd-social-message-actions.js`, `tests/sensitive-media.test.cjs`.
+- CI : [GitHub Actions #39108417269](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39108417269) : **265 tests réussis, zéro échec**, incluant les 4 tests du masquage opt-in.
+- Production Railway : non déployé, sauvegarde/restauration non encore vérifiée. Aucun paiement ou service externe créé.
