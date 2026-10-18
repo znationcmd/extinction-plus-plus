@@ -224,6 +224,7 @@ function html(res,body,status=200,headers={}){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017-text-safe-frame7"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
+  if(typeof body==="string"&&body.includes('id="channelMessages"')){body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-reminders-ui.js?v=20261018rem1"></script></body>');}
   if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="msgs"')||body.includes('id="messages"'))){
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-productivity.js?v=20261016lot4"></script></body>');
     body=body.replace(/<\/body>/i,'<script defer src="/cmd-chat-search.js?v=20261016lot5"></script></body>');
@@ -5754,6 +5755,10 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-social-privacy-ui.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-social-privacy-ui.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-message-reminders-ui.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-message-reminders-ui.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-social-message-actions.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
