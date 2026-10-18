@@ -5,7 +5,14 @@ const translations = {"en":{"Accueil":"Home","Serveurs":"Servers","Cartes intera
 const corsicanTranslations = {"Accueil":"Accolta","Serveurs":"Servitori","Cartes interactives":"Carte interattive","Installer l’application":"Installà l’applicazione","Nitrado":"Nitrado","Mods DayZ PC":"Mods DayZ PC","Valider JSON / XML":"Cunvalidà JSON / XML","Config propriétaires":"Cunfigurazione di i pruprietarii","Whitelist":"Lista bianca","Shop":"Buttega","Livraisons":"Cunsegne","Promos":"Prumuzione","Battle Pass":"Pass di battaglia","Quêtes":"Missioni","RP":"RP","Économie":"Ecunumia","Alarmes":"Allarmi","Interpol":"Interpol","Killfeed":"Morti","Classements":"Classifiche","Stats":"Statistiche","Tickets":"Biglietti","Plugins":"Estensioni","IA":"IA","Personnalisation":"Persunalizazione","Paramètres":"Paràmetri","Changer de Discord":"Cambià Discord","Langue":"Lingua","Assistant gratuit":"Assistente gratuitu","Ouvrir le menu":"Apre u menù","Fermer le menu":"Chjode u menù","Navigation mobile":"Navigazione mobile","Gérer":"Gestisce","Reconnexion Discord":"Ricunnessione Discord","Aucun Discord installé pour le moment.":"Nisun servitore Discord installatu per avà.","Inviter le bot sur un de tes Discord":"Invità u bot nant'à unu di i to Discord","Discord avec EXTINCTION ++ RSS":"Discord cù CMD Extinction ++ RSS","Inviter EXTINCTION ++ RSS":"Invità CMD Extinction ++ RSS","Connecter mon compte Nitrado":"Cunnette u mo contu Nitrado","Dinos & ressources ARK":"Dinosauri è risorse ARK","Loot DayZ":"Ogetti DayZ","Groupes de joueurs":"Gruppi di ghjucatori","Primes & automatisations":"Ricumpense è autumatisazioni","Serveurs Discord":"Servitori Discord"};
 translations.co = corsicanTranslations;
 const LanguageContext = createContext({ language: 'fr', setLanguage: () => {}, t: value => value });
-const valid = value => languages.some(([code]) => code === value);
+const valid = value => typeof value === 'string' && value.length <= 64 &&
+  (/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i.test(value) || value === 'us');
+const lookupTranslation = code => {
+  if (code === 'fr') return null;
+  if (code === 'us' || code === 'en-US') return translations.en;
+  const base = code.split('-')[0].toLowerCase();
+  return translations[code] || translations[base === 'gsw' ? 'de' : base] || translations.en || null;
+};
 export function useLanguage() { return useContext(LanguageContext); }
 export default function LanguageProvider({ children }) {
   const [language, updateLanguage] = useState('fr');
@@ -21,6 +28,7 @@ export default function LanguageProvider({ children }) {
     updateLanguage(value);
     try { localStorage.setItem('extinction-rss-language', value); } catch {}
   };
-  const t = value => translations[language]?.[value] ?? value;
+  // Untranslated dialects use an existing fallback; do not claim full localization.
+  const t = value => lookupTranslation(language)?.[value] ?? value;
   return <LanguageContext.Provider value={{ language, setLanguage, t }}>{children}</LanguageContext.Provider>;
 }
