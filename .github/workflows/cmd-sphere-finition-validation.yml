@@ -65,6 +65,9 @@ on:
       - 'cmd-discord-mcp/cmd-language-catalog.json'
       - 'cmd-discord-mcp/cmd-world-language-codes.js'
       - 'cmd-discord-mcp/tests/world-languages.test.cjs'
+      - 'cmd-discord-mcp/cmd-language-auto.js'
+      - 'cmd-discord-mcp/patch-runtime.cjs'
+      - 'cmd-discord-mcp/tests/language-auto-ui.test.cjs'
       - 'cmd-discord-mcp/tests/native-voice-text.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-extra-media.js'
       - 'cmd-discord-mcp/cmd-translation.js'
@@ -583,3 +586,23 @@ jobs:
         run: node --check unpack-profile-assets.cjs
       - name: Verify profile manifests stay valid during concurrent asset replacement
         run: node --test tests/profile-asset-atomic.test.cjs
+
+  validate-locale-auto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse mobile language settings and runtime integration
+        run: |
+          node --check cmd-language-auto.js
+          node --check settings-ui.js
+          node --check patch-runtime.cjs
+          node --check server.js
+      - name: Verify locale detection, manual override and worldwide pagination
+        run: node --test tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
