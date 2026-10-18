@@ -32,8 +32,12 @@ export function cmdHistoryParameters(url){
  if(after&&before&&after>before)throw error(400,'Plage de dates inversée.');
  const authorId=String(p.get('authorId')||'').trim();
  if(authorId.length>90||/[\x00-\x1f]/.test(authorId))throw error(400,'Auteur invalide.');
+ const fileFilter=p.get('hasFile');
+ if(fileFilter!==null&&!['true','false'].includes(fileFilter))throw error(400,'Filtre de pièces jointes invalide.');
+ if(fileFilter!==null&&scope!=='server')throw error(400,'Le filtre de pièces jointes est disponible dans les salons serveur uniquement.');
+ const hasFile=fileFilter===null?null:fileFilter==='true';
  const limit=Math.min(50,Math.max(1,Number.parseInt(p.get('limit')||'30',10)||30));
- return {scope,q,guildId,channelId,threadId,groupId,after,before,authorId:authorId||null,limit};
+ return {scope,q,guildId,channelId,threadId,groupId,after,before,authorId:authorId||null,hasFile,limit};
 }
 const commonFilter=[
  'AND strpos(lower(m.body),lower($2::text))>0',
@@ -47,7 +51,7 @@ export async function searchCmdHistory(pool,auth,params,{checkGuildPermissions}=
  const uid=String(auth?.user?.id||'');
  if(!uid)throw error(401,'Connexion requise.');
  const id=params.scope==='server'?params.channelId:params.scope==='dm'?params.threadId:params.groupId;
- const args=[uid,params.q,id,params.after,params.before,params.authorId,params.limit,params.guildId||null];
+ const args=[uid,params.q,id,params.after,params.before,params.authorId,params.limit,params.guildId||null,params.hasFile??null];
  let rows;
  if(params.scope==='server'){
   const member=await pool.query('SELECT membership_role FROM cmd_native_members WHERE guild_id=$1::uuid AND user_id=$2 LIMIT 1',[params.guildId,uid]);
@@ -74,7 +78,9 @@ export async function searchCmdHistory(pool,auth,params,{checkGuildPermissions}=
    'SELECT m.id::text AS id,m.channel_id::text AS "channelId",c.name AS "channelName",',
    'm.sender_user_id AS "authorId",m.body AS content,m.created_at AS "createdAt"',
    'FROM cmd_native_channel_messages m JOIN cmd_native_channels c ON c.id=m.channel_id',
-   'WHERE m.guild_id=$8::uuid AND m.channel_id=$3::uuid',commonFilter
+   'WHERE m.guild_id=$8::uuid AND m.channel_id=$3::uuid',
+   // Enforce the attachment filter inside the authorized channel, never in the browser.
+   commonFilter.replace('ORDER BY','AND ($9::boolean IS NULL OR (CASE WHEN jsonb_typeof(m.attachments)=\'array\' THEN jsonb_array_length(m.attachments)>0 ELSE FALSE END)=$9::boolean) ORDER BY')
   ].join(' ');
   rows=(await pool.query(sql,args)).rows;
  }else if(params.scope==='dm'){
@@ -95,7 +101,7 @@ export async function searchCmdHistory(pool,auth,params,{checkGuildPermissions}=
   ].join(' ');
   rows=(await pool.query(sql,args.slice(0,7))).rows;
  }
- return {scope:params.scope,results:rows.map(r=>({...r,scope:params.scope})),limit:params.limit,search:'full_stored_history',morePossible:rows.length>=params.limit};
+ return {scope:params.scope,results:rows.map(r=>({...r,scope:params.scope})),limit:params.limit,search:'full_stored_history',morePossible:rows.length>=params.limit,hasFile:params.hasFile??null};
 }
 export async function handleCmdHistorySearch(req,res,url,{pool,auth,sendJson,checkGuildPermissions}){
  if(url.pathname!=='/api/cmd/messages/history-search')return false;
