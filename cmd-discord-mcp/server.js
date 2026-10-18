@@ -2672,7 +2672,11 @@ async function updateDmPreferences(auth,input){
 
 async function searchDmUsers(auth,q){
   q=safeText(q,80);if(!q)return [];
-  const r=await pool.query("SELECT a.id,a.username,a.display_name,g.avatar_data_url FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text WHERE a.id::text<>$1 AND (a.username_key LIKE $2 OR LOWER(COALESCE(a.display_name,'')) LIKE $2) ORDER BY a.username_key LIMIT 20",[String(auth.user.id),"%"+q.toLowerCase()+"%"]);
+  const r=await pool.query("SELECT a.id,a.username,a.display_name,g.avatar_data_url FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text WHERE a.id::text<>$1 AND (a.username_key LIKE $2 OR LOWER(COALESCE(a.display_name,'')) LIKE $2)
+  AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE
+    (b.blocker_user_id=$1 AND b.blocked_user_id=a.id::text)
+    OR (b.blocked_user_id=$1 AND b.blocker_user_id=a.id::text))
+  ORDER BY a.username_key LIMIT 20",[String(auth.user.id),"%"+q.toLowerCase()+"%"]);
   return r.rows.map(x=>({id:String(x.id),username:x.username,displayName:x.display_name||x.username,avatar:x.avatar_data_url||null}));
 }
 
@@ -2740,6 +2744,8 @@ async function createGroupDm(auth,input){
   if(a.rows.length!==usernames.length)throw new Error("Un des membres CMD Sphere est introuvable.");
   const ids=[...new Set(a.rows.map(r=>String(r.id)))].filter(id=>id!==me);
   if(!ids.length)throw new Error("Ajoute une autre personne.");
+  for(const uid of ids)await assertNotBlocked(pool,me,uid);
+  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++)await assertNotBlocked(pool,ids[i],ids[j]);
   const prefs=await pool.query("SELECT user_id,allow_dms FROM cmd_user_preferences WHERE user_id=ANY($1::text[])",[ids]);
   if(prefs.rows.some(x=>x.allow_dms===false))throw new Error("Une personne n'accepte pas les messages privés.");
   const client=await pool.connect(),id=crypto.randomUUID();
@@ -2766,6 +2772,9 @@ async function getGroupDmMessages(auth,id){
 }
 async function sendGroupDmMessage(auth,input){
   const g=await requireGroupDm(auth,input.groupId),body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
+  // Existing conversations and membership stay intact. No new message crosses a block.
+  const peers=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[g.id,String(auth.user.id)]);
+  for(const peer of peers.rows)await assertNotBlocked(pool,String(auth.user.id),String(peer.user_id));
   const id=crypto.randomUUID(),uid=String(auth.user.id),r=await pool.query("INSERT INTO cmd_group_dm_messages(id,group_id,sender_user_id,body) VALUES($1,$2,$3,$4) RETURNING created_at",[id,g.id,uid,body]);
   await pool.query("UPDATE cmd_group_dms SET updated_at=NOW() WHERE id=$1",[g.id]);
   const members=await pool.query("SELECT user_id FROM cmd_group_dm_members WHERE group_id=$1 AND user_id<>$2",[g.id,uid]);
@@ -3663,10 +3672,15 @@ async function sendNativeChannelMessage(auth,input){
     const username=String(x.username||"").toLowerCase();
     return lowerBody.includes("@everyone")||lowerBody.includes("@here")||!!(username&&lowerBody.includes("@"+username));
   });
-  if(notifyRecipients.length){
+  // Sender blocks and recipient blocks suppress native mention / channel notifications.
+  const permittedRecipients=[];
+  for(const recipient of notifyRecipients){
+    if(!(await isBlockedPair(pool,String(auth.user.id),String(recipient.user_id))))permittedRecipients.push(recipient);
+  }
+  if(permittedRecipients.length){
     const name=String(row.author_name||auth.user.displayName||auth.user.name||"Utilisateur");
     const preview=body||(attachments.length?"📎 Pièce jointe":"📊 Sondage");
-    notifyUsers(notifyRecipients.map(x=>x.user_id),{
+    notifyUsers(permittedRecipients.map(x=>x.user_id),{
       kind:"message",title:name+" · #"+String(ch.name||"salon"),
       body:preview,href:"/dashboard?openNative="+encodeURIComponent(guildId)+"&openChannel="+encodeURIComponent(String(ch.id)),room:"channel:"+String(ch.id)
     });
