@@ -5,8 +5,9 @@ const root=path.join(__dirname,'..');
 const ui=fs.readFileSync(path.join(root,'settings-ui.js'),'utf8');
 const world=JSON.parse(fs.readFileSync(path.join(root,'cmd-language-catalog.json'),'utf8'));
 const country=JSON.parse(fs.readFileSync(path.join(root,'cmd-country-language-catalog.json'),'utf8'));
-test('A, B, C are separate closed expandable country folders, not alphabet filters',()=>{
- assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
+test('A–Z language folders are the default; country folders remain available and expandable',()=>{
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=true/);
+ assert.match(ui,/allLanguagesButton\.addEventListener\('click'/);
  assert.match(ui,/function renderCountryFolders\(\)/);
  assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
  assert.match(ui,/document\.createElement\('details'\)/);
