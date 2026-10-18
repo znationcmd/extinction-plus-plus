@@ -203,6 +203,7 @@
       if(selected==='us')selected='en';
       var base=selected.split('-')[0].toLowerCase();
       if(base==='gsw')base='de';
+      if(base==='fr')return null; // French is the original interface: do not replace it with English.
       return cmdSettingsLocales[selected]||cmdSettingsLocales[base]||cmdSettingsLocales.en||null;
     }
     function loadLanguageCatalogue(){
