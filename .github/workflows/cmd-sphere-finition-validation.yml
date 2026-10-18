@@ -65,6 +65,8 @@ on:
       - 'cmd-discord-mcp/cmd-language-catalog.json'
       - 'cmd-discord-mcp/cmd-world-language-codes.js'
       - 'cmd-discord-mcp/tests/world-languages.test.cjs'
+      - 'cmd-discord-mcp/tests/native-voice-text.test.cjs'
+      - 'cmd-discord-mcp/cmd-parity-extra-media.js'
       - 'cmd-discord-mcp/cmd-translation.js'
       - 'cmd-discord-mcp/cmd-message-translate.js'
       - 'cmd-discord-mcp/cmd-native-rules-screening.js'
@@ -524,3 +526,21 @@ jobs:
           node --check cmd-server-manager.js
       - name: Verify guarded invite flows, owner auth and existing invite regressions
         run: node --test tests/native-raid-protection.test.cjs tests/native-invites.test.cjs
+
+  validate-native-voice-text:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate native voice-room text JavaScript
+        run: |
+          node --check server.js
+          node --check cmd-parity-extra-media.js
+      - name: Ensure voice-room messages preserve permissions and messaging safety
+        run: node --test tests/native-voice-text.test.cjs tests/cmd-parity-59.test.cjs
