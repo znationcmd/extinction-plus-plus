@@ -221,6 +221,7 @@ function html(res,body,status=200,headers={}){
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
+      if(body.includes('id="channelMessages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-forward-ui.js?v=20261018forward1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017-text-safe-frame7"></script></body>');
       if(body.includes('id="messages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-dm-nameplate.js?v=20261016dmplate"></script></body>');
     }
@@ -5791,6 +5792,10 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/cmd-streamer-mode-ui.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-streamer-mode-ui.js",import.meta.url),"utf8"));return;
+    }
+    if(req.method==="GET"&&url.pathname==="/cmd-message-forward-ui.js"){
+      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-message-forward-ui.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-social-privacy-ui.js"){
       res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
