@@ -15,8 +15,8 @@ const config=[
  ['Communauté',['community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
 const settingTitle=tab=>{for(const [,items] of config)for(const item of items){const [id,,label]=item.split('|');if(id===tab)return label}return 'Paramètres du serveur'};
-async function request(path,body){
- const res=await fetch(path,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+async function request(path,body,method){
+ const res=await fetch(path,{method:method||(body===undefined?'GET':'POST'),credentials:'same-origin',cache:'no-store',headers:body===undefined?{}:{'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
  let json={};try{json=await res.json()}catch{}
  if(!res.ok||json.error)throw Error(json.error||'Erreur HTTP '+res.status);
  return json;
