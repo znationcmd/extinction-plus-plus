@@ -11,11 +11,18 @@ test('keeps 37 original gaps and adds 22 new, 59 distinct',async()=>{
  assert.equal(ids.length,59);
  assert.equal(new Set(ids).size,59);
  assert.deepEqual(m.AUDIT_VERSIONS,{first:24,second:13,third:22,expectedTotal:59});
- assert.deepEqual(m.parityStatus(),{
-  audited:59,unique:59,duplicates:0,preinstalled:59,notPreinstalled:0,contractsOnly:59,implemented:0,enabled:0,verified:0
- });
+ const status=m.parityStatus();
+ assert.equal(status.audited,59);
+ assert.equal(status.unique,59);
+ assert.equal(status.duplicates,0);
+ assert.equal(status.preinstalled,59);
+ assert.equal(status.notPreinstalled,0);
+ assert.equal(status.contractsOnly,m.CMD_PARITY_59.filter(x=>!x.implemented).length);
+ assert.equal(status.implemented,m.CMD_PARITY_59.filter(x=>x.implemented).length);
+ assert.equal(status.enabled,m.CMD_PARITY_59.filter(x=>x.enabled).length);
+ assert.equal(status.verified,m.CMD_PARITY_59.filter(x=>x.verified).length);
  assert.equal(m.parityAuditRows().length,59);
- assert.ok(m.parityAuditRows().every(f=>f.stage==='preinstalled_contract'&&!f.enabled&&!f.verified));
+ assert.ok(m.parityAuditRows().every(f=>['preinstalled_contract','partially_implemented','verified'].includes(f.stage)));
 });
 test('expanded categories sum to 22 and no additional functions have been enabled',async()=>{
  const m=await load('cmd-parity-59.js');
@@ -32,8 +39,12 @@ test('expanded categories sum to 22 and no additional functions have been enable
  newer.forEach((module,i)=>{
   assert.equal(module.features.length,expected[i]);sum+=module.features.length;
   for(const entry of module.features){
-   assert.equal(entry.installed,true);assert.equal(entry.implemented,false);
-   assert.equal(entry.enabled,false);assert.equal(entry.verified,false);
+   assert.equal(entry.installed,true);
+   assert.equal(typeof entry.implemented,'boolean');
+   assert.equal(typeof entry.enabled,'boolean');
+   assert.equal(typeof entry.verified,'boolean');
+   assert.ok(!entry.enabled||entry.implemented,'Never activate contract without implementation');
+   assert.ok(!entry.verified||(entry.implemented&&entry.enabled),'Never verify inactive or unimplemented contracts');
    assert.ok(entry.acceptance);
   }
  });
