@@ -44,6 +44,9 @@ on:
       - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
+      - 'cmd-discord-mcp/cmd-server-verification.js'
+      - 'cmd-discord-mcp/cmd-native-invites.js'
+      - 'cmd-discord-mcp/tests/server-verification.test.cjs'
       - 'cmd-discord-mcp/tests/native-forum-tags.test.cjs'
       - 'cmd-discord-mcp/server.js'
       - 'cmd-discord-mcp/call-ui.js'
@@ -187,3 +190,23 @@ jobs:
           node --check tests/voice-peer-volume.test.cjs
       - name: Test real per-member volume and unsupported mobile behavior
         run: node --test tests/voice-peer-volume.test.cjs
+
+  validate-server-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check verification engine and updated native forms
+        run: |
+          node --check cmd-server-verification.js
+          node --check cmd-native-invites.js
+          node --check cmd-server-manager.js
+          node --check server.js
+      - name: Test safe member verification
+        run: node --test tests/server-verification.test.cjs
