@@ -46,6 +46,7 @@ on:
       - 'cmd-discord-mcp/cmd-forum-tags.js'
       - 'cmd-discord-mcp/cmd-server-verification.js'
       - 'cmd-discord-mcp/cmd-native-invites.js'
+      - 'cmd-discord-mcp/tests/native-invites.test.cjs'
       - 'cmd-discord-mcp/tests/server-verification.test.cjs'
       - 'cmd-discord-mcp/tests/native-forum-tags.test.cjs'
       - 'cmd-discord-mcp/server.js'
