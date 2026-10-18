@@ -46,9 +46,10 @@ export const features=Object.freeze([
       "actions",
       "exempt_roles"
     ],
+    "stage": "partially_implemented_opt_in_native_message_terms_pending_rate_limits_and_attachment_moderation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "raid_protection",
