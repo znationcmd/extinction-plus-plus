@@ -14,6 +14,7 @@
       '.cmd-language-results{display:grid;gap:7px;max-height:48dvh;min-height:80px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:7px 4px;margin:10px 0 16px;border:1px solid #70608077;background:#0b0912;border-radius:16px}',
       '.cmd-language-more{border:1px solid #9b85d9;background:#24173a;color:#fff;border-radius:12px;font:inherit;font-weight:750;padding:14px;width:100%;min-height:46px}',
       '.cmd-language-alphabet{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:58dvh;overflow-y:auto;overscroll-behavior:contain;margin:12px 0 7px;padding:4px}',
+      '.cmd-language-alphabet[hidden],.cmd-language-results[hidden]{display:none!important}',
       '.cmd-country-folder{border:1px solid #63518a;background:#191425;border-radius:14px;overflow:hidden}',
       '.cmd-country-folder summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:12px 15px;font-size:17px;font-weight:800;color:#f5edff}',
       '.cmd-country-folder summary::-webkit-details-marker{display:none}',
@@ -630,7 +631,7 @@
         });
         allLanguagesButton.addEventListener('click',function(){
           allLanguages=!allLanguages;chosenCountry=null;searchInput.value='';
-          activeLetter='A';
+          activeLetter=allLanguages?'':'A';
           updateLetters();refreshCountryList('');
         });
         var automatic=view.querySelector('#cmdLanguageAutomatic'),automaticInfo=view.querySelector('#cmdLanguageAutoInfo');
