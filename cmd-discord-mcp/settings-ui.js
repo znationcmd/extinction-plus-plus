@@ -453,7 +453,7 @@
           // Show current language, then suggestions; everything else remains accessible.
           if(!query&&activeLetter){
             languageCatalogue.forEach(function(entry){
-              var initial=normalizeLanguageQuery(entry[1]).charAt(0).toUpperCase();
+              var initial=normalizeLanguageQuery(entry[1]).replace(/^[^a-z0-9]+/i,'').charAt(0).toUpperCase();
               if(activeLetter==='#'?!/^[A-Z]$/.test(initial):initial===activeLetter)push(entry[0],entry[1]);
             });
           }else if(!query){
