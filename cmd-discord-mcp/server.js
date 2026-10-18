@@ -265,6 +265,11 @@ body=body.replace("</head>",'<style>#channelMessages.cmd-media-channel{display:g
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
     body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
   }
+  // Locale detection must load on the real CMD Sphere HTML pages before deferred
+  // settings/chat scripts. A route alone did not initialize this module in browsers.
+  if(typeof body==="string"&&/<html\\b/i.test(body)&&/<\\/head>/i.test(body)){
+    body=body.replace(/<\\/head>/i,'<script defer src="/cmd-language-auto.js?v=20261018-country-auto1"></script></head>');
+  }
   if(typeof body==="string"&&/<html\b/i.test(body)){
     body=body.replace(/<html\b/i,'<html class="cmd-depth-ui"').replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-ui-depth.css?v=20261016relief1"></head>').replace(/<\/body>/i,'<script defer src="/cmd-ui-depth.js?v=20261016relief1"></script></body>');
   }
