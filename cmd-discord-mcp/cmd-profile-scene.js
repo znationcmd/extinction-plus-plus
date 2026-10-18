@@ -701,11 +701,18 @@ async function save(){
  const btn=$("#cmdSceneSave"),heroSave=$("#cmdScenePreviewSave");btn.disabled=true;heroSave.disabled=true;
  $("#cmdSceneNotice").textContent="Enregistrement sur ton compte CMD Sphere…";
  try{
-  const data={scene:state};if(customDirty)data.customBackground=custom;if(characterDirty)data.characterImage=characterPhoto;if(animalDirty)data.animalImage=animalPhoto;
+  // Send only actual user edits: full stale snapshots can overwrite another device.
+  const submittedState={...state};
+  const sceneChanges=Object.fromEntries(Object.entries(submittedState).filter(([key,value])=>!Object.is(value,savedState[key])));
+  const data={scene:sceneChanges};if(customDirty)data.customBackground=custom;if(characterDirty)data.characterImage=characterPhoto;if(animalDirty)data.animalImage=animalPhoto;
   const r=await fetch("/api/profile/scene",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(data)});
   const output=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(output.error||"Sauvegarde refusée");
-  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;characterDirty=false;animalDirty=false;savedState={...state};savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
+  // Re-read the merged response so unchanged fields from other devices remain visible.
+  const persisted=output.scene&&typeof output.scene==="object"?cleanCatalogueState({...defaults,...output.scene}):{...submittedState};
+  const laterEdits=Object.fromEntries(Object.entries(state).filter(([key,value])=>!Object.is(value,submittedState[key])));
+  state={...persisted,...laterEdits};savedState={...persisted};present();
+  $("#cmdSceneNotice").textContent="Ton décor est enregistré sur ton profil !";customDirty=false;characterDirty=false;animalDirty=false;savedCustom=custom;savedCharacterPhoto=characterPhoto;savedAnimalPhoto=animalPhoto;
   setTimeout(()=>{if(sheet){sheet.hidden=true;document.body.classList.remove("cmd-scene-editor-open")}},550);
  }catch(e){$("#cmdSceneNotice").textContent=e.message||"Erreur de sauvegarde"}
  finally{busy=false;btn.disabled=false;heroSave.disabled=false}
@@ -723,8 +730,7 @@ async function initialize(){
   const r=await fetch("/api/profile/scene",{credentials:"same-origin",cache:"no-store"});if(!r.ok)return;
   const data=await r.json();
   if(data.scene&&typeof data.scene==="object")state=cleanCatalogueState({...defaults,...data.scene});
-  if(state.avatarStyle==="illustrated")state.avatarStyle="3d";
-  if(state.petStyle==="illustrated"||state.petStyle==="3d")state.petStyle="photo";
+  // Never overwrite a saved legacy 3D/illustrated mode just by opening the editor.
   custom=typeof data.customBackground==="string"?data.customBackground:null;
   characterPhoto=typeof data.characterImage==="string"?data.characterImage:null;
   animalPhoto=typeof data.animalImage==="string"?data.animalImage:null;
