@@ -411,11 +411,11 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   }
   async function selectGuild(g,el,railEl){closeDiscordChannel();qs('.sphere-app')?.classList.remove('cmd-native-selected');document.querySelectorAll('.guild,.rail-server').forEach(x=>x.classList.remove('active'));el&&el.classList.add('active');railEl&&railEl.classList.add('active');S.guild=g;S.nativeGuild=null;rememberDashboardPosition('discord',g.id);S.bot=g.availableBots[0]?.id||null;qs('#serverSettingsBtn').disabled=false;qs('#gtitle').textContent=g.name;qs('#gbots').innerHTML=g.availableBots.map(x=>'<span class="bot">'+esc(x.name)+'</span>').join('');qs('#refresh').disabled=!g.installed;if(!g.installed){qs('#workspace').className='empty';qs('#workspace').innerHTML='<h2>'+esc(g.name)+'</h2><p>Ce serveur lié est visible car tu le gères, mais aucun bot CMD n’y est installé. Il reste grisé dans la barre à gauche.</p><button class="btn primary" onclick="openAdd(\'import\')">Importer / connecter</button>';return}await loadStructure()}
   function nativeChannelListItem(gid,x){
-    const openable=['text','announcement','forum','media'].includes(String(x.type||'')),unread=Number(x.unread_count||0);
+    const openable=['text','announcement','forum','media','voice'].includes(String(x.type||'')),unread=Number(x.unread_count||0);
     const badge=unread?'<span class="cmd-channel-badge">'+Math.min(99,unread)+'</span>':'';
     const archiveCount=Number(x.archived_count||0);
     const archived=archiveCount?'<span class="cmd-channel-archive-count" title="'+archiveCount+' messages archivés">📜 '+(archiveCount>=1000?Math.round(archiveCount/100)/10+'k':archiveCount)+'</span>':'';
-    return openable?'<a class="cmd-channel-row" href="/native/'+encodeURIComponent(String(gid))+'?channel='+encodeURIComponent(String(x.id))+'" data-native-channel="'+esc(String(x.id))+'" data-native-name="'+esc(String(x.name||'salon'))+'"><span class="cmd-channel-icon">#</span><span class="cmd-channel-title">'+esc(x.name)+'</span>'+badge+archived+'</a>':'<div class="cmd-channel-row static" aria-disabled="true"><span class="cmd-channel-icon">'+((x.type==='voice')?'🔊':'#')+'</span><span class="cmd-channel-title">'+esc(x.name)+'</span></div>';
+    return openable?'<a class="cmd-channel-row" href="/native/'+encodeURIComponent(String(gid))+'?channel='+encodeURIComponent(String(x.id))+'" data-native-channel="'+esc(String(x.id))+'" data-native-name="'+esc(String(x.name||'salon'))+'"><span class="cmd-channel-icon">'+(x.type==='voice'?'🔊':'#')+'</span><span class="cmd-channel-title">'+esc(x.name)+'</span>'+badge+archived+'</a>':'<div class="cmd-channel-row static" aria-disabled="true"><span class="cmd-channel-icon">'+((x.type==='voice')?'🔊':'#')+'</span><span class="cmd-channel-title">'+esc(x.name)+'</span></div>';
   }
   async function nativeSubmit(ev,action,gid){
     ev.preventDefault();const f=new FormData(ev.currentTarget),body={action,nativeGuildId:gid};for(const [k,v] of f)body[k]=v;
@@ -500,7 +500,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
       // Exception volontaire : un lien profond avec un salon explicite peut toujours l'ouvrir.
       const query=new URLSearchParams(location.search),channelId=String(query.get('openChannel')||'');
       const exact=channelId&&String(query.get('openNative'))===String(g.id)
-        ?chs.find(x=>String(x.id)===channelId&&!x.permission_denied&&!x.is_hidden&&['text','announcement','forum','media'].includes(String(x.type||'')))
+        ?chs.find(x=>String(x.id)===channelId&&!x.permission_denied&&!x.is_hidden&&['text','announcement','forum','media','voice'].includes(String(x.type||'')))
         :null;
       if(exact){
         try{
@@ -632,7 +632,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     if(CHAT.mode==='native'&&CHAT.channelType==='forum')void loadForumPostTags(guildId,id).catch(()=>{});
     qs('#channelMessages').textContent='Chargement des messages…';
     qs('#channelTitle').textContent='# '+CHAT.name;
-    qs('#channelSubtitle').textContent=combined?'Messages CMD Sphere + archives externes':archive?'Historique externe sauvegardé · lecture seule':live?'Messages liés en direct':'Messages CMD Sphere';
+    qs('#channelSubtitle').textContent=CHAT.channelType==='voice'?'Salon vocal · discussions écrites CMD Sphere (appel vocal indépendant)':combined?'Messages CMD Sphere + archives externes':archive?'Historique externe sauvegardé · lecture seule':live?'Messages liés en direct':'Messages CMD Sphere';
     qs('#channelOverlay').classList.add('on');
     qs('#channelInput').disabled=archive;qs('#channelSend').disabled=archive;
     updateReplyBar();
@@ -3017,9 +3017,9 @@ function nativeGuildPage(auth,d){
   const g=d.guild||{},gid=String(g.id||""),name=escHtml(g.name||"Serveur CMD Sphere"),icon=String(g.icon||"");
   const cats=(d.channels||[]).filter(x=>x.type==="category"),chs=(d.channels||[]).filter(x=>x.type!=="category");
   const channelRow=x=>{
-    const openable=["text","announcement","forum","media"].includes(String(x.type||"")),unread=Number(x.unread_count||0);
+    const openable=["text","announcement","forum","media","voice"].includes(String(x.type||"")),unread=Number(x.unread_count||0);
     if(!openable)return '<div class="ch static"><span>'+(x.type==="voice"?"🔊":"#")+'</span><b>'+escHtml(x.name)+'</b><small>'+escHtml(x.type||"salon")+'</small></div>';
-    return '<button class="ch openCh" type="button" data-id="'+escHtml(x.id)+'" data-name="'+escHtml(x.name)+'" data-type="'+escHtml(x.type||"text")+'"><span>#</span><b>'+escHtml(x.name)+'</b><small>CMD Sphere</small>'+(unread?'<i>'+Math.min(99,unread)+'</i>':'')+'<em>›</em></button>';
+    return '<button class="ch openCh" type="button" data-id="'+escHtml(x.id)+'" data-name="'+escHtml(x.name)+'" data-type="'+escHtml(x.type||"text")+'"><span>'+(x.type==="voice"?"🔊":"#")+'</span><b>'+escHtml(x.name)+'</b><small>CMD Sphere</small>'+(unread?'<i>'+Math.min(99,unread)+'</i>':'')+'<em>›</em></button>';
   };
   const channels=cats.map(cat=>'<section class="cat"><h3>⌄ '+escHtml(cat.name)+'</h3>'+chs.filter(x=>String(x.source_parent_id||"")===String(cat.source_channel_id||cat.id)).map(channelRow).join("")+'</section>').join("")+
     chs.filter(x=>!x.source_parent_id).map(channelRow).join("");
@@ -3454,7 +3454,13 @@ async function nativeTextChannel(auth,guildId,channelId){
   await requireNativeMember(auth,guildId);
   const r=await pool.query('SELECT * FROM cmd_native_channels WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2) LIMIT 1',[String(guildId),String(channelId||"")]);
   const ch=r.rows[0];if(!ch)throw new Error("Salon CMD introuvable.");
-  if(!["text","announcement","forum","media"].includes(String(ch.type)))throw new Error("Ce salon n'accepte pas les messages texte.");
+  if(!["text","announcement","forum","media","voice"].includes(String(ch.type)))throw new Error("Ce salon n'accepte pas les messages texte.");
+  if(String(ch.type)==="voice"){
+    // Voice text reuses the native message infrastructure, not the WebRTC stream.
+    const granted=await effectiveNativePermissions(String(auth.user.id),guildId);
+    if(!granted||!(granted.administrator||granted.viewChannels))
+      throw Object.assign(new Error("Tu n'as pas accès au texte de ce salon vocal."),{status:403});
+  }
   return ch;
 }
 // Read the historical backup directly from the existing mirror table; no duplicate storage.
