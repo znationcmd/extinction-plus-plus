@@ -8,13 +8,15 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const ACCOUNT_EXPORT_SECTION_LIMIT=500;
 const validUserId=id=>typeof id==='string'&&id.length>=1&&id.length<=120&&!/[\u0000-\u001f]/.test(id);
 
-function section(rows){
+const project=(row,keys)=>Object.fromEntries(keys.map(key=>[key,row?.[key]??null]));
+function section(rows,keys){
  const source=Array.isArray(rows)?rows:[];
- return {records:source.slice(0,ACCOUNT_EXPORT_SECTION_LIMIT),truncated:source.length>ACCOUNT_EXPORT_SECTION_LIMIT};
+ return {records:source.slice(0,ACCOUNT_EXPORT_SECTION_LIMIT).map(row=>project(row,keys)),
+  truncated:source.length>ACCOUNT_EXPORT_SECTION_LIMIT};
 }
-async function selectOwnRows(pool,sql,userId){
+async function selectOwnRows(pool,sql,userId,keys){
  const output=await pool.query(sql,[userId]);
- return section(output.rows);
+ return section(output.rows,keys);
 }
 export async function collectAccountExport(pool,auth,{now=new Date()}={}){
  const userId=String(auth?.user?.id||'');
@@ -29,20 +31,21 @@ export async function collectAccountExport(pool,auth,{now=new Date()}={}){
     FROM cmd_accounts WHERE id=$1::uuid LIMIT 1`,[userId]):{rows:[]};
  const membership=await selectOwnRows(pool,`SELECT guild_id::text AS "guildId",membership_role AS "role",joined_at AS "joinedAt",
     profile_display_name AS "displayName",profile_bio AS "bio"
-    FROM cmd_native_members WHERE user_id=$1 ORDER BY joined_at DESC LIMIT 501`,userId);
+    FROM cmd_native_members WHERE user_id=$1 ORDER BY joined_at DESC LIMIT 501`,userId,["guildId","role","joinedAt","displayName","bio"]);
  const serverMessages=await selectOwnRows(pool,`SELECT id::text AS id,guild_id::text AS "guildId",
     channel_id::text AS "channelId",body,created_at AS "createdAt",edited_at AS "editedAt"
     FROM cmd_native_channel_messages WHERE sender_user_id=$1
-    ORDER BY created_at DESC,id DESC LIMIT 501`,userId);
+    ORDER BY created_at DESC,id DESC LIMIT 501`,userId,["id","guildId","channelId","body","createdAt","editedAt"]);
  const directMessages=await selectOwnRows(pool,`SELECT id::text AS id,thread_id::text AS "threadId",body,
     created_at AS "createdAt" FROM cmd_dm_messages WHERE sender_user_id=$1
-    ORDER BY created_at DESC,id DESC LIMIT 501`,userId);
+    ORDER BY created_at DESC,id DESC LIMIT 501`,userId,["id","threadId","body","createdAt"]);
  const groupMessages=await selectOwnRows(pool,`SELECT id::text AS id,group_id::text AS "groupId",body,
     created_at AS "createdAt" FROM cmd_group_dm_messages WHERE sender_user_id=$1
-    ORDER BY created_at DESC,id DESC LIMIT 501`,userId);
+    ORDER BY created_at DESC,id DESC LIMIT 501`,userId,["id","groupId","body","createdAt"]);
  return {
   format:'cmd-sphere-account-data-v1',generatedAt:now.toISOString(),accountId:userId,
-  account:account.rows?.[0]||null,profile:profile.rows?.[0]||null,
+  account:account.rows?.[0]?project(account.rows[0],["id","username","display_name","created_at","updated_at"]):null,
+  profile:profile.rows?.[0]?project(profile.rows[0],["user_id","display_name","bio","status","accent_color","theme","updated_at"]):null,
   sections:{memberships:membership,serverMessages,directMessages,groupMessages},
   limits:{maxItemsPerSection:ACCOUNT_EXPORT_SECTION_LIMIT,binaryMediaIncluded:false},
   complete:false,
