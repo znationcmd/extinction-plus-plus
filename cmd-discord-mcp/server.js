@@ -8,6 +8,7 @@ import {handleCmdAccountExport} from "./cmd-account-export.js";
 import {initCmdOnboarding,handleNativeOnboarding} from "./cmd-native-onboarding.js";
 import {initCmdNativeRules,handleCmdNativeRules,assertNativeRulesAccepted} from "./cmd-native-rules-screening.js";
 import {initCmdNativeRaidProtection,handleNativeRaidProtection,guardNativeRaidAdmission} from "./cmd-native-raid-protection.js";
+import {initNativeAnnouncementFollows,handleNativeAnnouncementFollows,relayNativeAnnouncement} from "./cmd-native-announcement-follows.js";
 import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {initCmdNativeVoiceConfig,handleCmdNativeVoiceConfig} from "./cmd-native-voice-config.js";
 import {initCmdNativeAfk,handleNativeAfk} from "./cmd-native-afk-config.js";
@@ -1322,6 +1323,7 @@ async function initNativeDb(){
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_member_roles_role_idx ON cmd_native_member_roles(guild_id,role_id)');
   await initCmdOnboarding(pool);
   await initCmdNativeRules(pool);
+  await initNativeAnnouncementFollows(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channel_messages(
     id UUID PRIMARY KEY,
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -3820,6 +3822,12 @@ async function sendNativeChannelMessage(auth,input){
     });
   }
   let xpReward=null;try{if(!metadata.bot&&!metadata.webhook)xpReward=await awardMessageXp(pool,String(auth.user.id),body)}catch(e){console.error("level XP",e.message)}
+  // Only explicit followers of root, public announcement channels receive text.
+  // A relay failure never makes a committed original message appear unsent.
+  if(ch.type==="announcement"&&body.trim()){
+    try{await relayNativeAnnouncement(pool,{guildId,channelId:String(ch.id),body})}
+    catch(error){console.error("[CMD Sphere] announcement relay failed:",error?.message||error)}
+  }
   return {ok:true,xpReward,mode:"native",message:{id:String(row.id),channelId:String(ch.id),guildId,content:String(row.body||""),timestamp:row.created_at,author:{id:String(row.sender_user_id),username:String(row.metadata?.bot?.name||row.metadata?.webhook?.name||row.author_name||"Utilisateur"),avatar:row.metadata?.webhook?.avatar||row.author_avatar||null,bot:Boolean(row.metadata?.bot||row.metadata?.webhook)},attachments:Array.isArray(row.attachments)?row.attachments:[],metadata:row.metadata||{},embeds:[],stickers:[],reactions:[]}};
 }
 
@@ -4749,6 +4757,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleNativeAfk(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeVoiceConfig(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativePermission}))return;
     if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
+    if(await handleNativeAnnouncementFollows(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeAdmin}))return;
     if(await handleNativeRaidProtection(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeRules(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
     if(await handleNativeOnboarding(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
