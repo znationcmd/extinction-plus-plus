@@ -626,4 +626,4 @@ jobs:
           node --check server.js
           node --check cmd-language-auto.js
       - name: Verify A to Z countries, Swiss dialects and 8148-language fallback
-        run: node --test tests/country-language-navigation.test.cjs tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
+        run: node --test tests/country-language-navigation.test.cjs tests/language-alphabet-navigation.test.cjs tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
