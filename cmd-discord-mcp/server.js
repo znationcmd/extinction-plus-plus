@@ -621,7 +621,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
     chBtn?.querySelector('.channelUnread')?.remove();
     const ch=S.nativeChannels?.get(String(id)),sourceId=String(S.nativeGuild?.source_discord_id||'');
     const managed=(window.__discordManagedGuilds||[]).find(g=>String(g.id)===sourceId);
-    const linked=Boolean(S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||'')));
+    const linked=Boolean(ch?.type!=='voice'&&S.nativeImportedOwner&&/^\d{15,22}$/.test(sourceId)&&/^\d{15,22}$/.test(String(ch?.source_channel_id||'')));
     const live=Boolean(!localOnly&&linked&&sourceMode==='discord'&&managed?.installed&&(managed.availableBots||[]).length);
     const combined=Boolean(!localOnly&&linked&&!live&&sourceMode==='combined');
     const archive=Boolean(!localOnly&&linked&&!live&&!combined);
@@ -3810,7 +3810,9 @@ async function sendNativeChannelMessage(auth,input){
   });
   // Sender blocks and recipient blocks suppress native mention / channel notifications.
   const permittedRecipients=[];
-  for(const recipient of notifyRecipients){
+  for(const recipient of String(ch.type)==="voice"?[]:notifyRecipients){
+    // Voice-text notifications remain disabled until effective per-channel
+    // recipient permissions can be evaluated, avoiding message preview leaks.
     if(!(await isBlockedPair(pool,String(auth.user.id),String(recipient.user_id))))permittedRecipients.push(recipient);
   }
   if(permittedRecipients.length){
