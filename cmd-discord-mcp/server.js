@@ -18,6 +18,7 @@ import {initCmdEmojiLibrary,handleCmdEmojiLibrary} from "./cmd-emoji-library.js"
 import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
 import {initCmdNativeInvites,activeInviteForGuild,previewNativeInvite,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
+import {initCmdSlowmode,parseSlowmodeSeconds,saveNativeMessageWithSlowmode} from "./cmd-native-slowmode.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -3528,7 +3529,7 @@ async function nativeChannelMessages(auth,guildId,channelId,{before,limit=100}={
     referencedMessage:row.reply_to?{id:String(row.reply_to),content:String(row.reply_body||""),author:{username:String(row.reply_author||"Utilisateur")}}:null
   }));
   if(!before)await markNativeChannelRead(auth,guildId,ch.id);
-  return {mode:"native",channel:{id:String(ch.id),name:ch.name,type:ch.type,topic:ch.topic||null},messages,hasMore:messages.length===n,nextBefore:messages.length?messages[messages.length-1].id:null};
+  return {mode:"native",channel:{id:String(ch.id),name:ch.name,type:ch.type,topic:ch.topic||null,slowmodeSeconds:Number(ch.slowmode_seconds||0)},messages,hasMore:messages.length===n,nextBefore:messages.length?messages[messages.length-1].id:null};
 }
 
 function sanitizeNativeAttachments(v){
@@ -3616,7 +3617,10 @@ async function sendNativeChannelMessage(auth,input){
     if(r.rows[0])replyTo=r.rows[0].id;
   }
   const id=crypto.randomUUID();
-  await pool.query('INSERT INTO cmd_native_channel_messages(id,guild_id,channel_id,sender_user_id,body,reply_to,attachments,metadata) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)',[id,guildId,ch.id,String(auth.user.id),body,replyTo,JSON.stringify(attachments),JSON.stringify(metadata)]);
+  const effective=Number(ch.slowmode_seconds||0)>0
+    ?await effectiveNativePermissions(String(auth.user.id),guildId):null;
+  const bypass=Boolean(effective&&(effective.administrator||effective.manageChannels||effective.manageMessages));
+  await saveNativeMessageWithSlowmode(pool,{id,guildId,channelId:ch.id,userId:auth.user.id,body,replyTo,attachments,metadata,cooldownSeconds:ch.slowmode_seconds||0,bypass});
   const r=await pool.query(`SELECT m.*,COALESCE(mem.profile_display_name,gp.display_name,a.display_name,a.username,'Utilisateur') AS author_name,
       COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar
     FROM cmd_native_channel_messages m
@@ -3892,7 +3896,9 @@ async function applyNativeLocalAction(auth,input){
     const row=await pool.query('SELECT * FROM cmd_native_channels WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2) LIMIT 1',[gid,id]);if(!row.rows[0])throw new Error("Salon introuvable.");
     let parent=row.rows[0].source_parent_id;
     if("parentId" in input)parent=input.parentId?await nativeSourceId(gid,"channel",input.parentId):null;
-    await pool.query('UPDATE cmd_native_channels SET name=$3,type=$4,topic=$5,position=$6,source_parent_id=$7 WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),["text","voice","announcement","forum","category"].includes(String(input.type))?String(input.type):row.rows[0].type,safeText(input.topic??row.rows[0].topic,1024)||null,Number(input.position??row.rows[0].position??0),parent]);
+    const slowmode="slowmodeSeconds" in input?parseSlowmodeSeconds(input.slowmodeSeconds):null;
+    if(slowmode!==null&&row.rows[0].type==="category")throw Object.assign(new Error("Le mode lent est réservé aux salons texte."),{status:400});
+    await pool.query('UPDATE cmd_native_channels SET name=$3,type=$4,topic=$5,position=$6,source_parent_id=$7,slowmode_seconds=COALESCE($8::integer,slowmode_seconds) WHERE guild_id=$1 AND id=$2',[gid,row.rows[0].id,safeText(input.name||row.rows[0].name,100),["text","voice","announcement","forum","category"].includes(String(input.type))?String(input.type):row.rows[0].type,safeText(input.topic??row.rows[0].topic,1024)||null,Number(input.position??row.rows[0].position??0),parent,slowmode]);
   }else if(action==="reorder_channels"){
     // Native CMD Sphere only. Move categories or move text/voice rooms between
     // categories, preserving channel IDs, existing permissions and other channel types.
@@ -5313,7 +5319,24 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+      try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,e.status||400,{error:e.message,retryAfter:e.retryAfter||undefined})}return;
+    }
+    if(url.pathname==="/api/native/slowmode"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        if(req.method==="GET"){
+          const guildId=String(url.searchParams.get("guildId")||""),channelId=String(url.searchParams.get("channelId")||"");
+          const ch=await nativeTextChannel(auth,guildId,channelId);
+          sendJson(res,200,{guildId,channelId:String(ch.id),cooldownSeconds:Number(ch.slowmode_seconds||0)});return;
+        }
+        const input=await readFormBodyJson(req),guildId=String(input.guildId||""),channelId=String(input.channelId||"");
+        await requireNativePermission(auth,guildId,"manageChannels");
+        const seconds=parseSlowmodeSeconds(input.cooldownSeconds);
+        const updated=await pool.query("UPDATE cmd_native_channels SET slowmode_seconds=$3 WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2) AND type IN ('text','announcement','forum') RETURNING id,slowmode_seconds",[guildId,channelId,seconds]);
+        if(!updated.rows[0]){sendJson(res,404,{error:"Salon texte introuvable."});return}
+        sendJson(res,200,{ok:true,guildId,channelId:String(updated.rows[0].id),cooldownSeconds:Number(updated.rows[0].slowmode_seconds)});
+      }catch(error){sendJson(res,error.status||403,{error:error.message})}
+      return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -5810,7 +5833,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
