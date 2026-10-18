@@ -3,6 +3,16 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Reprise du 18 octobre 2026 — accueil membre et règlement versionné (GitHub)
+
+- Décompte actuel des 59 contrats : **25 avec du code d'application au moins partiel**, **34 à développer**, **0 vérifié en production**. Un contrat préinstallé n'est pas une fonction installée.
+- CI [39116328540](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39116328540) sur `7c0482746a3a8407ac2710a935dcc94cb73e46ac` : **357/357 tests réussis, 0 échec, 20 tâches CI réussies**. Tests de code sur GitHub et non de production Railway.
+- `membership_onboarding` : `cmd-native-onboarding.js`, serveur et interface `cmd-server-manager.js`. Propriétaire seul à configurer un texte de bienvenue et jusqu'à 10 rôles sûrs ; autorisation de choix individuel unique seulement pour les membres, avec vérification des rôles en base et transaction empêchant l'escalade de privilèges. Tests `native-onboarding.test.cjs`. Restent à livrer les étapes automatiques lors de l'adhésion, prompts multiples et canaux personnalisés.
+- `rules_screening` : `cmd-native-rules-screening.js`, API membre/propriétaire, interface règlement, révision à chaque changement et acceptation individuelle. La fonction est opt-in et bloque l'envoi de messages humains natifs tant que le nouveau règlement n'est pas accepté ; les administrateurs peuvent encore gérer les règles. Tests `native-rules-screening.test.cjs`. Le masquage complet des historiques, les autres surfaces de communication et les essais réels restent à faire.
+- Sauvegardes Git créées : `cmd-sphere/backup-before-onboarding-20261018` et `cmd-sphere/backup-before-rules-20261018`. Aucun déploiement, suppression de données, paiement ni migration appliquée à Railway dans ce lot.
+
+Les anciennes sections ci-dessous documentent des états antérieurs.
+
 ## Reprise du 18 octobre 2026 — audit natif et export de compte (état vérifié)
 
 - **21/59 contrats partiellement implémentés ; 38/59 non développés ; 0/59 validé en production.**
