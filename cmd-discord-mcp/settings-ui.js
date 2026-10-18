@@ -536,12 +536,19 @@
         function refreshCountryList(term){
           var query=String(term||'').trim();
           backCountry.hidden=!chosenCountry;
-          allLanguagesButton.textContent=allLanguages?'🌍 Rechercher par pays':'🌐 Revenir aux langues (A–Z)';
-          var alphabetLabel=view.querySelector('#cmdLanguageAlphabetLabel');
-          if(alphabetLabel)alphabetLabel.textContent=allLanguages
-            ?'Langues classées par lettre : touche A, B, C… jusqu’à Z (ou Tout)'
-            :'Pays classés par lettre : touche A, B, C… jusqu’à Z';
+          allLanguagesButton.textContent=allLanguages?'🌍 Revenir aux pays':'🌐 Toutes les 8 148 langues';
           allLanguagesButton.setAttribute('aria-pressed',String(allLanguages));
+          var alphabetLabel=view.querySelector('#cmdLanguageAlphabetLabel');
+          if(alphabetLabel)alphabetLabel.textContent='Ouvre une lettre pour voir les pays à l’intérieur';
+          renderCountryFolders();
+          if(!allLanguages&&!chosenCountry&&!query){
+            results.hidden=true;
+            label.textContent='Ouvre un dossier A, B, C… puis sélectionne ton pays';
+            var note=view.querySelector('#cmdLanguageSupportNotice');
+            if(note)note.textContent='Les pays sont dans leurs dossiers A à Z. Une fois un pays choisi, sélectionne sa langue. Le catalogue mondial reste disponible.';
+            return;
+          }
+          results.hidden=false;
           if(allLanguages){listMatches(query);return}
           if(chosenCountry&&!query){listCountryLanguages(chosenCountry);return}
           if(query){
