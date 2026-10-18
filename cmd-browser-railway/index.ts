@@ -96,7 +96,9 @@ void cmdGetHdImage().then(bytes=>console.log("CMD HD BACKGROUND READY bytes="+by
 Bun.serve({port:PORT,async fetch(request,server){
  const u=new URL(request.url),path=u.pathname;
  if(request.method==="GET"){
- if(path==="/")return res(page);
+ if(path==="/cmd-world-language-picker.js")return new Response(Bun.file(new URL("./cmd-world-language-picker.js",import.meta.url)),{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=3600"}});
+ if(path==="/cmd-world-languages.json")return new Response(Bun.file(new URL("./cmd-world-languages.json",import.meta.url)),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"public,max-age=3600"}});
+ if(path==="/")return res(page.replace("</body>",'<script defer src="/cmd-world-language-picker.js?v=20261018-az"></script></body>'));
  if(path==="/favicon.ico")return Response.redirect(new URL("/favicon-48.png?v=cmd-logo-20261013",request.url),302);
  if(["/favicon-48.png","/apple-touch-icon.png","/desktop-256.png","/icon-180.png","/icon-192.png","/icon-512.png"].includes(path)){const fileName=path==="/icon-180.png"?"apple-touch-icon.png":path.slice(1);return new Response(Bun.file(new URL("./assets/"+fileName,import.meta.url)),{headers:{"content-type":"image/png","cache-control":"public,max-age=3600","x-content-type-options":"nosniff"}})}
  if(path==="/icon.svg")return res(logo,"image/svg+xml");
