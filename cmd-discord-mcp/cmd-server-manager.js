@@ -13,7 +13,7 @@ const config=[
  ['Personnes',['members|♟|Membres','roles|♙|Rôles','invites|♧|Invitations']],
  ['Audio',['voicecfg|🎙|Paramètres vocaux']],
  ['Modération',['moderation|⚒|Modération','automod|◈|AutoMod','audit|▤|Logs du serveur','bans|⚑|Bannissements','security|⬡|Sécurité']],
- ['Communauté',['rules|▤|Règlement du serveur','onboarding|✦|Accueil et rôles','community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
+ ['Communauté',['announcements|📢|Relais d’annonces','rules|▤|Règlement du serveur','onboarding|✦|Accueil et rôles','community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
 const settingTitle=tab=>{for(const [,items] of config)for(const item of items){const [id,,label]=item.split('|');if(id===tab)return label}return 'Paramètres du serveur'};
 async function request(path,body,method){
@@ -136,6 +136,7 @@ function other(){
  if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
  if(currentTab==='rules')return intro('Règlement du serveur','Le propriétaire définit le règlement. Les membres acceptent sa version en vigueur avant d’écrire.')+(isNative()?'<section id="csm-native-rules" aria-live="polite">'+info('Chargement du règlement…')+'</section>':info('Disponible sur les serveurs CMD Sphere.'));
  if(currentTab==='onboarding')return intro('Accueil des nouveaux membres','Le propriétaire choisit des rôles sans droits de modération. Chaque membre peut choisir une seule fois.')+(isNative()?'<section id="csm-native-onboarding" aria-live="polite">'+info('Chargement de l’accueil…')+'</section>':info('Disponible sur les serveurs CMD Sphere uniquement.'));
+ if(currentTab==='announcements')return intro('Relais d’annonces','Partager volontairement les annonces d’un serveur public vers un autre serveur dont tu es administrateur.')+(isNative()?'<section id="csm-native-follows" aria-live="polite">'+info('Chargement des abonnements…')+'</section>':info('Uniquement pour les serveurs CMD Sphere.'));
  if(currentTab==='community')return intro('Communauté et découverte','Annuaire volontaire : ton serveur reste invisible tant que tu ne le publies pas.')+(isNative()?'<section id="csm-native-discovery" aria-live="polite">'+info('Chargement des paramètres…')+'</section>':info('Annuaire réservé aux serveurs CMD Sphere.'))+btn('Modifier la visibilité du serveur','overview');
  if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques enregistrées sur CMD Sphere, sans suivi externe.')+(isNative()?'<section id="csm-native-insights" aria-live="polite" aria-label="Statistiques de la communauté">'+info('Chargement des statistiques…')+'</section>':info('Les données du serveur externe ne sont pas accessibles ici.'));
 
@@ -320,6 +321,104 @@ async function renderNativeMembersTab(){
    }else list.append(row);
   }
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
+}
+
+async function loadNativeAnnouncementFollows(){
+ const host=$('#csm-native-follows'),guildId=id();
+ if(!host||!isNative())return;
+ if(!ctx?.admin){host.textContent='Administrateur du serveur requis pour les abonnements.';return}
+ const message=value=>{const p=document.createElement('p');p.setAttribute('role','status');p.textContent=value;return p};
+ host.replaceChildren(message('Chargement…'));
+ try{
+  const [followsInfo,allGuilds]=await Promise.all([
+   request('/api/native/announcement-follows?guildId='+safe(guildId)),
+   request('/api/native/guilds')
+  ]);
+  if(!host.isConnected||currentTab!=='announcements'||id()!==guildId)return;
+  host.replaceChildren();
+  const listTitle=document.createElement('h3');listTitle.textContent='Abonnements existants';host.append(listTitle);
+  const rows=Array.isArray(followsInfo.follows)?followsInfo.follows:[];
+  if(!rows.length)host.append(message('Aucun abonnement entre ces serveurs.'));
+  for(const follow of rows){
+   const row=document.createElement('div');row.className='csm-info';
+   const label=document.createElement('p');
+   label.textContent='Source : '+String(follow.sourceGuildId||'')+' · Destination : '+String(follow.destinationGuildId||'');
+   const button=document.createElement('button');button.type='button';button.className='csm-btn';
+   button.textContent='Arrêter le relais';
+   button.addEventListener('click',async()=>{
+    if(!confirm('Arrêter ce relais d’annonces entre les deux serveurs ?'))return;
+    button.disabled=true;
+    try{await request('/api/native/announcement-follows',{
+     sourceGuildId:follow.sourceGuildId,sourceChannelId:follow.sourceChannelId,
+     destinationGuildId:follow.destinationGuildId,destinationChannelId:follow.destinationChannelId
+    },'DELETE');void loadNativeAnnouncementFollows()}
+    catch(error){notify('Relais non supprimé : '+error.message,false);button.disabled=false}
+   });
+   row.append(label,button);host.append(row);
+  }
+  if(ctx?.data?.guild?.is_public!==true){
+   host.append(message('Pour publier des annonces depuis ce serveur, active d’abord sa visibilité publique. Les sources privées ne sont jamais relayées.'));
+   return;
+  }
+  const sourceRooms=(ctx.data.channels||[]).filter(ch=>
+   ch.type==='announcement'&&!ch.source_parent_id&&
+   (!ch.permission_overwrites||(Array.isArray(ch.permission_overwrites)&&ch.permission_overwrites.length===0)));
+  if(!sourceRooms.length){
+   host.append(message('Crée un salon Annonces hors catégorie et sans permission privée pour autoriser sa diffusion.'));
+   return;
+  }
+  const candidateGuilds=(Array.isArray(allGuilds.guilds)?allGuilds.guilds:[])
+   .filter(g=>String(g.id)!==guildId&&['owner','admin'].includes(String(g.membership_role)));
+  if(!candidateGuilds.length){
+   host.append(message('Tu dois être administrateur d’un deuxième serveur CMD Sphere pour créer un relais.'));
+   return;
+  }
+  const form=document.createElement('form');form.className='csm-form';
+  const title=document.createElement('h3');title.textContent='Suivre mes annonces depuis un autre serveur';form.append(title);
+  const note=document.createElement('p');note.textContent='Le relais partage uniquement le texte des nouvelles annonces du serveur public. Les photos, identités des auteurs, messages privés et pièces jointes ne sont pas transférés.';form.append(note);
+  const addSelect=(label,options)=>{
+   const wrapper=document.createElement('label');wrapper.className='csm-field';wrapper.textContent=label;
+   const select=document.createElement('select');select.required=true;select.style.cssText='width:100%;min-height:42px';
+   for(const opt of options){const item=document.createElement('option');item.value=String(opt.id);item.textContent=String(opt.name||opt.id);select.append(item)}
+   wrapper.append(select);form.append(wrapper);return select;
+  };
+  const sourceSelect=addSelect('Salon d’annonces source',sourceRooms);
+  const guildSelect=addSelect('Serveur destinataire',candidateGuilds);
+  const targetLabel=document.createElement('label');targetLabel.className='csm-field';targetLabel.textContent='Salon d’annonces destinataire';
+  const targetSelect=document.createElement('select');targetSelect.required=true;targetSelect.style.cssText='width:100%;min-height:42px';targetLabel.append(targetSelect);form.append(targetLabel);
+  const save=document.createElement('button');save.className='csm-btn primary';save.type='submit';save.textContent='Activer le relais';form.append(save);
+  const status=message('');form.append(status);
+  const updateTargets=async()=>{
+   const destGuildId=guildSelect.value;
+   targetSelect.replaceChildren();save.disabled=true;
+   try{
+    const info=await request('/api/native/guild/'+safe(destGuildId));
+    if(!form.isConnected||guildSelect.value!==destGuildId)return;
+    if(!['owner','admin'].includes(String(info.member?.membership_role)))throw Error('Administration requise.');
+    const channels=(info.channels||[]).filter(x=>x.type==='announcement');
+    for(const channel of channels){
+     const opt=document.createElement('option');opt.value=String(channel.id);opt.textContent=String(channel.name||channel.id);targetSelect.append(opt);
+    }
+    status.textContent=channels.length?'':'Crée un salon Annonces sur le serveur destinataire.';
+    save.disabled=channels.length===0;
+   }catch(error){status.textContent='Destination indisponible : '+error.message;save.disabled=true}
+  };
+  guildSelect.addEventListener('change',()=>{void updateTargets()});
+  form.addEventListener('submit',async event=>{
+   event.preventDefault();save.disabled=true;
+   try{
+    await request('/api/native/announcement-follows',{
+     sourceGuildId:guildId,sourceChannelId:sourceSelect.value,
+     destinationGuildId:guildSelect.value,destinationChannelId:targetSelect.value
+    });
+    notify('Relais d’annonces créé.');void loadNativeAnnouncementFollows();
+   }catch(error){status.textContent='Abonnement refusé : '+error.message;save.disabled=false}
+  });
+  host.append(form);void updateTargets();
+ }catch(error){
+  if(host.isConnected&&currentTab==='announcements'&&id()===guildId)
+   host.textContent='Relais d’annonces indisponibles : '+(error?.message||'Erreur inconnue');
+ }
 }
 
 async function loadNativeRaid(){
@@ -759,6 +858,7 @@ function render(){
  if(currentTab==='onboarding')void loadNativeOnboarding();
  if(currentTab==='rules')void loadNativeRules();
  if(currentTab==='security')void loadNativeRaid();
+ if(currentTab==='announcements')void loadNativeAnnouncementFollows();
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
  if(currentTab==='voicecfg')void loadNativeVoiceConfig();
