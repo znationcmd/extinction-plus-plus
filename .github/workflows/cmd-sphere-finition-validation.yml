@@ -22,6 +22,7 @@ on:
       - 'cmd-discord-mcp/cmd-parity-expansion-servers.js'
       - 'cmd-discord-mcp/cmd-social-message-actions.js'
       - 'cmd-discord-mcp/tests/message-tts.test.cjs'
+      - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/server.js'
       - '.github/workflows/cmd-sphere-finition-validation.yml'
