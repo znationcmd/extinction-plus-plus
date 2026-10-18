@@ -3,6 +3,17 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Reprise du 18 octobre 2026 — catalogue de langues mondial et variantes suisses (GitHub)
+
+- Demande de remplacer la limite de 11 langues : **8 148 entrées ISO 639-3 / ISO 639-1 et variantes BCP 47** ajoutées à `cmd-language-catalog.json`, consultables avec un champ de recherche sur iPhone, Android et PC dans `settings-ui.js`. Le sélecteur reste léger : 100 résultats visibles à la fois.
+- Variantes de suisse allemand explicitement répertoriées : `gsw-CH`, `gsw-CH-x-bern` (bernois), `gsw-CH-x-zueri` (zurichois), `gsw-CH-x-basel`, `gsw-CH-x-wallis`, `gsw-CH-x-luzern`, ainsi que `de-CH`, `fr-CH`, `it-CH` et `rm-CH`. Champ libre BCP 47 pour d'autres dialectes correctement identifiés.
+- Le choix est sauvegardé sans rebasculer silencieusement en français. `cmd-world-language-codes.js` valide les codes ; `cmd-translation.js` et `cmd-message-translate.js` acceptent les nouveaux paramètres. Les services de traduction gratuits ne couvrent pas 8 148 langues ; `gsw` se rabat sur l'allemand standard avec avertissement explicite ; l'original reste accessible. Le français conserve son interface d'origine et les autres langues sans fichier de traduction utilisent temporairement une interface de secours.
+- Source de la liste de codes : [ISO 639-3, humenda/isolang-rs](https://github.com/humenda/isolang-rs/blob/master/iso-639-3.tab). Cette source donne des noms/codes, **pas des traductions réelles de l'interface**.
+- CI [39116944042](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39116944042) : **362 tests réussis, 0 échec, 21 jobs réussis**, dont `world-languages.test.cjs`.
+- Les 59 contrats Discord restent un inventaire distinct : **25 partiellement codés, 34 à développer, 0 validé en production**. Aucune migration de production, activation de paiement ni suppression de contenu dans ce lot.
+
+Les sections plus anciennes conservent leurs chiffres historiques à leur date.
+
 ## Reprise du 18 octobre 2026 — accueil membre et règlement versionné (GitHub)
 
 - Décompte actuel des 59 contrats : **25 avec du code d'application au moins partiel**, **34 à développer**, **0 vérifié en production**. Un contrat préinstallé n'est pas une fonction installée.
