@@ -11,6 +11,14 @@
       '.cmd-settings-title-row{min-width:0}',
       '.cmd-settings-header h2{min-width:0;overflow-wrap:anywhere}',
       '.cmd-settings-local-language{flex:none;width:136px;min-width:108px;max-width:35vw;border:1px solid #666175;background:#19141f;color:white;border-radius:10px;padding:9px 6px;font-weight:700;font-size:13px;min-height:39px}',
+      '.cmd-language-results{display:grid;gap:7px;max-height:276px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:7px 4px;margin:10px 0 16px;border:1px solid #70608077;background:#0b0912;border-radius:16px}',
+      '.cmd-language-result{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:1px solid #62567580;border-radius:12px;background:linear-gradient(135deg,#242033,#17121f);padding:13px 14px;text-align:left;color:#f4f1ff;font-size:15px;font-weight:650;cursor:pointer;min-height:46px;overflow-wrap:anywhere}',
+      '.cmd-language-result:hover,.cmd-language-result:focus-visible{outline:2px solid #ad8aff;outline-offset:1px}',
+      '.cmd-language-result[aria-pressed="true"]{border-color:#73dbfa;background:linear-gradient(130deg,#262342,#161b33)}',
+      '.cmd-language-code{font-size:12px;white-space:nowrap;color:#bcb2cf;flex:none}',
+      '.cmd-language-selection{margin:8px 0 12px;padding:10px 12px;border-radius:11px;border:1px solid #7657ad55;background:#1e1731;font-size:14px}',
+      '.cmd-language-results-empty{margin:10px 13px;color:#b5a9c8;font-size:14px}',
+      '.cmd-settings-local-language[hidden]{display:none!important}',
       '@media(max-width:520px){.cmd-settings-title-row{gap:8px!important}.cmd-settings-local-language{width:112px;max-width:36vw;font-size:12px;padding:7px 4px}.cmd-settings-back,.cmd-settings-close{width:30px;min-width:30px}}',
       '.sphere-app .cmd-head-legacy{display:none!important}',
       '.sphere-app .cmd-app-controls{display:flex;align-items:center;gap:9px;margin-left:auto}',
@@ -220,7 +228,7 @@
     }
     function localizeSettings(){
       var L=settingsLocale(),language=activeSettingsLanguage();
-      var picker=layer.querySelector('#cmdSettingsLanguagePicker');if(picker)ensureLanguageOption(picker,language);
+      var picker=layer.querySelector('#cmdSettingsLanguagePicker');if(picker){ensureLanguageOption(picker,language);picker.hidden=current==='language'}
       title.textContent=L?L.title:'Paramètres';
       search.placeholder=L?L.search:'Rechercher';
       var groupsEls=view.querySelectorAll('.cmd-settings-category');
@@ -307,7 +315,7 @@
       voice:["Voix & Vidéo","Vérifie l'accès au microphone sur cet appareil. Les appels passent par la fonction d'appel CMD Sphere.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="mic">Tester le microphone</button><a class="cmd-set-cta secondary" href="/messages">Accéder aux appels et MP</a><p class="cmd-status" id="cmdSubStatus"></p>'],
       appearance:["Apparence","Personnalise l'affichage de CMD Sphere sur cet appareil.",'<label for="cmdThemeChoice">Thème</label><select id="cmdThemeChoice"><option value="dark">Sombre</option><option value="amoled">Noir AMOLED</option></select>'],
       accessibility:["Accessibilité","Réglages de confort visuel sur cet appareil.",'<label class="cmd-setting-toggle"><input id="cmdLessMotion" type="checkbox"> Réduire les animations</label><label class="cmd-setting-toggle"><input id="cmdBiggerType" type="checkbox"> Agrandir le texte</label>'],
-      language:["Langue","Rechercher parmi les langues et dialectes du monde (codes ISO 639-3 / BCP 47).",'<label for="cmdLanguageSearch">Rechercher langue, patois, dialecte ou code</label><input id="cmdLanguageSearch" type="search" placeholder="Ex. suisse allemand, Bärndütsch, gsw-CH, corse" autocomplete="off" style="width:100%;min-height:43px;margin:10px 0"><label for="cmdLanguageChoice">Résultats (100 au maximum à la fois)</label><select id="cmdLanguageChoice" size="7" style="width:100%;min-height:175px"></select><label for="cmdLanguageCustomCode">Code BCP 47 régional personnel (facultatif)</label><input id="cmdLanguageCustomCode" type="text" maxlength="64" placeholder="Ex. gsw-CH-x-bern" style="width:100%;min-height:42px"><button type="button" data-cmd-subaction="custom-language" class="cmd-set-cta secondary">Utiliser ce code de langue</button><p class="cmd-small" id="cmdLanguageSupportNotice">Catalogue mondial en chargement. Les langues régionales et variantes sont enregistrées dans tes préférences. La traduction intégrale de tous les menus et les messages dans tous les dialectes dépend de traductions disponibles ; les menus peuvent utiliser une langue de secours.</p><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les fournisseurs gratuits de traduction ne couvrent pas toutes les langues et tous les patois. Le texte original reste visible.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
+      language:["Langue","Rechercher parmi les langues et dialectes du monde (codes ISO 639-3 / BCP 47).",'<label for="cmdLanguageSearch">Rechercher langue, patois, dialecte ou code</label><input id="cmdLanguageSearch" type="search" placeholder="Ex. suisse allemand, Bärndütsch, gsw-CH, corse" autocomplete="off" style="width:100%;min-height:43px;margin:10px 0"><p id="cmdLanguageSelected" class="cmd-language-selection" aria-live="polite">Langue actuelle : Français</p><label id="cmdLanguageResultsLabel">Choisis une langue ci-dessous ou tape son nom</label><div id="cmdLanguageChoice" class="cmd-language-results" role="group" aria-labelledby="cmdLanguageResultsLabel"></div><label for="cmdLanguageCustomCode">Code BCP 47 régional personnel (facultatif)</label><input id="cmdLanguageCustomCode" type="text" maxlength="64" placeholder="Ex. gsw-CH-x-bern" style="width:100%;min-height:42px"><button type="button" data-cmd-subaction="custom-language" class="cmd-set-cta secondary">Utiliser ce code de langue</button><p class="cmd-small" id="cmdLanguageSupportNotice">Catalogue mondial en chargement. Les langues régionales et variantes sont enregistrées dans tes préférences. La traduction intégrale de tous les menus et les messages dans tous les dialectes dépend de traductions disponibles ; les menus peuvent utiliser une langue de secours.</p><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les fournisseurs gratuits de traduction ne couvrent pas toutes les langues et tous les patois. Le texte original reste visible.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
       notifications:["Notifications","Active les notifications de messages et d'appels sur cet appareil. L'autorisation système ne garantit pas à elle seule les alertes lorsque le navigateur est fermé.",'<p id="cmdNotifState" class="cmd-small"></p><button type="button" class="cmd-set-cta" data-cmd-subaction="notif">Autoriser les notifications</button><a class="cmd-set-cta secondary" href="/messages">Messages et appels</a><p id="cmdSubStatus" class="cmd-status"></p>'],
       appicon:["Icône de l'appli","Installe CMD Sphere depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil » sur iPhone ou « Installer l'application » sur les navigateurs compatibles.",'<a class="cmd-set-cta secondary" href="/dashboard">Revenir à CMD Sphere</a>'],
       advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes serveurs liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde des serveurs liés</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter mon compte externe</a>'],
@@ -329,33 +337,70 @@
         big.onchange=function(){localStorage.setItem('cmd-sphere-bigger-type',big.checked?'1':'0');applyPreferences()};
       }
       if(key==='language'){
-        var sel=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
+        var results=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
+        var label=view.querySelector('#cmdLanguageResultsLabel');
+        var favourites=['fr','en','de','es','it','co','gsw-CH','gsw-CH-x-bern','gsw-CH-x-zueri','gsw-CH-x-basel','gsw-CH-x-wallis','gsw-CH-x-luzern','fr-CH','de-CH','pt','ar','ja','zh'];
+        function normalizeLanguageQuery(value){
+          return String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase();
+        }
         function listMatches(term){
-          var query=String(term||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
-          var matched=[],chosen=activeSettingsLanguage();
-          for(var i=0;i<languageCatalogue.length&&matched.length<100;i++){
-            var entry=languageCatalogue[i];
-            var key=(entry[0]+' '+entry[1]).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
-            if(!query||key.includes(query))matched.push(entry);
+          var query=normalizeLanguageQuery(term).trim(),chosen=activeSettingsLanguage();
+          var matches=[],seen=new Set(),max=30;
+          var indexed=new Map(languageCatalogue);
+          function push(code,name){
+            if(!code||seen.has(code)||matches.length>=max)return;
+            seen.add(code);matches.push([code,name||nativeLanguageLabel(code)]);
           }
-          if(!matched.some(function(entry){return entry[0]===chosen}))
-            matched.unshift([chosen,nativeLanguageLabel(chosen)]);
-          sel.replaceChildren();
-          matched.forEach(function(entry){
-            var option=document.createElement('option');option.value=entry[0];
-            option.textContent=entry[1]+' · '+entry[0];sel.add(option);
+          if(query){
+            // Exact and starting-code matches first: fast lookup for gsw-CH and other BCP-47 codes.
+            for(var i=0;i<languageCatalogue.length&&matches.length<max;i++){
+              var item=languageCatalogue[i],code=normalizeLanguageQuery(item[0]),name=normalizeLanguageQuery(item[1]);
+              if(code===query||name===query||code.startsWith(query)||name.startsWith(query))push(item[0],item[1]);
+            }
+            for(var j=0;j<languageCatalogue.length&&matches.length<max;j++){
+              var row=languageCatalogue[j];
+              if(normalizeLanguageQuery(row[0]+' '+row[1]).includes(query))push(row[0],row[1]);
+            }
+          }else{
+            push(chosen,indexed.get(chosen)||nativeLanguageLabel(chosen));
+            favourites.forEach(function(code){push(code,indexed.get(code)||cmdSettingsNativeNames[code]||code)});
+          }
+          // Do not create an iOS native <select>: iPhone ignores size and opens a huge system picker.
+          results.replaceChildren();
+          matches.forEach(function(entry){
+            var item=document.createElement('button');item.type='button';item.className='cmd-language-result';
+            item.dataset.cmdLocale=entry[0];item.setAttribute('aria-pressed',String(chosen===entry[0]));
+            var name=document.createElement('span');name.textContent=entry[1];
+            var code=document.createElement('span');code.className='cmd-language-code';
+            code.textContent=(chosen===entry[0]?'✓ ':'')+entry[0];
+            item.append(name,code);results.append(item);
           });
-          sel.value=chosen;
+          if(!matches.length){
+            var empty=document.createElement('p');empty.className='cmd-language-results-empty';
+            empty.textContent=languageCatalogue.length
+              ?'Aucun résultat. Vérifie l’orthographe ou saisis un code BCP 47 ci-dessous.'
+              :'Catalogue en cours de chargement…';
+            results.append(empty);
+          }
+          label.textContent=query?'Résultats de recherche ('+matches.length+' au maximum '+max+')'
+            :'Langues favorites · recherche parmi '+(languageCatalogue.length||'8 148')+' codes';
+          var currentLabel=view.querySelector('#cmdLanguageSelected');
+          if(currentLabel)currentLabel.textContent='Langue actuelle : '+nativeLanguageLabel(chosen);
           var notice=view.querySelector('#cmdLanguageSupportNotice');
           if(notice)notice.textContent=languageCatalogue.length.toLocaleString('fr-FR')+
-            ' codes de langues et variantes référencés. Les traductions de l’interface non disponibles utilisent une langue de secours.';
+            ' codes référencés. La sélection affiche 30 résultats maximum ; affine la recherche pour les autres. Les traductions manquantes utilisent une langue de secours.';
         }
-        ensureLanguageOption(sel,activeSettingsLanguage());
         listMatches('');
         searchInput.addEventListener('input',function(){listMatches(searchInput.value)});
-        sel.onchange=function(){if(sel.value)applySettingsLanguage(sel.value)};
+        results.addEventListener('click',function(event){
+          var button=event.target.closest('button[data-cmd-locale]');
+          if(!button||!results.contains(button))return;
+          applySettingsLanguage(button.dataset.cmdLocale);
+          searchInput.blur();
+          listMatches(searchInput.value);
+        });
         loadLanguageCatalogue().then(function(){
-          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===sel)listMatches(searchInput.value);
+          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===results)listMatches(searchInput.value);
         }).catch(function(error){
           var notice=view.querySelector('#cmdLanguageSupportNotice');
           if(notice)notice.textContent='Catalogue international indisponible : '+error.message+
