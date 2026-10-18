@@ -39,6 +39,8 @@ test("all native voice channel entries open text with speaker symbol while exter
  assert.match(server,/const openable=\["text","announcement","forum","media","voice"\]/);
  assert.match(server,/data-native-name="[\s\S]*?x\.type==='voice'\?'🔊':'#'/);
  assert.match(server,/Salon vocal · discussions écrites CMD Sphere \(appel vocal indépendant\)/);
+ assert.match(server,/ch\?\.type!=='voice'&&S\.nativeImportedOwner/,"Voice text must not silently attach to external Discord streams");
+ assert.match(server,/for\(const recipient of String\(ch\.type\)==="voice"\?\[\]:notifyRecipients\)/,"Voice room content must not leak via mentions before per-channel notification permissions");
  assert.match(server,/\['text','announcement','forum','media','voice'\]\.includes\(String\(x\.type\|\|''\)\)/);
  // External Discord voice channels are still non-text objects.
  assert.match(server,/function channelListItem\(x\)\{\s*const openable=\['text','announcement','thread'\]/);
