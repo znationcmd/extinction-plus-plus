@@ -4,7 +4,7 @@
  * No TURN relay, external provider, paid service or disconnections.
  */
 const fail=(status,message)=>Object.assign(new Error(message),{status});
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const VOICE_BITRATE_CHOICES=Object.freeze([32,48,64,96,128]);
 export function validateVoiceConfig(value){
  if(!value||typeof value!=='object'||Array.isArray(value))throw fail(400,'Configuration vocale invalide.');
