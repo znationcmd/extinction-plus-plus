@@ -58,10 +58,15 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
 .auto input{width:20px;height:20px;min-height:20px}
 .more{width:100%;min-height:44px;border:1px solid #775ea1;border-radius:10px;background:#23233d;color:#fff;padding:11px}
 .counter{font-size:12px;color:#d5cbe7;margin:0}
-.alphabet{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;flex:none}
-.letter{background:#231935;color:#ece3ff;border:1px solid #735c9b;border-radius:8px;min-width:0;min-height:39px;font-weight:750;padding:3px}
-.letter[aria-pressed="true"]{border-color:#70dafa;background:#403064;box-shadow:0 0 0 1px #70dafa55}
-.letter:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.alphabet{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;flex:none;max-height:47dvh;overflow-y:auto;overscroll-behavior:contain}
+.country-folder{border:1px solid #735c9b;border-radius:12px;background:#21172f;overflow:hidden}
+.country-folder summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:45px;padding:11px 13px;color:#eee5ff;font-size:16px;font-weight:800;cursor:pointer}
+.country-folder summary::-webkit-details-marker{display:none}
+.country-folder summary:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+.country-folder[open] summary{background:#403064;border-bottom:1px solid #735c9b}
+.country-folder-content{max-height:45dvh;overflow-y:auto;overscroll-behavior:contain;padding:6px}
+.country-folder-content button{min-height:44px;border-radius:8px}
+.results.country-index-actions{flex:none;min-height:0;border:0}
 
 `;
  const trigger=document.createElement("button");trigger.type="button";trigger.className="trigger";
@@ -82,15 +87,32 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  const counter=document.createElement("p");counter.className="counter";
  const alphabet=document.createElement("div");alphabet.className="alphabet";
  alphabet.setAttribute("role","group");alphabet.setAttribute("aria-label","Pays classés de A à Z");
- const letters=["Toutes",..."ABCDEFGHIJKLMNOPQRSTUVWXYZ","#"];let letter="A",selectedCountry=null,viewMode="countries";
- for(const key of letters){
-  const item=document.createElement("button");item.type="button";item.className="letter";item.dataset.letter=key;
-  item.textContent=key==="Toutes"?"Tout":key==="#"?"Autres":key;
-  item.setAttribute("aria-label",key==="Toutes"?"Tous les pays":key==="#"?"Autres pays": "Pays commençant par "+key);
-  item.setAttribute("aria-pressed",String(key===letter));
-  alphabet.append(item);
+ const letters=[..."ABCDEFGHIJKLMNOPQRSTUVWXYZ","#"];let letter="",selectedCountry=null,viewMode="world";
+ function showLetters(){
+  alphabet.replaceChildren();
+  for(const key of letters){
+   const items=countries.filter(([code,name])=>{
+    const first=normalized(name).charAt(0).toUpperCase();
+    return key==="#"?!/^[A-Z]$/.test(first):first===key;
+   });
+   if(!items.length)continue;
+   const folder=document.createElement("details");folder.className="country-folder";
+   folder.dataset.cmdLetter=key;
+   const head=document.createElement("summary");head.textContent=key+" · "+items.length+" pays";
+   head.setAttribute("aria-label","Ouvrir les pays qui commencent par "+key);
+   folder.append(head);
+   const body=document.createElement("div");body.className="country-folder-content";
+   for(const [code,name] of items){
+    const button=document.createElement("button");button.type="button";button.className="choice";
+    button.dataset.cmdCountry=code;button.textContent=name+" ›";
+    button.addEventListener("click",()=>{
+     selectedCountry=code;viewMode="country-languages";query.value="";render();
+    });
+    body.append(button);
+   }
+   folder.append(body);alphabet.append(folder);
+  }
  }
- function showLetters(){alphabet.querySelectorAll("[data-letter]").forEach(el=>el.setAttribute("aria-pressed",String((el.dataset.letter==="Toutes"?"":el.dataset.letter)===letter)))}
  const results=document.createElement("div");results.className="results";results.setAttribute("role","group");
  const custom=document.createElement("input");custom.type="text";custom.maxLength=64;
  custom.placeholder="Code régional personnel : gsw-CH-x-bern";
@@ -133,6 +155,9 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
    const legacyKeys=["cmdLang","cmdpad-language","cmdpad-ui-lang","dayz-gate-language","ark-language","cmd-browser-lang"];
    for(const key of legacyKeys){try{if(localStorage.getItem(key)!==null)localStorage.setItem(key,fb)}catch{}}
   }
+  try{localStorage.setItem("cmd-sphere-language",known?fb:safe)}catch{}
+  window.dispatchEvent(new CustomEvent("cmd-sphere-language-change",{detail:{language:known?fb:safe,selectedLanguage:safe}}));
+  window.dispatchEvent(new CustomEvent("cmd-language-change",{detail:{language:safe,fallback:fb}}));
   window.dispatchEvent(new CustomEvent("cmd-world-language-change",{detail:{language:safe,fallback:fb,mode}}));
   msg.textContent="✓ "+(label||safe)+" · "+safe+" · "+(mode==="auto"?"automatique":"manuel")+". "+(safe!==fb?"Interface existante : "+fb+" si disponible.":"");
   autoInfo.textContent=mode==="auto"?"Langue déduite de la langue et de la région de l'appareil, sans GPS.":"Choix personnel conservé jusqu'à changement.";
@@ -160,28 +185,53 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   }
  }
  function renderWorld(){
-  results.replaceChildren();shown=0;matched=[];
+  alphabet.hidden=true;results.classList.remove("country-index-actions");
+  results.replaceChildren();
   if(!status.languages){results.textContent="Chargement du catalogue…";return}
-  const queryText=query.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-  if(!queryText&&letter){
-   for(const [code,name] of status.languages){
-    const first=name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").charAt(0).toUpperCase();
-    if(letter==="#"?!/^[A-Z]$/.test(first):first===letter)matched.push([code,name]);
-   }
-  }else if(!queryText){
-   const byCode=new Map(status.languages),seen=new Set();
-   const priority=[existing(),"fr","en","de","es","it","co","gsw-CH","gsw-CH-x-bern","gsw-CH-x-zueri","gsw-CH-x-basel","gsw-CH-x-wallis","gsw-CH-x-luzern"];
-   for(const code of priority)if(byCode.has(code)&&!seen.has(code)){matched.push([code,byCode.get(code)]);seen.add(code)}
-   for(const entry of status.languages)if(!seen.has(entry[0])){matched.push(entry);seen.add(entry[0])}
-  }else{
-   for(const [code,name] of status.languages){
-    const full=(code+" "+name).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    if(full.includes(queryText))matched.push([code,name]);
-   }
+  const search=normalized(query.value.trim()),groups=new Map();
+  for(const [code,name] of status.languages){
+   if(search&&!normalized(code+" "+name).includes(search))continue;
+   const first=normalized(name).charAt(0).toUpperCase();
+   const initial=/^[A-Z]$/.test(first)?first:"#";
+   if(!groups.has(initial))groups.set(initial,[]);
+   groups.get(initial).push([code,name]);
   }
-  if(matched.length)nextPage();else{
-   counter.textContent="0 langue trouvée";
-   results.textContent="Aucune langue trouvée. Essaie un autre nom ou un code.";
+  const total=[...groups.values()].reduce((a,b)=>a+b.length,0);
+  counter.textContent=total+" langues et dialectes · ouvre la lettre A, B, C…";
+  if(!total){results.textContent="Aucun résultat : essaie une autre langue ou un code.";return}
+  const selected=existing();
+  for(const character of letters){
+   if(!groups.has(character))continue;
+   const rows=groups.get(character);
+   const folder=document.createElement("details");folder.className="country-folder";
+   folder.dataset.cmdLetter=character;
+   const head=document.createElement("summary");
+   head.textContent=(character==="#"?"Autres":character)+" · "+rows.length+" langues";
+   head.setAttribute("aria-label","Afficher toutes les langues en "+character);
+   const body=document.createElement("div");body.className="country-folder-content";
+   body.setAttribute("role","listbox");body.setAttribute("aria-label","Langues en "+character);
+   function fill(){
+    if(body.childElementCount)return;
+    const fragment=document.createDocumentFragment();
+    for(const [code,name] of rows){
+     const btn=document.createElement("button");btn.type="button";btn.className="choice";
+     btn.setAttribute("role","option");btn.setAttribute("aria-selected",String(code===selected));
+     btn.textContent=name+" · "+code;
+     btn.addEventListener("click",()=>{save(code,name);panel.hidden=true;trigger.setAttribute("aria-expanded","false")});
+     fragment.append(btn);
+    }
+    body.append(fragment);
+   }
+   folder.append(head,body);
+   folder.addEventListener("toggle",()=>{if(folder.open)fill()});
+   if(search&&rows.length<=35){folder.open=true;fill()}
+   results.append(folder);
+  }
+  if(!search){
+   const byCountry=document.createElement("button");byCountry.type="button";byCountry.className="more";
+   byCountry.textContent="🌍 Choisir par pays (facultatif)";
+   byCountry.addEventListener("click",()=>{viewMode="countries";showLetters();render()});
+   results.append(byCountry);
   }
  }
 
@@ -194,6 +244,14 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  function renderCountries(){
   results.replaceChildren();
   const search=normalized(query.value.trim());
+  if(!search){
+   alphabet.hidden=false;showLetters();
+   results.classList.add("country-index-actions");
+   counter.textContent=countries.length+" pays et territoires · ouvre un dossier A, B, C…";
+   worldButton();
+   return;
+  }
+  alphabet.hidden=true;results.classList.remove("country-index-actions");
   const found=countries.filter(([code,name])=>{
     if(search)return normalized(name+" "+code).includes(search);
     const first=normalized(name).charAt(0).toUpperCase();
@@ -211,6 +269,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   worldButton();
  }
  function renderCountryLanguages(){
+  alphabet.hidden=true;results.classList.remove("country-index-actions");
   results.replaceChildren();
   const item=countries.find(c=>c[0]===selectedCountry);
   if(!item){viewMode="countries";return renderCountries()}
@@ -258,14 +317,8 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  query.addEventListener("input",()=>{
   letter="";selectedCountry=null;showLetters();
   const term=normalized(query.value.trim());
-  viewMode=term&&!countries.some(([code,name])=>normalized(code+" "+name).includes(term))?"world":"countries";
+  viewMode="world";
   render();
- });
- alphabet.addEventListener("click",event=>{
-  const button=event.target.closest("button[data-letter]");
-  if(!button||!alphabet.contains(button))return;
-  letter=button.dataset.letter==="Toutes"?"":button.dataset.letter;
-  selectedCountry=null;viewMode="countries";query.value="";showLetters();render();
  });
  checkbox.addEventListener("change",()=>{if(checkbox.checked)save(detect(),"Langue de l'appareil","auto");else save(existing(),"Langue actuelle","manual")});
  applyCustom.addEventListener("click",()=>save(custom.value,custom.value));
@@ -279,5 +332,68 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  if(checkbox.checked)window.addEventListener("DOMContentLoaded",()=>window.dispatchEvent(
   new CustomEvent("cmd-world-language-change",{detail:{language:saved,fallback:fallback(saved),mode:"auto"}})
  ),{once:true});
+
+ // Shared interface glossary: translate real navigation controls, not user content.
+ // Unknown languages keep their selected BCP-47 code and use the nearest available UI fallback.
+ const uiKeys=["Accueil","Messages","Serveurs","Profil","Paramètres","Langue","Boutique","Rechercher","Enregistrer","Annuler","Fermer","Créer","Modifier","Supprimer","Retour","Aide","Notifications","Amis","Appels","Déconnexion","Se connecter","Inviter","Tableau de bord","Mes serveurs","Fichiers","Sauvegardes","Console","Joueurs","Assistance","Facturation","Portefeuille","Membres","Rôles","Confidentialité","Sécurité","Apparence","Applications","Télécharger","Partager","Traduire"];
+ const uiValues={
+  en:["Home","Messages","Servers","Profile","Settings","Language","Shop","Search","Save","Cancel","Close","Create","Edit","Delete","Back","Help","Notifications","Friends","Calls","Log out","Log in","Invite","Dashboard","My servers","Files","Backups","Console","Players","Support","Billing","Wallet","Members","Roles","Privacy","Security","Appearance","Apps","Download","Share","Translate"],
+  de:["Startseite","Nachrichten","Server","Profil","Einstellungen","Sprache","Shop","Suchen","Speichern","Abbrechen","Schließen","Erstellen","Bearbeiten","Löschen","Zurück","Hilfe","Benachrichtigungen","Freunde","Anrufe","Abmelden","Anmelden","Einladen","Dashboard","Meine Server","Dateien","Backups","Konsole","Spieler","Support","Abrechnung","Guthaben","Mitglieder","Rollen","Datenschutz","Sicherheit","Darstellung","Apps","Herunterladen","Teilen","Übersetzen"],
+  es:["Inicio","Mensajes","Servidores","Perfil","Ajustes","Idioma","Tienda","Buscar","Guardar","Cancelar","Cerrar","Crear","Editar","Eliminar","Volver","Ayuda","Notificaciones","Amigos","Llamadas","Cerrar sesión","Iniciar sesión","Invitar","Panel de control","Mis servidores","Archivos","Copias de seguridad","Consola","Jugadores","Ayuda","Facturación","Monedero","Miembros","Roles","Privacidad","Seguridad","Apariencia","Aplicaciones","Descargar","Compartir","Traducir"],
+  it:["Home","Messaggi","Server","Profilo","Impostazioni","Lingua","Negozio","Cerca","Salva","Annulla","Chiudi","Crea","Modifica","Elimina","Indietro","Aiuto","Notifiche","Amici","Chiamate","Esci","Accedi","Invita","Pannello di controllo","I miei server","File","Backup","Console","Giocatori","Assistenza","Fatturazione","Portafoglio","Membri","Ruoli","Privacy","Sicurezza","Aspetto","App","Scarica","Condividi","Traduci"],
+  pt:["Início","Mensagens","Servidores","Perfil","Definições","Idioma","Loja","Pesquisar","Guardar","Cancelar","Fechar","Criar","Editar","Eliminar","Voltar","Ajuda","Notificações","Amigos","Chamadas","Terminar sessão","Iniciar sessão","Convidar","Painel","Meus servidores","Ficheiros","Cópias de segurança","Consola","Jogadores","Suporte","Faturação","Carteira","Membros","Funções","Privacidade","Segurança","Aparência","Aplicações","Transferir","Partilhar","Traduzir"],
+  ru:["Главная","Сообщения","Серверы","Профиль","Настройки","Язык","Магазин","Поиск","Сохранить","Отмена","Закрыть","Создать","Изменить","Удалить","Назад","Помощь","Уведомления","Друзья","Звонки","Выйти","Войти","Пригласить","Панель управления","Мои серверы","Файлы","Копии","Консоль","Игроки","Поддержка","Оплата","Кошелёк","Участники","Роли","Конфиденциальность","Безопасность","Внешний вид","Приложения","Скачать","Поделиться","Перевести"],
+  ko:["홈","메시지","서버","프로필","설정","언어","상점","검색","저장","취소","닫기","만들기","수정","삭제","뒤로","도움말","알림","친구","통화","로그아웃","로그인","초대","대시보드","내 서버","파일","백업","콘솔","플레이어","지원","결제","지갑","멤버","역할","개인정보","보안","화면","앱","다운로드","공유","번역"],
+  ja:["ホーム","メッセージ","サーバー","プロフィール","設定","言語","ショップ","検索","保存","キャンセル","閉じる","作成","編集","削除","戻る","ヘルプ","通知","友達","通話","ログアウト","ログイン","招待","ダッシュボード","マイサーバー","ファイル","バックアップ","コンソール","プレイヤー","サポート","請求","ウォレット","メンバー","ロール","プライバシー","セキュリティ","外観","アプリ","ダウンロード","共有","翻訳"],
+  zh:["首页","消息","服务器","个人资料","设置","语言","商店","搜索","保存","取消","关闭","创建","编辑","删除","返回","帮助","通知","好友","通话","退出登录","登录","邀请","控制面板","我的服务器","文件","备份","控制台","玩家","支持","账单","钱包","成员","角色","隐私","安全","外观","应用","下载","分享","翻译"]
+ };
+ const labelOriginal=new WeakMap(),attrOriginal=new WeakMap();
+ const aliases={gsw:"de",bar:"de",deu:"de",ger:"de",fra:"fr",eng:"en",spa:"es",ita:"it",por:"pt",rus:"ru",jpn:"ja",kor:"ko",zho:"zh",cmn:"zh"};
+ const availableUI=code=>{
+  const base=String(code||"fr").split("-")[0].toLowerCase();
+  return aliases[base]||(uiValues[base]?base:"fr");
+ };
+ const uiSelectors='nav a,nav button,nav span,header a,header button,header span,aside a,aside button,aside span,[role="navigation"] a,[role="navigation"] button,[class*="sidebar"] a,[class*="sidebar"] button,[class*="topbar"] button,[class*="menu"] a,[class*="menu"] button,[class*="dock"] button';
+ function translateMenus(code){
+  const lang=availableUI(code),values=uiValues[lang],dict=new Map();
+  if(values)uiKeys.forEach((key,i)=>dict.set(key,values[i]||key));
+  const elements=document.querySelectorAll(uiSelectors);
+  for(const el of elements){
+   if(el.closest('[contenteditable="true"],[data-message-id],.chat-messages,#chatMessages'))continue;
+   for(const node of el.childNodes){
+    if(node.nodeType!==Node.TEXT_NODE)continue;
+    if(!labelOriginal.has(node))labelOriginal.set(node,node.textContent);
+    const source=labelOriginal.get(node),m=/^(\s*)(.*?)(\s*)$/s.exec(source);
+    if(m&&uiKeys.includes(m[2])){
+     const next=m[1]+(dict.get(m[2])||m[2])+m[3];
+     if(node.textContent!==next)node.textContent=next;
+    }
+   }
+   let originals=attrOriginal.get(el);
+   if(!originals){originals={};for(const attribute of ["title","aria-label"]){if(el.hasAttribute(attribute))originals[attribute]=el.getAttribute(attribute)}attrOriginal.set(el,originals)}
+   for(const [attribute,source] of Object.entries(originals)){
+    if(uiKeys.includes(source)){
+     const next=dict.get(source)||source;
+     if(el.getAttribute(attribute)!==next)el.setAttribute(attribute,next);
+    }
+   }
+  }
+ }
+ let menuLanguage=existing(),menuScheduled=false;
+ function menuRefresh(){
+  if(menuScheduled)return;menuScheduled=true;
+  requestAnimationFrame(()=>{menuScheduled=false;translateMenus(menuLanguage)});
+ }
+ window.addEventListener("cmd-world-language-change",event=>{menuLanguage=event.detail?.language||existing();menuRefresh()});
+ window.addEventListener("cmd-language-change",event=>{menuLanguage=event.detail?.language||existing();menuRefresh()});
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",menuRefresh,{once:true});else menuRefresh();
+ const watchMenus=new MutationObserver(records=>{
+  if(records.some(record=>{
+   const el=record.target.nodeType===1?record.target:record.target.parentElement;
+   return el?.closest?.('nav,header,aside,[role="navigation"],[class*="sidebar"],[class*="menu"],[class*="dock"],[class*="topbar"]');
+  }))menuRefresh();
+ });
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>watchMenus.observe(document.body,{childList:true,subtree:true}),{once:true});
+ else watchMenus.observe(document.body,{childList:true,subtree:true});
  window.CMDWorldLanguagePicker={get language(){return existing()},open:()=>{if(panel.hidden)void toggle()},set:(code)=>save(code,code)};
 })();
