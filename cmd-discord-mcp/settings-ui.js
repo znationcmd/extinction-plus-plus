@@ -258,7 +258,7 @@
     }
     var pages={
       social:["Contenu et social","Accède à tes messages privés et gère les conversations et relations de CMD Sphere.",'<a class="cmd-set-cta" href="/messages">Ouvrir les messages</a>'],
-      privacy:["Données et confidentialité","Paramètres de confidentialité de CMD Sphere. Les autorisations et le fonctionnement de du service externe restent indépendants de CMD Sphere.",'<a class="cmd-set-cta" href="/connections">Gérer mes connexions</a><a class="cmd-set-cta secondary" href="/profile">Paramètres de mon profil</a>'],
+      privacy:["Données et confidentialité","Gère tes informations CMD Sphere sans toucher aux serveurs externes.",'<a class="cmd-set-cta" href="/connections">Gérer mes connexions</a><a class="cmd-set-cta secondary" href="/profile">Paramètres de mon profil</a><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="export-data">Exporter une copie de mes données (JSON)</button><p class="cmd-small">Export partiel : 500 éléments maximum par catégorie. Les pièces jointes, achats et archives complètes ne sont pas encore inclus.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
       device:["Appareils","Informations concernant cet appareil et ta session CMD Sphere.",'<p id="cmdDeviceText" class="cmd-small"></p>'],
       invites:["Scanner / invitations","La création et la réception des invitations CMD Sphere se font depuis les serveurs.",'<a class="cmd-set-cta" href="/servers/add">Créer ou rejoindre un serveur</a>'],
       premium:["CMD Premium","Personnalisations, abonnements et avantages proposés par CMD Sphere.",'<a class="cmd-set-cta" href="/shop">Voir les offres CMD Premium</a>'],
@@ -327,6 +327,31 @@
     async function subAction(which){
       if(['sync','folders','bots','webhooks','backup'].includes(which)){action(which);return}
       if(which==='diagnostics'){detail(which);return}
+      if(which==='export-data'){
+        const button=view.querySelector('[data-cmd-subaction="export-data"]');
+        if(button)button.disabled=true;
+        status('Création du fichier personnel…');
+        try{
+          const response=await fetch('/api/account/export-data',{
+            method:'POST',credentials:'same-origin',cache:'no-store',
+            headers:{'content-type':'application/json'},body:'{}'
+          });
+          if(!response.ok){
+            const problem=await response.json().catch(()=>({}));
+            throw Error(problem.error||'Export refusé (HTTP '+response.status+')');
+          }
+          const blob=await response.blob();
+          const uri=URL.createObjectURL(blob);
+          try{
+            const link=document.createElement('a');
+            link.href=uri;link.download='cmd-sphere-mes-donnees.json';
+            link.style.display='none';document.body.append(link);link.click();link.remove();
+          }finally{setTimeout(()=>URL.revokeObjectURL(uri),60000)}
+          status('Export partiel prêt : conserve ce fichier privé. Les images et archives complètes restent à intégrer.');
+        }catch(error){status('Export indisponible : '+(error?.message||'Erreur inconnue'))}
+        finally{if(button)button.disabled=false}
+        return;
+      }
       if(which==='refresh'){refreshApp();return}
       if(which==='health'){status('Vérification…');try{var r=await fetch('/health',{cache:'no-store'});var d=await r.json();status(r.ok&&d.ok?'CMD Sphere répond correctement.':'Le serveur a retourné une erreur HTTP '+r.status)}catch(e){status('Serveur inaccessible : '+e.message)}return}
       if(which==='notif'){if(!('Notification' in window)){status('Notifications non prises en charge. Sur iPhone, ajoute CMD Sphere à l’écran d’accueil.');return}try{var p=await Notification.requestPermission();status('Autorisation : '+p+'. Active aussi les alertes dans les réglages de l’appareil.');var e=view.querySelector('#cmdNotifState');if(e)e.textContent='État : '+p}catch(e){status('Autorisation impossible : '+e.message)}return}
