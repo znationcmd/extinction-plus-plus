@@ -552,26 +552,37 @@
             window.CMDSphereLocale?.manual(currentCode);
             try{localStorage.setItem('cmd-sphere-language-mode','manual')}catch(e){}
           }
-          updateAutomaticUi();listMatches(searchInput.value);
+          updateAutomaticUi();refreshCountryList(searchInput.value);
         });
         updateAutomaticUi();
-        listMatches('');
+        refreshCountryList('');
         searchInput.addEventListener('input',function(){
-          activeLetter='';updateLetters();listMatches(searchInput.value);
+          chosenCountry=null;
+          refreshCountryList(searchInput.value);
         });
         results.addEventListener('click',function(event){
           var more=event.target.closest('button[data-cmd-more]');
           if(more&&results.contains(more)){appendLanguages();return}
+          var countryButton=event.target.closest('button[data-cmd-country]');
+          if(countryButton&&results.contains(countryButton)){
+            chosenCountry=countryCatalogue.find(function(country){return country.code===countryButton.dataset.cmdCountry})||null;
+            allLanguages=false;searchInput.value='';refreshCountryList('');
+            return;
+          }
           var button=event.target.closest('button[data-cmd-locale]');
           if(!button||!results.contains(button))return;
           applySettingsLanguage(button.dataset.cmdLocale);
           searchInput.blur();
           updateAutomaticUi();
-          listMatches(searchInput.value);
+          refreshCountryList(searchInput.value);
         });
-        loadLanguageCatalogue().then(function(){
-          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===results)listMatches(searchInput.value);
+        Promise.all([loadLanguageCatalogue(),loadCountryCatalogue()]).then(function(){
+          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===results)
+            refreshCountryList(searchInput.value);
         }).catch(function(error){
+          // Still permit searching every language when country metadata cannot load.
+          allLanguages=true;chosenCountry=null;
+          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===results)refreshCountryList(searchInput.value);
           var notice=view.querySelector('#cmdLanguageSupportNotice');
           if(notice)notice.textContent='Catalogue international indisponible : '+error.message+
             '. Tu peux utiliser un code BCP 47 personnalisé.';
