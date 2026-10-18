@@ -21,6 +21,18 @@ Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écr
 
 Les sections plus anciennes conservent leurs chiffres historiques à leur date.
 
+## Reprise du 18 octobre 2026 — protection anti-raid, relais public et stabilité des profils (vérification GitHub)
+
+- **28/59 contrats avec implémentation au moins partielle**, **31/59 encore à coder**, **0/59 validé en production**. Le code préparé n'est pas une mise en service sur Railway.
+- [CI GitHub Actions 39117618871](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39117618871) : **386 tests réussis sur 386, 0 échec**, incluant les modules anti-raid, relais d'annonces et stabilité des catalogues de profils. Les tests CI restent des tests de code ; pas de sauvegarde PostgreSQL restaurée ni de test en production.
+- **raid_protection** : `cmd-native-raid-protection.js`, `cmd-native-invites.js`, `server.js` et le panneau Sécurité permettent un plafond opt-in de 3 à 100 nouveaux membres en 1 à 60 minutes. L'admission est contrôlée dans la transaction d'invitation, en sérialisant les entrées du même serveur, avec exception pour membres existants. Aucune interdiction permanente, aucun bannissement ni suppression. Tests `native-raid-protection.test.cjs`. Le support d'appel et le suivi des fausses alertes restent à finaliser.
+- **followed_announcements** : `cmd-native-announcement-follows.js` et `cmd-server-manager.js` proposent de suivre et révoquer des canaux d'annonces natifs. Administration requise sur les deux serveurs ; source publique, hors catégorie privée, accessible à @everyone ; relayage **texte uniquement** sans auteur ni médias, arrêté quand la source n'est plus publique ou que l'admin perd ses droits. Tests `native-announcement-follows.test.cjs`. Retentatives, idempotence et validation d'appareils réels encore nécessaires.
+- **Stabilité des profils** : `unpack-profile-assets.cjs` restaure désormais les fichiers d'archives et `manifest.json` par écriture temporaire puis renommage atomique. Cela corrige une course de lecture entre tests simultanés, sans retirer les archives ni images existantes. Test `profile-asset-atomic.test.cjs`.
+- **voice_channel_text** : un autre lot intervenu sur la même branche ajoute la messagerie texte de salon vocal, comptée partielle et non validée sur la production.
+- Sauvegardes du code : `cmd-sphere/backup-before-raid-20261018` et `cmd-sphere/backup-before-announcement-relay-20261018`. Aucune migration de production, aucun paiement ni suppression exécutés par cette intervention.
+
+Les sections suivantes conservent les résultats des lots précédents.
+
 ## Reprise du 18 octobre 2026 — accueil membre et règlement versionné (GitHub)
 
 - Décompte actuel des 59 contrats : **25 avec du code d'application au moins partiel**, **34 à développer**, **0 vérifié en production**. Un contrat préinstallé n'est pas une fonction installée.
