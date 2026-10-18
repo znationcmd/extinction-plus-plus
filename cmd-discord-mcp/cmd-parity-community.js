@@ -100,9 +100,10 @@ export const features=Object.freeze([
       "destination_id",
       "following"
     ],
+    "stage": "partially_implemented_public_text_only_dual_admin_native_follows_pending_delivery_retries_and_production",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "community_discovery",
