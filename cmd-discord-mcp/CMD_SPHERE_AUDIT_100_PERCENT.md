@@ -3,6 +3,27 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Mise à jour vérifiable — contrats Discord, 18 octobre 2026
+
+Les chiffres ci-dessous sont limités au **registre de 59 contrats**, pas à toute l'application.
+
+- **5/59 codés** dans la branche de finition avec tests, mais **non activés / non vérifiés en production**.
+- **54/59 toujours déclarés contrats préparatoires** (code d'application complet non confirmé).
+- **0/59 validé en production** : il reste donc 59 contrats à clôturer réellement.
+- GitHub Actions `39107036489` : **249 tests automatisés réussis, 0 échec** sur le commit `ff1e74fe829b21c8b20d1177a5924c448b50d965`.
+- Pas de migration exécutée ni de déploiement vers Railway pendant cette mise à jour. Le déploiement nécessite la sauvegarde restaurable et les tests sur comptes séparés.
+- Les statuts `enabled` et `verified` restent `false` et ne doivent pas être modifiés sans preuves.
+
+| Contrat | Implémentation ajoutée | Tests automatisés | Production | État |
+|---|---|---|---|---|
+| channel_slowmode | `cmd-native-slowmode.js`, `server.js`, `cmd-server-manager.js` : délais par salon, contrôle PostgreSQL atomique, permissions | `native-slowmode.test.cjs` | Non déployé | 🟡 |
+| server_template_cloning | `server.js` : nouveaux serveurs modèles, copie de salons/rôles avec identifiants indépendants | `native-templates.test.cjs` et GitHub Actions validate-templates | Non déployé | 🟡 |
+| user_block_controls | `cmd-social-privacy.js`, `cmd-social-privacy-ui.js`, `server.js` : blocage/déblocage, refus d'interaction privée, groupes, recherche et notifications | `social-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
+| friend_request_privacy | mêmes fichiers : paramètres propres au compte, serveurs communs, limitation des demandes répétées | `social-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
+| per_server_dm_privacy | `cmd-dm-guild-privacy.js`, `server.js`, `cmd-social-privacy-ui.js` : préférences de MP par serveur, validation d'appartenance, application aux MP et groupes | `dm-guild-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
+
+**Garanties** : aucune suppression de comptes, messages, salons, avatars, achats ou contenus permanents ; aucun paiement lancé ; pas de modification des autres produits CMD. Les nouvelles tables sont créées via `CREATE TABLE IF NOT EXISTS` et les réglages existants restent en place. Les tests de doubles de base ne constituent pas une preuve de restauration PostgreSQL ni un test réel multi-appareils.
+
 ## Production constatée
 
 - Projet radiant-nature, environnement production : d4e965d4-5077-4f36-b05e-5810fab77759.
