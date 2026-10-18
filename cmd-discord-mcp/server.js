@@ -211,6 +211,11 @@ function clearDashboardCookies(){
 }
 const CMD_APP_RELEASE=String(process.env.RAILWAY_GIT_COMMIT_SHA||process.env.GIT_COMMIT_SHA||"20261017-unified").slice(0,40);
 function html(res,body,status=200,headers={}){
+  // Every native CMD Sphere page exposes the same alphabetic language selector.
+  if(typeof body==="string"&&/<html\\b/i.test(body)&&/<\\/body>/i.test(body)&&/CMD Sphere/.test(body)&&!body.includes('src="/cmd-world-language-picker.js')){
+    body=body.replace(/<\\/body>/i,'<script defer src="/cmd-world-language-picker.js?v=20261018-az"></script></body>');
+  }
+
     if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
       body=body.replace(/<\/head>/i,'<meta name="cmd-sphere-release" content="'+CMD_APP_RELEASE+'"></head>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-app-update.js?v=20261017pwa2"></script></body>');
@@ -4821,6 +4826,11 @@ const httpServer=createServer(async(req,res)=>{
       const js=url.pathname.endsWith(".js");
       res.writeHead(200,{"content-type":js?"application/javascript; charset=utf-8":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(js?"./cmd-message-compose.js":"./cmd-message-compose.css","utf8"));return;
+    }
+    if(req.method==="GET"&&(url.pathname==="/cmd-world-languages.json"||url.pathname==="/cmd-world-language-picker.js")){
+      const json=url.pathname.endsWith(".json");
+      res.writeHead(200,{"content-type":json?"application/json; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL(json?"./cmd-world-languages.json":"./cmd-world-language-picker.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-invite-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public, max-age=300"});res.end(readFileSync("./cmd-invite-ui.js","utf8"));return}
     if(req.method==="GET"&&url.pathname.startsWith("/cmd-art/")){const bits=url.pathname.split("/");const match=bits.length===4?bits[3].match(/^([a-z0-9-]{2,60})\.(svg|webp|avif)$/):null;const key=match?match[1]:"";const format=match?match[2]:"";const photo=realisticArtworkPath(bits[2],key,url.searchParams.get("quality")==="4k");if(photo){res.writeHead(302,{location:photo,"cache-control":"public,max-age=300"});res.end();return}const img=key?renderCmdPremiumSvg(bits[2],key):null;if(!img){res.writeHead(404).end("Artwork not found");return}if(format==="webp"||format==="avif"){try{const width=bits[2]==="avatar"?1024:bits[2]==="frame"?1600:1280;const raster=sharp(Buffer.from(img),{density:192}).resize({width,withoutEnlargement:false}).ensureAlpha();const output=await (format==="webp"?raster.webp({quality:92,effort:4}):raster.avif({quality:82,effort:4})).toBuffer();res.writeHead(200,{"content-type":format==="webp"?"image/webp":"image/avif","cache-control":"public,max-age=86400","x-content-type-options":"nosniff"});res.end(output)}catch(e){console.error("CMD artwork raster error",e);res.writeHead(500).end("Artwork conversion failed")}return}res.writeHead(200,{"content-type":"image/svg+xml; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(img);return}
