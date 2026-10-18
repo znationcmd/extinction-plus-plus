@@ -4748,6 +4748,12 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleCommunityInsights(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
     if(await handleCmdDiscovery(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdHistorySearch(req,res,url,{pool,auth:dashboardAuth(req),sendJson,checkGuildPermissions:effectiveNativePermissions}))return;
+    if(url.pathname==="/cmd-language-catalog.json"){
+      if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
+      res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=86400",
+        "x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-language-catalog.json",import.meta.url),"utf8"));return;
+    }
     if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-productivity.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-productivity.js",import.meta.url),"utf8"));return}
