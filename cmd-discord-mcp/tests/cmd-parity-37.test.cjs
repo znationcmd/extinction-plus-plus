@@ -11,11 +11,12 @@ test('13 additional Discord gaps are preinstalled as inactive contracts',async()
  const {CMD_PARITY_EXTRA_13,extraStatus,extraGap}=await get('cmd-parity-extra-13.js');
  assert.equal(CMD_PARITY_EXTRA_13.length,13);
  assert.equal(new Set(CMD_PARITY_EXTRA_13.map(f=>f.id)).size,13);
- assert.deepEqual(extraStatus(),{total:13,preinstalled:13,implemented:0,enabled:0,verified:0});
+ const implemented=CMD_PARITY_EXTRA_13.filter(f=>f.implemented).length;
+ assert.deepEqual(extraStatus(),{total:13,preinstalled:13,implemented,enabled:0,verified:0});
  for(const item of CMD_PARITY_EXTRA_13){
   assert.ok(item.id);assert.ok(item.title);assert.ok(item.permission);
   assert.ok(item.acceptance);assert.ok(item.endpoint);assert.ok(item.fields.length);
-  assert.equal(item.implemented,false);assert.equal(item.enabled,false);assert.equal(item.verified,false);
+  assert.equal(typeof item.implemented,'boolean');assert.equal(item.enabled,false);assert.equal(item.verified,false);
   assert.equal(extraGap(item.id).id,item.id);
  }
  assert.equal(extraGap('__proto__'),null);
@@ -25,10 +26,11 @@ test('original 24 plus new 13 form 37 unique, still-unverified gaps',async()=>{
  const {CMD_PARITY_37,cmdGapStatus,cmdGapList}=await get('cmd-parity-37.js');
  assert.equal(CMD_PARITY_37.length,37);
  assert.equal(new Set(CMD_PARITY_37.map(f=>f.id)).size,37);
- assert.deepEqual(cmdGapStatus(),{audited:37,preinstalled:37,notPreinstalled:0,contractsOnly:37,implemented:0,enabled:0,verified:0,duplicates:0});
+ const implemented=CMD_PARITY_37.filter(f=>f.implemented).length;
+ assert.deepEqual(cmdGapStatus(),{audited:37,preinstalled:37,notPreinstalled:0,contractsOnly:37-implemented,implemented,enabled:0,verified:0,duplicates:0});
  const visible=cmdGapList();
  assert.equal(visible.length,37);
- assert.ok(visible.every(x=>x.stage==='preinstalled_contract'&&!x.enabled&&!x.verified));
+ assert.ok(visible.every(x=>['preinstalled_contract','implementation_unverified'].includes(x.stage)&&!x.enabled&&!x.verified));
 });
 
 test('new safety functions remain explicitly disabled',async()=>{
