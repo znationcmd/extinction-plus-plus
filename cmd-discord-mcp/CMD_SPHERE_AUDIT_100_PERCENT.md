@@ -3,6 +3,18 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Reprise du 18 octobre 2026 — audit natif et export de compte (état vérifié)
+
+- **21/59 contrats partiellement implémentés ; 38/59 non développés ; 0/59 validé en production.**
+- [GitHub Actions 39115224459](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39115224459) : **334 tests automatisés réussis, 0 échec** sur le commit `0f0a91babe7a728d96a620900368aed1be597aa6`. Les tests GitHub ne remplacent pas une sauvegarde restaurée, une vérification réelle multi-comptes, ni des essais iPhone/Android/PC.
+- **moderation_audit** : `cmd-native-audit-log.js`, `server.js` et `cmd-server-manager.js` : registre des changements de salons, rôles, permissions avec utilisateur authentifié, heure et chaîne SHA-256 (preuve limitée). Panneau Logs du serveur réservé aux administrateurs, pagination. Tests `native-audit-log.test.cjs`. Les autres événements de modération et la rétention restent à terminer.
+- **account_export_package** : `cmd-account-export.js`, `server.js` et `settings-ui.js` : téléchargement JSON de données propres au compte, par action volontaire, avec requêtes SQL liées à l'utilisateur, colonnes autorisées et sections plafonnées à 500 éléments. Tests `account-export.test.cjs`. Export **partiel**, sans fichiers médias, achats ou archive complète ; ne pas présenter comme une réponse RGPD complète.
+- **automod_engine** : un autre lot de modifications a ajouté des règles natives activables par le propriétaire, avec tests d'API et contrôle avant enregistrement. Le contrôle de production, les exemptions et la modération avancée restent nécessaires ; la fonction demeure désactivée par défaut.
+- Sauvegardes Git : `cmd-sphere/backup-before-audit-log-20261018` et `cmd-sphere/backup-before-account-export-20261018`. Branche modifiée : `cmd-sphere/finition-20261018`.
+- Aucun déploiement Railway, migration sur la vraie base, suppression de données, ni paiement exécuté dans ces lots. Les statuts `enabled` et `verified` ne changent pas.
+
+Les sections plus bas conservent les états historiques antérieurs.
+
 ## Reprise du 18 octobre 2026 — fonctionnalités communauté (vérifié sur GitHub)
 
 - **18/59** contrats disposent d'une implémentation partielle et de tests ou d'un raccordement de code : **41/59** restent des contrats à développer. **0/59 validé en production**. Aucun module ne doit être décrit comme pleinement fini avant tests de production, permissions réelles, iPhone/Android/PC et sauvegarde restaurable.
