@@ -78,6 +78,10 @@ function overview(){
    '<p>Cette description peut apparaître sur le profil et les invitations du serveur.</p></section>'+
   '<section class="csm-discord-group"><h2>Visibilité du serveur</h2>'+
    '<div class="csm-discord-panel">'+checkbox('isPublic','Serveur visible dans Découvrir',g.is_public)+'</div></section>'+
+  (isNative()?'<section class="csm-discord-group"><h2>Vérification des nouveaux membres</h2>'+
+   '<p>Les membres existants conservent leur accès. Seules les nouvelles invitations sont contrôlées.</p>'+
+   '<label class="csm-field">Niveau de vérification<select name="verificationLevel"'+disabled+'>'+
+   options(String(g.verification_level||'none'),[['none','Désactivée'],['email','Adresse e-mail vérifiée'],['email_5m','E-mail vérifié et compte CMD de 5 minutes'],['email_1d','E-mail vérifié et compte CMD de 24 heures']])+'</select></label></section>':'')+
   (enabled?'<button type="submit" class="csm-btn primary csm-discord-save">Enregistrer les modifications</button>':info('Seul le propriétaire peut modifier les paramètres généraux de ce serveur.'))+
  '</form>'+info(note())+(isNative()?(enabled?'<section class="csm-server-lifecycle"><h3>Propriété du serveur</h3><p>Les opérations de transfert et suppression ne concernent que ce serveur CMD Sphere.</p><div class="csm-actions">'+btn('Transférer la propriété','transfer-guild')+btn('Supprimer ce serveur','delete-guild','danger')+'</div><div id="csm-transfer-ui" aria-live="polite"></div></section>':'<section class="csm-server-lifecycle"><h3>Quitter le serveur</h3><p>Quitter le serveur ne supprime pas les messages des autres membres.</p>'+btn('Quitter ce serveur','leave-guild','danger')+'</section>'):'');
 }
@@ -604,7 +608,9 @@ async function saveIdentity(e){
  const f=e.currentTarget,fd=new FormData(f);
  try{
   const result=await request('/api/native/server-identity',{guildId:id(),name:String(fd.get('name')||'').trim(),description:String(fd.get('description')||''),iconDataUrl:newIcon||undefined,isPublic:fd.has('isPublic'),welcomeMessage:fd.has('welcomeMessage'),defaultNotifications:fd.get('defaultNotifications'),showBoostBar:fd.has('showBoostBar')});
-  notify('Identité du serveur CMD Sphere enregistrée.');newIcon=null;await update();
+  const verification=String(fd.get('verificationLevel')||'none');
+  await request('/api/native/verification',{guildId:id(),level:verification},'PATCH');
+  notify('Identité et vérification du serveur CMD Sphere enregistrées.');newIcon=null;await update();
  }catch(e){notify(e.message,false)}
 }
 function revealChannelCreate(kind='text'){
