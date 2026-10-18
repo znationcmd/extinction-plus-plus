@@ -144,7 +144,7 @@ function other(){
  if(currentTab==='appearance')return intro('Personnalisation','Icône, description et identité du serveur.')+btn('Modifier la vue d’ensemble','overview','primary')+(isNative()?'<a class="csm-btn" href="/profile?server='+safe(id())+'">Profil du serveur ↗</a>':'')+toDiscord();
  if(currentTab==='members')return intro('Membres','Membres réellement inscrits sur ce serveur et rôles CMD Sphere associés.')+
   (isNative()?'<div id="csm-native-members" aria-live="polite">'+info('Chargement des membres du serveur CMD Sphere…')+'</div>':info('Les membres du serveur externe doivent être gérés sur sa plateforme.')+toDiscord());
- if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité externes restent dans la plateforme liée.')+toDiscord();
+ if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories.')+(isNative()?'<section id="csm-native-raid" aria-live="polite">'+info('Chargement de la protection anti-raid…')+'</section>':info('La protection anti-raid des serveurs externes est gérée par leur plateforme.')+toDiscord());
  if(currentTab==='automod')return intro('AutoMod','Blocage facultatif des expressions dans les messages CMD Sphere natifs.')+(isNative()?'<section id="csm-native-automod" aria-live="polite">'+info('Chargement…')+'</section>':info('La modération du serveur externe reste gérée sur sa plateforme.')+toDiscord());
  return intro('Journal d’audit','Historique privé des modifications des salons et des rôles du serveur.')+
   (isNative()?'<section id="csm-native-audit" aria-live="polite">'+info('Chargement du journal…')+'</section>':
@@ -320,6 +320,56 @@ async function renderNativeMembersTab(){
    }else list.append(row);
   }
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
+}
+
+async function loadNativeRaid(){
+ const host=$('#csm-native-raid'),guildId=id();
+ if(!host||!isNative())return;
+ if(!ctx?.owner){host.textContent='La protection anti-raid est réservée au propriétaire du serveur.';return}
+ const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Chargement…';
+ host.replaceChildren(status);
+ try{
+  const saved=await request('/api/native/security/raid?guildId='+safe(guildId));
+  if(!host.isConnected||currentTab!=='security'||id()!==guildId)return;
+  const form=document.createElement('form');form.className='csm-form';
+  const title=document.createElement('h3');title.textContent='Protection contre les arrivées massives';
+  const description=document.createElement('p');description.textContent=
+   'Désactivée par défaut. Limite temporairement les nouvelles adhésions par invitation. Aucun bannissement, aucune suppression des membres existants.';
+  form.append(title,description);
+  const enabledLabel=document.createElement('label');enabledLabel.className='csm-discord-toggle';
+  const enabledText=document.createElement('strong');enabledText.textContent='Activer le contrôle anti-raid';
+  const enabled=document.createElement('input');enabled.type='checkbox';enabled.checked=!!saved.enabled;
+  enabledLabel.append(enabledText,enabled);form.append(enabledLabel);
+  const numberField=(label,value,min,max)=>{
+   const wrapper=document.createElement('label');wrapper.className='csm-field';wrapper.textContent=label;
+   const control=document.createElement('input');control.type='number';control.min=String(min);control.max=String(max);
+   control.step='1';control.required=true;control.value=String(value);wrapper.append(control);form.append(wrapper);
+   return control;
+  };
+  const joins=numberField('Nouvelles arrivées maximum (3 à 100)',saved.maxJoins,3,100);
+  const windowMinutes=numberField('Période en minutes (1 à 60)',saved.windowMinutes,1,60);
+  const saveButton=document.createElement('button');saveButton.type='submit';saveButton.className='csm-btn primary';saveButton.textContent='Enregistrer la protection';form.append(saveButton);
+  const notice=document.createElement('p');notice.setAttribute('role','status');form.append(notice);
+  host.replaceChildren(form);
+  form.addEventListener('submit',async event=>{
+   event.preventDefault();
+   const maxJoins=Number(joins.value),minutes=Number(windowMinutes.value);
+   if(!Number.isInteger(maxJoins)||maxJoins<3||maxJoins>100||
+      !Number.isInteger(minutes)||minutes<1||minutes>60){notice.textContent='Saisis des limites valides.';return}
+   saveButton.disabled=true;
+   try{
+    const data=await request('/api/native/security/raid',{guildId,
+     enabled:enabled.checked,maxJoins,windowMinutes:minutes});
+    notice.textContent=data.enabled?
+     'Protection anti-raid active : '+data.maxJoins+' arrivées sur '+data.windowMinutes+' minute(s).':
+     'Protection désactivée. Les invitations existantes restent inchangées.';
+   }catch(error){notice.textContent='Enregistrement impossible : '+error.message}
+   finally{saveButton.disabled=false}
+  });
+ }catch(error){
+  if(host.isConnected&&currentTab==='security'&&id()===guildId)
+   host.textContent='Protection anti-raid indisponible : '+(error?.message||'Erreur inconnue');
+ }
 }
 
 async function loadNativeRules(){
@@ -708,6 +758,7 @@ function render(){
  if(currentTab==='community')void loadNativeDiscovery();
  if(currentTab==='onboarding')void loadNativeOnboarding();
  if(currentTab==='rules')void loadNativeRules();
+ if(currentTab==='security')void loadNativeRaid();
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
  if(currentTab==='voicecfg')void loadNativeVoiceConfig();
