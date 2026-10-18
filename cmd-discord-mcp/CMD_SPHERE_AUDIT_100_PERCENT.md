@@ -3,6 +3,13 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Reprise du 18 octobre 2026 — texte dans les salons vocaux CMD Sphere
+
+- Décompte actuel sur les 59 contrats : **28 fonctionnalités au moins partiellement codées ; 31 toujours non développées ; 0 validée en production**. Ces nombres ne représentent ni une installation de tous les modules, ni des essais sur appareils réels.
+- `voice_channel_text` : les salons vocaux natifs sont désormais ouvrables dans les vues de salon et peuvent recevoir ou afficher des messages par les API déjà existantes. Les contrôles de membres, droits de lecture du serveur, règles acceptées, AutoMod, mode lent et notifications bloquées sont conservés. Le chat vocal WebRTC et les serveurs Discord externes ne sont pas modifiés. Par précaution, les notifications avec aperçu du contenu des salons vocaux sont désactivées jusqu'au contrôle de permissions fines par destinataire.
+- Tests de sécurité supplémentaires : `tests/native-voice-text.test.cjs`, plus mise à jour de `tests/native-media-channels.test.cjs`. [GitHub Actions 39117383895](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39117383895) : **384/384 tests réussis, 24/24 validations réussies, 0 échec**.
+- Toujours aucun déploiement ni migration sur Railway, ni suppression de l'existant, ni activation de paiement ; sauvegarde Git `cmd-sphere/backup-before-voice-text-20261018`. La validation des permissions par canal, des notifications et des usages mobiles réels reste nécessaire avant production.
+
 ## Reprise du 18 octobre 2026 — catalogue de langues mondial et variantes suisses (GitHub)
 
 - Demande de remplacer la limite de 11 langues : **8 148 entrées ISO 639-3 / ISO 639-1 et variantes BCP 47** ajoutées à `cmd-language-catalog.json`, consultables avec un champ de recherche sur iPhone, Android et PC dans `settings-ui.js`. Le sélecteur reste léger : 100 résultats visibles à la fois.
