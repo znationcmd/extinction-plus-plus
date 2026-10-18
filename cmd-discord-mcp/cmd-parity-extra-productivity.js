@@ -48,8 +48,8 @@ export const features=Object.freeze([
       "tags",
       "display_mode"
     ],
-    "installedStage": "contract_only",
-    "implemented": false,
+    "installedStage": "developed_pending_production_validation",
+    "implemented": true,
     "enabled": false,
     "verified": false
   }
