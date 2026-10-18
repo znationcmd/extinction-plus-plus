@@ -275,6 +275,12 @@ function openCompactMenu(article,x,y){
    action('■ Arrêter la lecture',stopCmdSpeech);
    action('🔈 Volume vocal : '+Math.round(cmdTts.volume*100)+' %',()=>{const choices=[1,.75,.5,.25,0];const current=choices.indexOf(cmdTts.volume);window.cmdSphereTts.setVolume(choices[(current+1)%choices.length])});
  }
+ if(window.cmdSphereSensitiveMedia?.toggle){
+   action(window.cmdSphereSensitiveMedia.get()?'🖼 Afficher les médias':'🛡️ Flouter les photos et vidéos',
+    ()=>window.cmdSphereSensitiveMedia.toggle().catch(e=>window.alert?.(e.message)));
+   if(window.cmdSphereSensitiveMedia.get()&&article.querySelector('.msg-image,video'))
+     action('Afficher les médias de ce message',()=>window.cmdSphereSensitiveMedia.revealArticle(article));
+ }
  if(content)action('Copier le texte',()=>navigator.clipboard?.writeText(content).catch(()=>{}));
  if(article.dataset.messageId&&window.cmdSphereReminders&&window.cmdSphereMessageActions?.context?.()){
   action('⏰ Me rappeler ce message',()=>window.cmdSphereReminders.open(article));
