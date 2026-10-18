@@ -32,7 +32,7 @@ export const features=Object.freeze([
       "timezone"
     ],
     "installedStage": "contract_only",
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
