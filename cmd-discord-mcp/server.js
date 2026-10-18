@@ -3668,6 +3668,40 @@ async function deleteOwnOrOwnerNativeMessage(auth,input){
  if(!deleted.rows.length)throw Object.assign(new Error("Message introuvable ou suppression non autorisée."),{status:403});
  return {ok:true,messageId,guildId,channelId:String(channel.id)};
 }
+/* Contract 34 — forwarding from one authorized native text room to another.
+ * Copy visible text only. Do not replicate attachments or metadata, mutate source,
+ * automatically mention everyone, or bypass per-channel slowmode.
+ */
+async function forwardNativeTextMessage(auth,input){
+  const sourceGuildId=validCmdUuid(input?.sourceGuildId),sourceChannelId=validCmdUuid(input?.sourceChannelId);
+  const destinationGuildId=validCmdUuid(input?.destinationGuildId),destinationChannelId=validCmdUuid(input?.destinationChannelId);
+  const messageId=validCmdUuid(input?.messageId);
+  const source=await nativeTextChannel(auth,sourceGuildId,sourceChannelId);
+  const destination=await nativeTextChannel(auth,destinationGuildId,destinationChannelId);
+  const elevated=p=>Boolean(p?.administrator||p?.manageGuild);
+  const from=await effectiveNativePermissions(String(auth.user.id),sourceGuildId);
+  const to=await effectiveNativePermissions(String(auth.user.id),destinationGuildId);
+  if(!from||!to||(!elevated(from)&&!(from.viewChannels&&from.readHistory))||(!elevated(to)&&!(to.viewChannels&&to.sendMessages)))
+    throw Object.assign(new Error("Permissions de lecture ou d'envoi insuffisantes."),{status:403});
+  // Effective category and channel overwrites are not yet evaluated by nativeTextChannel.
+  // Fail closed on overridden rooms until the permissions engine supports them.
+  const overridden=ch=>Array.isArray(ch.permission_overwrites)?ch.permission_overwrites.length>0:Boolean(ch.permission_overwrites&&ch.permission_overwrites!=="[]");
+  if(overridden(source)||overridden(destination))
+    throw Object.assign(new Error("Transfert indisponible dans les salons à permissions particulières."),{status:403});
+  const original=await pool.query(
+    "SELECT body FROM cmd_native_channel_messages WHERE id=$1 AND guild_id=$2 AND channel_id=$3 LIMIT 1",
+    [messageId,sourceGuildId,String(source.id)]
+  );
+  const body=String(original.rows[0]?.body||"").trim();
+  if(!body)throw Object.assign(new Error("Message inexistant ou sans texte transférable."),{status:404});
+  // Prevent unwanted mention amplification through forwarded text.
+  const quoted=body.replace(/@everyone\b/gi,"@\u200beveryone").replace(/@here\b/gi,"@\u200bhere").slice(0,3500);
+  const sent=await sendNativeChannelMessage(auth,{
+    guildId:destinationGuildId,channelId:String(destination.id),
+    content:"↪ Message transféré depuis #"+String(source.name||"salon").slice(0,80)+"\n"+quoted
+  });
+  return {ok:true,sourceMessageId:messageId,destinationGuildId,destinationChannelId:String(destination.id),message:sent};
+}
 async function sendNativeChannelMessage(auth,input){
   const guildId=String(input.guildId||""),ch=await nativeTextChannel(auth,guildId,input.channelId),body=String(input.content||"").trim();
   if(body.length>4000)throw Object.assign(new Error("4000 caractères maximum par message."),{status:413});
@@ -5441,6 +5475,12 @@ const httpServer=createServer(async(req,res)=>{
         }
         sendJson(res,200,native);
       }catch(e){sendJson(res,400,{error:e.message})}return;
+    }
+    if(req.method==="POST"&&url.pathname==="/api/messages/forward"){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{sendJson(res,201,await forwardNativeTextMessage(auth,await readFormBodyJson(req)))}
+      catch(error){sendJson(res,error.status||400,{error:error.message,retryAfter:error.retryAfter||undefined})}
+      return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
