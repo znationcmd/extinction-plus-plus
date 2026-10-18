@@ -25,6 +25,7 @@ import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cm
 import {initCmdSensitiveMedia,getCmdSensitiveMedia,saveCmdSensitiveMedia} from "./cmd-sensitive-media.js";
 import {initCmdMessageReminders,createCmdMessageReminder,listCmdMessageReminders,cancelCmdMessageReminder,dispatchDueCmdMessageReminders} from "./cmd-message-reminders.js";
 import {initCmdForumTags,getCmdForumSettings,setCmdForumSettings} from "./cmd-forum-tags.js";
+import {initCmdServerVerification,getCmdServerVerification,setCmdServerVerification} from "./cmd-server-verification.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -5512,6 +5513,17 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,e.status||400,{error:e.message,retryAfter:e.retryAfter||undefined})}return;
     }
+    if(url.pathname==="/api/native/verification"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const input=req.method==="GET"?null:await readFormBodyJson(req);
+        const guildId=String(input?.guildId||url.searchParams.get("guildId")||"");
+        await requireNativeMember(auth,guildId);
+        if(req.method==="GET"){sendJson(res,200,await getCmdServerVerification(pool,guildId));return}
+        await requireNativeOwner(auth,guildId);
+        sendJson(res,200,await setCmdServerVerification(pool,guildId,input?.level));
+      }catch(error){sendJson(res,error.status||403,{error:error.message})}return;
+    }
     if(url.pathname==="/api/native/slowmode"&&(req.method==="GET"||req.method==="PATCH")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -6044,7 +6056,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);await initCmdForumTags(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);await initCmdForumTags(pool);await initCmdServerVerification(pool);
     const cmdReminderTimer=setInterval(()=>dispatchDueCmdMessageReminders(pool,notifyUsers).catch(e=>console.warn("[cmd-reminders]",e.message)),60000);
     cmdReminderTimer.unref?.();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
