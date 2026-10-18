@@ -25,6 +25,7 @@ import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cm
 import {initCmdSensitiveMedia,getCmdSensitiveMedia,saveCmdSensitiveMedia} from "./cmd-sensitive-media.js";
 import {initCmdMessageReminders,createCmdMessageReminder,listCmdMessageReminders,cancelCmdMessageReminder,dispatchDueCmdMessageReminders} from "./cmd-message-reminders.js";
 import {initCmdForumTags,getCmdForumSettings,setCmdForumSettings,validateForumPostTags} from "./cmd-forum-tags.js";
+import {initCmdForumThreadControls,getForumThreadState,setForumThreadState,assertForumThreadReplyAllowed,touchForumThreadReply} from "./cmd-forum-thread-controls.js";
 import {initCmdServerVerification,getCmdServerVerification,setCmdServerVerification} from "./cmd-server-verification.js";
 import {assertNativeMediaPost} from "./cmd-native-media-channels.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
@@ -279,7 +280,7 @@ function dashboardPage(auth,initialNativeGuilds=[]){
   const S={guild:null,bot:null,structure:null,nativeGuild:null,nativeChannels:new Map(),nativeImportedOwner:false};const CHAT={open:false,mode:'discord',guildId:null,bot:null,channelId:null,name:'',messages:[],nextBefore:null,hasMore:false,loading:false,replyTo:null,poll:null,pendingAttachments:[],pendingPoll:null,recording:false,recorder:null,forumGallery:false,forumTags:[],forumFilter:''};const qs=s=>document.querySelector(s);
   window.cmdSphereMessageActions={
     mode:()=>CHAT.mode,
-    context:()=>CHAT.mode==="native"?{guildId:String(CHAT.guildId||""),channelId:String(CHAT.channelId||"")}:null,
+    context:()=>CHAT.mode==="native"?{guildId:String(CHAT.guildId||""),channelId:String(CHAT.channelId||""),channelType:String(CHAT.channelType||"text")}:null,
     delete:async id=>{if(CHAT.mode!=="native")throw new Error("Suppression disponible uniquement pour les messages CMD Sphere natifs.");const res=await fetch("/api/native/messages/delete",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,messageId:String(id)})});const body=await res.json();if(!res.ok)throw new Error(body.error||"Suppression impossible");CHAT.messages=CHAT.messages.filter(m=>String(m.id)!==String(id));renderChannelMessages();return body},
     edit:async(id,content)=>{if(CHAT.mode!=="native")throw new Error("Modification disponible uniquement pour les messages natifs.");const res=await fetch("/api/native/messages/edit",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({guildId:CHAT.guildId,channelId:CHAT.channelId,messageId:String(id),content})});const body=await res.json();if(!res.ok)throw new Error(body.error||"Modification impossible");const m=CHAT.messages.find(x=>String(x.id)===String(id));if(m)m.content=content;renderChannelMessages();return body},
     reply:id=>{const m=CHAT.messages.find(x=>String(x.id)===String(id));if(!m)throw new Error("Message introuvable");replyDiscordMessage(id,m.author?.displayName||m.author?.username||"Utilisateur",String(m.content||"").slice(0,90));qs("#channelInput")?.focus()}
@@ -3749,11 +3750,13 @@ async function sendNativeChannelMessage(auth,input){
     const r=await pool.query('SELECT id FROM cmd_native_channel_messages WHERE id=$1 AND channel_id=$2 LIMIT 1',[String(input.replyTo),ch.id]);
     if(r.rows[0])replyTo=r.rows[0].id;
   }
+  const forumRoot=await assertForumThreadReplyAllowed(pool,guildId,ch,replyTo);
   const id=crypto.randomUUID();
   const effective=Number(ch.slowmode_seconds||0)>0
     ?await effectiveNativePermissions(String(auth.user.id),guildId):null;
   const bypass=Boolean(effective&&(effective.administrator||effective.manageChannels||effective.manageMessages));
   await saveNativeMessageWithSlowmode(pool,{id,guildId,channelId:ch.id,userId:auth.user.id,body,replyTo,attachments,metadata,cooldownSeconds:ch.slowmode_seconds||0,bypass});
+  if(forumRoot)try{await touchForumThreadReply(pool,forumRoot)}catch(error){console.warn("[cmd-forum-thread] activity update:",error.message)}
   const r=await pool.query(`SELECT m.*,COALESCE(mem.profile_display_name,gp.display_name,a.display_name,a.username,'Utilisateur') AS author_name,
       COALESCE(mem.profile_avatar_data_url,gp.avatar_data_url) AS author_avatar
     FROM cmd_native_channel_messages m
@@ -5489,6 +5492,22 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,await deleteOwnOrOwnerNativeMessage(auth,await readFormBodyJson(req)))}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/native/forum-thread"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const input=req.method==="GET"?{
+          guildId:url.searchParams.get("guildId"),channelId:url.searchParams.get("channelId"),messageId:url.searchParams.get("messageId")
+        }:await readFormBodyJson(req);
+        const guildId=String(input.guildId||""),channelId=String(input.channelId||""),messageId=String(input.messageId||"");
+        const channel=await nativeTextChannel(auth,guildId,channelId);
+        if(req.method==="GET"){
+          sendJson(res,200,await getForumThreadState(pool,guildId,channel,messageId));return;
+        }
+        await requireNativePermission(auth,guildId,"manageChannels");
+        sendJson(res,200,await setForumThreadState(pool,guildId,channel,messageId,input));
+      }catch(error){sendJson(res,error.status||403,{error:error.message})}
+      return;
+    }
     if(url.pathname==="/api/forums/tags"&&(req.method==="GET"||req.method==="PATCH")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -6088,7 +6107,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);await initCmdForumTags(pool);await initCmdServerVerification(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);await initCmdForumTags(pool);await initCmdForumThreadControls(pool);await initCmdServerVerification(pool);
     const cmdReminderTimer=setInterval(()=>dispatchDueCmdMessageReminders(pool,notifyUsers).catch(e=>console.warn("[cmd-reminders]",e.message)),60000);
     cmdReminderTimer.unref?.();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
