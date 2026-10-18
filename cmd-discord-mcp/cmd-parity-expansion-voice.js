@@ -73,9 +73,9 @@ export const features=Object.freeze([
       "user_limit"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "partially_implemented_native_voice_configuration_without_webrtc_enforcement",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
