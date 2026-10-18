@@ -5,7 +5,7 @@
 "use strict";
 // The catalogue is loaded in settings, but message translations can accept any
 // syntactically valid BCP47 language tag. The server checks ISO recognition.
-const languageTag=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,7}$/i;
+const languageTag=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i;
 const translatedCache=new Map(), failedCache=new Map();
 const waiting=[],queued=new WeakSet(),watched=new WeakSet();
 let inFlight=0,windowCount=0,windowStart=Date.now(),pausedUntil=0,epoch=0;
