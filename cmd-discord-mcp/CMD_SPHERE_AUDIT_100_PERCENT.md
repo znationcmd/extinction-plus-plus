@@ -3,6 +3,19 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## État confirmé — suite des installations (18 octobre 2026, 10:49 Paris)
+
+- **16/59 contrats avec code d'application partiel**, **43/59 encore préparatoires**, **0/59 validé en production**. Ne pas confondre code installé, fonction testée et déploiement live.
+- GitHub Actions [39112889245](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39112889245) : **305 tests réussis sur 305, aucun échec**, incluant recherche historique et pièces jointes, langue TTS locale, isolation compte, sécurité, profils, salons médias et forums. Cette preuve reste une CI avec doubles, pas un test de déploiement Railway.
+- Recherche historique : `cmd-message-history-search.js` et `cmd-chat-history-ui.js` permettent filtres auteur, date, présence ou absence de pièces jointes dans les salons serveur autorisés (y compris médias). Les recherches MP/groupe ne proposent pas de filtre fichier inexistant dans leur schéma. `tests/history-attachment-filter.test.cjs` et `tests/history-attachment-ui.test.cjs` protègent le périmètre.
+- TTS : `cmd-social-message-actions.js` ajoute un sélecteur de langue local avec volume, arrêt et consentement explicite ; `tests/message-tts.test.cjs` vérifie le fonctionnement. La commande `/tts` et les appareils réels ne sont pas encore validés.
+- Fonds synchronisés : sauvegarde propre au compte, portée générale ou serveur, déjà dans `cmd-personal-backgrounds.js` et `server.js`; marquée partielle, notamment parce que le chiffrement au repos et la restauration multi-appareils n'ont pas été prouvés.
+- Fils de forum : code d'archivage et verrouillage préparé sur la même branche, tests CI verts ; non validé en production.
+- Branche de travail : `cmd-sphere/finition-20261018`. Sauvegarde Git du début du lot : `cmd-sphere/backup-before-history-20261018`.
+- **Aucun déploiement, migration ou paiement exécuté dans ce lot** ; conserver l'exigence d'une sauvegarde PostgreSQL restaurable et de validations multi-utilisateurs avant mise en production.
+
+La section ci-dessous conserve la photographie historique antérieure ; ne pas utiliser ses anciens compteurs comme chiffres actuels.
+
 ## Mise à jour vérifiable — contrats Discord, 18 octobre 2026
 
 Les chiffres ci-dessous sont limités au **registre de 59 contrats**, pas à toute l'application.
