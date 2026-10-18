@@ -141,7 +141,7 @@ function other(){
  if(currentTab==='members')return intro('Membres','Membres réellement inscrits sur ce serveur et rôles CMD Sphere associés.')+
   (isNative()?'<div id="csm-native-members" aria-live="polite">'+info('Chargement des membres du serveur CMD Sphere…')+'</div>':info('Les membres du serveur externe doivent être gérés sur sa plateforme.')+toDiscord());
  if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité externes restent dans la plateforme liée.')+toDiscord();
- if(currentTab==='automod')return intro('AutoMod','Modération automatisée du serveur.')+info('L’édition des règles AutoMod externe n’est pas accessible depuis ce panneau.')+toDiscord();
+ if(currentTab==='automod')return intro('AutoMod','Blocage facultatif des expressions dans les messages CMD Sphere natifs.')+(isNative()?'<section id="csm-native-automod" aria-live="polite">'+info('Chargement…')+'</section>':info('La modération du serveur externe reste gérée sur sa plateforme.')+toDiscord());
  return intro('Journal d’audit','Historique privé des modifications des salons et des rôles du serveur.')+
   (isNative()?'<section id="csm-native-audit" aria-live="polite">'+info('Chargement du journal…')+'</section>':
   info('Pour les serveurs externes, utilise le journal de leur plateforme.')+toDiscord());
@@ -379,6 +379,39 @@ const CMD_AUDIT_ACTION_LABELS={
  create_role:'Rôle créé',update_role:'Rôle modifié',delete_role:'Rôle supprimé',
  set_channel_permissions:'Permissions du salon modifiées'
 };
+async function loadNativeAutoMod(){
+ const host=$('#csm-native-automod'),guildId=id();
+ if(!host||!isNative())return;
+ if(!ctx?.owner){host.textContent='Seul le propriétaire peut gérer les règles AutoMod.';return}
+ try{
+  const settings=await request('/api/native/automod?guildId='+safe(guildId));
+  if(!host.isConnected||currentTab!=='automod'||id()!==guildId)return;
+  const form=document.createElement('form');form.className='csm-form';
+  const enabled=document.createElement('input');enabled.type='checkbox';enabled.checked=!!settings.enabled;
+  const label=document.createElement('label');label.className='csm-discord-toggle';
+  label.append(document.createTextNode('Activer le blocage des expressions'),enabled);
+  const field=document.createElement('label');field.className='csm-field';
+  field.textContent='Expressions interdites (une par ligne, maximum 40)';
+  const terms=document.createElement('textarea');terms.rows=7;terms.maxLength=2000;
+  terms.value=Array.isArray(settings.blockedTerms)?settings.blockedTerms.join('\n'):'';
+  terms.style.cssText='display:block;width:100%;min-height:140px;padding:10px;border-radius:12px;color:inherit;background:#251735;border:1px solid #8d6bba;resize:vertical';
+  field.append(terms);
+  const save=document.createElement('button');save.type='submit';save.className='csm-btn primary';save.textContent='Enregistrer AutoMod';
+  const status=document.createElement('p');status.setAttribute('role','status');
+  status.textContent='Désactivé tant que tu ne coches pas la case. Ne filtre pas encore les fichiers, anciens messages et autres services.';
+  form.append(label,field,save,status);host.replaceChildren(form);
+  form.addEventListener('submit',async event=>{
+   event.preventDefault();
+   const blockedTerms=terms.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+   save.disabled=true;
+   try{
+    const result=await request('/api/native/automod',{guildId,enabled:enabled.checked,blockedTerms},'PATCH');
+    status.textContent=result.enabled?'Filtrage activé sur les nouveaux messages CMD Sphere.':'AutoMod désactivé.';
+   }catch(error){status.textContent='Enregistrement refusé : '+error.message}
+   finally{save.disabled=false}
+  });
+ }catch(error){if(host.isConnected&&currentTab==='automod')host.textContent='AutoMod indisponible : '+error.message}
+}
 async function loadNativeAudit(before=null,append=false){
  const host=$('#csm-native-audit'),guildId=id();
  if(!host||!isNative())return;
@@ -465,6 +498,7 @@ function render(){
  if(currentTab==='analytics')void loadNativeInsights();
  if(currentTab==='community')void loadNativeDiscovery();
  if(currentTab==='audit')void loadNativeAudit();
+ if(currentTab==='automod')void loadNativeAutoMod();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
