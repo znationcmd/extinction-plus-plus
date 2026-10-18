@@ -88,7 +88,7 @@ test("Failed insert rolls back cooldown; no partial state is persisted",async()=
 test("Server enforces permission-scoped endpoint, includes cooldown in channel and guards message POST",()=>{
  assert.match(server,/initCmdNativeDb\(\);await initCmdSlowmode\(pool\)/);
  assert.match(server,/await requireNativePermission\(auth,guildId,"manageChannels"\)/);
- assert.match(server,/url.pathname==="/api/native/slowmode"&&\(req.method==="GET"\|\|req.method==="PATCH"\)/);
+ assert.ok(server.includes('url.pathname==="/api/native/slowmode"&&(req.method==="GET"||req.method==="PATCH")'));
  assert.match(server,/saveNativeMessageWithSlowmode\(pool,\{id,guildId,channelId:ch.id,userId:auth.user.id/);
  assert.match(server,/COALESCE\(\$8::integer,slowmode_seconds\)/);
  assert.match(server,/retryAfter:e.retryAfter\|\|undefined/);
