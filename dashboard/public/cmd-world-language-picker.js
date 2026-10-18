@@ -8,7 +8,12 @@
  const tag=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i;
  const originalChoices=["fr","en","us","de","es","it","ru","ko","ja","zh","co","pt"];
  const status={languages:null,loading:null};
- const existing=()=>{try{return localStorage.getItem("cmd-world-language")||"fr"}catch{return"fr"}};
+ const existing=()=>{
+  try{const chosen=localStorage.getItem("cmd-world-language");if(chosen)return chosen}catch{}
+  // Use the visitor's actual browser language, not an assumed country or IP location.
+  const preferred=typeof navigator!=="undefined"?(navigator.languages||[navigator.language]).filter(Boolean):[];
+  return preferred[0]||"fr";
+ };
  const root=document.createElement("div");
  root.id="cmd-world-language-root";
  root.style.cssText="position:fixed;right:14px;bottom:14px;z-index:2147483000;pointer-events:none";
@@ -24,6 +29,14 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
 .results{min-height:80px;overflow-y:auto;flex:1;border:1px solid #2d2541;border-radius:9px}
 .choice{display:block;width:100%;background:transparent;color:#e9e6f5;border:0;border-bottom:1px solid #342e4c;text-align:left;padding:9px 10px;overflow-wrap:anywhere}
 .choice:hover,.choice:focus{background:#352052}
+.letter{margin:0;border-bottom:1px solid #342e4c}
+.letter>summary{display:flex;justify-content:space-between;align-items:center;padding:12px;cursor:pointer;min-height:44px;font-weight:750;background:#1d1730;list-style-position:inside}
+.letter>summary:hover,.letter>summary:focus-visible{background:#33204c}
+.letter[open]>summary{background:#392153}
+.letter .choice{padding-left:22px}
+.letter small{color:#cbb5e5;font-weight:500}
+.choice[aria-selected="true"]{color:#dbbcff;background:#322044}
+.results>p{padding:12px;margin:0}
 .muted{font-size:12px;color:#cfc4e9;line-height:1.45;margin:0}
 .status{font-size:12px;color:#bcefd3;min-height:20px;overflow-wrap:anywhere}
 `;
@@ -37,7 +50,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  const close=document.createElement("button");close.type="button";close.className="close";close.textContent="Fermer";head.append(title,close);
  const query=document.createElement("input");query.type="search";query.placeholder="Rechercher : suisse allemand, bernois, gsw-CH…";
  query.setAttribute("aria-label","Rechercher une langue ou un dialecte");
- const results=document.createElement("div");results.className="results";results.setAttribute("role","listbox");
+ const results=document.createElement("div");results.className="results";results.setAttribute("role","group");results.setAttribute("aria-label","Langues classées de A à Z");
  const custom=document.createElement("input");custom.type="text";custom.maxLength=64;
  custom.placeholder="Code régional personnel : gsw-CH-x-bern";
  custom.setAttribute("aria-label","Code de langue régional BCP 47");
@@ -72,6 +85,10 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
    }
   }
   const known=originalChoices.includes(fb);
+  // Notify the individual applications, including CMD Sphere settings and React views.
+  try{localStorage.setItem("cmd-sphere-language",known?fb:safe)}catch{}
+  window.dispatchEvent(new CustomEvent("cmd-sphere-language-change",{detail:{language:known?fb:safe,selectedLanguage:safe}}));
+  window.dispatchEvent(new CustomEvent("cmd-language-change",{detail:{language:safe,fallback:fb}}));
   if(known){
    const legacyKeys=["cmdLang","cmdpad-language","cmdpad-ui-lang","dayz-gate-language","ark-language","cmd-browser-lang"];
    for(const key of legacyKeys){try{if(localStorage.getItem(key)!==null)localStorage.setItem(key,fb)}catch{}}
@@ -81,20 +98,50 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   trigger.setAttribute("aria-label","Langue choisie : "+safe);
   trigger.title="Langue : "+safe;
  }
+ function normalized(value){return String(value||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase()}
  function render(){
   results.replaceChildren();
   if(!status.languages){results.textContent="Chargement du catalogue…";return}
-  const search=query.value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-  let matched=0;
+  const needle=normalized(query.value.trim());
+  const buckets=new Map();
   for(const [code,name] of status.languages){
-   if(search&&!((code+" "+name).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().includes(search)))continue;
-   const button=document.createElement("button");button.type="button";button.className="choice";
-   button.setAttribute("role","option");button.textContent=name+" · "+code;
-   button.addEventListener("click",()=>save(code,name));
-   results.append(button);
-   matched++;if(matched>=85)break;
+   if(needle&&!normalized(code+" "+name).includes(needle))continue;
+   const first=normalized(name).charAt(0).toUpperCase();
+   const letter=/^[A-Z]$/.test(first)?first:"#";
+   if(!buckets.has(letter))buckets.set(letter,[]);
+   buckets.get(letter).push([code,name]);
   }
-  if(!matched)results.textContent="Aucun résultat — essaie un code régional.";
+  const letters=[..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"].filter(letter=>buckets.has(letter));
+  if(buckets.has("#"))letters.push("#");
+  if(!letters.length){const none=document.createElement("p");none.textContent="Aucune langue correspondante.";results.append(none);return}
+  const selected=existing();
+  for(const letter of letters){
+   const rows=buckets.get(letter);
+   const section=document.createElement("details");section.className="letter";
+   const summary=document.createElement("summary");
+   const heading=document.createElement("span");heading.textContent=letter==="#"?"Autres":letter;
+   const count=document.createElement("small");count.textContent=rows.length+" langues";
+   summary.append(heading,count);section.append(summary);
+   const entries=document.createElement("div");entries.setAttribute("role","listbox");entries.setAttribute("aria-label","Langues "+letter);section.append(entries);
+   // Create options only when a letter opens: all 8,148 entries remain accessible
+   // without generating thousands of interactive DOM nodes at every keystroke.
+   const fill=()=>{
+    if(entries.childElementCount)return;
+    const fragment=document.createDocumentFragment();
+    for(const [code,name] of rows){
+     const button=document.createElement("button");button.type="button";button.className="choice";
+     button.setAttribute("role","option");button.setAttribute("aria-selected",String(code===selected));
+     button.textContent=name+" · "+code;
+     button.addEventListener("click",()=>{save(code,name);panel.hidden=true;trigger.setAttribute("aria-expanded","false")});
+     fragment.append(button);
+    }
+    entries.append(fragment);
+   };
+   section.addEventListener("toggle",()=>{if(section.open)fill()});
+   // Short search results expand directly; larger matches stay neatly grouped.
+   if(needle&&rows.length<=35){section.open=true;fill()}
+   results.append(section);
+  }
  }
  async function load(){
   if(status.languages)return;
@@ -116,6 +163,11 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden){panel.hidden=true;trigger.setAttribute("aria-expanded","false")}});
  document.addEventListener("DOMContentLoaded",()=>{if(!document.getElementById(root.id))document.body.append(root)},{once:true});
  if(document.readyState!=="loading")document.body.append(root);
- const saved=existing();if(validate(saved))document.documentElement.lang=saved;
+ const saved=existing();if(validate(saved)){
+  document.documentElement.lang=saved;
+  // Synchronize the initial preference once widgets and app menus have mounted.
+  const signal=()=>window.dispatchEvent(new CustomEvent("cmd-world-language-change",{detail:{language:saved,fallback:fallback(saved),initial:true}}));
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",signal,{once:true});else queueMicrotask(signal);
+ }
  window.CMDWorldLanguagePicker={get language(){return existing()},open:()=>{if(panel.hidden)void toggle()},set:(code)=>save(code,code)};
 })();
