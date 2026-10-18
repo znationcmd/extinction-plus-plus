@@ -17,7 +17,7 @@ Les chiffres ci-dessous sont limités au **registre de 59 contrats**, pas à tou
 | Contrat | Implémentation ajoutée | Tests automatisés | Production | État |
 |---|---|---|---|---|
 | channel_slowmode | `cmd-native-slowmode.js`, `server.js`, `cmd-server-manager.js` : délais par salon, contrôle PostgreSQL atomique, permissions | `native-slowmode.test.cjs` | Non déployé | 🟡 |
-| server_template_cloning | `server.js` : nouveaux serveurs modèles, copie de salons/rôles avec identifiants indépendants | `native-templates.test.cjs` et GitHub Actions validate-templates | Non déployé | 🟡 |
+| server_template_cloning | `server.js` : nouveaux serveurs modèles, copie de salons/rôles avec identifiants indépendants | `native-templates-contract.test.cjs` et GitHub Actions validate-templates | Non déployé | 🟡 |
 | user_block_controls | `cmd-social-privacy.js`, `cmd-social-privacy-ui.js`, `server.js` : blocage/déblocage, refus d'interaction privée, groupes, recherche et notifications | `social-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
 | friend_request_privacy | mêmes fichiers : paramètres propres au compte, serveurs communs, limitation des demandes répétées | `social-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
 | per_server_dm_privacy | `cmd-dm-guild-privacy.js`, `server.js`, `cmd-social-privacy-ui.js` : préférences de MP par serveur, validation d'appartenance, application aux MP et groupes | `dm-guild-privacy.test.cjs`, `social-privacy-ui.test.cjs` | Non déployé | 🟡 |
