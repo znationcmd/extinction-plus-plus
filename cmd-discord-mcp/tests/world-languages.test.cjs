@@ -44,7 +44,7 @@ test('Swiss German and regional tags are transparent about standard-language fal
  assert.ok(provider('fr-CH').approximation);
  assert.equal(provider('ar-EG').target,'ar');
  assert.equal(provider('fr').approximation,null);
- assert.equal(provider('non-existent'),null);
+ assert.equal(provider('zzq-XX'),null); // Base code is not in the ISO registry.
 });
 test('translation endpoint accepts global target codes without claiming provider coverage',async()=>{
  const {freeMessageTranslation:translate}=await import(pathToFileURL(path.join(base,'cmd-translation.js')).href);
