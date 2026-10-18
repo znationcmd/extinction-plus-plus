@@ -2,6 +2,7 @@ import {assertApiOrigin,readBoundedJson} from "./cmd-request-safety.js";
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
 import {handleCommunityInsights} from "./cmd-community-insights.js";
+import {initCmdDiscovery,handleCmdDiscovery} from "./cmd-community-discovery.js";
 import {parityStatus,parityAuditRows,parityBreakdown} from "./cmd-parity-59.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
@@ -1259,6 +1260,7 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS founder_auto_boost BOOLEAN NOT NULL DEFAULT FALSE");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS server_banner TEXT");
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS welcome_message BOOLEAN NOT NULL DEFAULT TRUE");
+  await initCmdDiscovery(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL,
@@ -4712,6 +4714,7 @@ const httpServer=createServer(async(req,res)=>{
       sendJson(res,200,{catalogue:"CMD Sphere vs Discord",auditDate:"2026-10-16",status:parityStatus(),breakdown:parityBreakdown(),features:parityAuditRows(),note:"Préinstallé signifie uniquement contrat préparatoire; non activé, non vérifié."});return;
     }
     if(await handleCommunityInsights(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
+    if(await handleCmdDiscovery(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdHistorySearch(req,res,url,{pool,auth:dashboardAuth(req),sendJson,checkGuildPermissions:effectiveNativePermissions}))return;
     if(req.method==="GET"&&url.pathname==="/cmd-chat-history-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-history-ui.js",import.meta.url),"utf8"));return}
     if(req.method==="GET"&&url.pathname==="/cmd-chat-search.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(readFileSync(new URL("./cmd-chat-search.js",import.meta.url),"utf8"));return}
