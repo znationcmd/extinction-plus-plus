@@ -56,6 +56,7 @@ test("A valid invitation grants membership to ONLY its linked guild",async()=>{
  const client={query:async(q,p)=>{
   sql.push({q,p});
   if(q.includes("SELECT g.id,g.name FROM cmd_native_invites"))return{rows:[{id:GUILD_A,name:"Extinction"}]};
+  if(q.includes("EXISTS(SELECT 1 FROM cmd_native_members"))return{rows:[{level:"none",email_verified:false,account_created_at:new Date(),already_member:false}]};
   return{rows:[]}},release(){}};
  const g=await joinNativeInvite({connect:async()=>client},AUTH,"abcdefABC123");
  assert.equal(g.id,GUILD_A);
