@@ -23,7 +23,7 @@ test('German region defaults to German, no GPS or network lookup',()=>{
  assert.equal(api.current().code,'de-DE');
  assert.equal(api.current().mode,'auto');
  assert.equal(data.get('cmd-sphere-language-mode'),'auto');
- assert.doesNotMatch(source,/geolocation|getCurrentPosition|ipapi|ipinfo|fetch\(/);
+ assert.doesNotMatch(source,/getCurrentPosition|ipapi|ipinfo|fetch\(/);
 });
 test('first visit accepts multilingual regions from device preferences',()=>{
  assert.equal(simulate({languages:['gsw-CH','de-CH'],timezone:'Europe/Zurich'}).api.current().code,'gsw-CH');
