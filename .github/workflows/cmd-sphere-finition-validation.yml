@@ -1,0 +1,39 @@
+name: CMD Sphere - non-destructive profile validation
+on:
+  push:
+    branches:
+      - cmd-sphere/finition-20261018
+    paths:
+      - 'cmd-discord-mcp/cmd-profile-scene-api.js'
+      - 'cmd-discord-mcp/cmd-profile-scene.js'
+      - 'cmd-discord-mcp/tests/profile-scene-*.test.cjs'
+      - 'cmd-discord-mcp/tests/profile-3d.test.cjs'
+      - '.github/workflows/cmd-sphere-finition-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cmd-sphere-finition-profiles
+  cancel-in-progress: true
+jobs:
+  validate-profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cmd-discord-mcp/package-lock.json
+      - name: Verify JavaScript syntax
+        run: |
+          node --check cmd-profile-scene-api.js
+          node --check cmd-profile-scene.js
+      - name: Install exact dependencies and restore bundled assets
+        run: npm ci
+      - name: Test account isolation, decoration saves, legacy avatars and 3D compatibility
+        run: node --test tests/profile-scene-preservation.test.cjs tests/profile-scene-controls.test.cjs tests/profile-3d.test.cjs
