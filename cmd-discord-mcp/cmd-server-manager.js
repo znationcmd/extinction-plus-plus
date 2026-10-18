@@ -133,7 +133,7 @@ function other(){
  if(currentTab==='moderation')return intro('Modération','Gestion des personnes et accès du serveur.')+btn('Gérer les membres','members','primary')+btn('Gérer les rôles','roles')+btn('Paramètres de sécurité','security');
  if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
  if(currentTab==='community')return intro('Paramètres de communauté','Choisis les informations publiques et le message de bienvenue.')+btn('Modifier le serveur','overview','primary');
- if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques de la communauté.')+info('Les statistiques ne sont pas encore disponibles dans cette rubrique. Les membres se trouvent dans Personnes → Membres.');
+ if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques enregistrées sur CMD Sphere, sans suivi externe.')+(isNative()?'<section id="csm-native-insights" aria-live="polite" aria-label="Statistiques de la communauté">'+info('Chargement des statistiques…')+'</section>':info('Les données du serveur externe ne sont pas accessibles ici.'));
 
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations du service connecté sont générées depuis la plateforme liée.'))+toDiscord();
  if(currentTab==='integrations')return intro('Intégrations','Bots et webhooks du serveur.')+'<div class="csm-actions">'+(isNative()?'<a class="csm-btn primary" href="/apps/directory">＋ Inviter un bot CMD Sphere</a><a class="csm-btn" href="/developers">CMD Sphere Développeur</a>':'')+btn('Voir les bots','bots','primary')+btn('Tous mes webhooks externes','all-webhooks')+(isNative()&&ctx.source&&canEdit()?btn('Récupérer bots et webhooks ici','import-integrations','primary'):'')+'</div>'+(isNative()?'<section id="csm-installed-cmd-apps" aria-live="polite">'+info('Chargement des bots CMD Sphere installés…')+'</section>':'')+'<section id="csm-native-webhooks" aria-live="polite"></section><section id="csm-webhooks" aria-live="polite">'+info('Chargement des webhooks…')+'</section>';
@@ -316,12 +316,49 @@ async function renderNativeMembersTab(){
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
 }
 
+async function loadNativeInsights(period='7d'){
+ const host=$('#csm-native-insights'),guildId=id();
+ if(!host||!isNative()||!ctx?.admin)return void(host&&(host.textContent='Accès réservé aux administrateurs du serveur.'));
+ const controls=document.createElement('div');controls.className='csm-actions';
+ const details=document.createElement('div');details.className='csm-insights-grid';
+ const status=document.createElement('p');status.setAttribute('role','status');status.textContent='Chargement…';
+ for(const [value,label] of [['7d','7 jours'],['30d','30 jours']]){
+  const button=document.createElement('button');button.type='button';button.className='csm-btn'+(value===period?' primary':'');
+  button.textContent=label;button.setAttribute('aria-pressed',String(value===period));
+  button.addEventListener('click',()=>{void loadNativeInsights(value)});
+  controls.append(button);
+ }
+ host.replaceChildren(controls,status,details);
+ try{
+  const stats=await request('/api/native/community-insights?guildId='+safe(guildId)+'&period='+safe(period));
+  if(!host.isConnected||currentTab!=='analytics'||id()!==guildId)return;
+  details.replaceChildren();
+  for(const [title,value] of [
+   ['Membres',stats.members],['Salons',stats.channels],
+   ['Messages sur '+(period==='7d'?'7':'30')+' jours',stats.messages],
+   ['Nouvelles inscriptions',stats.newMembers],
+   ['Membres actifs',stats.activeMembers===null?'Masqué (petit groupe)':stats.activeMembers]
+  ]){
+   const item=document.createElement('div');item.className='csm-info';
+   const heading=document.createElement('strong');heading.textContent=title;
+   const number=document.createElement('div');number.textContent=String(value??'—');
+   number.style.cssText='font-size:clamp(18px,3vw,26px);font-weight:800;margin-top:6px';
+   item.append(heading,number);details.append(item);
+  }
+  details.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px;margin-top:14px';
+  status.textContent='Données globales du serveur, sans identité ni analyse de messages privés.';
+ }catch(error){
+  if(host.isConnected&&currentTab==='analytics'&&id()===guildId)status.textContent='Statistiques indisponibles : '+(error?.message||'erreur');
+ }
+}
+
 function render(){
  if(!ctx)return;
  const modal=$('#serverSettingsModal'),box=$('#serverSettingsBody');if(!modal||!box)return;
  const guild=ctx.data.guild;
  box.innerHTML='<div class="csm-root '+(currentTab==='home'?'csm-mobile-index':'csm-mobile-detail')+'"><header class="csm-header"><button type="button" id="csm-back" aria-label="Retour aux paramètres">‹</button><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong class="csm-guild-title">'+escapeHtml(guild.name||'Serveur')+'</strong><strong class="csm-mobile-title">'+(currentTab==='home'?'Paramètres du serveur':escapeHtml(settingTitle(currentTab)))+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='home'||currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
  modal.classList.add('on','csm-open');
+ if(currentTab==='analytics')void loadNativeInsights();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
