@@ -63,7 +63,7 @@ export async function searchCmdHistory(pool,auth,params,{checkGuildPermissions}=
    'AND (p.id::text=c.source_parent_id OR p.source_channel_id=c.source_parent_id)',
    'WHERE c.guild_id=$1::uuid AND (c.id::text=$2 OR c.source_channel_id=$2) LIMIT 1'
   ].join(' '),[params.guildId,params.channelId]);
-  if(!ch.rows.length||!['text','forum','announcement'].includes(ch.rows[0].type))throw error(404,'Salon introuvable.');
+  if(!ch.rows.length||!['text','forum','announcement','media'].includes(ch.rows[0].type))throw error(404,'Salon introuvable.');
   const role=member.rows[0].membership_role;
   const admin=role==='owner'||role==='admin';
   const overwritten=value=>value!=null&&(Array.isArray(value)?value.length>0:typeof value==='object'?Object.keys(value).length>0:true);
