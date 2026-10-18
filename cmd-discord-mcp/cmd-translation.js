@@ -2,6 +2,7 @@
    Providers used only after a reader explicitly clicks "Traduire".
    The original message is never modified. No paid API key is needed.
    Availability of free public endpoints is not guaranteed. */
+import {providerLanguageCode,recognizeWorldLanguage} from "./cmd-world-language-codes.js";
 const allowed=new Set(["fr","en","de","es","it","ru","ko","ja","zh","co","pt"]);
 const cache=new Map();
 const hitTimes=new Map();
@@ -73,21 +74,26 @@ async function myMemory(text,target,source){
 }
 
 export async function freeMessageTranslation({userId,text,target,source="auto"}){
-  const content=String(text||"").trim(),lang=target==="us"?"en":String(target||"").trim().toLowerCase();
-  if(!allowed.has(lang))fail("Langue demandée non disponible.",400);
+  const content=String(text||"").trim(),provider=providerLanguageCode(target),lang=provider?.target;
+  if(!provider||!lang)fail("Code de langue non répertorié.",400);
   if(!content||content.length>MAX_MESSAGE)fail("Sélectionne un message de 1 à 1 700 caractères.",400);
-  if(source===lang)return {translatedText:content,sourceLanguage:source,provider:"identique"};
-  const key=lang+"|"+source+"|"+content;
+  const normalizedSource=source==="auto"?"auto":recognizeWorldLanguage(source)||"auto";
+  if(normalizedSource===provider.requested||normalizedSource===lang)return {
+    translatedText:content,sourceLanguage:normalizedSource,provider:"identique",
+    requestedLanguage:provider.requested,targetLanguage:provider.requested,
+    providerLanguage:lang,approximation:provider.approximation||null
+  };
+  const key=provider.requested+"|"+normalizedSource+"|"+content;
   const old=cache.get(key);if(old&&Date.now()-old.at<3*3600*1000)return old.value;
   rateLimit(userId);
   let translated=null,reason="";
   try{translated=await googlePublic(content,lang)}catch(e){reason=e.message}
   if(!translated){
-    try{translated=await myMemory(content,lang,source)}
+    try{translated=await myMemory(content,lang,normalizedSource)}
     catch(e){reason+=" ; "+e.message}
   }
   if(!translated)fail("Traduction indisponible actuellement pour "+lang+". Le message original reste visible. "+reason);
-  const value={...translated,targetLanguage:lang};
+  const value={...translated,targetLanguage:provider.requested,providerLanguage:lang,approximation:provider.approximation||null};
   cache.set(key,{value,at:Date.now()});
   if(cache.size>700){const first=cache.keys().next().value;cache.delete(first)}
   return value;
