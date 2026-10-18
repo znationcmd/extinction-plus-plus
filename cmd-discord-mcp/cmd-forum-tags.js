@@ -58,3 +58,28 @@ export async function setCmdForumSettings(pool,auth,input,lookup,requirePermissi
  if(!updated.rows.length)throw invalid("Forum non modifiable.",403);
  return {ok:true,guildId,channelId:String(forum.id),tags:updated.rows[0].tags,gallery:updated.rows[0].gallery};
 }
+
+/** Validate tag selections against the CURRENT forum configuration.
+ * Never trust the browser list; validate on every message before persisting.
+ * Older forum messages without tags remain valid and visible.
+ */
+export async function validateForumPostTags(pool,channel,guildId,requested){
+ const raw=requested===undefined?[]:requested;
+ if(!Array.isArray(raw)||raw.length>5||raw.some(x=>typeof x!=="string"||x.length>32))
+  throw invalid("Sélection des tags du forum invalide.");
+ if(channel?.type!=="forum"){
+  if(raw.length)throw invalid("Les tags sont réservés aux salons forum.");
+  return [];
+ }
+ if(!raw.length)return [];
+ const r=await pool.query("SELECT tags FROM cmd_native_forum_settings WHERE guild_id=$1 AND channel_id=$2 LIMIT 1",
+  [String(guildId),String(channel.id)]);
+ const allowed=new Map((Array.isArray(r.rows[0]?.tags)?r.rows[0].tags:[]).map(t=>[String(t.name).toLocaleLowerCase("fr"),String(t.name)]));
+ const selected=[],seen=new Set();
+ for(const text of raw){
+  const key=text.trim().toLocaleLowerCase("fr"),found=allowed.get(key);
+  if(!found||seen.has(key))throw invalid("Tag de forum inconnu ou en double.");
+  selected.push(found);seen.add(key);
+ }
+ return selected;
+}
