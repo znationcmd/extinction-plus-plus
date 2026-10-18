@@ -3,7 +3,7 @@
  * No invite codes, membership lists or personal profiles may leave this API.
  */
 const invalid=(status,message)=>Object.assign(new Error(message),{status});
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function initCmdDiscovery(pool){
  await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS discovery_opt_in BOOLEAN NOT NULL DEFAULT FALSE");
