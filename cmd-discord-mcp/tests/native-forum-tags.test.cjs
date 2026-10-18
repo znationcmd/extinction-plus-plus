@@ -8,7 +8,7 @@ const credentials={user:{id:"33333333-3333-4333-8333-333333333333"}};
 const make=()=>{const state=new Map(),queries=[];
  const pool={async query(sql,args=[]){
   queries.push({sql,args});
-  if(sql.startsWith("SELECT tags,gallery"))return {rows:state.has(args[1])?[state.get(args[1])]:[]};
+  if(sql.startsWith("SELECT tags,gallery")||sql.startsWith("SELECT tags FROM cmd_native_forum_settings"))return {rows:state.has(args[1])?[state.get(args[1])]:[]};
   if(sql.startsWith("INSERT INTO cmd_native_forum_settings")){
    const saved={tags:JSON.parse(args[2]),gallery:args[3]};state.set(args[0],saved);return {rows:[saved]};
   }
