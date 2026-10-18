@@ -232,13 +232,7 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
  const u=new URL(req.url),path=u.pathname;
  if(req.method==="GET"&&path==="/cmd-world-language-picker.js")return new Response(Bun.file(new URL("./cmd-world-language-picker.js",import.meta.url)),{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=3600"}});
  if(req.method==="GET"&&path==="/cmd-world-languages.json"){
-   try{
-     const up=await fetch("https://cmd-sphere.up.railway.app/cmd-language-catalog.json",{signal:AbortSignal.timeout(8000)});
-     if(!up.ok)throw Error("catalog_unavailable");
-     const content=await up.text();
-     if(content.length<120000||content.length>300000)throw Error("catalog_invalid");
-     return new Response(content,{headers:{"content-type":"application/json; charset=utf-8","cache-control":"public,max-age=3600"}});
-   }catch{return new Response(JSON.stringify({error:"catalogue_indisponible"}),{status:503,headers:{"content-type":"application/json"}})}
+  return new Response(Bun.file(new URL("./cmd-world-languages.json",import.meta.url)),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"public,max-age=3600"}});
  }
  const accountResponse=await handleAccountRequest(req,server.requestIP(req)?.address||"unknown");if(accountResponse)return accountResponse;
  if(req.method==="GET"&&path==="/api/neuria/integration/version")return new Response(JSON.stringify({name:"CMD NEURIA",integration:"in-app-overlay",version:"1.2.0",autoUpdates:true,script:"/neuria-embed.js",app:"/"}),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","access-control-allow-origin":"*"}});
