@@ -50,7 +50,7 @@ export const features=Object.freeze([
       "content"
     ],
     "installedStage": "contract_only",
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
