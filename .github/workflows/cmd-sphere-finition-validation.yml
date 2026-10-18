@@ -21,6 +21,7 @@ on:
       - 'cmd-discord-mcp/cmd-social-privacy.js'
       - 'cmd-discord-mcp/cmd-social-privacy-ui.js'
       - 'cmd-discord-mcp/tests/social-privacy.test.cjs'
+      - 'cmd-discord-mcp/tests/social-privacy-ui.test.cjs'
       - 'cmd-discord-mcp/tests/native-templates-contract.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-servers.js'
       - 'cmd-discord-mcp/cmd-social-message-actions.js'
@@ -125,5 +126,7 @@ jobs:
           node --check cmd-social-privacy.js
           node --check cmd-social-privacy-ui.js
           node --check server.js
-      - name: Verify real account privacy behavior
-        run: node --test tests/social-privacy.test.cjs
+      - name: Install browser test fixtures
+        run: npm ci
+      - name: Verify real account privacy behavior and buttons
+        run: node --test tests/social-privacy.test.cjs tests/social-privacy-ui.test.cjs
