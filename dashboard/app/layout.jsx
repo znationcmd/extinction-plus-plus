@@ -1,4 +1,6 @@
 import './globals.css';
+import './premium.css';
+import InteractionGlow from '../components/InteractionGlow';
 import Script from 'next/script';
 import LanguageProvider from '../components/LanguageProvider';
 import PwaProvider from '../components/PwaProvider';
@@ -35,7 +37,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
-      <body><LanguageProvider><PwaProvider>{children}<footer className="px-5 py-8 pb-28 text-center"><a href="https://discord.gg/t5dGcykTdE" target="_blank" rel="noopener noreferrer" className="btn btn-primary">Rejoindre notre Discord</a></footer></PwaProvider></LanguageProvider><Script src="/cmd-world-language-picker.js" strategy="afterInteractive" /></body>
+      <body><InteractionGlow/><LanguageProvider><PwaProvider>{children}<footer className="px-5 py-8 pb-28 text-center"><a href="https://discord.gg/t5dGcykTdE" target="_blank" rel="noopener noreferrer" className="btn btn-primary">Rejoindre notre Discord</a></footer></PwaProvider></LanguageProvider><Script src="/cmd-world-language-picker.js" strategy="afterInteractive" /></body>
     </html>
   );
 }

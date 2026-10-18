@@ -1,0 +1,52 @@
+/* Resolution-independent relief. Preserve the dashboard's existing palette. */
+:root {
+  --cmd-edge-light: rgba(255,255,255,.26);
+  --cmd-raised: inset 0 1px 0 #ffffff26, inset 0 -2px 0 #0007, 0 5px 0 #0005, 0 10px 22px #0005;
+}
+body { -webkit-font-smoothing: antialiased; }
+.card, [role="dialog"] {
+  box-shadow: inset 0 1px 0 #ffffff20, inset 0 -1px 0 #0009, 0 18px 45px #0005;
+}
+body :is(button, .btn, input[type="submit"], a.card, .ext-small-app, nav a, .ext-apps-list a) {
+  box-shadow: var(--cmd-raised);
+  transition: box-shadow .16s ease, outline-color .16s ease;
+}
+body :is(button, input[type="submit"]) { border-radius: 12px; }
+body :is(aside, .ext-draft-header, .ext-guild-rail, .ext-module-panel, .ext-apps-drawer, .mobile-bottom-nav) {
+  box-shadow: inset 0 1px 0 #ffffff20, 0 12px 35px #0005;
+}
+body :is(.ext-module-search, .input, textarea, select) { box-shadow: inset 0 2px 6px #0005; }
+body :is(input, textarea, select):focus-visible,
+body :is(button, a, [role="button"]):focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #a78bfa33, 0 0 22px #a78bfa66;
+}
+@media (hover: hover) {
+  body :is(button, .btn, a.card, .ext-small-app, nav a, .ext-apps-list a):not(:disabled):not([aria-disabled="true"]):hover {
+    box-shadow: var(--cmd-raised), 0 0 0 1px #ffffff30, 0 0 16px #a78bfa30;
+  }
+}
+body :is(button, .btn, input[type="submit"], a.card, .ext-small-app, nav a, .ext-apps-list a):not(:disabled):not([aria-disabled="true"]):active,
+body [data-cmd-glow="true"]:not(:disabled):not([aria-disabled="true"]),
+body :is(nav a, .ext-apps-list a)[aria-current="page"],
+body button[aria-pressed="true"], body button[aria-expanded="true"], body .ext-guild-bubble.active {
+  outline: 1px solid #a78bfa;
+  outline-offset: 1px;
+  box-shadow: inset 0 1px 0 #ffffff40, inset 0 0 12px #a78bfa18, 0 2px 0 #0005, 0 0 0 1px #a78bfa, 0 0 12px #a78bfaaa, 0 0 26px #a78bfa55;
+}
+body :is(button, .btn):disabled, body [aria-disabled="true"] { box-shadow: none; cursor: not-allowed; }
+body .ext-guild-bubble { border-radius: 50%; }
+@media (max-width: 1023px) {
+  body .ext-draft-header > button, body .ext-header-actions > button { border-radius: 14px; }
+  body .ext-header-actions { gap: 5px; }
+  body .mobile-bottom-nav a { box-shadow: inset 0 1px 0 #ffffff15, 0 3px 8px #0005; }
+  body .mobile-bottom-nav a[aria-current="page"], body .mobile-bottom-nav a[data-cmd-glow="true"] { box-shadow: inset 0 1px 0 #ffffff30, 0 0 12px #a78bfa88; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body :is(button, a, input, select, textarea) { transition: none !important; }
+}
+@media (forced-colors: active) {
+  body :is(button, .btn, nav a, .card) { border: 1px solid ButtonText; box-shadow: none; }
+  body :is([aria-current="page"], [data-cmd-glow="true"]) { outline: 2px solid Highlight; }
+}

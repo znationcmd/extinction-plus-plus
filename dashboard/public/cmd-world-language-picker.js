@@ -38,15 +38,18 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
 .choice[aria-selected="true"]{color:#dbbcff;background:#322044}
 .results>p{padding:12px;margin:0}
 .muted{font-size:12px;color:#cfc4e9;line-height:1.45;margin:0}
+button,summary{box-shadow:inset 0 1px 0 #ffffff26,inset 0 -2px 0 #0007,0 4px 0 #0005,0 8px 18px #0004;transition:box-shadow .16s}
+button:active,button:focus-visible,summary:focus-visible,.choice[aria-selected="true"]{outline:1px solid #a78bfa;outline-offset:1px;box-shadow:0 0 0 1px #a78bfa,0 0 14px #a78bfa99}
+@media(prefers-reduced-motion:reduce){button,summary{transition:none}}
 .status{font-size:12px;color:#bcefd3;min-height:20px;overflow-wrap:anywhere}
 `;
  const trigger=document.createElement("button");trigger.type="button";trigger.className="trigger";
  trigger.setAttribute("aria-label","Choisir une langue ou un dialecte");
- trigger.title="Langues du monde, y compris le suisse allemand";trigger.textContent="🌐";
+ trigger.title="Langues du monde, y compris le suisse allemand";trigger.innerHTML='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>';
  const panel=document.createElement("section");panel.className="panel";panel.hidden=true;
  panel.setAttribute("aria-label","Langues et dialectes du monde");panel.setAttribute("role","dialog");
  const head=document.createElement("div");head.className="head";
- const title=document.createElement("strong");title.textContent="🌐 Langues du monde";
+ const title=document.createElement("strong");title.textContent="Langues du monde";
  const close=document.createElement("button");close.type="button";close.className="close";close.textContent="Fermer";head.append(title,close);
  const query=document.createElement("input");query.type="search";query.placeholder="Rechercher : suisse allemand, bernois, gsw-CH…";
  query.setAttribute("aria-label","Rechercher une langue ou un dialecte");

@@ -4,6 +4,7 @@ import {usePwa} from './PwaProvider';
 import { useLanguage } from './LanguageProvider';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Map,ShoppingCart,Skull,Shield,Settings,Palette,Trophy,ClipboardList,Home,Menu,
   PackageCheck,Siren,Search,BriefcaseBusiness,BarChart3,Coins,Plug,Brain,Ticket,
@@ -119,6 +120,8 @@ function GuildAvatar({guild}) {
 
 export default function Shell({ children }) {
   const { t } = useLanguage();
+  const pathname = usePathname();
+  const currentPage = href => pathname === href || (href !== '/' && pathname.startsWith(href + '/')) ? 'page' : undefined;
   const {refreshApp,refreshing}=usePwa();
   const [menuOpen,setMenuOpen]=useState(false);
   const [appsOpen,setAppsOpen]=useState(false);
@@ -200,7 +203,7 @@ export default function Shell({ children }) {
             const items=hrefs.map(h=>byHref.get(h)).filter(Boolean);
             return <section key={title} className="mb-5">
               <h3 className="mb-2 px-3 text-[11px] font-black tracking-[.13em] text-white/35">{title}</h3>
-              {items.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/75 hover:bg-white/10 active:bg-red-600"><Icon size={20}/>{t(label)}</Link>)}
+              {items.map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} className="mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/75 hover:bg-white/10 active:bg-red-600"><Icon size={20}/>{t(label)}</Link>)}
             </section>
           })}
         </nav>
@@ -219,7 +222,7 @@ export default function Shell({ children }) {
       </header>
 
       {(menuOpen||appsOpen)&&<div className="ext-menu-shade lg:hidden" onClick={()=>{setMenuOpen(false);setAppsOpen(false)}}/>}
-      {appsOpen&&<section className="ext-apps-drawer lg:hidden" aria-label="Toutes les applications CMD"><div className="ext-apps-heading"><strong>Applications CMD</strong><button type="button" onClick={()=>setAppsOpen(false)} aria-label="Fermer les applications">×</button></div><div className="ext-apps-list">{links.filter(([href])=>href!=='/').map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} onClick={()=>setAppsOpen(false)}><Icon size={23}/><span>{t(label)}</span></Link>)}</div></section>} 
+      {appsOpen&&<section className="ext-apps-drawer lg:hidden" aria-label="Toutes les applications CMD"><div className="ext-apps-heading"><strong>Applications CMD</strong><button type="button" onClick={()=>setAppsOpen(false)} aria-label="Fermer les applications">×</button></div><div className="ext-apps-list">{links.filter(([href])=>href!=='/').map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} onClick={()=>setAppsOpen(false)}><Icon size={23}/><span>{t(label)}</span></Link>)}</div></section>}
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
         {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble relative ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
@@ -239,7 +242,7 @@ export default function Shell({ children }) {
         <nav className="ext-module-scroll">
           {visibleGroups.map(([title,items])=><section key={title} className="ext-module-group">
             <h3>{title}<span>⌄</span></h3>
-            {items.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} onClick={()=>setMenuOpen(false)}><Icon size={21}/><span>{t(label)}</span></Link>)}
+            {items.map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} onClick={()=>setMenuOpen(false)}><Icon size={21}/><span>{t(label)}</span></Link>)}
           </section>)}
           {!visibleGroups.length&&<p className="p-4 text-sm text-white/45">{t('Aucun module trouvé')}</p>}
         </nav>
@@ -247,7 +250,7 @@ export default function Shell({ children }) {
       </aside>
 
       <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-0.5 border-t border-white/10 bg-black/95 px-1 pt-2 pb-[calc(8px+env(safe-area-inset-bottom,0px))] backdrop-blur-xl lg:hidden">
-        {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} prefetch={false} className="flex min-w-0 min-h-[57px] flex-col items-center justify-start gap-1 rounded-xl px-0.5 py-1.5 text-[10px] active:bg-red-600"><Icon size={21} className="shrink-0"/><span className="w-full text-center leading-tight break-words line-clamp-2">{label==='CFTools & BattleMetrics'?'CFTools':t(label)}</span></Link>)}
+        {bottomLinks.map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} className="flex min-w-0 min-h-[57px] flex-col items-center justify-start gap-1 rounded-xl px-0.5 py-1.5 text-[10px] active:bg-red-600"><Icon size={21} className="shrink-0"/><span className="w-full text-center leading-tight break-words line-clamp-2">{label==='CFTools & BattleMetrics'?'CFTools':t(label)}</span></Link>)}
       </nav>
 
       <section className="ext-content px-4 py-5 lg:ml-[23rem] lg:p-10">{children}</section>

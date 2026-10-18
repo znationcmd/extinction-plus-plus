@@ -1,4 +1,5 @@
 "use client";
+import { Globe, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { languages, useLanguage } from './LanguageProvider';
 const VALID = /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i;
@@ -52,11 +53,11 @@ export default function LanguageSelector() {
   return <>
     <button type="button" onClick={() => setOpen(true)} aria-label="Choisir une langue ou un dialecte"
       className="min-h-11 max-w-[170px] truncate rounded-xl border border-white/20 bg-[#08111f] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-400">
-      🌐 {label}
+      <Globe className="inline-block mr-2" size={18} aria-hidden="true"/> {label}
     </button>
     {open && <div role="presentation" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-3" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}>
       <section role="dialog" aria-modal="true" aria-label="Choisir ma langue" className="flex max-h-[85dvh] w-full max-w-xl flex-col gap-3 overflow-hidden rounded-2xl border border-violet-400/40 bg-[#0c1024] p-4 text-white shadow-2xl">
-        <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Langues et dialectes du monde</h2><button type="button" aria-label="Fermer" onClick={()=>setOpen(false)} className="rounded-lg border px-3 py-1">✕</button></div>
+        <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Langues et dialectes du monde</h2><button type="button" aria-label="Fermer" onClick={()=>setOpen(false)} className="rounded-lg border px-3 py-1"><X size={18} aria-hidden="true"/></button></div>
         <p className="text-xs text-white/70">8 148 langues et variantes référencées. La traduction des interfaces dépend de la disponibilité des traductions ; le suisse allemand peut utiliser l’allemand standard.</p>
         <input type="search" value={search} onChange={e=>{setSearch(e.target.value);setExpandedLetter('')}} autoFocus
           placeholder="Rechercher : suisse allemand, bernois, corsu, gsw-CH"
