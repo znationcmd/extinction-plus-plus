@@ -27,16 +27,16 @@ export const features=Object.freeze([
     "title": "Niveaux de vérification du serveur",
     "category": "servers",
     "permission": "manage_guild",
-    "apiContract": "PATCH /api/native/security/verification",
+    "apiContract": "GET/PATCH /api/native/verification",
     "acceptance": "verified_email_account_age_join_delay_no_lockout",
     "fields": [
       "guild_id",
       "verification_level"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "developed_pending_prod_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
@@ -82,7 +82,7 @@ export const features=Object.freeze([
     "title": "Salons médias et galerie de publications",
     "category": "servers",
     "permission": "manage_channels",
-    "apiContract": "POST /api/native/media-channels",
+    "apiContract": "POST /api/native/action (create_channel type=media)",
     "acceptance": "file_safety_private_permissions_tagging_and_storage_quota",
     "fields": [
       "guild_id",
@@ -90,9 +90,9 @@ export const features=Object.freeze([
       "visibility"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "partial_gallery_pending_prod_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
