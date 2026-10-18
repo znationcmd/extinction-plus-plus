@@ -21,13 +21,14 @@ function view(){
  dom.window.eval(src);
  return {dom,window:dom.window,requests,article:dom.window.document.querySelector('article')};
 }
-test('Reminder UI is available only as intentional on-device user action',()=>{
+test('Reminder UI is available only as intentional on-device user action',async()=>{
  const {dom,window,requests,article}=view();
  assert.ok(window.cmdSphereReminders);
  assert.equal(requests.length,0);
  assert.equal(window.cmdSphereReminders.open(article),true);
  assert.ok(window.document.querySelector('[role="dialog"][aria-modal="true"]'));
  assert.equal(window.document.querySelector('.cmd-reminder-panel input').type,'datetime-local');
+ await new Promise(r=>setTimeout(r,8));
  dom.window.close();
 });
 test('Message reminder action sends only authorized context, target message and timezone to API',async()=>{
