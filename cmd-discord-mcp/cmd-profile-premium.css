@@ -379,3 +379,17 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   right:auto!important;
   bottom:0!important;
 }
+
+/* Avatar decoration follows the saved profile photo (106 x 106 at 17, -53).
+   Preserve the ornament's native artwork and keep the presence dot above it. */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+ position:absolute!important;
+ left:7px!important;
+ top:-63px!important;
+ width:126px!important;
+ height:126px!important;
+ max-width:none!important;
+ max-height:none!important;
+ object-fit:contain!important;
+ pointer-events:none!important;
+}
