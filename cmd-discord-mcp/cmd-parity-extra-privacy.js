@@ -15,8 +15,8 @@ export const features=Object.freeze([
       "mask_invites",
       "hide_notifications"
     ],
-    "installedStage": "contract_only",
-    "implemented": false,
+    "installedStage": "developed_pending_production_validation",
+    "implemented": true,
     "enabled": false,
     "verified": false
   }
