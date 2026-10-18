@@ -15,7 +15,7 @@ export const features=Object.freeze([
       "destination_id"
     ],
     "installedStage": "contract_only",
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
