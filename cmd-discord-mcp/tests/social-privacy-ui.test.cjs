@@ -6,7 +6,7 @@ const uid="22222222-2222-4222-8222-222222222222";
 const tick=()=>new Promise(resolve=>setTimeout(resolve,25));
 function fixture(){
  const dom=new JSDOM('<!doctype html><html><head></head><body><div id="friendsPanel"><div class="friendsTop"><h2>Amis</h2></div><div class="friendTabs"></div><section data-section="friends"><div class="friendRow" data-profile-user="other"><span>Other</span></div></section></div></body></html>',{runScripts:"outside-only",pretendToBeVisual:true,url:"https://cmd-sphere.example/messages"});
- const w=dom.window,calls=[],state={allowEveryone:true,allowSharedServers:true,blocked:[]};
+ const w=dom.window,calls=[],state={allowEveryone:true,allowSharedServers:true,blocked:[],guildPolicy:"inherit"};
  w.confirm=()=>true;
  w.fetch=async(url,init={})=>{
   const request={url:String(url),method:init.method||"GET",body:init.body?JSON.parse(init.body):null};
@@ -20,6 +20,9 @@ function fixture(){
     state.blocked=action==="block"?[{userId:targetUserId,displayName:"Other"}]:[];
     data={ok:true,blocked:action==="block"};
    }else data={users:state.blocked};
+  }else if(request.url==="/api/account/privacy/dm-guilds"){
+   if(request.method==="PATCH")state.guildPolicy=request.body.policy;
+   data=request.method==="GET"?{servers:[{guildId:"33333333-3333-4333-8333-333333333333",name:"Serveur CMD",policy:state.guildPolicy}]}:{ok:true,policy:state.guildPolicy};
   }else if(request.url==="/api/friends")data={friends:[{username:"other",userId:uid}]};
   else if(request.url.startsWith("/api/dm/search"))data={users:[{username:"other",id:uid}]};
   else throw Error("Unexpected URL "+url);
@@ -67,5 +70,21 @@ test("Changing friend request privacy sends checked booleans to a protected PATC
   const request=f.calls.find(x=>x.url==="/api/account/privacy/friend-requests"&&x.method==="PATCH");
   assert.deepEqual(request.body,{allowEveryone:false,allowSharedServers:false});
   assert.ok(f.document.querySelector("#cmdPrivacyPanel [role=status]").textContent.includes("enregistrées"));
+ }finally{f.dom.window.close()}
+});
+
+test("Personal per-server DM controls persist only the selected server policy",async()=>{
+ const f=fixture();
+ try{
+  await tick();f.document.querySelector("#cmdPrivacyTab").click();await tick();
+  const selector=f.document.querySelector("#cmdDmGuildPrivacyList select");
+  assert.ok(selector,"A server-scoped DM privacy dropdown must be visible");
+  assert.equal(selector.value,"inherit");
+  selector.value="deny";selector.dispatchEvent(new f.w.Event("change",{bubbles:true}));
+  await tick();
+  const request=f.calls.find(x=>x.url==="/api/account/privacy/dm-guilds"&&x.method==="PATCH");
+  assert.deepEqual(request.body,{guildId:"33333333-3333-4333-8333-333333333333",policy:"deny"});
+  assert.equal(f.state.guildPolicy,"deny");
+  assert.equal(f.document.querySelector("#cmdDmGuildPrivacyList select").disabled,false);
  }finally{f.dom.window.close()}
 });
