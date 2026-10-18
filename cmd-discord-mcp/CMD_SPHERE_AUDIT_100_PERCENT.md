@@ -164,3 +164,15 @@ Les échecs ne sont pas tous des bugs produit confirmés : deux tests attendent 
 ## Maintenance du registre
 
 Exécuter node scripts/generate-completion-audit.mjs depuis cmd-discord-mcp après mise à jour des preuves. Les compteurs des contrats proviennent de CMD_PARITY_59 ; aucune case verified ne doit être modifiée sans preuve de production. Les résultats de ce lot sont figés dans audit/2026-10-18-tests.json.
+
+## Lot — rappels de messages natifs (18 octobre 2026)
+
+Le rappel de messages est désormais **développé dans la branche** mais **non déployé et non vérifié en production**. Aucun compte, salon, inventaire ou message n'a été supprimé.
+
+| ID | Fonction | API / SQL | Interface | Test | Production | État |
+|---|---|---|---|---|---|---|
+| `message_reminders` | Programmation volontaire et annulation d'un rappel natif | `cmd-message-reminders.js` : table additive PostgreSQL, vérification des salons et messages, calendrier, annulation propriétaire, traitement périodique | `cmd-message-reminders-ui.js` + menu existant dans `cmd-social-message-actions.js` | `tests/message-reminders-ui.test.cjs` : 4 réussis, suite générale **253/253 réussis** | Pas de restauration PostgreSQL démontrée, pas de test push utilisateur réel | 🟡 Développé, non activé / non vérifié |
+
+**Preuve CI** : [GitHub Actions 39107460068](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39107460068) — aucune erreur dans la suite complète. Le déploiement Railway reste sur sa branche antérieure ; ne pas interpréter la réussite CI comme un fonctionnement utilisateur en production.
+
+**Registre des 59 contrats** : 7 `implemented=true`, 52 contrats non implémentés, 0 `enabled=true`, 0 `verified=true` d'après les définitions de cette branche. Cette progression signifie uniquement que les sept implémentations ont du code (pas une homologation en production). Aucun pourcentage à 100 % n'est revendiqué.
