@@ -76,8 +76,14 @@ function modeTranslated(row,result){
  }
  const target=actualLang(),div=output(row);
  div.textContent=result.translatedText;
+ if(result.approximation){
+  const warning=document.createElement("small");warning.className="cmd-translation-language-note";
+  warning.style.cssText="display:block;margin-top:6px;opacity:.78;font-size:12px";
+  warning.textContent="ℹ "+String(result.approximation);
+  div.appendChild(warning);
+ }
  div.dataset.state="translated";
- div.setAttribute("lang",target);
+ div.setAttribute("lang",result.providerLanguage||target);
  div.hidden=false;
  original.hidden=true;
  const show=row.querySelector(".cmd-original-action");
