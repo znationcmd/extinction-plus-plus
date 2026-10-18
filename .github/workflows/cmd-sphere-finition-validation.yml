@@ -48,6 +48,8 @@ on:
       - 'cmd-discord-mcp/cmd-native-invites.js'
       - 'cmd-discord-mcp/tests/native-invites.test.cjs'
       - 'cmd-discord-mcp/tests/server-verification.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-media-channels.js'
+      - 'cmd-discord-mcp/tests/native-media-channels.test.cjs'
       - 'cmd-discord-mcp/tests/native-forum-tags.test.cjs'
       - 'cmd-discord-mcp/server.js'
       - 'cmd-discord-mcp/call-ui.js'
@@ -211,3 +213,22 @@ jobs:
           node --check server.js
       - name: Test safe member verification
         run: node --test tests/server-verification.test.cjs
+
+  validate-media-channels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check media validation syntax
+        run: |
+          node --check server.js
+          node --check cmd-server-manager.js
+          node --check cmd-native-media-channels.js
+      - name: Test original data preservation and media-only messages
+        run: node --test tests/native-media-channels.test.cjs
