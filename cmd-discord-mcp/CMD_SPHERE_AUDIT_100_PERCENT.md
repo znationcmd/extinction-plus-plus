@@ -3,6 +3,17 @@
 Mission ouverte. Ce registre initial ne constitue ni un audit exhaustif achevé ni une validation à 100 %.
 Le périmètre demandé dépasse les 59 contrats ; les contrôles de chaque écran, fonction sociale et catalogue restent à inventorier individuellement. Aucun pourcentage global n’est calculé.
 
+## Reprise du 18 octobre 2026 — fonctionnalités communauté (vérifié sur GitHub)
+
+- **18/59** contrats disposent d'une implémentation partielle et de tests ou d'un raccordement de code : **41/59** restent des contrats à développer. **0/59 validé en production**. Aucun module ne doit être décrit comme pleinement fini avant tests de production, permissions réelles, iPhone/Android/PC et sauvegarde restaurable.
+- [GitHub Actions 39114303281](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39114303281) : **317/317 tests réussis, 0 échec**, 13 tâches de validation réussies, sur le commit `c847e1bb3764d6561befc397a80c41910b71e0c5`.
+- **community_insights** : `cmd-community-insights.js` et `cmd-server-manager.js` affichent des agrégats des membres, salons, messages et inscriptions sur 7/30 jours aux admins autorisés. Suppression des comptes de membres actifs si moins de cinq ; aucune nouvelle donnée de suivi, aucune analyse des MP, aucune information nominative. Tests `native-community-insights.test.cjs`.
+- **community_discovery** : `cmd-community-discovery.js` et `cmd-server-manager.js` fournissent un annuaire consultable depuis le panneau Communauté, sans code d'invitation ni identité des membres. L'inscription du serveur nécessite à la fois `is_public=true` et un accord séparé du propriétaire via `discovery_opt_in=true`; valeur par défaut FALSE. Quand le propriétaire rend le serveur privé, la publication est également désactivée. Tests `native-community-discovery.test.cjs`. L'annuaire reste **partiel** : modération des fiches, tags, langues et parcours de demande d'adhésion non livrés.
+- Nouvelle modification de schéma **additive seulement** (`discovery_opt_in` et index partiel), pas de migration appliquée en production pendant cette intervention.
+- Sauvegarde du code de départ sur `cmd-sphere/backup-before-community-20261018` ; tous les changements sur `cmd-sphere/finition-20261018`. Aucun contenu existant, compte, salon, décoration ou serveur supprimé. Aucun paiement activé et aucun déploiement Railway effectué.
+
+Les compteurs historiques plus bas décrivent des états antérieurs et ne remplacent pas cet état récent.
+
 ## État confirmé — suite des installations (18 octobre 2026, 10:49 Paris)
 
 - **16/59 contrats avec code d'application partiel**, **43/59 encore préparatoires**, **0/59 validé en production**. Ne pas confondre code installé, fonction testée et déploiement live.
