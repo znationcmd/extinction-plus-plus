@@ -359,7 +359,7 @@
         var results=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
         var label=view.querySelector('#cmdLanguageResultsLabel'),alphabet=view.querySelector('#cmdLanguageAlphabet');
         var backCountry=view.querySelector('#cmdCountryBack'),allLanguagesButton=view.querySelector('#cmdShowAllLanguages');
-        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=true;
+        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=false;
         function loadCountryCatalogue(){
           if(countryCataloguePromise)return countryCataloguePromise;
           countryCataloguePromise=fetch('/cmd-country-language-catalog.json',{credentials:'same-origin'})
