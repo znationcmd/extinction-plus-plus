@@ -76,7 +76,7 @@ const pcs=new Map(),candidates=new Map(),known=new Set(),peerNames=new Map();
 const peerVolumes=new Map();
 function applyPeerVolume(id,percent){
  const key=String(id||""),amount=Number(percent);
- if(!key||!Number.isInteger(amount)||amount<0||amount>100)return false;
+ if(!key||percent===null||percent===undefined||percent===""||!Number.isInteger(amount)||amount<0||amount>100)return false;
  const el=Array.from($("#stage").children).find(tile=>tile.dataset.peer===key);
  const video=el?.querySelector("video");
  if(!video)return false;
