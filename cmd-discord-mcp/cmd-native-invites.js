@@ -11,9 +11,10 @@ export function normalizeInviteCode(value){
   .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").replace(/-{2,}/g,"-");
 }
 export const inviteExpiry=(period,now=new Date())=>{
+ period=({"3":"3d","30":"30d"})[String(period)]||String(period);
  const durations={"30m":1800000,"1h":3600000,"6h":21600000,"12h":43200000,"1d":86400000,"3d":259200000,"7d":604800000,"30d":2592000000};
  if(period==="never")return null;
- if(!Object.prototype.hasOwnProperty.call(durations,period))throw Object.assign(new Error("Durée d’invitation invalide."),{status:400});
+ if(!Object.prototype.hasOwnProperty.call(durations,period))throw Object.assign(new Error("Durée d’invitation invalide : choisis notamment 3 jours, 30 jours ou jamais."),{status:400});
  return new Date(now.getTime()+durations[period]);
 };
 export async function initCmdNativeInvites(pool){

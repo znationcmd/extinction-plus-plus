@@ -1,0 +1,86 @@
+{
+  "source_before": {
+    "tests": 194,
+    "pass": 179,
+    "fail": 15,
+    "failures": [
+      "Failed Discord write never silently mutates the local copy",
+      "Failed refresh after a successful Discord write never duplicates the action locally",
+      "Recovered or edited content refreshes even when the message count stays the same",
+      "premium avatar ornament stays centered with the smaller profile photo",
+      "Expiration configurable: 3 jours / 30 jours / jamais seulement",
+      "3D scene config retains 3D mode, model choice and original profile ownership",
+      "CMD Sphere only offers the 68 approved complete avatars",
+      "CMD Sphere dressing, scene and pet/vehicle switches remain clickable",
+      "CMD Sphere renders and selects each of the 68 distinct avatars, including last",
+      "CMD Sphere catalogue offers every pet, vehicle, home and scene as an independent selectable option",
+      "Simplified phone video editor maps real actions to settings and storytelling",
+      "iPhone HEIC photo becomes JPEG, preserving full image aspect",
+      "Hosting panel has an independent direct URL and explicit account-link errors",
+      "All 77 catalogue items have registered photographic files, verified 4K exports and honest native dimensions",
+      "Apple mobile only accepts compatible MP3 catalog and verifies actual playback"
+    ]
+  },
+  "runtime_before": {
+    "tests": 194,
+    "pass": 180,
+    "fail": 14,
+    "failures": [
+      "Failed Discord write never silently mutates the local copy",
+      "Failed refresh after a successful Discord write never duplicates the action locally",
+      "Recovered or edited content refreshes even when the message count stays the same",
+      "premium avatar ornament stays centered with the smaller profile photo",
+      "Expiration configurable: 3 jours / 30 jours / jamais seulement",
+      "3D scene config retains 3D mode, model choice and original profile ownership",
+      "CMD Sphere only offers the 68 approved complete avatars",
+      "CMD Sphere dressing, scene and pet/vehicle switches remain clickable",
+      "CMD Sphere renders and selects each of the 68 distinct avatars, including last",
+      "CMD Sphere catalogue offers every pet, vehicle, home and scene as an independent selectable option",
+      "Simplified phone video editor maps real actions to settings and storytelling",
+      "iPhone HEIC photo becomes JPEG, preserving full image aspect",
+      "Hosting panel has an independent direct URL and explicit account-link errors",
+      "Apple mobile only accepts compatible MP3 catalog and verifies actual playback"
+    ]
+  },
+  "source_after": {
+    "tests": 201,
+    "pass": 187,
+    "fail": 14,
+    "failures": [
+      "Failed Discord write never silently mutates the local copy",
+      "Failed refresh after a successful Discord write never duplicates the action locally",
+      "Recovered or edited content refreshes even when the message count stays the same",
+      "premium avatar ornament stays centered with the smaller profile photo",
+      "3D scene config retains 3D mode, model choice and original profile ownership",
+      "CMD Sphere only offers the 68 approved complete avatars",
+      "CMD Sphere dressing, scene and pet/vehicle switches remain clickable",
+      "CMD Sphere renders and selects each of the 68 distinct avatars, including last",
+      "CMD Sphere catalogue offers every pet, vehicle, home and scene as an independent selectable option",
+      "Simplified phone video editor maps real actions to settings and storytelling",
+      "iPhone HEIC photo becomes JPEG, preserving full image aspect",
+      "Hosting panel has an independent direct URL and explicit account-link errors",
+      "All 77 catalogue items have registered photographic files, verified 4K exports and honest native dimensions",
+      "Apple mobile only accepts compatible MP3 catalog and verifies actual playback"
+    ]
+  },
+  "runtime_after": {
+    "tests": 201,
+    "pass": 188,
+    "fail": 13,
+    "failures": [
+      "Failed Discord write never silently mutates the local copy",
+      "Failed refresh after a successful Discord write never duplicates the action locally",
+      "Recovered or edited content refreshes even when the message count stays the same",
+      "premium avatar ornament stays centered with the smaller profile photo",
+      "3D scene config retains 3D mode, model choice and original profile ownership",
+      "CMD Sphere only offers the 68 approved complete avatars",
+      "CMD Sphere dressing, scene and pet/vehicle switches remain clickable",
+      "CMD Sphere renders and selects each of the 68 distinct avatars, including last",
+      "CMD Sphere catalogue offers every pet, vehicle, home and scene as an independent selectable option",
+      "Simplified phone video editor maps real actions to settings and storytelling",
+      "iPhone HEIC photo becomes JPEG, preserving full image aspect",
+      "Hosting panel has an independent direct URL and explicit account-link errors",
+      "Apple mobile only accepts compatible MP3 catalog and verifies actual playback"
+    ]
+  }
+}

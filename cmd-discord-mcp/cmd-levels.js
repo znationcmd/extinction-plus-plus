@@ -5,6 +5,13 @@ export async function levelTables(pool){
  await pool.query("CREATE TABLE IF NOT EXISTS cmd_level_chests(user_id TEXT NOT NULL,level INTEGER NOT NULL,reward INTEGER NOT NULL,opened_at TIMESTAMPTZ DEFAULT NOW(),PRIMARY KEY(user_id,level))");
 }
 export const levelOf=xp=>Math.floor(Math.sqrt(Math.max(0,Number(xp))/120))+1;
+export function pendingLevelChests(level,claimed){
+ const pending=[];
+ for(let value=2;value<=Math.min(level,10000)&&pending.length<100;value++){
+  if(!claimed.has(value))pending.push(value);
+ }
+ return pending;
+}
 export async function awardMessageXp(pool,userId,content){
  const str=String(content||"").trim(),normalized=str.toLowerCase().replace(/\s+/g," ");
  const messageHash=crypto.createHash("sha256").update(normalized).digest("hex");
@@ -17,7 +24,7 @@ export async function awardMessageXp(pool,userId,content){
 }
 export async function levelStatus(pool,userId){
  await levelTables(pool);const r=await pool.query("SELECT xp FROM cmd_user_levels WHERE user_id=$1",[userId]);const xp=Number(r.rows[0]?.xp||0),level=levelOf(xp),chests=await pool.query("SELECT level FROM cmd_level_chests WHERE user_id=$1",[userId]),claimed=new Set(chests.rows.map(x=>Number(x.level)));
- return {xp,level,xpInLevel:xp-(level-1)**2*120,xpForNext:((level)**2-(level-1)**2)*120,pendingChests:Array.from({length:Math.min(level-1,100)},(_,i)=>i+2).filter(x=>!claimed.has(x))};
+ return {xp,level,xpInLevel:xp-(level-1)**2*120,xpForNext:((level)**2-(level-1)**2)*120,pendingChests:pendingLevelChests(level,claimed)};
 }
 export async function openLevelChest(pool,userId,level){
  level=Number(level);if(!Number.isInteger(level)||level<2||level>10000)throw Error("Niveau invalide");

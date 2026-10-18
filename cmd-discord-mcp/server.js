@@ -1,3 +1,4 @@
+import {assertApiOrigin,readBoundedJson} from "./cmd-request-safety.js";
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
 import {parityStatus,parityAuditRows,parityBreakdown} from "./cmd-parity-59.js";
@@ -148,12 +149,11 @@ function sendJson(res,status,data,headers={}){
 }
 function redirect(res,url){res.writeHead(302,{Location:url,"cache-control":"no-store"});res.end()}
 async function readFormBodyJson(req){
-  const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>12*1024*1024)throw new Error("Requête trop volumineuse (12 Mo maximum).");chunks.push(chunk)}
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+  return readBoundedJson(req,12*1024*1024);
 }
 async function readNativeMessageBodyJson(req){
-  const chunks=[];for await(const chunk of req)chunks.push(chunk);
-  return JSON.parse(Buffer.concat(chunks).toString("utf8")||"{}");
+  // 12 MiB of attachments expand to 16 MiB of base64, plus JSON metadata.
+  return readBoundedJson(req,17*1024*1024);
 }
 async function readForm(req){
   const chunks=[];let size=0;
@@ -170,7 +170,7 @@ function issueTokens(codeData){
   return {access_token:signPayload(access),token_type:"Bearer",expires_in:8*3600,refresh_token:signPayload(refresh),scope:codeData.scope.join(" ")};
 }
 function parseCookies(req){
-  const out={};for(const part of String(req.headers.cookie||"").split(";")){const i=part.indexOf("=");if(i<0)continue;const k=part.slice(0,i).trim(),v=part.slice(i+1).trim();if(k)out[k]=decodeURIComponent(v)}
+  const out=Object.create(null);for(const part of String(req.headers.cookie||"").split(";")){const i=part.indexOf("=");if(i<0)continue;const k=part.slice(0,i).trim(),v=part.slice(i+1).trim();if(k){try{out[k]=decodeURIComponent(v)}catch{}}}
   return out;
 }
 function dashboardAuth(req){
@@ -4519,6 +4519,7 @@ const httpServer=createServer(async(req,res)=>{
   try{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
     const url=new URL(req.url,baseUrl);
+    assertApiOrigin(req,url,baseUrl);
     if(await cmdEmailRoute(req,res,url,{pool,readBody:readFormBodyJson,resetPassword:async(id,pass)=>{const pw=passwordParts(pass);await pool.query("UPDATE cmd_accounts SET password_salt=$1,password_hash=$2,updated_at=NOW() WHERE id=$3",[pw.salt,pw.hash,id]);}}))return;
     // Private, authenticated wallpaper settings (global or per server; never per channel).
     if(url.pathname==="/api/cmd/personal-wallpaper"){
@@ -4877,7 +4878,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/groups/send"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{sendJson(res,200,{message:await sendGroupDmMessage(auth,await readNativeMessageBodyJson(req))})}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{sendJson(res,200,{message:await sendGroupDmMessage(auth,await readNativeMessageBodyJson(req))})}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/groups/add"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -4984,7 +4985,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/dm/send"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{const body=await readNativeMessageBodyJson(req);sendJson(res,200,{message:await sendDmMessage(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{const body=await readNativeMessageBodyJson(req);sendJson(res,200,{message:await sendDmMessage(auth,body)})}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/dm/preferences"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -5312,7 +5313,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{const body=await readNativeMessageBodyJson(req);sendJson(res,201,await sendNativeChannelMessage(auth,body))}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/native/action"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
@@ -5802,7 +5803,9 @@ const httpServer=createServer(async(req,res)=>{
     }
     res.writeHead(404,{"content-type":"text/plain"}).end("Not Found");
   }catch(e){
-    console.error("HTTP request failed",e);if(!res.headersSent)sendJson(res,500,{error:"server_error"});
+    const status=[400,403,413].includes(e.status)?e.status:500;
+    if(status===500)console.error("HTTP request failed",e);
+    if(!res.headersSent)sendJson(res,status,{error:status===500?"server_error":e.message});
   }
 });
 
