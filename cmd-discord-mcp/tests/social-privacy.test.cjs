@@ -115,3 +115,18 @@ test("Blocks cannot be bypassed by group DMs, search or channel mention notifica
  assert.match(server,/const permittedRecipients=\[\]/);
  assert.match(server,/if\(!\(await isBlockedPair\(pool,String\(auth.user.id\),String\(recipient.user_id\)\)\)\)permittedRecipients.push/);
 });
+
+test("Blocked identities are excluded from inbox and friend listings but retained in storage",()=>{
+ const source=server;
+ const blockFilter=/NOT EXISTS\s*\(\s*SELECT 1 FROM cmd_user_blocks b WHERE/gi;
+ assert.ok((source.match(blockFilter)||[]).length>=6,"Listings and unread counts must exclude blocked pairs");
+ const snippets=[
+  source.slice(source.indexOf("async function listFriends("),source.indexOf("async function sendFriendRequest(")),
+  source.slice(source.indexOf("async function listDmThreads("),source.indexOf("async function getDmMessages(")),
+  source.slice(source.indexOf("async function getUnreadSummary("),source.indexOf("async function getDmPreferences("))
+ ];
+ for(const snippet of snippets)assert.match(snippet,/cmd_user_blocks/);
+ assert.match(source,/async function getDmMessages/);
+ // Preserve original messages and accounts, even when they disappear from listings.
+ for(const snippet of snippets)assert.doesNotMatch(snippet,/DELETE FROM cmd_(dm_messages|dm_threads|accounts|friendships)/i);
+});
