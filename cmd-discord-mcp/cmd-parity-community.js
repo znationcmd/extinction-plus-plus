@@ -65,9 +65,10 @@ export const features=Object.freeze([
       "flags",
       "actions"
     ],
+    "stage": "partially_implemented_opt_in_guild_join_rate_limits_pending_appeals_and_live_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "moderation_audit",
