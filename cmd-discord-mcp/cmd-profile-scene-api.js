@@ -42,18 +42,39 @@ const COLORS=new Set(["#f7cb9e","#e8ad7e","#c68a60","#905a3d","#573b30","#2f2728
 const HAIR_COLORS=new Set(["#201b27","#58372a","#a65d32","#dcc071","#9b9ba9","#d76884","#f7f0e1"]);
 const OUTFIT_COLORS=new Set(["#ffffff","#212331","#7549b9","#237a9b","#d24e79","#e6a53a","#317f67","#b23b3b"]);
 const defaultConfig=()=>({scene:"none",avatarPreset:"reference-avatar-0",gender:"neutral",skin:"#f7cb9e",hair:"short",hairColor:"#201b27",beard:"none",beardColor:"#201b27",faceShape:"oval",browStyle:"natural",eyeShape:"normal",top:"hoodie",topColor:"#7549b9",bottom:"jeans",shoes:"sneakers",bag:"none",piercing:"none",pet:"none",pose:"stand",accessory:"none",avatarStyle:"2d",petStyle:"2d",avatarModel:"civilian",petModel:"fox",vehicle:"none",home:"none",hideHome:true,petName:"",bodyType:"average",eyeColor:"#28222e",nose:"standard",mouth:"smile",label:""});
-const clean=(v,a,def)=>a.has(String(v||""))?String(v):def;
+// Validate only changed keys on writes; GET remains backward-compatible with saved IDs.
+// Legacy catalogue IDs must not disappear when asset manifests are temporarily incomplete.
+const PROFILE_FIELDS={scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,beard:BEARDS,beardColor:BEARD_COLORS,faceShape:FACE_SHAPES,browStyle:BROW_STYLES,eyeShape:EYE_SHAPES,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,bag:BAGS,piercing:PIERCINGS,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS};
+const LEGACY_ID_FIELDS=new Set(["scene","avatarPreset","pet","vehicle","home","avatarModel","petModel"]);
+const validCatalogueId=value=>typeof value==="string"&&/^[a-z][a-z0-9_-]{0,99}$/i.test(value);
+const accepted=(key,value,choices)=>choices.has(String(value??""))||(LEGACY_ID_FIELDS.has(key)&&validCatalogueId(value));
 function config(input){
- const a=input&&typeof input==="object"?input:{},d=defaultConfig(),result={...d};
- for(const [key,set] of Object.entries({scene:SCENES,avatarPreset:PRESETS,gender:GENDERS,skin:COLORS,hair:HAIR,hairColor:HAIR_COLORS,beard:BEARDS,beardColor:BEARD_COLORS,faceShape:FACE_SHAPES,browStyle:BROW_STYLES,eyeShape:EYE_SHAPES,top:TOPS,topColor:OUTFIT_COLORS,bottom:BOTTOMS,shoes:SHOES,bag:BAGS,piercing:PIERCINGS,pet:PETS,pose:POSES,accessory:ACCESSORIES,avatarStyle:STYLES,petStyle:STYLES,avatarModel:AVATAR_MODELS,petModel:PET_MODELS,vehicle:VEHICLES,home:HOMES,bodyType:BODY_TYPES,eyeColor:EYE_COLORS,nose:NOSES,mouth:MOUTHS})){result[key]=clean(a[key],set,d[key])}
- // A valid saved supplemental scene must survive an older/incomplete deployment.
- // Retain its ID so that the original decoration reappears when its asset returns.
- if(typeof a.scene==="string"&&/^(?:cmd-restored|cmd-fond)-[a-z0-9-]{1,100}$/.test(a.scene))result.scene=a.scene;
- if(!/^reference-avatar-/.test(result.avatarPreset))result.avatarPreset="reference-avatar-0";result.avatarStyle="2d";result.petStyle="2d";
- result.label=String(a.label||"").trim().slice(0,42);
- result.petName=String(a.petName||"").trim().slice(0,40);
+ const a=input&&typeof input==="object"&&!Array.isArray(input)?input:{},d=defaultConfig(),result={...d};
+ for(const [key,choices] of Object.entries(PROFILE_FIELDS)){
+  result[key]=accepted(key,a[key],choices)?String(a[key]):d[key];
+ }
+ result.label=String(a.label??"").trim().slice(0,42);
+ result.petName=String(a.petName??"").trim().slice(0,40);
  result.hideHome=a.hideHome!==false;
  return result;
+}
+function configPatch(input){
+ if(input===undefined)return {};
+ if(!input||typeof input!=="object"||Array.isArray(input))throw Error("Décor invalide.");
+ const cleaned=config(input),changes={};
+ for(const [key,choices] of Object.entries(PROFILE_FIELDS)){
+  if(!Object.prototype.hasOwnProperty.call(input,key))continue;
+  if(!accepted(key,input[key],choices))throw Error("Choix de décor invalide : "+key);
+  changes[key]=cleaned[key];
+ }
+ for(const key of ["label","petName"]){
+  if(Object.prototype.hasOwnProperty.call(input,key))changes[key]=cleaned[key];
+ }
+ if(Object.prototype.hasOwnProperty.call(input,"hideHome")){
+  if(typeof input.hideHome!=="boolean")throw Error("Visibilité de maison invalide.");
+  changes.hideHome=input.hideHome;
+ }
+ return changes;
 }
 function send(res,status,body){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(body))}
 function checkCustom(value){
@@ -145,13 +166,19 @@ export async function handleCmdProfileScene(req,res,url,{pool,auth}){
    const chunks=[];let size=0;
    for await(const chunk of req){size+=chunk.length;if(size>10*1024*1024)throw Error("Images trop volumineuses. Optimise les photos avant l’envoi.");chunks.push(chunk)}
    const data=JSON.parse(Buffer.concat(chunks).toString("utf8"));
-   const scene=config(data.scene);
-   const image=Object.prototype.hasOwnProperty.call(data,"customBackground")?checkCustom(data.customBackground):undefined;
-   const character=Object.prototype.hasOwnProperty.call(data,"characterImage")?checkCustom(data.characterImage):undefined;
-   const animal=Object.prototype.hasOwnProperty.call(data,"animalImage")?checkCustom(data.animalImage):undefined;
+   if(!data||typeof data!=="object"||Array.isArray(data))throw Error("Requête de profil invalide.");
+   const scene=configPatch(data.scene);
+   const hasImage=Object.prototype.hasOwnProperty.call(data,"customBackground");
+   const hasCharacter=Object.prototype.hasOwnProperty.call(data,"characterImage");
+   const hasAnimal=Object.prototype.hasOwnProperty.call(data,"animalImage");
+   const image=hasImage?checkCustom(data.customBackground):null;
+   const character=hasCharacter?checkCustom(data.characterImage):null;
+   const animal=hasAnimal?checkCustom(data.animalImage):null;
    await pool.query("INSERT INTO cmd_global_profiles(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING",[uid]);
-   await pool.query("UPDATE cmd_global_profiles SET cmd_avatar_scene=$2::jsonb,cmd_avatar_scene_image=COALESCE($3,cmd_avatar_scene_image),cmd_avatar_character_image=COALESCE($4,cmd_avatar_character_image),cmd_avatar_pet_image=COALESCE($5,cmd_avatar_pet_image),updated_at=NOW() WHERE user_id=$1",[uid,JSON.stringify(scene),image===undefined?null:image,character===undefined?null:character,animal===undefined?null:animal]);
-   send(res,200,{ok:true,scene});return true;
+   // Atomic JSONB patch: omitted fields retain the database version even across devices.
+   // Explicit null clears a personal image; omission does not clear it.
+   const saved=await pool.query("UPDATE cmd_global_profiles SET cmd_avatar_scene=COALESCE(cmd_avatar_scene,'{}'::jsonb) || $2::jsonb,cmd_avatar_scene_image=CASE WHEN $6::boolean THEN $3::text ELSE cmd_avatar_scene_image END,cmd_avatar_character_image=CASE WHEN $7::boolean THEN $4::text ELSE cmd_avatar_character_image END,cmd_avatar_pet_image=CASE WHEN $8::boolean THEN $5::text ELSE cmd_avatar_pet_image END,updated_at=NOW() WHERE user_id=$1 RETURNING cmd_avatar_scene",[uid,JSON.stringify(scene),image,character,animal,hasImage,hasCharacter,hasAnimal]);
+   send(res,200,{ok:true,scene:config(saved.rows[0]?.cmd_avatar_scene||scene)});return true;
   }
   send(res,405,{error:"Méthode non autorisée"});return true;
  }catch(e){send(res,400,{error:e.message||"Décor indisponible"});return true}
