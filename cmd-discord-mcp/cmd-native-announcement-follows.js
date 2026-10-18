@@ -51,6 +51,8 @@ export async function followNativeAnnouncements(pool,auth,input,{requireNativeAd
     AND src.type='announcement' AND dst.type='announcement'
     AND pub.is_public=TRUE AND src.source_parent_id IS NULL
     AND src.permission_overwrites='[]'::jsonb
+    AND EXISTS(SELECT 1 FROM cmd_native_roles everyone WHERE everyone.guild_id=src.guild_id
+      AND everyone.name='@everyone' AND everyone.permissions->>'viewChannels'='true')
   ON CONFLICT DO NOTHING
   RETURNING source_guild_id::text AS "sourceGuildId",source_channel_id::text AS "sourceChannelId",
      destination_guild_id::text AS "destinationGuildId",destination_channel_id::text AS "destinationChannelId"`,
@@ -100,7 +102,11 @@ export async function relayNativeAnnouncement(pool,{guildId,channelId,body}){
       AND dst.guild_id=f.destination_guild_id AND dst.type='announcement'
    JOIN cmd_native_members allowed ON allowed.guild_id=f.destination_guild_id
       AND allowed.user_id=f.creator_id AND allowed.membership_role IN ('owner','admin')
-   WHERE f.source_guild_id=$1::uuid AND f.source_channel_id=$2::uuid
+   JOIN cmd_native_members source_admin ON source_admin.guild_id=f.source_guild_id
+      AND source_admin.user_id=f.creator_id AND source_admin.membership_role IN ('owner','admin')
+   WHERE EXISTS(SELECT 1 FROM cmd_native_roles everyone WHERE everyone.guild_id=f.source_guild_id
+     AND everyone.name='@everyone' AND everyone.permissions->>'viewChannels'='true')
+    AND f.source_guild_id=$1::uuid AND f.source_channel_id=$2::uuid
    ORDER BY f.created_at ASC LIMIT $3`,[guildId,channelId,MAX_FOLLOW_TARGETS]);
  let relayed=0;
  const safeText=raw.replace(/@(everyone|here)/gi,'@\u200b$1').slice(0,3000);
