@@ -18,6 +18,9 @@ on:
       - 'cmd-discord-mcp/tests/server-icon-hosting.test.cjs'
       - 'cmd-discord-mcp/cmd-native-slowmode.js'
       - 'cmd-discord-mcp/tests/native-slowmode.test.cjs'
+      - 'cmd-discord-mcp/cmd-social-privacy.js'
+      - 'cmd-discord-mcp/cmd-social-privacy-ui.js'
+      - 'cmd-discord-mcp/tests/social-privacy.test.cjs'
       - 'cmd-discord-mcp/tests/native-templates-contract.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-servers.js'
       - 'cmd-discord-mcp/cmd-social-message-actions.js'
@@ -105,3 +108,22 @@ jobs:
           node-version: '22'
       - name: Test isolated and authorized server template creation
         run: node --test tests/native-templates-contract.test.cjs
+
+  validate-privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and safety
+        run: |
+          node --check cmd-social-privacy.js
+          node --check cmd-social-privacy-ui.js
+          node --check server.js
+      - name: Verify real account privacy behavior
+        run: node --test tests/social-privacy.test.cjs
