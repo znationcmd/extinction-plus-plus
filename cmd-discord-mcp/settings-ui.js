@@ -456,6 +456,79 @@
             ' langues et variantes accessibles. Utilise la recherche ou « Afficher la suite ». '+
             'Si une traduction manque, une langue de secours est utilisée.';
         }
+        function listCountries(term){
+          var query=normalizeLanguageQuery(term).trim();
+          results.replaceChildren();results.scrollTop=0;loadedLanguages=0;matchedLanguages=[];
+          var countries=countryCatalogue.filter(function(country){
+            if(query)return normalizeLanguageQuery(country.name+' '+country.code).includes(query);
+            var initial=normalizeLanguageQuery(country.name).charAt(0).toUpperCase();
+            return !activeLetter||(activeLetter==='#'?!/^[A-Z]$/.test(initial):initial===activeLetter);
+          });
+          for(var country of countries){
+            var button=document.createElement('button');
+            button.type='button';button.className='cmd-language-result cmd-country-item';
+            button.dataset.cmdCountry=country.code;
+            var name=document.createElement('span');name.textContent=country.name;
+            var meta=document.createElement('span');meta.className='cmd-language-code';
+            meta.textContent=country.languages.length+' langues ›';
+            button.append(name,meta);results.append(button);
+          }
+          if(!countries.length){
+            var empty=document.createElement('p');empty.className='cmd-language-results-empty';
+            empty.textContent=countryCatalogue.length?'Aucun pays trouvé pour cette lettre.':'Chargement des pays…';
+            results.append(empty);
+          }
+          label.textContent='Pays '+(activeLetter||'du monde')+' : '+countries.length+
+            ' · Choisis un pays pour voir ses langues et dialectes';
+          var notice=view.querySelector('#cmdLanguageSupportNotice');
+          if(notice)notice.textContent=countryCatalogue.length+' pays et territoires. Les 8 148 langues restent accessibles par le bouton « Toutes les langues » et la recherche. Les langues proposées par pays ne sont pas toutes traduites.';
+          var selected=view.querySelector('#cmdLanguageSelected');
+          if(selected)selected.textContent='Langue actuelle : '+nativeLanguageLabel(activeSettingsLanguage());
+        }
+        function listCountryLanguages(country){
+          results.replaceChildren();results.scrollTop=0;loadedLanguages=0;
+          var byCode=new Map(languageCatalogue);
+          matchedLanguages=country.languages.filter(function(code){return byCode.has(code)})
+            .map(function(code){return [code,byCode.get(code)]});
+          var info=document.createElement('p');info.className='cmd-country-divider';
+          info.textContent='Langues et dialectes associés à '+country.name+' ('+country.code+')';
+          results.append(info);
+          if(matchedLanguages.length)appendLanguages();
+          else{
+            var missing=document.createElement('p');missing.className='cmd-language-results-empty';
+            missing.textContent='Aucune langue répertoriée pour ce pays. Utilise « Toutes les langues ».';
+            results.append(missing);
+          }
+          label.textContent=country.name+' — choisis une langue ou un dialecte';
+          var notice=view.querySelector('#cmdLanguageSupportNotice');
+          if(notice)notice.textContent='Les langues de '+country.name+' proviennent du catalogue CLDR. Le pays ne détermine pas à lui seul la langue de chacun : le choix est personnel. La traduction de toutes les variantes n’est pas garantie.';
+          var selected=view.querySelector('#cmdLanguageSelected');
+          if(selected)selected.textContent='Langue actuelle : '+nativeLanguageLabel(activeSettingsLanguage());
+        }
+        function refreshCountryList(term){
+          var query=String(term||'').trim();
+          backCountry.hidden=!chosenCountry;
+          allLanguagesButton.textContent=allLanguages?'🌍 Revenir aux pays (A à Z)':'🌐 Toutes les 8 148 langues';
+          allLanguagesButton.setAttribute('aria-pressed',String(allLanguages));
+          if(allLanguages){listMatches(query);return}
+          if(chosenCountry&&!query){listCountryLanguages(chosenCountry);return}
+          if(query){
+            var found=countryCatalogue.some(function(country){
+              return normalizeLanguageQuery(country.name+' '+country.code).includes(normalizeLanguageQuery(query));
+            });
+            if(!found&&languageCatalogue.length){listMatches(query);return}
+          }
+          listCountries(query);
+        }
+        backCountry.addEventListener('click',function(){
+          chosenCountry=null;searchInput.value='';refreshCountryList('');
+        });
+        allLanguagesButton.addEventListener('click',function(){
+          allLanguages=!allLanguages;chosenCountry=null;searchInput.value='';
+          if(allLanguages)activeLetter='';
+          else activeLetter='A';
+          updateLetters();refreshCountryList('');
+        });
         var automatic=view.querySelector('#cmdLanguageAutomatic'),automaticInfo=view.querySelector('#cmdLanguageAutoInfo');
         function updateAutomaticUi(){
           var pref=window.CMDSphereLocale?.current();
