@@ -45,12 +45,24 @@ test('Long press opens exactly four statuses and suppresses the following short 
  }finally{x.close()}
 });
 const mutationFn=source.slice(source.indexOf('async function applyNativeStructureAction('),source.indexOf('\nasync function updateNativeProfile('));
-function mutationHarness({failWrite=false,failSync=false}={}){
- const calls=[];const ctx={requireNativeAdmin:async()=>{},pool:{query:async()=>({rows:[{source_discord_id:guild.source_discord_id}]})},resolveBot:async()=> 'dayz',nativeSourceId:async(g,k,id)=>'remote-'+id,bots:{dayz:{label:'DAYZ GATE'}},backend:async()=>{calls.push('write');if(failWrite)throw Error('Discord refused')},syncNativeFromDiscord:async()=>{calls.push('sync');if(failSync)throw Error('refresh failed')},applyNativeLocalAction:async()=>{calls.push('local');return {ok:true}}};
+// Native CMD Sphere guilds are independent of the linked Discord server.
+function mutationHarness({failLocal=false}={}){
+ const calls=[];const ctx={
+  applyNativeLocalAction:async()=>{calls.push('local');if(failLocal)throw Error('Local database refused');return {ok:true,synced:false}},
+  backend:async()=>{calls.push('external');throw Error('Unexpected external write')},
+  syncNativeFromDiscord:async()=>{calls.push('external-sync');throw Error('Unexpected external sync')}
+ };
  const fn=vm.runInNewContext(mutationFn+';applyNativeStructureAction',ctx);return {fn,calls};
 }
-test('Failed Discord write never silently mutates the local copy',async()=>{const x=mutationHarness({failWrite:true});await assert.rejects(x.fn(auth,{nativeGuildId:guild.id,action:'create_channel'}),/Discord refused/);assert.deepEqual(x.calls,['write'])});
-test('Failed refresh after a successful Discord write never duplicates the action locally',async()=>{const x=mutationHarness({failSync:true});const r=await x.fn(auth,{nativeGuildId:guild.id,action:'create_channel'});assert.equal(r.remoteApplied,true);assert.equal(r.synced,false);assert.match(r.warning,/refresh failed/);assert.deepEqual(x.calls,['write','sync'])});
+test('Failed CMD Sphere write never mutates an external Discord server',async()=>{
+ const x=mutationHarness({failLocal:true});
+ await assert.rejects(x.fn(auth,{nativeGuildId:guild.id,action:'create_channel'}),/Local database refused/);
+ assert.deepEqual(x.calls,['local']);
+});
+test('CMD Sphere structure writes only once locally without duplicating on linked Discord',async()=>{
+ const x=mutationHarness();const r=await x.fn(auth,{nativeGuildId:guild.id,action:'create_channel'});
+ assert.equal(r.ok,true);assert.equal(r.synced,false);assert.deepEqual(x.calls,['local']);
+});
 
 test('Switching channels ignores a slow response from the previous channel',async()=>{
  const x=setup();try{await tick();x.w.eval('S.guild={id:"1513783303285637181"};S.bot="dayz";');
@@ -61,7 +73,7 @@ test('Switching channels ignores a slow response from the previous channel',asyn
 test('Recovered or edited content refreshes even when the message count stays the same',async()=>{
  const x=setup();try{await tick();const msg={id:'1513783303285637199',content:'',author:{username:'CMD'},timestamp:'2026-10-08T07:00:00Z'};
  x.w.eval('CHAT.open=true;CHAT.version=1;CHAT.mode="discord";CHAT.guildId="1513783303285637181";CHAT.channelId="1513783303285637183";CHAT.messages='+JSON.stringify([msg])+';renderChannelMessages();');
- x.w.fetch=async()=>({ok:true,json:async()=>({messages:[{...msg,content:'Texte accessible'}]})});await x.w.refreshDiscordMessages();assert.match(x.w.document.querySelector('#channelMessages').textContent,/Texte accessible/);
+ Object.defineProperty(x.w.document,'hidden',{value:false,configurable:true});x.w.fetch=async()=>({ok:true,json:async()=>({messages:[{...msg,content:'Texte accessible'}]})});await x.w.refreshDiscordMessages();assert.match(x.w.document.querySelector('#channelMessages').textContent,/Texte accessible/);
  }finally{x.close()}
 });
 
