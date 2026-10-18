@@ -281,6 +281,9 @@ function openCompactMenu(article,x,y){
   action('📅 Gérer mes rappels',()=>window.cmdSphereReminders.list());
  }
  if(window.cmdSphereProductivity?.saveMessage)action('⭐ Ajouter aux favoris',()=>window.cmdSphereProductivity.saveMessage(article));
+ const cmdNativeContext=window.cmdSphereMessageActions?.context?.();
+ if(article.dataset.messageId&&cmdNativeContext&&String(article.dataset.cmdSource||'')!=='discord_archive'&&window.cmdSphereForwardMessage?.open)
+   action('↪ Transférer dans un salon',()=>window.cmdSphereForwardMessage.open(article));
  const edit=article.querySelector('.cmd-message-edit');if(edit)action('✎ Modifier',()=>edit.click());
  const del=article.querySelector('.cmd-message-delete');if(del)action('🗑 Supprimer',()=>del.click(),true);
  if(article.dataset.cmdAuthorId||article.dataset.cmdAuthorUser)action('Ouvrir le profil',()=>showProfile(article));
