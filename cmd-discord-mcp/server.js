@@ -2564,19 +2564,31 @@ async function listFriends(auth){
       FROM cmd_friend_requests r
       LEFT JOIN cmd_accounts a ON a.id::text=r.requester_user_id
       LEFT JOIN cmd_global_profiles g ON g.user_id=r.requester_user_id
-      WHERE r.target_user_id=$1 AND r.status='pending' ORDER BY r.created_at DESC`,[me]),
+      WHERE r.target_user_id=$1 AND r.status='pending'
+        AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE
+            (b.blocker_user_id=$1 AND b.blocked_user_id=r.requester_user_id)
+            OR (b.blocked_user_id=$1 AND b.blocker_user_id=r.requester_user_id))
+       ORDER BY r.created_at DESC`,[me]),
     pool.query(`SELECT r.id,r.target_user_id,r.created_at,a.username,a.display_name,g.avatar_data_url,g.status
       FROM cmd_friend_requests r
       LEFT JOIN cmd_accounts a ON a.id::text=r.target_user_id
       LEFT JOIN cmd_global_profiles g ON g.user_id=r.target_user_id
-      WHERE r.requester_user_id=$1 AND r.status='pending' ORDER BY r.created_at DESC`,[me]),
+      WHERE r.requester_user_id=$1 AND r.status='pending'
+        AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE
+            (b.blocker_user_id=$1 AND b.blocked_user_id=r.target_user_id)
+            OR (b.blocked_user_id=$1 AND b.blocker_user_id=r.target_user_id))
+       ORDER BY r.created_at DESC`,[me]),
     pool.query(`SELECT f.created_at,
       CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END other_id,
       a.username,a.display_name,g.avatar_data_url,g.status
       FROM cmd_friendships f
       LEFT JOIN cmd_accounts a ON a.id::text=(CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END)
       LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text
-      WHERE f.user_low=$1 OR f.user_high=$1 ORDER BY COALESCE(a.display_name,a.username) ASC`,[me])
+      WHERE (f.user_low=$1 OR f.user_high=$1) AND NOT EXISTS (
+      SELECT 1 FROM cmd_user_blocks b WHERE
+      (b.blocker_user_id=$1 AND b.blocked_user_id=(CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END))
+      OR (b.blocked_user_id=$1 AND b.blocker_user_id=(CASE WHEN f.user_low=$1 THEN f.user_high ELSE f.user_low END))
+    ) ORDER BY COALESCE(a.display_name,a.username) ASC`,[me])
   ]);
   return {
     incoming:incoming.rows.map(x=>({id:String(x.id),userId:String(x.requester_user_id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,status:x.status||"",createdAt:x.created_at})),
@@ -2650,14 +2662,17 @@ async function getUnreadSummary(auth){
   const [dm,native,fr]=await Promise.all([
     pool.query(`SELECT COUNT(*)::int AS n FROM cmd_dm_messages m
       JOIN cmd_dm_threads t ON t.id=m.thread_id
-      WHERE (t.user_low=$1 OR t.user_high=$1) AND m.sender_user_id<>$1 AND m.read_at IS NULL`,[me]),
+      WHERE (t.user_low=$1 OR t.user_high=$1) AND m.sender_user_id<>$1 AND m.read_at IS NULL
+      AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE
+       (b.blocker_user_id=$1 AND b.blocked_user_id=m.sender_user_id)
+       OR (b.blocked_user_id=$1 AND b.blocker_user_id=m.sender_user_id))`,[me]),
     pool.query(`SELECT m.guild_id::text AS guild_id,COUNT(*)::int AS n
       FROM cmd_native_channel_messages m
       JOIN cmd_native_members mem ON mem.guild_id=m.guild_id AND mem.user_id=$1
       LEFT JOIN cmd_native_channel_reads r ON r.user_id=$1 AND r.channel_id=m.channel_id
       WHERE m.sender_user_id<>$1 AND m.created_at>COALESCE(r.last_read_at,'1970-01-01'::timestamptz)
       GROUP BY m.guild_id`,[me]),
-    pool.query("SELECT COUNT(*)::int AS n FROM cmd_friend_requests WHERE target_user_id=$1 AND status='pending'",[me])
+    pool.query("SELECT COUNT(*)::int AS n FROM cmd_friend_requests r WHERE r.target_user_id=$1 AND r.status='pending' AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE (b.blocker_user_id=$1 AND b.blocked_user_id=r.requester_user_id) OR (b.blocked_user_id=$1 AND b.blocker_user_id=r.requester_user_id))",[me])
   ]);
   const nativeByGuild={};let nativeTotal=0;
   for(const row of native.rows){nativeByGuild[String(row.guild_id)]=Number(row.n||0);nativeTotal+=Number(row.n||0)}
@@ -2713,7 +2728,11 @@ async function listDmThreads(auth){
     FROM cmd_dm_threads t
     LEFT JOIN cmd_accounts a ON a.id::text=(CASE WHEN t.user_low=$1 THEN t.user_high ELSE t.user_low END)
     LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text
-    WHERE t.user_low=$1 OR t.user_high=$1 ORDER BY t.updated_at DESC LIMIT 100`,[me]);
+    WHERE (t.user_low=$1 OR t.user_high=$1) AND NOT EXISTS (
+      SELECT 1 FROM cmd_user_blocks b WHERE
+       (b.blocker_user_id=$1 AND b.blocked_user_id=(CASE WHEN t.user_low=$1 THEN t.user_high ELSE t.user_low END))
+       OR (b.blocked_user_id=$1 AND b.blocker_user_id=(CASE WHEN t.user_low=$1 THEN t.user_high ELSE t.user_low END))
+    ) ORDER BY t.updated_at DESC LIMIT 100`,[me]);
   return r.rows.map(x=>({id:String(x.id),username:x.username||"utilisateur",displayName:x.display_name||x.username||"Utilisateur",avatar:x.avatar_data_url||null,lastMessage:x.last_message||"",unread:Number(x.unread||0)}));
 }
 
