@@ -132,7 +132,7 @@ function other(){
  if(currentTab==='stickers')return intro('Autocollants','Autocollants du serveur CMD Sphere.')+info('Ouvre le sélecteur de stickers dans un salon pour voir les autocollants disponibles.');
  if(currentTab==='moderation')return intro('Modération','Gestion des personnes et accès du serveur.')+btn('Gérer les membres','members','primary')+btn('Gérer les rôles','roles')+btn('Paramètres de sécurité','security');
  if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
- if(currentTab==='community')return intro('Paramètres de communauté','Choisis les informations publiques et le message de bienvenue.')+btn('Modifier le serveur','overview','primary');
+ if(currentTab==='community')return intro('Communauté et découverte','Annuaire volontaire : ton serveur reste invisible tant que tu ne le publies pas.')+(isNative()?'<section id="csm-native-discovery" aria-live="polite">'+info('Chargement des paramètres…')+'</section>':info('Annuaire réservé aux serveurs CMD Sphere.'))+btn('Modifier la visibilité du serveur','overview');
  if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques enregistrées sur CMD Sphere, sans suivi externe.')+(isNative()?'<section id="csm-native-insights" aria-live="polite" aria-label="Statistiques de la communauté">'+info('Chargement des statistiques…')+'</section>':info('Les données du serveur externe ne sont pas accessibles ici.'));
 
  if(currentTab==='invites')return intro('Invitations','Fais rejoindre les membres à ton serveur.')+(isNative()?'<div class="csm-invite">'+escapeHtml(ctx.data.inviteUrl||'')+'</div>'+btn('Copier le lien','copy-invite','primary'):info('Les invitations du service connecté sont générées depuis la plateforme liée.'))+toDiscord();
@@ -316,6 +316,61 @@ async function renderNativeMembersTab(){
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
 }
 
+async function loadNativeDiscovery(){
+ const host=$('#csm-native-discovery'),guildId=id();
+ if(!host||!isNative())return;
+ host.replaceChildren();
+ const status=document.createElement('p');status.setAttribute('role','status');
+ status.textContent='L’annuaire affiche uniquement les serveurs publics qui acceptent volontairement la publication.';
+ host.append(status);
+ if(ctx?.owner){
+  try{
+   const settings=await request('/api/native/community-discovery?mode=mine&guildId='+safe(guildId));
+   if(!host.isConnected||id()!==guildId||currentTab!=='community')return;
+   const label=document.createElement('label');label.className='csm-discord-toggle';
+   const title=document.createElement('strong');title.textContent='Afficher mon serveur dans l’annuaire';
+   const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=!!settings.listed;
+   toggle.disabled=!settings.isPublic;
+   label.append(title,toggle);host.append(label);
+   if(!settings.isPublic){const hint=document.createElement('p');hint.textContent='Active d’abord Serveur public dans Vue d’ensemble pour autoriser sa publication.';host.append(hint)}
+   toggle.addEventListener('change',async()=>{
+    toggle.disabled=true;
+    try{
+     const updated=await request('/api/native/community-discovery',{guildId,listed:toggle.checked});
+     status.textContent=updated.listed?'Serveur inscrit volontairement dans l’annuaire.':'Serveur retiré de l’annuaire.';
+    }catch(error){toggle.checked=!toggle.checked;status.textContent='Publication refusée : '+error.message}
+    finally{toggle.disabled=!settings.isPublic}
+   });
+  }catch(error){status.textContent='Paramètres de l’annuaire indisponibles : '+error.message}
+ }
+ const header=document.createElement('h3');header.textContent='Découvrir les serveurs publics';
+ const input=document.createElement('input');input.type='search';input.placeholder='Rechercher un serveur';input.maxLength=64;
+ input.setAttribute('aria-label','Rechercher un serveur public');
+ input.style.cssText='width:100%;min-height:42px;margin-bottom:12px';
+ const search=document.createElement('button');search.type='button';search.textContent='Rechercher';search.className='csm-btn';
+ const list=document.createElement('ul');list.style.cssText='list-style:none;padding:0;display:grid;gap:10px';
+ host.append(header,input,search,list);
+ const lookup=async()=>{
+  search.disabled=true;list.replaceChildren();
+  try{
+   const response=await request('/api/native/community-discovery?q='+safe(input.value.trim()));
+   if(!host.isConnected||id()!==guildId||currentTab!=='community')return;
+   const entries=Array.isArray(response.guilds)?response.guilds:[];
+   for(const item of entries){
+    const row=document.createElement('li');row.className='csm-info';
+    const name=document.createElement('strong');name.textContent=String(item.name||'Serveur');
+    const description=document.createElement('p');description.textContent=String(item.description||'Aucune description.');
+    row.append(name,description);list.append(row);
+   }
+   if(!entries.length){const empty=document.createElement('li');empty.textContent='Aucun serveur publié ne correspond à cette recherche.';list.append(empty)}
+  }catch(error){const msg=document.createElement('li');msg.textContent='Annuaire indisponible : '+error.message;list.append(msg)}
+  finally{search.disabled=false}
+ };
+ search.addEventListener('click',()=>{void lookup()});
+ input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();void lookup()}});
+ void lookup();
+}
+
 async function loadNativeInsights(period='7d'){
  const host=$('#csm-native-insights'),guildId=id();
  if(!host||!isNative()||!ctx?.admin)return void(host&&(host.textContent='Accès réservé aux administrateurs du serveur.'));
@@ -359,6 +414,7 @@ function render(){
  box.innerHTML='<div class="csm-root '+(currentTab==='home'?'csm-mobile-index':'csm-mobile-detail')+'"><header class="csm-header"><button type="button" id="csm-back" aria-label="Retour aux paramètres">‹</button><div class="csm-header-icon">'+gicon()+'</div><div class="csm-header-label"><strong class="csm-guild-title">'+escapeHtml(guild.name||'Serveur')+'</strong><strong class="csm-mobile-title">'+(currentTab==='home'?'Paramètres du serveur':escapeHtml(settingTitle(currentTab)))+'</strong><small>Gestion du serveur · CMD Sphere</small></div><button type="button" id="csm-close" title="Fermer">×</button></header><div class="csm-columns">'+nav()+'<main class="csm-main">'+(currentTab==='home'||currentTab==='overview'?overview():currentTab==='channels'?channels():currentTab==='roles'?roles():other())+'</main></div></div>';
  modal.classList.add('on','csm-open');
  if(currentTab==='analytics')void loadNativeInsights();
+ if(currentTab==='community')void loadNativeDiscovery();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
