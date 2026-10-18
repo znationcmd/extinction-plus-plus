@@ -470,3 +470,50 @@ const observe=()=>{if(document.body)new MutationObserver(schedule).observe(docum
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",observe,{once:true});else observe();
 window.CMDMenuI18n={get language(){return current},get translatedLocale(){return locale(current)},get supportedLocales(){return ["fr",...Object.keys(words)]},refresh:schedule};
 })();
+
+// CMD Browser desktop: translate native toolbar labels as well as the shared menus.
+(function(){
+  if(typeof window==="undefined"||window.CMDDesktopToolbarI18n)return;
+  const names=["fr","en","de","es","it","ru","pt","nl","ja","ko","zh","co"];
+  const strings={
+    go:["Ouvrir","Open","Öffnen","Abrir","Apri","Открыть","Abrir","Openen","開く","열기","打开","Apre"],
+    showBookmarks:["Favoris","Bookmarks","Lesezeichen","Favoritos","Preferiti","Закладки","Favoritos","Bladwijzers","ブックマーク","북마크","书签","Preferiti"],
+    showHistory:["Historique","History","Verlauf","Historial","Cronologia","История","Histórico","Geschiedenis","履歴","기록","历史","Storia"],
+    vpnConnect:["Activer","Connect","Verbinden","Conectar","Connetti","Подключить","Ligar","Verbinden","接続","연결","连接","Attivà"],
+    vpnDisconnect:["Désactiver","Disconnect","Trennen","Desconectar","Disconnetti","Отключить","Desligar","Verbreken","切断","연결 해제","断开","Disattivà"],
+    vpnClose:["Fermer","Close","Schließen","Cerrar","Chiudi","Закрыть","Fechar","Sluiten","閉じる","닫기","关闭","Chjode"],
+    vpnImport:["Importer .conf","Import .conf","Importieren .conf","Importar .conf","Importa .conf","Импорт .conf","Importar .conf","Importeren .conf",".conf を読込",".conf 가져오기","导入 .conf","Impurtà .conf"],
+    vpnClient:["Installer WireGuard","Install WireGuard","WireGuard installieren","Instalar WireGuard","Installa WireGuard","Установить WireGuard","Instalar WireGuard","WireGuard installeren","WireGuard をインストール","WireGuard 설치","安装 WireGuard","Installà WireGuard"]
+  };
+  const titles={
+    back:["Précédent","Back","Zurück","Atrás","Indietro","Назад","Voltar","Terug","戻る","뒤로","后退","In daretu"],
+    forward:["Suivant","Forward","Vorwärts","Adelante","Avanti","Вперёд","Avançar","Vooruit","進む","앞으로","前进","Avanti"],
+    reload:["Actualiser","Reload","Neu laden","Recargar","Ricarica","Обновить","Recarregar","Vernieuwen","更新","새로고침","刷新","Ricaricà"],
+    home:["Accueil","Home","Startseite","Inicio","Home","Главная","Início","Startpagina","ホーム","홈","首页","Accolta"],
+    bookmark:["Ajouter aux favoris","Add bookmark","Lesezeichen hinzufügen","Añadir favorito","Aggiungi preferito","В закладки","Adicionar favorito","Bladwijzer toevoegen","ブックマークに追加","북마크 추가","添加书签","Aghjunghje à i preferiti"],
+    showBookmarks:strings.showBookmarks,showHistory:strings.showHistory,
+    vpnToggle:["Configuration VPN","VPN settings","VPN-Einstellungen","Configuración VPN","Impostazioni VPN","Настройки VPN","Configuração VPN","VPN-instellingen","VPN 設定","VPN 설정","VPN设置","Paràmetri VPN"]
+  };
+  const fallback={gsw:"de",bar:"de",swg:"de",nds:"de",eng:"en",fra:"fr",deu:"de",spa:"es",ita:"it",zho:"zh",jpn:"ja",kor:"ko",cos:"co"};
+  const choice=()=>{try{return localStorage.getItem("cmd-world-language")||navigator.language||"fr"}catch{return"fr"}};
+  let selected=choice();
+  function apply(){
+    const base=selected.split("-")[0].toLowerCase();
+    const code=fallback[base]||base;
+    const lang=names.indexOf(code),i=lang<0?1:lang;
+    for(const [id,terms] of Object.entries(strings)){
+      const el=document.getElementById(id);if(el&&el.textContent!==terms[i])el.textContent=terms[i];
+    }
+    for(const [id,terms] of Object.entries(titles)){
+      const el=document.getElementById(id);if(el&&el.getAttribute("title")!==terms[i])el.setAttribute("title",terms[i]);
+    }
+    const input=document.getElementById("url");
+    if(input){const choices=["Rechercher ou saisir une adresse","Search or enter an address","Suchen oder Adresse eingeben","Buscar o introducir dirección","Cerca o inserisci indirizzo","Поиск или адрес","Pesquisar ou inserir endereço","Zoeken of adres invoeren","検索またはアドレスを入力","검색 또는 주소 입력","搜索或输入网址","Circà o scrive un indirizzu"];
+      if(input.placeholder!==choices[i])input.placeholder=choices[i]}
+  }
+  const onChange=e=>{selected=e.detail?.language||choice();apply()};
+  window.addEventListener("cmd-world-language-change",onChange);
+  const onReady=()=>{apply()};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",onReady,{once:true});else onReady();
+  window.CMDDesktopToolbarI18n={refresh:apply};
+})();
