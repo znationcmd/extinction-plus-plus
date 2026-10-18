@@ -22,6 +22,7 @@ import {initCmdSlowmode,parseSlowmodeSeconds,saveNativeMessageWithSlowmode} from
 import {initCmdSocialPrivacy,isBlockedPair,assertNotBlocked,assertFriendRequestPermitted,listAccountBlocks,setAccountBlock,getFriendRequestPrivacy,updateFriendRequestPrivacy} from "./cmd-social-privacy.js";
 import {initCmdDmGuildPrivacy,listDmGuildPrivacy,updateDmGuildPrivacy,assertDmGuildPermitted} from "./cmd-dm-guild-privacy.js";
 import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cmd-streamer-mode.js";
+import {initCmdMessageReminders,createCmdMessageReminder,listCmdMessageReminders,cancelCmdMessageReminder,dispatchDueCmdMessageReminders} from "./cmd-message-reminders.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -5407,6 +5408,15 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,await deleteOwnOrOwnerNativeMessage(auth,await readFormBodyJson(req)))}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/messages/reminders"&&["GET","POST","DELETE"].includes(req.method)){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        if(req.method==="GET"){sendJson(res,200,await listCmdMessageReminders(pool,auth));return}
+        const input=await readFormBodyJson(req);
+        if(req.method==="POST"){sendJson(res,201,await createCmdMessageReminder(pool,auth,input,nativeTextChannel));return}
+        sendJson(res,200,await cancelCmdMessageReminder(pool,auth,input.id));
+      }catch(e){sendJson(res,e.status||400,{error:e.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/native/messages"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -5954,7 +5964,9 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdMessageReminders(pool);
+    const cmdReminderTimer=setInterval(()=>dispatchDueCmdMessageReminders(pool,notifyUsers).catch(e=>console.warn("[cmd-reminders]",e.message)),60000);
+    cmdReminderTimer.unref?.();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
