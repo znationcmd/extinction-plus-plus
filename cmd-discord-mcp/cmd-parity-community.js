@@ -111,9 +111,10 @@ export const features=Object.freeze([
       "tags",
       "languages"
     ],
+    "stage": "partially_implemented_opt_in_directory_pending_moderation_and_live_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "community_insights",
@@ -126,9 +127,10 @@ export const features=Object.freeze([
       "period",
       "aggregate_counts"
     ],
+    "stage": "partially_implemented_admin_aggregates_pending_production_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   }
 ].map(f=>Object.freeze({...f,fields:Object.freeze(f.fields)})));
 export const category="community";
