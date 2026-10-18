@@ -2678,11 +2678,11 @@ async function updateDmPreferences(auth,input){
 
 async function searchDmUsers(auth,q){
   q=safeText(q,80);if(!q)return [];
-  const r=await pool.query("SELECT a.id,a.username,a.display_name,g.avatar_data_url FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text WHERE a.id::text<>$1 AND (a.username_key LIKE $2 OR LOWER(COALESCE(a.display_name,'')) LIKE $2)
+  const r=await pool.query(`SELECT a.id,a.username,a.display_name,g.avatar_data_url FROM cmd_accounts a LEFT JOIN cmd_global_profiles g ON g.user_id=a.id::text WHERE a.id::text<>$1 AND (a.username_key LIKE $2 OR LOWER(COALESCE(a.display_name,'')) LIKE $2)
   AND NOT EXISTS (SELECT 1 FROM cmd_user_blocks b WHERE
     (b.blocker_user_id=$1 AND b.blocked_user_id=a.id::text)
     OR (b.blocked_user_id=$1 AND b.blocker_user_id=a.id::text))
-  ORDER BY a.username_key LIMIT 20",[String(auth.user.id),"%"+q.toLowerCase()+"%"]);
+  ORDER BY a.username_key LIMIT 20`,[String(auth.user.id),"%"+q.toLowerCase()+"%"]);
   return r.rows.map(x=>({id:String(x.id),username:x.username,displayName:x.display_name||x.username,avatar:x.avatar_data_url||null}));
 }
 
