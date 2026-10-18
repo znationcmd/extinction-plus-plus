@@ -63,6 +63,8 @@ on:
       - 'cmd-discord-mcp/cmd-native-onboarding.js'
       - 'cmd-discord-mcp/tests/native-onboarding.test.cjs'
       - 'cmd-discord-mcp/cmd-language-catalog.json'
+      - 'cmd-discord-mcp/cmd-country-language-catalog.json'
+      - 'cmd-discord-mcp/tests/country-language-navigation.test.cjs'
       - 'cmd-discord-mcp/cmd-world-language-codes.js'
       - 'cmd-discord-mcp/tests/world-languages.test.cjs'
       - 'cmd-discord-mcp/cmd-language-auto.js'
@@ -606,3 +608,22 @@ jobs:
           node --check server.js
       - name: Verify locale detection, manual override and worldwide pagination
         run: node --test tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
+
+  validate-country-language-navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse country navigation, runtime routes and frontend
+        run: |
+          node --check settings-ui.js
+          node --check server.js
+          node --check cmd-language-auto.js
+      - name: Verify A to Z countries, Swiss dialects and 8148-language fallback
+        run: node --test tests/country-language-navigation.test.cjs tests/language-auto-ui.test.cjs tests/world-languages.test.cjs
