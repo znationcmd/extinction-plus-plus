@@ -55,7 +55,7 @@ test('country-by-letter chooser uses accessible tappable buttons with back navig
  assert.match(text,/id="cmdLanguageAlphabetLabel">Choisir un pays/);
  assert.match(text,/id="cmdCountryBack"/);
  assert.match(text,/id="cmdShowAllLanguages"/);
- assert.match(text,/data\.cmdCountry=country\.code/);
+ assert.match(text,/button\.dataset\.cmdCountry=country\.code/);
  assert.match(text,/allLanguagesButton\.addEventListener\('click'/);
  assert.match(text,/backCountry\.addEventListener\('click'/);
  assert.match(text,/var activeLetter='A'/);
