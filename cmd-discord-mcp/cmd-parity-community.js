@@ -15,9 +15,10 @@ export const features=Object.freeze([
       "role_choices",
       "channel_choices"
     ],
+    "stage": "partially_implemented_native_owner_role_choices_pending_new_member_flow_and_production_tests",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "rules_screening",
