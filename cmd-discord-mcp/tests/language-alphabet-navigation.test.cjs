@@ -25,7 +25,7 @@ test('every worldwide language belongs to precisely one A to Z or Other letter, 
 });
 test('A and B open complete language folders, independently from country folders',()=>{
  assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
- assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=true/);
  assert.match(ui,/function renderCountryFolders\(\)/);
  assert.match(ui,/if\(allLanguages\)\{/);
  assert.match(ui,/letterGroups\.get\(letter\)\.push\(entry\)/);
@@ -36,12 +36,12 @@ test('A and B open complete language folders, independently from country folders
  assert.match(ui,/function appendLanguageFolder\(folder\)/);
  assert.match(ui,/var items=folder\._cmdEntries,stop=Math\.min\(items\.length,folder\._cmdOffset\+75\)/);
  assert.match(ui,/selected\.dataset\.cmdLocale/);
- assert.match(ui,/allLanguagesButton\.textContent=allLanguages\?'🌍 Voir les pays/);
+ assert.match(ui,/allLanguagesButton\.textContent=allLanguages\?'🌍 Rechercher par pays/);
  assert.match(ui,/label\.textContent=allLanguages/);
  assert.match(ui,/8 148 langues classées dans les dossiers A à Z/);
 });
 test('all 8148 codes and country-specific search remain separately available without native iPhone select',()=>{
- assert.match(ui,/var alphabetLetters=\['Toutes',\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
+ assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
  assert.match(ui,/matchedLanguages=out;loadedLanguages=0/);
  assert.match(ui,/pageSize=75/);
  assert.match(ui,/data-cmd-more/);
