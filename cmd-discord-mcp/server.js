@@ -20,6 +20,7 @@ import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
 import {initCmdNativeInvites,activeInviteForGuild,previewNativeInvite,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
 import {initCmdSlowmode,parseSlowmodeSeconds,saveNativeMessageWithSlowmode} from "./cmd-native-slowmode.js";
 import {initCmdSocialPrivacy,isBlockedPair,assertNotBlocked,assertFriendRequestPermitted,listAccountBlocks,setAccountBlock,getFriendRequestPrivacy,updateFriendRequestPrivacy} from "./cmd-social-privacy.js";
+import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cmd-streamer-mode.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -4990,6 +4991,15 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId")})})}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/account/streamer-mode"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const userId=String(auth.user.id);
+        if(req.method==="GET"){sendJson(res,200,await readCmdStreamerMode(pool,userId));return}
+        sendJson(res,200,await writeCmdStreamerMode(pool,userId,await readFormBodyJson(req)));
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}
+      return;
+    }
     if(url.pathname==="/api/account/blocked"&&(req.method==="GET"||req.method==="POST")){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -5903,7 +5913,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdStreamerMode(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
