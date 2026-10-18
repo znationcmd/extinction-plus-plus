@@ -127,7 +127,7 @@ function roles(){
  return intro('Rôles','Crée des rôles personnalisés, règle leurs permissions et attribue plusieurs rôles par membre.')+(canEditRoles()?btn('＋ Nouveau rôle','new-role','primary'):'')+'<div id="csm-role-editor"></div><div class="csm-lines">'+all.map(role=>'<div class="csm-line"><i class="csm-role-color" style="background:'+( /^#[0-9a-f]{6}$/i.test(String(role.color||''))?role.color:'#5865f2')+'"></i><div><strong>'+escapeHtml(role.name)+'</strong><small>Position '+escapeHtml(role.position||0)+'</small></div>'+(canEditRoles()?'<button type="button" data-csm-edit-role="'+escapeHtml(role.id)+'" class="csm-btn">Modifier et attribuer</button>':'')+'</div>').join('')+'</div>'+(isNative()&&ctx.owner?'<section id="csm-hosting-role-permissions" aria-live="polite"><h3>🎮 Accès CMD Hosting</h3>'+info('Chargement des autorisations…')+'</section>':'')+info(note());
 }
 function other(){
- if(currentTab==='voicecfg')return intro('Paramètres vocaux','Réglages des salons vocaux CMD Sphere.')+(isNative()?'<section id="csm-native-voicecfg" aria-live="polite">'+info('Chargement des salons vocaux…')+'</section>':info('Disponible pour les serveurs CMD Sphere uniquement.'));
+ if(currentTab==='voicecfg')return intro('Paramètres vocaux','Réglages des salons vocaux CMD Sphere.')+(isNative()?'<section id="csm-native-voicecfg" aria-live="polite">'+info('Chargement des salons vocaux…')+'</section><section id="csm-native-afk" aria-live="polite" style="margin-top:16px">'+info('Chargement de la configuration AFK…')+'</section>':info('Disponible pour les serveurs CMD Sphere uniquement.'));
  if(currentTab==='tag')return intro('Tag du serveur','Personnalise l’identité du serveur sur CMD Sphere.')+(isNative()?'<a class="csm-btn primary" href="/profile?server='+safe(id())+'">Ouvrir le profil du serveur</a>':info('Option disponible uniquement pour les serveurs CMD Sphere.'));
  if(currentTab==='template')return intro('Modèle de serveur','Crée un nouveau serveur à partir d’un modèle.')+info('Utilise le bouton Créer un serveur et choisis ton modèle. Un modèle ne modifie pas le serveur existant.');
  if(currentTab==='emoji')return intro('Émoji','Gère les émojis du serveur.')+info('Ouvre un salon du serveur puis le sélecteur Émoji pour accéder aux émojis disponibles. Les paramètres spécifiques seront ajoutés dans cette rubrique.');
@@ -381,6 +381,37 @@ const CMD_AUDIT_ACTION_LABELS={
  create_role:'Rôle créé',update_role:'Rôle modifié',delete_role:'Rôle supprimé',
  set_channel_permissions:'Permissions du salon modifiées'
 };
+async function loadNativeAfk(){
+ const host=$('#csm-native-afk'),guildId=id();
+ if(!host||!isNative())return;
+ if(!ctx?.owner){host.textContent='Paramètres AFK réservés au propriétaire du serveur.';return}
+ const channels=(ctx.data.channels||[]).filter(ch=>String(ch.type||'')==='voice');
+ try{
+  const data=await request('/api/native/voice-afk?guildId='+safe(guildId));
+  if(!host.isConnected||currentTab!=='voicecfg'||id()!==guildId)return;
+  const title=document.createElement('h3');title.textContent='Salon AFK (configuration)';
+  const info=document.createElement('p');info.textContent='Le déplacement automatique après inactivité n’est pas encore actif. Aucun micro ne sera déplacé ou activé.';
+  const form=document.createElement('form');form.className='csm-form';
+  const room=document.createElement('select');room.setAttribute('aria-label','Salon AFK');
+  const none=document.createElement('option');none.value='';none.textContent='Aucun salon AFK';room.append(none);
+  for(const ch of channels){const opt=document.createElement('option');opt.value=String(ch.id);opt.textContent=String(ch.name||'Vocal');room.append(opt)}
+  room.value=String(data.channelId||'');
+  const timeout=document.createElement('select');timeout.setAttribute('aria-label','Délai AFK');
+  for(const value of [60,300,600,900,1800,3600]){const opt=document.createElement('option');opt.value=String(value);opt.textContent=String(value/60)+' minute(s)';timeout.append(opt)}
+  timeout.value=String(data.timeoutSeconds);
+  const save=document.createElement('button');save.type='submit';save.className='csm-btn primary';save.textContent='Enregistrer AFK';
+  const status=document.createElement('p');status.setAttribute('role','status');
+  form.append(room,timeout,save,status);host.replaceChildren(title,info,form);
+  form.addEventListener('submit',async event=>{
+   event.preventDefault();save.disabled=true;
+   try{
+    await request('/api/native/voice-afk',{guildId,channelId:room.value||null,timeoutSeconds:Number(timeout.value)},'PATCH');
+    status.textContent='Préférence AFK enregistrée (déplacement automatique à finaliser).';
+   }catch(error){status.textContent='Enregistrement refusé : '+error.message}
+   finally{save.disabled=false}
+  });
+ }catch(error){if(host.isConnected&&currentTab==='voicecfg')host.textContent='AFK indisponible : '+error.message}
+}
 async function loadNativeVoiceConfig(){
  const host=$('#csm-native-voicecfg'),guildId=id();
  if(!host||!isNative())return;
@@ -542,6 +573,7 @@ function render(){
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
  if(currentTab==='voicecfg')void loadNativeVoiceConfig();
+ if(currentTab==='voicecfg')void loadNativeAfk();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
