@@ -2605,6 +2605,11 @@ async function sendFriendRequest(auth,input){
     await pool.query("UPDATE cmd_friend_requests SET status='accepted',updated_at=NOW() WHERE id=$1",[reverse.rows[0].id]);
     return {ok:true,accepted:true,user:target};
   }
+  // Avoid amplifying repeated requests; do not touch existing friendships or conversations.
+  const existingRequest=await pool.query("SELECT id FROM cmd_friend_requests WHERE requester_user_id=$1 AND target_user_id=$2 AND status='pending' LIMIT 1",[me,other]);
+  if(existingRequest.rows.length)return {ok:true,pending:true,user:target};
+  const outbound=await pool.query("SELECT COUNT(*)::int AS n FROM cmd_friend_requests WHERE requester_user_id=$1 AND status='pending' AND created_at>NOW()-INTERVAL '1 hour'",[me]);
+  if(Number(outbound.rows[0]?.n||0)>=20)throw Object.assign(new Error("Trop de demandes d'ami : réessaie plus tard."),{status:429});
   const id=crypto.randomUUID();
   await pool.query(`INSERT INTO cmd_friend_requests(id,requester_user_id,target_user_id,status)
     VALUES($1,$2,$3,'pending')
@@ -5021,7 +5026,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="POST"&&url.pathname==="/api/friends/request"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{sendJson(res,200,await sendFriendRequest(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,400,{error:e.message})}return;
+      try{sendJson(res,200,await sendFriendRequest(auth,await readFormBodyJson(req)))}catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
     if(req.method==="POST"&&url.pathname==="/api/friends/respond"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
