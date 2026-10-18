@@ -276,6 +276,10 @@ function openCompactMenu(article,x,y){
    action('🔈 Volume vocal : '+Math.round(cmdTts.volume*100)+' %',()=>{const choices=[1,.75,.5,.25,0];const current=choices.indexOf(cmdTts.volume);window.cmdSphereTts.setVolume(choices[(current+1)%choices.length])});
  }
  if(content)action('Copier le texte',()=>navigator.clipboard?.writeText(content).catch(()=>{}));
+ if(article.dataset.messageId&&window.cmdSphereReminders&&window.cmdSphereMessageActions?.context?.()){
+  action('⏰ Me rappeler ce message',()=>window.cmdSphereReminders.open(article));
+  action('📅 Gérer mes rappels',()=>window.cmdSphereReminders.list());
+ }
  if(window.cmdSphereProductivity?.saveMessage)action('⭐ Ajouter aux favoris',()=>window.cmdSphereProductivity.saveMessage(article));
  const edit=article.querySelector('.cmd-message-edit');if(edit)action('✎ Modifier',()=>edit.click());
  const del=article.querySelector('.cmd-message-delete');if(del)action('🗑 Supprimer',()=>del.click(),true);
