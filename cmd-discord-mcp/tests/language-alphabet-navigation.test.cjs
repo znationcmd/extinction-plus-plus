@@ -23,9 +23,9 @@ test('every worldwide language belongs to precisely one A to Z or Other letter, 
  assert.equal(group('A').some(row=>row[0]==='alu'),true,"'Are'are must appear in A");
  assert.equal(group('B').some(row=>row[0]==='alu'),false);
 });
-test('A and B open complete language folders, independently from country folders',()=>{
+test('A and B country folders are the default; global languages are still available under optional A-Z folders',()=>{
  assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
- assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=true/);
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
  assert.match(ui,/function renderCountryFolders\(\)/);
  assert.match(ui,/if\(allLanguages\)\{/);
  assert.match(ui,/letterGroups\.get\(letter\)\.push\(entry\)/);
@@ -36,7 +36,7 @@ test('A and B open complete language folders, independently from country folders
  assert.match(ui,/function appendLanguageFolder\(folder\)/);
  assert.match(ui,/var items=folder\._cmdEntries,stop=Math\.min\(items\.length,folder\._cmdOffset\+75\)/);
  assert.match(ui,/selected\.dataset\.cmdLocale/);
- assert.match(ui,/allLanguagesButton\.textContent=allLanguages\?'🌍 Rechercher par pays/);
+ assert.match(ui,/allLanguagesButton\.textContent=allLanguages\?'🌍 Voir les pays \(A–Z\)'/);
  assert.match(ui,/label\.textContent=allLanguages/);
  assert.match(ui,/8 148 langues classées dans les dossiers A à Z/);
 });
