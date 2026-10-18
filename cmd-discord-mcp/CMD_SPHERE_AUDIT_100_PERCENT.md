@@ -39,6 +39,18 @@ Les compteurs historiques plus bas décrivent des états antérieurs et ne rempl
 
 La section ci-dessous conserve la photographie historique antérieure ; ne pas utiliser ses anciens compteurs comme chiffres actuels.
 
+## Lot de préinstallations GitHub — 18 octobre 2026 (état actuel du registre)
+
+- **23/59 fonctionnalités partiellement codées ; 36/59 encore préparatoires ; 0/59 validée sur Railway en production.**
+- AutoMod natif : règles de mots interdits par serveur avec activation volontaire, API propriétaire, intégration sur le chemin d’envoi des messages natifs, interface et tests. Pas encore une modération complète des pièces jointes, edits, transferts ou raids ; désactivé par défaut.
+- Export de données personnelles : export JSON partiel limité aux données du compte authentifié, sans mots de passe ou hash de connexion ; export ZIP exhaustif et tous les fichiers restent à réaliser.
+- Paramètres vocaux natifs : définition du débit demandé (32–128 kbit/s) et de la capacité prévue (0–99), avec configuration propriétaire/permission Gérer les salons, sans enforcement réel WebRTC.
+- Salon AFK : sélection du salon et délai d'inactivité enregistrés par propriétaire ; **aucun déplacement automatique ni activation des microphones** à ce stade.
+- Journal de modération natif : modifications des rôles et salons, historique paginé, contrôle d'administration, chaîne SHA256, sans garantie de résistance à un administrateur de la base ou archivage externe.
+- Fichiers : `cmd-native-automod.js`, `cmd-account-export.js`, `cmd-native-voice-config.js`, `cmd-native-afk-config.js`, `cmd-native-audit-log.js`, interfaces `cmd-server-manager.js` et `settings-ui.js` et tests associés.
+- Aucune migration réalisée sur la production Railway au cours de ce lot ; aucun paiement ni fournisseur payant activé. Vérifier une sauvegarde PostgreSQL restaurable avant tout déploiement de la branche de finition.
+- GitHub Actions : validation automatisée requise à chaque nouveau commit. Le pourcentage ci-dessus est celui du registre de 59 contrats, pas de la totalité de CMD Sphere.
+
 ## Mise à jour vérifiable — contrats Discord, 18 octobre 2026
 
 Les chiffres ci-dessous sont limités au **registre de 59 contrats**, pas à toute l'application.
