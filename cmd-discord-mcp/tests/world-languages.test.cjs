@@ -86,7 +86,8 @@ test('iPhone language search uses in-page buttons, never a native fullscreen sel
  assert.match(settings,/item\.setAttribute\('aria-pressed'/);
  assert.match(settings,/results\.addEventListener\('click'/);
  assert.match(settings,/applySettingsLanguage\(button\.dataset\.cmdLocale\)/);
- assert.match(settings,/var matches=\[\],seen=new Set\(\),max=30/);
+ assert.match(settings,/matchedLanguages=\[\],loadedLanguages=0,pageSize=75/);
+ assert.match(settings,/data-cmd-more/);
  assert.match(settings,/code\.startsWith\(query\)\|\|name\.startsWith\(query\)/);
  assert.match(settings,/picker\.hidden=current==='language'/);
  assert.match(settings,/favourites=\['fr','en','de','es','it','co','gsw-CH'/);
