@@ -109,8 +109,8 @@ test("Friend requests are rate-limited and repeated pending requests are idempot
  assert.match(server,/status:429/);
 });
 test("Blocks cannot be bypassed by group DMs, search or channel mention notifications",()=>{
- assert.match(server,/async function createGroupDm[\s\S]*?for\(const uid of ids\)await assertNotBlocked\(pool,me,uid\)/);
- assert.match(server,/async function sendGroupDmMessage[\s\S]*?for\(const peer of peers\.rows\)await assertNotBlocked/);
+ assert.match(server,/async function createGroupDm[\s\S]*?for\(const uid of ids\)\s*\{?\s*await assertNotBlocked\(pool,me,uid\)/);
+ assert.match(server,/async function sendGroupDmMessage[\s\S]*?for\(const peer of peers\.rows\)\s*\{?\s*await assertNotBlocked/);
  assert.match(server,/AND NOT EXISTS \(SELECT 1 FROM cmd_user_blocks b WHERE/);
  assert.match(server,/const permittedRecipients=\[\]/);
  assert.match(server,/if\(!\(await isBlockedPair\(pool,String\(auth.user.id\),String\(recipient.user_id\)\)\)\)permittedRecipients.push/);
