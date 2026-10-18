@@ -181,6 +181,11 @@ function html(res,body,status=200,headers={}){
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&(/<title>Messages · CMD Sphere<\/title>/.test(body)||/<title>CMD Sphere<\/title>/.test(body)||/<title>Appel · CMD Sphere<\/title>/.test(body))){
     body=body.replace(/<\/body>/i,'<script defer src="/notification-client.js"></script></body>');
   }
+  // A single language selector on every CMD Sphere page, including profile and messages.
+  // Append only to full HTML; leave API payloads and embedded user content untouched.
+  if(typeof body==="string"&&/<html\\b/i.test(body)&&/<\\/body>/i.test(body)&&/CMD Sphere/.test(body)&&!body.includes('src="/cmd-world-language-picker.js"')){
+    body=body.replace(/<\\/body>/i,'<script defer src="/cmd-world-language-picker.js?v=20261018-az"></script></body>');
+  }
   res.writeHead(status,{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","referrer-policy":"no-referrer",...headers});res.end(body);
 }
 function dashboardPage(auth,initialNativeGuilds=[]){
@@ -3984,6 +3989,11 @@ const httpServer=createServer(async(req,res)=>{
       const js=url.pathname.endsWith(".js");
       res.writeHead(200,{"content-type":js?"application/javascript; charset=utf-8":"text/css; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
       res.end(readFileSync(js?"./cmd-message-compose.js":"./cmd-message-compose.css","utf8"));return;
+    }
+    if(req.method==="GET"&&(url.pathname==="/cmd-world-languages.json"||url.pathname==="/cmd-world-language-picker.js")){
+      const json=url.pathname.endsWith(".json");
+      res.writeHead(200,{"content-type":json?"application/json; charset=utf-8":"application/javascript; charset=utf-8","cache-control":"public, max-age=300","x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL(json?"./cmd-world-languages.json":"./cmd-world-language-picker.js",import.meta.url),"utf8"));return;
     }
     if(req.method==="GET"&&url.pathname==="/cmd-invite-ui.js"){res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"public, max-age=300"});res.end(readFileSync("./cmd-invite-ui.js","utf8"));return}
     if(req.method==="GET"&&url.pathname.startsWith("/cmd-art/")){const bits=url.pathname.split("/");const img=bits.length===4&&bits[3].endsWith(".svg")?renderCmdPremiumSvg(bits[2],bits[3].slice(0,-4)):null;if(!img){res.writeHead(404).end("Artwork not found");return}res.writeHead(200,{"content-type":"image/svg+xml; charset=utf-8","cache-control":"public, max-age=86400","x-content-type-options":"nosniff"});res.end(img);return}
