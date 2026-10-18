@@ -74,7 +74,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   const fb=fallback(safe);
   try{localStorage.setItem("cmd-world-language",safe)}catch{}
   document.documentElement.lang=safe;
-  const ids=["language","mobile-language","lng","cmd-sphere-language","cmdLanguageChoice","cmdSettingsLanguagePicker"];
+  const ids=["language","mobile-language","lng","lang","aiLanguage","cmdLangPicker","cmd-sphere-language","cmdLanguageChoice","cmdSettingsLanguagePicker"];
   for(const id of ids){
    const select=document.getElementById(id);
    if(!select||select.tagName!=="SELECT")continue;
