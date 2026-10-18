@@ -1,7 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {handleCmdProfileScene}=awaitImport();
-function awaitImport(){return import('../cmd-profile-scene-api.js')}
+const sceneApi=import('../cmd-profile-scene-api.js');
 const endpoint=new URL('https://cmd-sphere.up.railway.app/api/profile/scene');
 const image='data:image/png;base64,'+Buffer.from('89504e470d0a1a0a00000000','hex').toString('base64');
 function harness(){
@@ -37,6 +36,7 @@ function harness(){
  const execute=async(method,uid,payload)=>{
   const {req,context}=request(method,uid,payload);
   const res={status:0,body:'',writeHead(status){this.status=status;return this},end(data){this.body=String(data??'');return this}};
+  const {handleCmdProfileScene}=await sceneApi;
   const matched=await handleCmdProfileScene(req,res,endpoint,context);
   assert.equal(matched,true);
   return {status:res.status,body:JSON.parse(res.body)};
