@@ -12,7 +12,7 @@ test('all 24 identified Discord parity gaps are preinstalled without activation'
  const counts=Object.fromEntries(['voice','messaging','community','developer','accounts'].map(k=>[k,m.cmdParityByCategory(k).length]));
  assert.deepEqual(counts,{voice:5,messaging:2,community:8,developer:6,accounts:3});
  const status=m.cmdParityStatus();
- assert.deepEqual(status,{total:24,preinstalled:24,contractsOnly:24,implemented:0,enabled:0,verified:0});
+ assert.deepEqual(status,{total:24,preinstalled:24,contractsOnly:23,implemented:1,enabled:0,verified:0});
 });
 test('unverified parity contracts cannot grant permissions or activate API endpoints',async()=>{
  const m=await manifest;
@@ -20,7 +20,7 @@ test('unverified parity contracts cannot grant permissions or activate API endpo
  for(const item of m.CMD_PARITY_MISSING_24){
   assert.equal(m.cmdParityReady(item.id,allPassed),false,item.id);
   assert.equal(item.enabled,false);
-  assert.equal(item.implemented,false);
+  assert.equal(item.implemented,item.id==="history_search_filters");
   assert.equal(item.verified,false);
   assert.ok(item.permission);
   assert.ok(item.endpoint);
