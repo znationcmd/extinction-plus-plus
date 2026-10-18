@@ -16,6 +16,10 @@ on:
       - 'cmd-discord-mcp/cmd-promo-studio.js'
       - 'cmd-discord-mcp/tests/studio-music-iphone.test.cjs'
       - 'cmd-discord-mcp/tests/server-icon-hosting.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-slowmode.js'
+      - 'cmd-discord-mcp/tests/native-slowmode.test.cjs'
+      - 'cmd-discord-mcp/cmd-server-manager.js'
+      - 'cmd-discord-mcp/server.js'
       - '.github/workflows/cmd-sphere-finition-validation.yml'
   workflow_dispatch:
 permissions:
@@ -63,3 +67,22 @@ jobs:
         run: npm ci
       - name: Run entire CMD Sphere automated test suite
         run: npm test
+
+  validate-slowmode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check application and slowmode JavaScript syntax
+        run: |
+          node --check server.js
+          node --check cmd-server-manager.js
+          node --check cmd-native-slowmode.js
+      - name: Test 59-contract channel slowmode implementation
+        run: node --test tests/native-slowmode.test.cjs
