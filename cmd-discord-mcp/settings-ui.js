@@ -177,17 +177,49 @@
 
     // Locale-specific settings labels. The account setting keys never change.
     var cmdSettingsLocales={"en":{"sections":"Account settings|Billing settings|App settings|CMD tools|Support|What's new|Account","rows":["Account|Content and social|Data and privacy|Devices|Authorized apps|Connections|Scan / invitations","Shop|Quests|CMD Premium|Server boosts|Rewards inventory|My diamonds","Voice and video|Appearance|Accessibility|Language|Notifications|App icon|Advanced","Sync linked servers|Reconnect external account|Server folders|Connected bots|Webhooks|Server backups","Help|Diagnostics","What's new in CMD Sphere","Log out"],"subs":"Profile, photo, banner|Messages and friends","title":"Settings","search":"Search","desc":"Manage this setting for your CMD Sphere account."},"es":{"sections":"Ajustes de la cuenta|Ajustes de facturación|Ajustes de la aplicación|Herramientas CMD|Ayuda|Novedades|Cuenta","rows":["Cuenta|Contenido y social|Datos y privacidad|Dispositivos|Aplicaciones autorizadas|Conexiones|Escanear / invitaciones","Tienda|Misiones|CMD Premium|Mejoras del servidor|Inventario de recompensas|Mis diamantes","Voz y vídeo|Apariencia|Accesibilidad|Idioma|Notificaciones|Icono de la aplicación|Avanzado","Sincronizar servidores vinculados|Reconectar cuenta externa|Carpetas de servidores|Bots conectados|Webhooks|Copias de seguridad","Ayuda|Diagnóstico","Novedades CMD Sphere","Cerrar sesión"],"subs":"Perfil, foto y banner|Mensajes y amigos","title":"Ajustes","search":"Buscar","desc":"Gestiona este ajuste en tu cuenta de CMD Sphere."},"de":{"sections":"Kontoeinstellungen|Abrechnung|App-Einstellungen|CMD-Werkzeuge|Hilfe|Neuigkeiten|Konto","rows":["Konto|Inhalte und Soziales|Daten und Datenschutz|Geräte|Autorisierte Apps|Verbindungen|Scannen / Einladungen","Shop|Quests|CMD Premium|Server-Boosts|Belohnungsinventar|Meine Diamanten","Sprache und Video|Darstellung|Barrierefreiheit|Sprache|Benachrichtigungen|App-Symbol|Erweitert","Verknüpfte Server synchronisieren|Externes Konto neu verbinden|Serverordner|Verbundene Bots|Webhooks|Server-Sicherung","Hilfe|Diagnose","CMD Sphere Neuigkeiten","Abmelden"],"subs":"Profil, Foto und Banner|Nachrichten und Freunde","title":"Einstellungen","search":"Suchen","desc":"Verwalte diese Einstellung in CMD Sphere."},"it":{"sections":"Impostazioni account|Fatturazione|Impostazioni app|Strumenti CMD|Assistenza|Novità|Account","rows":["Account|Contenuti e social|Dati e privacy|Dispositivi|App autorizzate|Connessioni|Scansione / inviti","Negozio|Missioni|CMD Premium|Boost server|Inventario ricompense|I miei diamanti","Voce e video|Aspetto|Accessibilità|Lingua|Notifiche|Icona app|Avanzate","Sincronizza i server collegati|Ricollega l’account esterno|Cartelle server|Bot collegati|Webhook|Backup server","Assistenza|Diagnostica","Novità CMD Sphere","Disconnetti"],"subs":"Profilo, foto e banner|Messaggi e amici","title":"Impostazioni","search":"Cerca","desc":"Gestisci questa impostazione nel tuo account CMD Sphere."},"ru":{"sections":"Настройки аккаунта|Платежи|Настройки приложения|Инструменты CMD|Поддержка|Новости|Аккаунт","rows":["Аккаунт|Контент и общение|Данные и приватность|Устройства|Разрешённые приложения|Подключения|Сканер / приглашения","Магазин|Задания|CMD Premium|Усиления сервера|Награды|Мои алмазы","Голос и видео|Внешний вид|Доступность|Язык|Уведомления|Значок приложения|Дополнительно","Синхронизировать связанные серверы|Повторно подключить внешний аккаунт|Папки серверов|Подключённые боты|Вебхуки|Резервные копии","Поддержка|Диагностика","Новости CMD Sphere","Выйти"],"subs":"Профиль, фото, баннер|Сообщения и друзья","title":"Настройки","search":"Поиск","desc":"Настройки вашего аккаунта CMD Sphere."},"ko":{"sections":"계정 설정|결제 설정|앱 설정|CMD 도구|지원|새로운 소식|계정","rows":["계정|콘텐츠 및 소셜|데이터와 개인정보|기기|승인된 앱|연결|스캔 / 초대","상점|퀘스트|CMD 프리미엄|서버 부스트|보상 보관함|내 다이아몬드","음성 및 영상|외관|접근성|언어|알림|앱 아이콘|고급","연결된 서버 동기화|외부 계정 다시 연결|서버 폴더|연결된 봇|웹훅|서버 백업","지원|진단","CMD Sphere 새로운 소식","로그아웃"],"subs":"프로필, 사진, 배너|메시지 및 친구","title":"설정","search":"검색","desc":"CMD Sphere 계정의 이 설정을 관리합니다."},"ja":{"sections":"アカウント設定|請求設定|アプリ設定|CMDツール|サポート|新着情報|アカウント","rows":["アカウント|コンテンツと交流|データとプライバシー|デバイス|認証済みアプリ|接続|スキャン / 招待","ショップ|クエスト|CMDプレミアム|サーバーブースト|報酬インベントリ|ダイヤモンド","音声・ビデオ|外観|アクセシビリティ|言語|通知|アプリアイコン|詳細設定","連携サーバーを同期|外部アカウントを再接続|サーバーフォルダー|連携ボット|ウェブフック|サーバーのバックアップ","サポート|診断","CMD Sphereの新機能","ログアウト"],"subs":"プロフィール、写真、バナー|メッセージとフレンド","title":"設定","search":"検索","desc":"CMD Sphereアカウントの設定を管理します。"},"zh":{"sections":"账户设置|账单设置|应用设置|CMD 工具|支持|新功能|账户","rows":["账户|内容与社交|数据与隐私|设备|已授权应用|连接|扫码 / 邀请","商店|任务|CMD 会员|服务器加成|奖励背包|我的钻石","语音与视频|外观|辅助功能|语言|通知|应用图标|高级","同步已连接的服务器|重新连接外部账号|服务器文件夹|已连接的机器人|Webhook|服务器备份","帮助|诊断","CMD Sphere 新功能","退出登录"],"subs":"个人资料、照片、横幅|消息和好友","title":"设置","search":"搜索","desc":"管理 CMD Sphere 账户中的此项设置。"},"co":{"sections":"Paràmetri di u contu|Fatturazione|Paràmetri di l'app|Arnesi CMD|Assistenza|Novità|Contu","rows":["Contu|Cuntenutu è suciale|Dati è riservatezza|Apparechji|Applicazioni auturizate|Cunnessioni|Scannà / inviti","Buttega|Missioni|CMD Premium|Boost di servore|Ricumpense|I mo diamanti","Voce è video|Aspettu|Accessibilità|Lingua|Nutificazioni|Icona di l'app|Avanzatu","Sincrunizà i servori ligati|Ricunnette u contu esternu|Cartulari di servori|Bot cunnessi|Webhooks|Salvaguardia di servori","Assistenza|Diagnostichi","Novità CMD Sphere","Scunnettassi"],"subs":"Prufilu, fotò è bandera|Missaghji è amichi","title":"Paràmetri","search":"Circà","desc":"Gestisci stu paràmetru di u contu CMD Sphere."}};
-    var cmdSettingsNativeNames={fr:'Français',en:'English',us:'English (US)',de:'Deutsch',es:'Español',it:'Italiano',ru:'Русский',ko:'한국어',ja:'日本語',zh:'中文',co:'Corsu'};
-    var settingsChosenLanguage='';
+    var cmdSettingsNativeNames={fr:'Français',en:'English',us:'English (US)',de:'Deutsch',es:'Español',it:'Italiano',ru:'Русский',ko:'한국어',ja:'日本語',zh:'中文',co:'Corsu',
+      'gsw-CH':'Schwiizertüütsch / Suisse allemand','de-CH':'Schweizer Hochdeutsch'};
+    var languageCatalogue=[],languageCataloguePromise=null,settingsChosenLanguage='';
+    function validLocaleCode(v){return /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,7}$/i.test(String(v||''))&&String(v).length<=64}
+    function nativeLanguageLabel(code){
+      if(cmdSettingsNativeNames[code])return cmdSettingsNativeNames[code];
+      var found=languageCatalogue.find(function(entry){return entry[0]===code});
+      return found?found[1]+' ('+code+')':code;
+    }
+    function ensureLanguageOption(select,code){
+      if(!select||!validLocaleCode(code))return;
+      if(!Array.from(select.options).some(function(option){return option.value===code})){
+        var option=document.createElement('option');option.value=code;option.textContent=nativeLanguageLabel(code);select.add(option);
+      }
+      select.value=code;
+    }
     function activeSettingsLanguage(){
       var selected=settingsChosenLanguage;
-      try{selected=selected||document.querySelector('#cmd-sphere-language')?.value||localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){}
-      return cmdSettingsNativeNames[selected]?selected:'fr';
+      try{selected=selected||localStorage.getItem('cmd-sphere-language')||document.querySelector('#cmd-sphere-language')?.value||'fr'}catch(e){}
+      return validLocaleCode(selected)?selected:'fr';
     }
-    function settingsLocale(){var selected=activeSettingsLanguage();return cmdSettingsLocales[selected==='us'?'en':selected]||null}
+    function settingsLocale(){
+      var selected=activeSettingsLanguage();
+      if(selected==='us')selected='en';
+      var base=selected.split('-')[0].toLowerCase();
+      if(base==='gsw')base='de';
+      return cmdSettingsLocales[selected]||cmdSettingsLocales[base]||cmdSettingsLocales.en||null;
+    }
+    function loadLanguageCatalogue(){
+      if(languageCataloguePromise)return languageCataloguePromise;
+      languageCataloguePromise=fetch('/cmd-language-catalog.json',{credentials:'same-origin'})
+        .then(function(response){if(!response.ok)throw Error('HTTP '+response.status);return response.json()})
+        .then(function(payload){
+          if(!payload||!Array.isArray(payload.languages)||payload.languages.length<7000)throw Error('Catalogue incomplet');
+          languageCatalogue=payload.languages.filter(function(entry){return Array.isArray(entry)&&validLocaleCode(entry[0])&&typeof entry[1]==='string'});
+          ensureLanguageOption(layer.querySelector('#cmdSettingsLanguagePicker'),activeSettingsLanguage());
+          return languageCatalogue;
+        }).catch(function(error){languageCataloguePromise=null;throw error});
+      return languageCataloguePromise;
+    }
     function localizeSettings(){
       var L=settingsLocale(),language=activeSettingsLanguage();
-      var picker=layer.querySelector('#cmdSettingsLanguagePicker');if(picker&&picker.value!==language)picker.value=language;
+      var picker=layer.querySelector('#cmdSettingsLanguagePicker');if(picker)ensureLanguageOption(picker,language);
       title.textContent=L?L.title:'Paramètres';
       search.placeholder=L?L.search:'Rechercher';
       var groupsEls=view.querySelectorAll('.cmd-settings-category');
@@ -205,7 +237,7 @@
           row.dataset.cmdFilter=(translated+' '+(h?h.textContent:'')+' '+orig[0]+' '+g.label).toLocaleLowerCase();
         });
       });
-      var currentLang=view.querySelector('#cmdCurrentLanguage');if(currentLang)currentLang.textContent=cmdSettingsNativeNames[language]||'Français';
+      var currentLang=view.querySelector('#cmdCurrentLanguage');if(currentLang)currentLang.textContent=nativeLanguageLabel(language);
       if(current!=='home'&&pages[current]){
         var d=pages[current],h=view.querySelector('.cmd-settings-detail h3'),p=view.querySelector('.cmd-settings-detail > p');
         var pageLabel=d[0];groups.forEach(function(g,i){g.rows.forEach(function(r,j){if(r[2]===current&&L)pageLabel=L.rows[i].split('|')[j]})});
@@ -221,22 +253,29 @@
     var lastAppliedLanguage='';
     function syncSettingsLanguage(chosen){
       var code=typeof chosen==='string'?chosen:'';
-      if(!code){try{code=document.querySelector('#cmd-sphere-language')?.value||localStorage.getItem('cmd-sphere-language')||'fr'}catch(e){code='fr'}}
-      if(!cmdSettingsNativeNames[code])code='fr';
+      if(!code){try{code=localStorage.getItem('cmd-sphere-language')||document.querySelector('#cmd-sphere-language')?.value||'fr'}catch(e){code='fr'}}
+      if(!validLocaleCode(code))code='fr';
       settingsChosenLanguage=code;
+      ensureLanguageOption(layer.querySelector('#cmdSettingsLanguagePicker'),code);
       if(code===lastAppliedLanguage&&view.querySelector('.cmd-settings-category')?.dataset.cmdLang===code)return;
       lastAppliedLanguage=code;
       localizeSettings();
       view.querySelectorAll('.cmd-settings-category').forEach(function(section){section.dataset.cmdLang=code});
     }
-    layer.querySelector('#cmdSettingsLanguagePicker').addEventListener('change',function(e){
-      var code=e.target.value;if(!cmdSettingsNativeNames[code])code='fr';
+    function applySettingsLanguage(code){
+      if(!validLocaleCode(code)){status('Code de langue invalide. Utilise le format BCP 47.');return}
       settingsChosenLanguage=code;lastAppliedLanguage='';
-      try{localStorage.setItem('cmd-sphere-language',code)}catch(err){}
+      try{localStorage.setItem('cmd-sphere-language',code)}catch(e){}
       var globalPicker=document.querySelector('#cmd-sphere-language');
-      if(globalPicker){globalPicker.value=code;globalPicker.dispatchEvent(new Event('change',{bubbles:true}))}
+      if(globalPicker){ensureLanguageOption(globalPicker,code);
+        globalPicker.dispatchEvent(new Event('input',{bubbles:true}));
+        globalPicker.dispatchEvent(new Event('change',{bubbles:true}))}
       syncSettingsLanguage(code);
       window.dispatchEvent(new CustomEvent('cmd-sphere-language-change',{detail:{language:code}}));
+      status('Langue enregistrée : '+nativeLanguageLabel(code)+'. Traductions de menus limitées aux langues disponibles.');
+    }
+    layer.querySelector('#cmdSettingsLanguagePicker').addEventListener('change',function(e){
+      applySettingsLanguage(e.target.value);
     });
     document.addEventListener('input',function(e){
       if(e.target&&e.target.id==='cmd-sphere-language')syncSettingsLanguage(e.target.value);
@@ -267,7 +306,7 @@
       voice:["Voix & Vidéo","Vérifie l'accès au microphone sur cet appareil. Les appels passent par la fonction d'appel CMD Sphere.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="mic">Tester le microphone</button><a class="cmd-set-cta secondary" href="/messages">Accéder aux appels et MP</a><p class="cmd-status" id="cmdSubStatus"></p>'],
       appearance:["Apparence","Personnalise l'affichage de CMD Sphere sur cet appareil.",'<label for="cmdThemeChoice">Thème</label><select id="cmdThemeChoice"><option value="dark">Sombre</option><option value="amoled">Noir AMOLED</option></select>'],
       accessibility:["Accessibilité","Réglages de confort visuel sur cet appareil.",'<label class="cmd-setting-toggle"><input id="cmdLessMotion" type="checkbox"> Réduire les animations</label><label class="cmd-setting-toggle"><input id="cmdBiggerType" type="checkbox"> Agrandir le texte</label>'],
-      language:["Langue","Choisis la langue de l'interface CMD Sphere.",'<label for="cmdLanguageChoice">Langue de l’application</label><select id="cmdLanguageChoice"><option value="fr">Français</option><option value="en">English</option><option value="us">English (USA)</option><option value="de">Deutsch</option><option value="es">Español</option><option value="it">Italiano</option><option value="ru">Русский</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option><option value="co">Corsu</option></select><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les messages visibles sont traduits dans ta langue lorsque le service gratuit est disponible. Le texte original reste accessible. La traduction utilise un service externe et peut être momentanément indisponible.</p><p id="cmdSubStatus" class="cmd-status"></p>'],
+      language:["Langue","Rechercher parmi les langues et dialectes du monde (codes ISO 639-3 / BCP 47).",'<label for="cmdLanguageSearch">Rechercher langue, patois, dialecte ou code</label><input id="cmdLanguageSearch" type="search" placeholder="Ex. suisse allemand, Bärndütsch, gsw-CH, corse" autocomplete="off" style="width:100%;min-height:43px;margin:10px 0"><label for="cmdLanguageChoice">Résultats (100 au maximum à la fois)</label><select id="cmdLanguageChoice" size="7" style="width:100%;min-height:175px"></select><label for="cmdLanguageCustomCode">Code BCP 47 régional personnel (facultatif)</label><input id="cmdLanguageCustomCode" type="text" maxlength="64" placeholder="Ex. gsw-CH-x-bern" style="width:100%;min-height:42px"><button type="button" data-cmd-subaction="custom-language" class="cmd-set-cta secondary">Utiliser ce code de langue</button><p class="cmd-small" id="cmdLanguageSupportNotice">Catalogue mondial en chargement. Les langues régionales et variantes sont enregistrées dans tes préférences. La traduction intégrale de tous les menus et les messages dans tous les dialectes dépend de traductions disponibles ; les menus peuvent utiliser une langue de secours.</p><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les fournisseurs gratuits de traduction ne couvrent pas toutes les langues et tous les patois. Le texte original reste visible.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
       notifications:["Notifications","Active les notifications de messages et d'appels sur cet appareil. L'autorisation système ne garantit pas à elle seule les alertes lorsque le navigateur est fermé.",'<p id="cmdNotifState" class="cmd-small"></p><button type="button" class="cmd-set-cta" data-cmd-subaction="notif">Autoriser les notifications</button><a class="cmd-set-cta secondary" href="/messages">Messages et appels</a><p id="cmdSubStatus" class="cmd-status"></p>'],
       appicon:["Icône de l'appli","Installe CMD Sphere depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil » sur iPhone ou « Installer l'application » sur les navigateurs compatibles.",'<a class="cmd-set-cta secondary" href="/dashboard">Revenir à CMD Sphere</a>'],
       advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes serveurs liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde des serveurs liés</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter mon compte externe</a>'],
@@ -288,7 +327,44 @@
         less.onchange=function(){localStorage.setItem('cmd-sphere-less-motion',less.checked?'1':'0');applyPreferences()};
         big.onchange=function(){localStorage.setItem('cmd-sphere-bigger-type',big.checked?'1':'0');applyPreferences()};
       }
-      if(key==='language'){var sel=view.querySelector('#cmdLanguageChoice');sel.value=activeSettingsLanguage();sel.onchange=function(){var code=sel.value;settingsChosenLanguage=code;lastAppliedLanguage='';try{localStorage.setItem('cmd-sphere-language',code)}catch(e){};var original=document.querySelector('#cmd-sphere-language');if(original){original.value=code;original.dispatchEvent(new Event('input',{bubbles:true}));original.dispatchEvent(new Event('change',{bubbles:true}))}syncSettingsLanguage(code);window.dispatchEvent(new CustomEvent('cmd-sphere-language-change',{detail:{language:code}}))};var aut=view.querySelector('#cmdAutoTranslate');if(aut){aut.checked=localStorage.getItem('cmd-sphere-auto-translate')!=='0';aut.onchange=function(){localStorage.setItem('cmd-sphere-auto-translate',aut.checked?'1':'0');window.dispatchEvent(new Event('cmd-sphere-auto-translate-change'))}}}
+      if(key==='language'){
+        var sel=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
+        function listMatches(term){
+          var query=String(term||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
+          var matched=[],chosen=activeSettingsLanguage();
+          for(var i=0;i<languageCatalogue.length&&matched.length<100;i++){
+            var entry=languageCatalogue[i];
+            var key=(entry[0]+' '+entry[1]).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
+            if(!query||key.includes(query))matched.push(entry);
+          }
+          if(!matched.some(function(entry){return entry[0]===chosen}))
+            matched.unshift([chosen,nativeLanguageLabel(chosen)]);
+          sel.replaceChildren();
+          matched.forEach(function(entry){
+            var option=document.createElement('option');option.value=entry[0];
+            option.textContent=entry[1]+' · '+entry[0];sel.add(option);
+          });
+          sel.value=chosen;
+          var notice=view.querySelector('#cmdLanguageSupportNotice');
+          if(notice)notice.textContent=languageCatalogue.length.toLocaleString('fr-FR')+
+            ' codes de langues et variantes référencés. Les traductions de l’interface non disponibles utilisent une langue de secours.';
+        }
+        ensureLanguageOption(sel,activeSettingsLanguage());
+        listMatches('');
+        searchInput.addEventListener('input',function(){listMatches(searchInput.value)});
+        sel.onchange=function(){if(sel.value)applySettingsLanguage(sel.value)};
+        loadLanguageCatalogue().then(function(){
+          if(current==='language'&&view.querySelector('#cmdLanguageChoice')===sel)listMatches(searchInput.value);
+        }).catch(function(error){
+          var notice=view.querySelector('#cmdLanguageSupportNotice');
+          if(notice)notice.textContent='Catalogue international indisponible : '+error.message+
+            '. Tu peux utiliser un code BCP 47 personnalisé.';
+        });
+        var aut=view.querySelector('#cmdAutoTranslate');
+        if(aut){aut.checked=localStorage.getItem('cmd-sphere-auto-translate')!=='0';
+          aut.onchange=function(){localStorage.setItem('cmd-sphere-auto-translate',aut.checked?'1':'0');
+            window.dispatchEvent(new Event('cmd-sphere-auto-translate-change'))}}
+      }
       if(key==='notifications'){var notif=view.querySelector('#cmdNotifState');notif.textContent=('Notification' in window)?('État : '+Notification.permission):'Notifications navigateur indisponibles sur cet appareil.'}
     }
     function status(s){var el=view.querySelector('#cmdSubStatus');if(el)el.textContent=String(s)}
@@ -326,6 +402,13 @@
     }
     async function subAction(which){
       if(['sync','folders','bots','webhooks','backup'].includes(which)){action(which);return}
+      if(which==='custom-language'){
+        var raw=String(view.querySelector('#cmdLanguageCustomCode')?.value||'').trim();
+        if(!validLocaleCode(raw)){status('Code BCP 47 invalide : exemple gsw-CH-x-bern.');return}
+        try{raw=Intl.getCanonicalLocales(raw)[0]||raw}catch(e){status('Code de langue invalide : '+e.message);return}
+        applySettingsLanguage(raw);
+        return;
+      }
       if(which==='diagnostics'){detail(which);return}
       if(which==='export-data'){
         const button=view.querySelector('[data-cmd-subaction="export-data"]');
