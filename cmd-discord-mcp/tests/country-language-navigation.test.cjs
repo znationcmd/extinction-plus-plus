@@ -52,8 +52,8 @@ test('country language choices refer only to available worldwide catalogue codes
 test('country-by-letter chooser uses accessible tappable buttons with back navigation and 8148-language escape hatch',()=>{
  const text=fs.readFileSync(path.join(base,'settings-ui.js'),'utf8');
  const server=fs.readFileSync(path.join(base,'server.js'),'utf8');
- assert.match(text,/id="cmdLanguageAlphabetLabel">Pays classés par lettre/);
- assert.match(text,/allLanguagesButton\.textContent=allLanguages\?'🌍 Voir les pays \(A–Z\)'/);
+ assert.match(text,/id="cmdLanguageAlphabetLabel">Toutes les langues par lettre/);
+ assert.match(text,/allLanguagesButton\.textContent=allLanguages\?'🌍 Rechercher par pays'/);
  assert.match(text,/id="cmdCountryBack"/);
  assert.match(text,/id="cmdShowAllLanguages"/);
  assert.match(text,/button\.dataset\.cmdCountry=country\.code/);
