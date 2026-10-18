@@ -62,6 +62,8 @@ on:
       - 'cmd-discord-mcp/tests/account-export.test.cjs'
       - 'cmd-discord-mcp/cmd-native-onboarding.js'
       - 'cmd-discord-mcp/tests/native-onboarding.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-rules-screening.js'
+      - 'cmd-discord-mcp/tests/native-rules-screening.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
       - 'cmd-discord-mcp/tests/native-automod.test.cjs'
@@ -454,3 +456,22 @@ jobs:
           node --check cmd-server-manager.js
       - name: Test private onboarding, owner authorization and no role escalation
         run: node --test tests/native-onboarding.test.cjs
+
+  validate-native-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check native rules enforcement syntax and server integration
+        run: |
+          node --check cmd-native-rules-screening.js
+          node --check server.js
+          node --check cmd-server-manager.js
+      - name: Test explicit member acceptance and privileged owner control
+        run: node --test tests/native-rules-screening.test.cjs
