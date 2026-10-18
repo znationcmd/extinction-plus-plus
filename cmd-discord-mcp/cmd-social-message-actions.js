@@ -227,6 +227,36 @@ compactCss.textContent+=`
 `;
 compactCss.textContent+="#channelMessages article.discord-message.cmd-message-cosmetic{border:0!important;border-image:none!important;overflow:visible!important}#channelMessages article.discord-message .msg-main.cmd-default-message-frame:not(.cmd-chat-framed){border:2px solid transparent!important;border-image-source:var(--cmd-message-frame-source)!important;border-image-slice:28% 20% 28% 20%!important;border-image-width:2px!important;border-image-repeat:stretch!important;padding:7px 9px;width:fit-content;max-width:100%;box-sizing:border-box}";document.head.append(compactCss);
 let compactMenu=null,compactTimer=null,compactOrigin=null,suppressMessageClickUntil=0;
+/* Opt-in, device-local TTS. Never send a private message to an external speech API.
+   Speech must be initiated by a direct user gesture; there is no autoplay. */
+const cmdTts={volume:1,language:'',lastStart:0};
+const speechEngine=()=>window.speechSynthesis&&typeof window.SpeechSynthesisUtterance==='function'
+  ?window.speechSynthesis:null;
+try{
+ const prefs=JSON.parse(window.localStorage?.getItem('cmd-sphere:tts:prefs')||'{}');
+ if([0,.25,.5,.75,1].includes(prefs.volume))cmdTts.volume=prefs.volume;
+ if(typeof prefs.language==='string'&&/^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/.test(prefs.language))cmdTts.language=prefs.language;
+}catch{}
+const saveTtsPrefs=()=>{try{window.localStorage?.setItem('cmd-sphere:tts:prefs',JSON.stringify({volume:cmdTts.volume,language:cmdTts.language}))}catch{}};
+function stopCmdSpeech(){try{speechEngine()?.cancel()}catch{}}
+function speakCmdMessage(text){
+ const engine=speechEngine();
+ if(!engine||cmdTts.volume===0)return false;
+ // A visible local message is the authority for reading it aloud.
+ const content=String(text||'').trim().slice(0,2000);
+ if(!content||Date.now()-cmdTts.lastStart<750)return false;
+ cmdTts.lastStart=Date.now();
+ const utterance=new window.SpeechSynthesisUtterance(content);
+ utterance.lang=cmdTts.language||document.documentElement.lang||navigator.language||'fr-FR';
+ utterance.volume=cmdTts.volume;utterance.rate=1;
+ try{engine.cancel();engine.speak(utterance);return true}catch{return false}
+}
+window.addEventListener('pagehide',stopCmdSpeech);
+window.cmdSphereTts={speak:speakCmdMessage,stop:stopCmdSpeech,
+ setVolume(value){const v=Number(value);if(![0,.25,.5,.75,1].includes(v))return false;cmdTts.volume=v;saveTtsPrefs();if(!v)stopCmdSpeech();return true},
+ setLanguage(value){const lang=String(value||'');if(lang&&!/^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/.test(lang))return false;cmdTts.language=lang;saveTtsPrefs();return true},
+ getSettings(){return {...cmdTts,supported:!!speechEngine()}}
+};
 const messageSelector='#channelMessages article.discord-message';
 const interactiveSelector='button,a,input,textarea,select,video,audio,[role=button],.cmd-person-target';
 function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
@@ -240,6 +270,11 @@ function openCompactMenu(article,x,y){
  if(translate)action('🌐 Traduire',()=>translate.click());
  if(original&&!original.hidden)action('Voir l’original',()=>original.click());
  const content=article.querySelector('.msg-text')?.innerText||article.querySelector('.msg-text')?.textContent||'';
+ if(content&&speechEngine()){
+   action('🔊 Lire à voix haute',()=>{if(!speakCmdMessage(content)){try{window.alert?.('Lecture vocale indisponible ou désactivée.') }catch{}}});
+   action('■ Arrêter la lecture',stopCmdSpeech);
+   action('🔈 Volume vocal : '+Math.round(cmdTts.volume*100)+' %',()=>{const choices=[1,.75,.5,.25,0];const current=choices.indexOf(cmdTts.volume);window.cmdSphereTts.setVolume(choices[(current+1)%choices.length])});
+ }
  if(content)action('Copier le texte',()=>navigator.clipboard?.writeText(content).catch(()=>{}));
  if(window.cmdSphereProductivity?.saveMessage)action('⭐ Ajouter aux favoris',()=>window.cmdSphereProductivity.saveMessage(article));
  const edit=article.querySelector('.cmd-message-edit');if(edit)action('✎ Modifier',()=>edit.click());
