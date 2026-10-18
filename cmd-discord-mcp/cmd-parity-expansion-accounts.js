@@ -15,9 +15,9 @@ export const features=Object.freeze([
       "export_scope"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "partial_bounded_self_json_export_pending_full_media_archive_and_production_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
