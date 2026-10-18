@@ -79,7 +79,11 @@ test("user choice is atomic, guild scoped and cannot remove pre-existing role gr
  assert.ok(sql.some(x=>x.includes("FOR UPDATE")));
  assert.ok(sql.some(x=>x.includes("INSERT INTO cmd_native_member_roles")&&x.includes("ON CONFLICT DO NOTHING")));
  assert.ok(!sql.some(x=>/DELETE FROM cmd_native_member_roles/.test(x)));
- for(const x of db.calls.filter(x=>x.args?.length))assert.equal(x.args[0],guildId);
+ for(const x of db.calls.filter(x=>x.args?.length)){
+  if(x.sql.startsWith("SELECT id::text AS id,name,permissions"))
+   assert.deepEqual(x.args,[roleId,guildId]);
+  else assert.equal(x.args[0],guildId);
+ }
 });
 test("disable, stale role, privilege elevation and repeated choice deny role grant",async()=>{
  const {chooseNativeOnboardingRole:pick}=await load;
