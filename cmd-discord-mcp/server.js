@@ -4,6 +4,7 @@ import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
 import {handleCommunityInsights} from "./cmd-community-insights.js";
 import {initCmdDiscovery,handleCmdDiscovery} from "./cmd-community-discovery.js";
 import {initCmdNativeAudit,appendCmdNativeAudit,nativeAuditTarget,handleCmdNativeAudit} from "./cmd-native-audit-log.js";
+import {handleCmdAccountExport} from "./cmd-account-export.js";
 import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {parityStatus,parityAuditRows,parityBreakdown} from "./cmd-parity-59.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
@@ -4729,6 +4730,7 @@ const httpServer=createServer(async(req,res)=>{
       sendJson(res,200,{catalogue:"CMD Sphere vs Discord",auditDate:"2026-10-16",status:parityStatus(),breakdown:parityBreakdown(),features:parityAuditRows(),note:"Préinstallé signifie uniquement contrat préparatoire; non activé, non vérifié."});return;
     }
     if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
+    if(await handleCmdAccountExport(req,res,url,{pool,auth:dashboardAuth(req),sendJson}))return;
     if(await handleCmdNativeAudit(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
     if(await handleCommunityInsights(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
     if(await handleCmdDiscovery(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
