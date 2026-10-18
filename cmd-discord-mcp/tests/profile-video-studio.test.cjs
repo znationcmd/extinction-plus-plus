@@ -19,16 +19,16 @@ test("Simplified phone video editor maps real actions to settings and storytelli
  assert.match(studio,/data-cmd-tool="effect"/);
  assert.match(studio,/data-cmd-tool="filter"/);
  assert.match(studio,/data-cmd-tool="camera"/);
- assert.match(studio,/id="cmdStudioStory"/);
- assert.match(studio,/id="cmdStudioNext"/);
+ assert.match(studio,/\["story","📱 Story"\]/);
+ assert.match(studio,/id="cmdStudioLocalSave"/);\n assert.match(studio,/post\.id="cmdStudioPostFeed"/);
  assert.match(studio,/function showTool\(/);
- assert.match(studio,/async function publishStory\(/);
+ assert.match(studio,/async function publishToFeed\(/);\n assert.match(studio,/post\.onclick=publishToFeed/);
  assert.match(studio,/\/api\/cmd-profile-videos/);
  assert.match(studio,/\.put\(draft,"profile:"\+studioScope\)/);
  assert.match(studio,/\.get\("profile:"\+studioScope\)/);
  assert.match(studio,/setPointerCapture/);
  assert.match(styles,/#cmdStudioToolRail/);
- assert.match(styles,/#cmdStudioBottomBar/);
+ assert.match(styles,/#cmdStudioActionDock/);
 });
 test("Profile video API is user-scoped and checks membership for server profiles",()=>{
  const api=read("cmd-promo-studio-api.js");
