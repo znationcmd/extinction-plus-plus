@@ -225,3 +225,12 @@ La capacité complète « tags et galerie avancés des forums » n'est **pas** d
 - Preuve de régression : [GitHub Actions 39112027209](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39112027209), **291 tests réussis, 0 échec** (9 groupes de validation verts).
 - État contractuel `forum_advanced_tags_gallery` : `implemented: true`, `enabled: false`, `verified: false`. L'intégration sur GitHub est testée mais ni la base PostgreSQL réelle ni le rendu sur iPhone/Android/PC ne sont certifiés en production. Aucune suppression ni activation de paiement.
 
+
+## Mise à jour — Forums et inventaire réel des 59 contrats (18 octobre 2026)
+
+- Registre calculé depuis les 16 fichiers de capacités actuels : **59 contrats uniques**, **14 marqués `implemented:true`**, **45 encore `implemented:false`**. Les 14 correspondent à du code préparé/testé, **0 activé et certifié en production**. Ces compteurs n'impliquent pas que 14 fonctions soient pleinement disponibles sur le site public.
+- **Forums (tags et galerie)** : vérification serveur des tags autorisés sur chaque publication, boutons de sélection et filtre, badges échappés, galerie par forum, aucun effacement des messages. `cmd-forum-tags.js`, `server.js`, `tests/native-forum-tags.test.cjs` ; `forum_advanced_tags_gallery` : `implemented:true`, `enabled:false`, `verified:false`.
+- **Archivage/verrouillage des fils de forum** : nouvelle table additive `cmd_native_forum_thread_state`, archivage automatique désactivé par défaut, API authentifiée `GET/PATCH /api/native/forum-thread`, paramètres accessibles dans le menu des messages natifs, restriction des réponses dans un fil archivé ou verrouillé, possibilité de réouverture autorisée, aucun message historique supprimé. `cmd-forum-thread-controls.js`, `server.js`, `cmd-social-message-actions.js`, `tests/native-forum-thread-controls.test.cjs` ; `threads_auto_archive_lock` : `implemented:true`, `enabled:false`, `verified:false`.
+- GitHub Actions [39112417210](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39112417210) : **302/302 tests réussis**, les 10 groupes de validation ont réussi. Les contrôles couvrent la logique, avec des doubles de bases pour les nouveaux modules ; ce n'est pas une preuve de fonctionnement avec plusieurs comptes et navigateurs réels.
+- Production inchangée : **aucun déploiement Railway ni migration exécutée** pour ce lot. La sauvegarde PostgreSQL vérifiée par restauration reste une condition de mise en production ; aucune activation payante ni destruction de données.
+
