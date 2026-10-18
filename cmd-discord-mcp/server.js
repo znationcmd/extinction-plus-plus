@@ -4153,7 +4153,7 @@ async function updateNativeServerIdentity(auth,input){
   const welcomeMessage=input.welcomeMessage===undefined?null:Boolean(input.welcomeMessage);
   const showBoostBar=input.showBoostBar===undefined?null:Boolean(input.showBoostBar);
   const r=await pool.query(
-    "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=COALESCE($4::boolean,is_public),icon=COALESCE($5,icon),default_notifications=COALESCE($6::text,default_notifications),welcome_message=COALESCE($7::boolean,welcome_message),show_boost_bar=COALESCE($8::boolean,show_boost_bar),updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,show_boost_bar,source_discord_id",
+    "UPDATE cmd_native_guilds SET name=$2,server_description=$3,is_public=COALESCE($4::boolean,is_public),discovery_opt_in=CASE WHEN $4::boolean=FALSE THEN FALSE ELSE discovery_opt_in END,icon=COALESCE($5,icon),default_notifications=COALESCE($6::text,default_notifications),welcome_message=COALESCE($7::boolean,welcome_message),show_boost_bar=COALESCE($8::boolean,show_boost_bar),updated_at=NOW() WHERE id=$1 RETURNING id,name,icon,server_description,is_public,default_notifications,welcome_message,show_boost_bar,source_discord_id",
     [guildId,name,description,isPublic,image,notifications,welcomeMessage,showBoostBar]
   );
   if(!r.rows[0])throw new Error("Serveur CMD Sphere introuvable.");
