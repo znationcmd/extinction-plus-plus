@@ -30,6 +30,9 @@ on:
       - 'cmd-discord-mcp/tests/native-templates-contract.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-servers.js'
       - 'cmd-discord-mcp/cmd-social-message-actions.js'
+      - 'cmd-discord-mcp/cmd-message-reminders.js'
+      - 'cmd-discord-mcp/cmd-message-reminders-ui.js'
+      - 'cmd-discord-mcp/tests/message-reminders-*.test.cjs'
       - 'cmd-discord-mcp/tests/message-tts.test.cjs'
       - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
@@ -136,3 +139,22 @@ jobs:
         run: npm ci
       - name: Verify real account privacy behavior and buttons
         run: node --test tests/social-privacy.test.cjs tests/social-privacy-ui.test.cjs tests/dm-guild-privacy.test.cjs
+
+  validate-reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test fixtures
+        run: npm ci
+      - name: Validate opt-in message reminders and cancellation
+        run: |
+          node --check cmd-message-reminders.js
+          node --check cmd-message-reminders-ui.js
+          node --test tests/message-reminders-ui.test.cjs
