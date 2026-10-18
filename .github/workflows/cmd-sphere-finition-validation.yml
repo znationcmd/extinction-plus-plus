@@ -41,6 +41,8 @@ on:
       - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/server.js'
+      - 'cmd-discord-mcp/call-ui.js'
+      - 'cmd-discord-mcp/tests/voice-peer-volume.test.cjs'
       - '.github/workflows/cmd-sphere-finition-validation.yml'
   workflow_dispatch:
 permissions:
@@ -162,3 +164,21 @@ jobs:
           node --check cmd-message-reminders.js
           node --check cmd-message-reminders-ui.js
           node --test tests/message-reminders-ui.test.cjs
+
+  validate-voice-volume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse voice and participant controls
+        run: |
+          node --check call-ui.js
+          node --check tests/voice-peer-volume.test.cjs
+      - name: Test real per-member volume and unsupported mobile behavior
+        run: node --test tests/voice-peer-volume.test.cjs
