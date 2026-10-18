@@ -57,3 +57,34 @@ test("API and live forum editor are wired to real permissions and no Discord wri
  assert.match(manager,/isNative\(\)&&ch.type==='forum'/);
  assert.doesNotMatch(manager.slice(manager.indexOf("function editChannel(chId)"),manager.indexOf("function editRole(roleId)")),/discord\.com\/api/);
 });
+
+test("Forum publications accept only active tags from the same forum, without changing originals",async()=>{
+ const {validateForumPostTags}=await m;
+ const x=make();
+ await (await m).setCmdForumSettings(x.pool,credentials,{
+  guildId:G,channelId:C,tags:[{name:"Questions",color:"#8833aa"},{name:"Résolu",color:"#ffffff"}],gallery:true
+ },x.lookup,x.permission);
+ assert.deepEqual(await validateForumPostTags(x.pool,{id:C,type:"forum"},G,["Questions"]),["Questions"]);
+ assert.deepEqual(await validateForumPostTags(x.pool,{id:C,type:"forum"},G,[]),[]);
+ for(const bad of [["inconnu"],["Questions","Questions"],["Questions","inconnu"],Array(6).fill("Questions"),"Questions"])
+  await assert.rejects(validateForumPostTags(x.pool,{id:C,type:"forum"},G,bad));
+ await assert.rejects(validateForumPostTags(x.pool,{id:C,type:"text"},G,["Questions"]),/réservés/);
+ assert.deepEqual(await validateForumPostTags(x.pool,{id:C,type:"text"},G,[]),[]);
+});
+test("Forum post validator reads current forum-specific tag definitions and never writes old messages",async()=>{
+ const {validateForumPostTags}=await m,queried=[];
+ const pool={query:async(sql,args)=>{queried.push({sql,args});return {rows:[{tags:[{name:"Tutoriels",color:"#9863d5"}]}]}}};
+ assert.deepEqual(await validateForumPostTags(pool,{id:C,type:"forum"},G,["tutoriels"]),["Tutoriels"]);
+ assert.equal(queried[0].args[0],G);assert.equal(queried[0].args[1],C);
+ assert.match(queried[0].sql,/SELECT tags FROM cmd_native_forum_settings/);
+ assert.ok(queried.every(q=>!/UPDATE cmd_native_channel_messages|DELETE FROM/i.test(q.sql)));
+});
+test("Native forum composer presents tag selection and rendered badges only for its active forum",()=>{
+ assert.match(server,/CHAT\.forumGallery=false;CHAT\.forumTags=\[\]/);
+ assert.ok(server.includes("function loadForumPostTags(guildId,channelId)"));
+ assert.ok(server.includes("select.id='cmdForumPostTag'"));
+ assert.ok(server.includes("metadata.forumTags=[qs('#cmdForumPostTag').value]"));
+ assert.ok(server.includes("validateForumPostTags(pool,ch,guildId,input.metadata?.forumTags)"));
+ assert.ok(server.includes("box.classList.toggle('cmd-forum-gallery'"));
+ assert.ok(server.includes("m.metadata?.forumTags"));
+});
