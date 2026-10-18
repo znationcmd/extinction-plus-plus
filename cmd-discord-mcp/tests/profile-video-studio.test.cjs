@@ -20,9 +20,11 @@ test("Simplified phone video editor maps real actions to settings and storytelli
  assert.match(studio,/data-cmd-tool="filter"/);
  assert.match(studio,/data-cmd-tool="camera"/);
  assert.match(studio,/\["story","📱 Story"\]/);
- assert.match(studio,/id="cmdStudioLocalSave"/);\n assert.match(studio,/post\.id="cmdStudioPostFeed"/);
+ assert.match(studio,/id="cmdStudioLocalSave"/);
+ assert.match(studio,/post\.id="cmdStudioPostFeed"/);
  assert.match(studio,/function showTool\(/);
- assert.match(studio,/async function publishToFeed\(/);\n assert.match(studio,/post\.onclick=publishToFeed/);
+ assert.match(studio,/async function publishToFeed\(/);
+ assert.match(studio,/post\.onclick=publishToFeed/);
  assert.match(studio,/\/api\/cmd-profile-videos/);
  assert.match(studio,/\.put\(draft,"profile:"\+studioScope\)/);
  assert.match(studio,/\.get\("profile:"\+studioScope\)/);
