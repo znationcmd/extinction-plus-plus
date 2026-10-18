@@ -4774,6 +4774,12 @@ const httpServer=createServer(async(req,res)=>{
         "x-content-type-options":"nosniff"});
       res.end(readFileSync(new URL("./cmd-language-auto.js",import.meta.url),"utf8"));return;
     }
+    if(url.pathname==="/cmd-country-language-catalog.json"){
+      if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
+      res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=3600",
+        "x-content-type-options":"nosniff"});
+      res.end(readFileSync(new URL("./cmd-country-language-catalog.json",import.meta.url),"utf8"));return;
+    }
     if(url.pathname==="/cmd-language-catalog.json"){
       if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
       res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=86400",
