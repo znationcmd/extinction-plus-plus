@@ -63,6 +63,9 @@ on:
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
       - 'cmd-discord-mcp/tests/native-automod.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-voice-config.js'
+      - 'cmd-discord-mcp/tests/native-voice-config.test.cjs'
+      - 'cmd-discord-mcp/cmd-parity-expansion-voice.js'
       - 'cmd-discord-mcp/cmd-parity-community.js'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
@@ -390,3 +393,22 @@ jobs:
           node --check server.js
       - name: Test authenticated bounded download and sensitive-data redaction
         run: node --test tests/account-export.test.cjs tests/cmd-parity-59.test.cjs
+
+  validate-native-voice-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check voice channel configuration JavaScript
+        run: |
+          node --check cmd-native-voice-config.js
+          node --check cmd-server-manager.js
+          node --check server.js
+      - name: Verify owner-managed voice channel limits without claiming WebRTC enforcement
+        run: node --test tests/native-voice-config.test.cjs tests/cmd-parity-59.test.cjs
