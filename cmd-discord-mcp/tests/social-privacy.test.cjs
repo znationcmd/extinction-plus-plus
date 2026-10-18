@@ -92,7 +92,7 @@ test("Server enforces blocking before friend requests and DM starts and sends",(
  assert.match(server,/cmd-social-privacy-ui\.js/);
 });
 test("Visible privacy controls are wired to real APIs and do not disclose secret values",()=>{
- assert.match(ui,/id="cmdPrivacyPanel"/);
+ assert.match(ui,/section\.id="cmdPrivacyPanel"/);
  assert.match(ui,/api\("\/api\/account\/blocked"/);
  assert.match(ui,/api\("\/api\/account\/privacy\/friend-requests"/);
  assert.match(ui,/json\("PATCH",\{allowEveryone:allInput.checked,allowSharedServers:sharedInput.checked\}\)/);
