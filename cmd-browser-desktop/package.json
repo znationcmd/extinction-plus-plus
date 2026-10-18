@@ -19,7 +19,9 @@
     "files": [
       "main.cjs",
       "preload.cjs",
-      "renderer.html"
+      "renderer.html",
+      "cmd-world-languages.js",
+      "cmd-world-language-picker.js"
     ],
     "directories": {
       "output": "dist"
