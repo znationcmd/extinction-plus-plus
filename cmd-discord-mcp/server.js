@@ -3148,6 +3148,20 @@ async function createNativeGuild(auth,input){
   };
   const preset=Object.hasOwn(nativeTemplates,template)?nativeTemplates[template]:null;
   if(preset){
+    // Template-created roles have freshly generated IDs; no user receives an
+    // elevated permission automatically and no external role or token is copied.
+    const safeTemplateRoles={
+      gaming:[["Modérateur",{"manageMessages":true}],["Organisateur",{"manageEvents":true}]],
+      school:[["Enseignant",{"manageMessages":true}],["Élève",{"sendMessages":true}]],
+      study:[["Animateur",{"manageMessages":true}]],
+      friends:[],
+      art:[["Créateur",{"sendMessages":true}]],
+      community:[["Modérateur",{"manageMessages":true}],["Annonceur",{"sendMessages":true}]]
+    };
+    for(const [roleName,perms] of safeTemplateRoles[template]||[]){
+      await pool.query("INSERT INTO cmd_native_roles(id,guild_id,name,color,permissions,position,hoist,mentionable) VALUES($1,$2,$3,$4,$5::jsonb,$6,FALSE,FALSE)",
+        [crypto.randomUUID(),id,roleName,"#a77fda",JSON.stringify(perms),1]);
+    }
     const newCategory=crypto.randomUUID();
     await pool.query("INSERT INTO cmd_native_channels(id,guild_id,name,type,position) VALUES($1,$2,$3,'category',3)",[newCategory,id,preset.category]);
     for(let index=0;index<preset.rooms.length;index++){
@@ -5180,6 +5194,24 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion au service externe requise"});return}
       try{const body=await readFormBodyJson(req);sendJson(res,201,{guild:await createNativeGuild(auth,body)})}catch(e){sendJson(res,400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/native/templates"&&(req.method==="GET"||req.method==="POST")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion CMD Sphere requise"});return}
+      const templates=[
+        {id:"gaming",label:"Gaming"},{id:"school",label:"Club scolaire"},
+        {id:"study",label:"Groupe d'étude"},{id:"friends",label:"Entre amis"},
+        {id:"art",label:"Créations"},{id:"community",label:"Communauté"}
+      ];
+      if(req.method==="GET"){sendJson(res,200,{templates});return}
+      try{
+        const input=await readFormBodyJson(req);
+        const requested=String(input.template||"");
+        if(!templates.some(t=>t.id===requested))throw Object.assign(new Error("Modèle de serveur inconnu."),{status:400});
+        const guild=await createNativeGuild(auth,{name:input.name,template:requested,isPublic:input.isPublic===true});
+        sendJson(res,201,{ok:true,guild,template:requested});
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}
+      return;
+    }
+
     if(req.method==="GET"&&url.pathname==="/api/native/discover"){
       try{sendJson(res,200,{guilds:await discoverNativeGuilds()})}catch(e){sendJson(res,500,{error:e.message})}return;
     }
