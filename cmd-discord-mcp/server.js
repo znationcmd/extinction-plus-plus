@@ -19,6 +19,7 @@ import {handleCmdGifSearch} from "./cmd-gif-public.js";
 import {initCmdPromos,handleCmdPromos} from "./cmd-promo-studio-api.js";
 import {initCmdNativeInvites,activeInviteForGuild,previewNativeInvite,joinNativeInvite,handleCmdNativeInvites} from "./cmd-native-invites.js";
 import {initCmdSlowmode,parseSlowmodeSeconds,saveNativeMessageWithSlowmode} from "./cmd-native-slowmode.js";
+import {initCmdSocialPrivacy,isBlockedPair,assertNotBlocked,assertFriendRequestPermitted,listAccountBlocks,setAccountBlock,getFriendRequestPrivacy,updateFriendRequestPrivacy} from "./cmd-social-privacy.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -2594,6 +2595,7 @@ async function sendFriendRequest(auth,input){
   }
   if(!target)throw new Error("Utilisateur CMD Sphere introuvable.");
   const other=String(target.id);if(other===me)throw new Error("Tu ne peux pas t’ajouter toi-même.");
+  await assertFriendRequestPermitted(pool,me,other);
   if(await areFriends(me,other))return {ok:true,alreadyFriends:true,user:target};
   const reverse=await pool.query("SELECT id FROM cmd_friend_requests WHERE requester_user_id=$1 AND target_user_id=$2 AND status='pending' LIMIT 1",[other,me]);
   if(reverse.rows[0]){
@@ -2613,6 +2615,7 @@ async function respondFriendRequest(auth,input){
   const r=await pool.query("SELECT * FROM cmd_friend_requests WHERE id=$1 AND target_user_id=$2 AND status='pending' LIMIT 1",[id,me]);
   const req=r.rows[0];if(!req)throw new Error("Demande d’ami introuvable.");
   if(action==="accept"){
+    await assertNotBlocked(pool,me,String(req.requester_user_id));
     const [low,high]=friendPair(me,req.requester_user_id);
     await pool.query('INSERT INTO cmd_friendships(user_low,user_high) VALUES($1,$2) ON CONFLICT DO NOTHING',[low,high]);
     await pool.query("UPDATE cmd_friend_requests SET status='accepted',updated_at=NOW() WHERE id=$1",[id]);
@@ -2684,6 +2687,7 @@ async function startDmThread(auth,input){
   const r=await pool.query("SELECT id,username,display_name FROM cmd_accounts WHERE username_key=$1 LIMIT 1",[key]);
   const target=r.rows[0];if(!target)throw new Error("Utilisateur introuvable.");
   const me=String(auth.user.id),other=String(target.id);if(me===other)throw new Error("Impossible de t’écrire à toi-même.");
+  await assertNotBlocked(pool,me,other);
   const p=await pool.query("SELECT allow_dms FROM cmd_user_preferences WHERE user_id=$1",[other]);
   if(p.rows[0]?.allow_dms===false)throw new Error("Cette personne n’accepte pas les messages privés.");
   const [low,high]=[me,other].sort(),id=crypto.randomUUID();
@@ -2713,6 +2717,7 @@ async function getDmMessages(auth,id){
 
 async function sendDmMessage(auth,input){
   const t=await findDmThread(auth,input.threadId),me=String(auth.user.id),other=t.user_low===me?t.user_high:t.user_low;
+  await assertNotBlocked(pool,me,other);
   const p=await pool.query("SELECT allow_dms FROM cmd_user_preferences WHERE user_id=$1",[other]);
   if(p.rows[0]?.allow_dms===false)throw new Error("Cette personne n’accepte pas les messages privés.");
   const body=String(input.body??"").trim();if(!body)throw new Error("Message vide.");
@@ -4971,6 +4976,21 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId")})})}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/account/blocked"&&(req.method==="GET"||req.method==="POST")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        if(req.method==="GET"){sendJson(res,200,{users:await listAccountBlocks(pool,String(auth.user.id))});return}
+        const input=await readFormBodyJson(req);
+        sendJson(res,200,await setAccountBlock(pool,String(auth.user.id),input.targetUserId,input.action));
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}return;
+    }
+    if(url.pathname==="/api/account/privacy/friend-requests"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        if(req.method==="GET"){sendJson(res,200,await getFriendRequestPrivacy(pool,String(auth.user.id)));return}
+        sendJson(res,200,await updateFriendRequestPrivacy(pool,String(auth.user.id),await readFormBodyJson(req)));
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}return;
+    }
     if(req.method==="GET"&&url.pathname==="/api/friends"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{sendJson(res,200,await listFriends(auth))}catch(e){sendJson(res,400,{error:e.message})}return;
@@ -5865,7 +5885,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
       const user=String(process.env.CMD_FOUNDER_USERNAME||'cmd').trim().toLowerCase();
       const password=String(process.env.CMD_FOUNDER_PASSWORD||'');
