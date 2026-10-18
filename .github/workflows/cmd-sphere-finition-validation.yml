@@ -43,6 +43,8 @@ on:
       - 'cmd-discord-mcp/tests/message-tts.test.cjs'
       - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
+      - 'cmd-discord-mcp/cmd-forum-tags.js'
+      - 'cmd-discord-mcp/tests/native-forum-tags.test.cjs'
       - 'cmd-discord-mcp/server.js'
       - 'cmd-discord-mcp/call-ui.js'
       - 'cmd-discord-mcp/tests/voice-peer-volume.test.cjs'
