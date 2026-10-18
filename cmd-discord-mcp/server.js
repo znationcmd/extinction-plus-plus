@@ -4,6 +4,7 @@ import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
 import {handleCommunityInsights} from "./cmd-community-insights.js";
 import {initCmdDiscovery,handleCmdDiscovery} from "./cmd-community-discovery.js";
 import {initCmdNativeAudit,appendCmdNativeAudit,nativeAuditTarget,handleCmdNativeAudit} from "./cmd-native-audit-log.js";
+import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {parityStatus,parityAuditRows,parityBreakdown} from "./cmd-parity-59.js";
 import { CMD_REALISTIC_ART, CMD_REALISTIC_IDS, realisticArtworkPath, realisticShopItem, CMD_REALISTIC_SHOP_CSS, CMD_REALISTIC_BADGE_CSS } from "./cmd-realistic-art.js";
 import {cmdUniverseEditorPage} from "./cmd-universe-editor.js";
@@ -1263,6 +1264,7 @@ async function initNativeDb(){
   await pool.query("ALTER TABLE cmd_native_guilds ADD COLUMN IF NOT EXISTS welcome_message BOOLEAN NOT NULL DEFAULT TRUE");
   await initCmdDiscovery(pool);
   await initCmdNativeAudit(pool);
+  await initCmdNativeAutoMod(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_members(
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL,
@@ -3750,6 +3752,7 @@ async function sendNativeChannelMessage(auth,input){
   if(forumTags.length)metadata.forumTags=forumTags;
   assertNativeMediaPost(ch,attachments);
   if(!body&&!attachments.length&&!metadata.poll)throw new Error("Message vide.");
+  await guardCmdNativeAutoMod(pool,guildId,body,auth,{nativeMembership});
   let replyTo=null;
   if(input.replyTo&&/^[0-9a-f-]{36}$/i.test(String(input.replyTo))){
     const r=await pool.query('SELECT id FROM cmd_native_channel_messages WHERE id=$1 AND channel_id=$2 LIMIT 1',[String(input.replyTo),ch.id]);
@@ -4725,6 +4728,7 @@ const httpServer=createServer(async(req,res)=>{
       if(!session){sendJson(res,401,{error:"Connexion requise"});return}
       sendJson(res,200,{catalogue:"CMD Sphere vs Discord",auditDate:"2026-10-16",status:parityStatus(),breakdown:parityBreakdown(),features:parityAuditRows(),note:"Préinstallé signifie uniquement contrat préparatoire; non activé, non vérifié."});return;
     }
+    if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeAudit(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
     if(await handleCommunityInsights(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
     if(await handleCmdDiscovery(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
