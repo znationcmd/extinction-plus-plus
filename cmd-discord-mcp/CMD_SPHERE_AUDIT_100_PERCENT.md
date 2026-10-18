@@ -195,3 +195,11 @@ Le rappel de messages est désormais **développé dans la branche** mais **non 
 - Fichiers : `cmd-sensitive-media.js`, `cmd-sensitive-media-ui.js`, `server.js`, `cmd-social-message-actions.js`, `tests/sensitive-media.test.cjs`.
 - CI : [GitHub Actions #39108417269](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39108417269) : **265 tests réussis, zéro échec**, incluant les 4 tests du masquage opt-in.
 - Production Railway : non déployé, sauvegarde/restauration non encore vérifiée. Aucun paiement ou service externe créé.
+
+## Lot de développement — tags et affichage galerie des forums
+
+| ID | Domaine | Fonction | État initial | Travail effectué | Fichiers | API / SQL | Test | Production | État final | Preuve |
+|---|---|---|---|---|---|---|---|---|---|---|
+| PARITY-FORUM-TAGS | Forums | Tags et option de galerie par forum CMD natif | 🟠 Contrat préparatoire | Table additive et API GET/PATCH vérifiant le membre / permission `manageChannels`; écran d'édition des tags et choix du mode galerie dans les paramètres des salons | `cmd-forum-tags.js`, `server.js`, `cmd-server-manager.js`, `tests/native-forum-tags.test.cjs` | `cmd_native_forum_settings`, `/api/forums/tags` ; aucune table historique effacée | 5 scénarios ajoutés et suite globale GitHub Actions **270/270 réussie** | Non déployé, PostgreSQL réel et rendu de galerie des publications à vérifier | 🟡 | Commits `778033c`, `1a90283`, `6bd18e0`, `6bce030` ; [CI 39109946907](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39109946907) |
+
+La capacité complète « tags et galerie avancés des forums » n'est **pas** déclarée vérifiée : l'attribution des tags aux publications, le rendu effectif en galerie et les scénarios multi-comptes sur PostgreSQL réel restent à développer ou à valider. Les registres restent honnêtement à `implemented: false`, `enabled: false`, `verified: false` pour ce contrat jusqu'à une preuve plus complète. Ne pas activer de déploiement avec migration sans sauvegarde/restauration vérifiée.
