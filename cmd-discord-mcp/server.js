@@ -24,6 +24,7 @@ import {initCmdDmGuildPrivacy,listDmGuildPrivacy,updateDmGuildPrivacy,assertDmGu
 import {initCmdStreamerMode,readCmdStreamerMode,writeCmdStreamerMode} from "./cmd-streamer-mode.js";
 import {initCmdSensitiveMedia,getCmdSensitiveMedia,saveCmdSensitiveMedia} from "./cmd-sensitive-media.js";
 import {initCmdMessageReminders,createCmdMessageReminder,listCmdMessageReminders,cancelCmdMessageReminder,dispatchDueCmdMessageReminders} from "./cmd-message-reminders.js";
+import {initCmdForumTags,getCmdForumSettings,setCmdForumSettings} from "./cmd-forum-tags.js";
 import {initCmdProfileScene,handleCmdProfileScene} from "./cmd-profile-scene-api.js";
 import {initCmdProfile3D,handleCmdProfile3D} from "./cmd-profile-3d-api.js";
 import {initCmdProfilePremium,handleCmdProfilePremium} from "./cmd-profile-premium-api.js";
@@ -5455,6 +5456,20 @@ const httpServer=createServer(async(req,res)=>{
       try{sendJson(res,200,await deleteOwnOrOwnerNativeMessage(auth,await readFormBodyJson(req)))}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
+    if(url.pathname==="/api/forums/tags"&&(req.method==="GET"||req.method==="PATCH")){
+      const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
+      try{
+        const lookup=async(guildId,channelId)=>{
+          const found=await pool.query("SELECT id,type,guild_id FROM cmd_native_channels WHERE guild_id=$1 AND (id::text=$2 OR source_channel_id=$2) LIMIT 1",[guildId,channelId]);
+          return found.rows[0]||null;
+        };
+        if(req.method==="GET"){
+          const gid=String(url.searchParams.get("guildId")||""),cid=String(url.searchParams.get("channelId")||"");
+          sendJson(res,200,await getCmdForumSettings(pool,auth,gid,cid,lookup,requireNativeMember));return;
+        }
+        sendJson(res,200,await setCmdForumSettings(pool,auth,await readFormBodyJson(req),lookup,requireNativePermission));
+      }catch(error){sendJson(res,error.status||400,{error:error.message})}return;
+    }
     if(url.pathname==="/api/messages/reminders"&&["GET","POST","DELETE"].includes(req.method)){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
       try{
@@ -6029,7 +6044,7 @@ const httpServer=createServer(async(req,res)=>{
 });
 
 httpServer.listen(port,"0.0.0.0",async()=>{
-  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);
+  try{await initNativeDb();await initCmdSlowmode(pool);await initCmdSocialPrivacy(pool);await initCmdDmGuildPrivacy(pool);await initCmdStreamerMode(pool);await initCmdSensitiveMedia(pool);await initCmdMessageReminders(pool);await initCmdForumTags(pool);
     const cmdReminderTimer=setInterval(()=>dispatchDueCmdMessageReminders(pool,notifyUsers).catch(e=>console.warn("[cmd-reminders]",e.message)),60000);
     cmdReminderTimer.unref?.();await initCmdNativeInvites(pool);await initCmdEmojiLibrary(pool);await initCmdPromos(pool);await initCmdProfileScene(pool);await initCmdProfile3D(pool);await initCmdProfilePremium(pool);await initCmdBubbleColors(pool);await initCmdStarsDb(pool);await initDeveloperDb(pool);await initCmdOAuthDb(pool);await initCmdHostingBridge(pool);await initCmdEmailDb(pool);
     try{
