@@ -23,6 +23,7 @@
   .cmd-privacy-panel h3{margin:8px 0;font-size:16px}
   .cmd-privacy-panel label{display:flex;align-items:center;gap:12px;min-height:42px;margin:7px 0}
   .cmd-privacy-panel input[type=checkbox]{width:20px;height:20px;accent-color:#bc8cff}
+  .cmd-privacy-panel select{background:#1c1924;border:1px solid #a886cb;color:#fff;border-radius:9px;min-height:42px;padding:8px;max-width:100%}
   .cmd-privacy-panel input[type=text]{background:#1c1924;border:1px solid #a886cb;color:#fff;border-radius:9px;min-height:42px;padding:9px;width:100%}
   .cmd-privacy-panel button,.cmd-privacy-block-action{border:1px solid #a886cb;background:#31203d;border-radius:10px;padding:8px 11px;color:#fff;min-height:38px;cursor:pointer}
   .cmd-privacy-block-action{font-size:12px;margin-left:8px}
@@ -43,18 +44,44 @@
   const save=add("button","","Enregistrer la confidentialité",section);save.type="button";
   add("h3","","Utilisateurs bloqués",section);
   const list=add("div","",undefined,section);list.id="cmdPrivacyBlockedList";
+  add("h3","","Messages privés par serveur",section);
+  const guildList=add("div","",undefined,section);guildList.id="cmdDmGuildPrivacyList";
+  add("p","","Chaque réglage concerne uniquement les MP provenant des membres de ce serveur.",section);
   const lookup=add("label","",undefined,section);lookup.textContent="Bloquer par identifiant CMD Sphere";
   const name=add("input","",undefined,lookup);name.type="text";name.placeholder="Identifiant du compte";name.autocomplete="off";
   const block=add("button","","Bloquer cet utilisateur",section);block.type="button";
   const notice=add("p","",undefined,section);notice.setAttribute("role","status");notice.setAttribute("aria-live","polite");
   const tell=(msg,error=false)=>{notice.textContent=msg;notice.classList.toggle("cmd-privacy-error",error)};
   async function refresh(){
-   const [privacy,blocked,friends]=await Promise.all([
+   const [privacy,blocked,friends,guildPrivacy]=await Promise.all([
     api("/api/account/privacy/friend-requests"),
-    api("/api/account/blocked"),api("/api/friends")]);
+    api("/api/account/blocked"),api("/api/friends"),
+    api("/api/account/privacy/dm-guilds")]);
    allInput.checked=privacy.allowEveryone!==false;
    sharedInput.checked=privacy.allowSharedServers!==false;
    list.replaceChildren();
+   guildList.replaceChildren();
+   const guilds=Array.isArray(guildPrivacy.servers)?guildPrivacy.servers:[];
+   if(!guilds.length)add("p","","Aucun serveur à configurer.",guildList);
+   for(const guild of guilds){
+    const row=add("label","",undefined,guildList);
+    add("span","",guild.name,row);
+    const select=add("select","",undefined,row);
+    select.setAttribute("aria-label","Confidentialité des MP : "+guild.name);
+    const labels=[["inherit","Par défaut"],["allow","Autoriser"],["deny","Refuser"]];
+    for(const [value,label] of labels){
+     const option=add("option","",label,select);option.value=value;
+    }
+    select.value=labels.some(([v])=>v===guild.policy)?guild.policy:"inherit";
+    select.onchange=async()=>{
+     select.disabled=true;
+     try{
+      await api("/api/account/privacy/dm-guilds",json("PATCH",{guildId:guild.guildId,policy:select.value}));
+      tell("Confidentialité des MP enregistrée pour "+guild.name+".");
+     }catch(e){tell(e.message,true);await refresh()}
+     finally{select.disabled=false}
+    };
+   }
    const users=Array.isArray(blocked.users)?blocked.users:[];
    if(!users.length)add("p","","Aucun utilisateur bloqué.",list);
    for(const person of users){
