@@ -47,9 +47,10 @@ export const features=Object.freeze([
       "image_key",
       "asset_hash"
     ],
+    "stage": "existing_account_scoped_cloud_wallpapers_pending_encryption_and_prod_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   }
 ].map(f=>Object.freeze({...f,fields:Object.freeze(f.fields)})));
 export const category="accounts";
