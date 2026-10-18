@@ -28,7 +28,8 @@ test('Media room content enforcement occurs after upload sanitization and before
 test('Media channels are created and edited using native IDs without modifying imported Discord',()=>{
  assert.ok(server.includes('["text","voice","announcement","forum","media"]'));
  assert.ok(server.includes('["text","voice","announcement","forum","media","category"]'));
- assert.ok(server.includes('["text","announcement","forum","media"].includes(String(ch.type))'));
+ assert.ok(server.includes('["text","announcement","forum","media","voice"].includes(String(ch.type))'));
+ assert.ok(server.includes('if(String(ch.type)==="voice")'),"Voice channels keep separate effective permission check");;
  assert.ok(server.includes("type IN ('text','announcement','forum','media')"));
 });
 test('Media channel messages render with the existing persistent message source and gallery layout',()=>{
