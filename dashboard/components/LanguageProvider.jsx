@@ -17,16 +17,39 @@ export function useLanguage() { return useContext(LanguageContext); }
 export default function LanguageProvider({ children }) {
   const [language, updateLanguage] = useState('fr');
   useEffect(() => {
-    try { const saved = localStorage.getItem('extinction-rss-language'); if (valid(saved)) updateLanguage(saved); } catch {}
-    const sync = event => { if (event.key === 'extinction-rss-language') updateLanguage(valid(event.newValue) ? event.newValue : 'fr'); };
+    // Keep the language selected in the world picker and the real React menus in sync.
+    const preferred = () => {
+      try {
+        const stored = localStorage.getItem('cmd-world-language') || localStorage.getItem('extinction-rss-language');
+        if (valid(stored)) return stored;
+      } catch {}
+      const browser = navigator.languages?.[0] || navigator.language || 'fr';
+      return valid(browser) ? browser : 'fr';
+    };
+    updateLanguage(preferred());
+    const sync = event => {
+      if (event.key === 'extinction-rss-language' || event.key === 'cmd-world-language')
+        updateLanguage(preferred());
+    };
+    const fromPicker = event => {
+      const code = event.detail?.language;
+      if (!valid(code)) return;
+      updateLanguage(code);
+      try { localStorage.setItem('extinction-rss-language', code); } catch {}
+    };
     window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
+    window.addEventListener('cmd-world-language-change', fromPicker);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('cmd-world-language-change', fromPicker);
+    };
   }, []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   const setLanguage = value => {
     if (!valid(value)) return;
     updateLanguage(value);
-    try { localStorage.setItem('extinction-rss-language', value); } catch {}
+    try { localStorage.setItem('extinction-rss-language', value); localStorage.setItem('cmd-world-language', value); } catch {}
+    window.dispatchEvent(new CustomEvent('cmd-world-language-change', {detail:{language:value, fallback:value.split('-')[0]}}));
   };
   // Untranslated dialects use an existing fallback; do not claim full localization.
   const t = value => lookupTranslation(language)?.[value] ?? value;
