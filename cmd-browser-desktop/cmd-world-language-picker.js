@@ -191,7 +191,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   const search=normalized(query.value.trim()),groups=new Map();
   for(const [code,name] of status.languages){
    if(search&&!normalized(code+" "+name).includes(search))continue;
-   const first=normalized(name).charAt(0).toUpperCase();
+   const first=normalized(name).replace(/^[^a-z0-9]+/i,"").charAt(0).toUpperCase();
    const initial=/^[A-Z]$/.test(first)?first:"#";
    if(!groups.has(initial))groups.set(initial,[]);
    groups.get(initial).push([code,name]);
