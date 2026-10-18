@@ -176,3 +176,13 @@ Le rappel de messages est désormais **développé dans la branche** mais **non 
 **Preuve CI** : [GitHub Actions 39107460068](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39107460068) — aucune erreur dans la suite complète. Le déploiement Railway reste sur sa branche antérieure ; ne pas interpréter la réussite CI comme un fonctionnement utilisateur en production.
 
 **Registre des 59 contrats** : 7 `implemented=true`, 52 contrats non implémentés, 0 `enabled=true`, 0 `verified=true` d'après les définitions de cette branche. Cette progression signifie uniquement que les sept implémentations ont du code (pas une homologation en production). Aucun pourcentage à 100 % n'est revendiqué.
+
+
+## Lot transfert de messages — code non déployé
+- Branche : `cmd-sphere/finition-20261018`.
+- Contrat : `message_forwarding`. Code/API et interface ajoutés, **non activés ni vérifiés en production**. Aucune suppression de message et aucune mutation de données existantes.
+- API authentifiée `POST /api/messages/forward`, validation de l'appartenance au serveur source et destination, des droits de lecture/envoi et du message source. Refus prudent des salons avec surcharges de permissions ; transfert du texte seulement, sans répliquer les pièces jointes ni propager @everyone/@here.
+- Interface : `cmd-message-forward-ui.js`, raccordée au menu d'actions secondaire des messages natifs.
+- Fichiers : `server.js`, `cmd-social-message-actions.js`, `cmd-message-forward-ui.js`, `tests/native-message-forward.test.cjs`, `cmd-parity-extra-productivity.js`.
+- Preuve CI : [GitHub Actions #39107940968](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39107940968) : **257 tests réussis, 0 échec**, dont 4 scénarios spécifiques au transfert.
+- État : 🟡 code installé sur GitHub, tests locaux/CI réussis, déploiement Railway non entrepris. Sauvegarde/rétablissement PostgreSQL de production non validés. Ne pas afficher ✅.
