@@ -87,4 +87,7 @@ test("Native forum composer presents tag selection and rendered badges only for 
  assert.ok(server.includes("validateForumPostTags(pool,ch,guildId,input.metadata?.forumTags)"));
  assert.ok(server.includes("box.classList.toggle('cmd-forum-gallery'"));
  assert.ok(server.includes("m.metadata?.forumTags"));
+ assert.ok(server.includes("CHAT.forumFilter"));
+ assert.ok(server.includes("filter.id='cmdForumFilter'"));
+ assert.ok(server.includes("filter.onchange=()=>{CHAT.forumFilter=filter.value;renderChannelMessages()}"));
 });
