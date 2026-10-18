@@ -79,9 +79,10 @@ export const features=Object.freeze([
       "target_id",
       "created_at"
     ],
+    "stage": "partially_implemented_native_channel_role_audit_pending_broader_actions_and_live_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "followed_announcements",
