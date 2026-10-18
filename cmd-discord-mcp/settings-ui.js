@@ -358,7 +358,7 @@
         var results=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
         var label=view.querySelector('#cmdLanguageResultsLabel'),alphabet=view.querySelector('#cmdLanguageAlphabet');
         var backCountry=view.querySelector('#cmdCountryBack'),allLanguagesButton=view.querySelector('#cmdShowAllLanguages');
-        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=false;
+        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=true;
         function loadCountryCatalogue(){
           if(countryCataloguePromise)return countryCataloguePromise;
           countryCataloguePromise=fetch('/cmd-country-language-catalog.json',{credentials:'same-origin'})
@@ -596,7 +596,7 @@
         function refreshCountryList(term){
           var query=String(term||'').trim();
           backCountry.hidden=!chosenCountry;
-          allLanguagesButton.textContent=allLanguages?'🌍 Voir les pays (A–Z)':'🌐 Voir les langues (A–Z)';
+          allLanguagesButton.textContent=allLanguages?'🌍 Rechercher par pays':'🔤 Revenir aux langues (A–Z)';
           allLanguagesButton.setAttribute('aria-pressed',String(allLanguages));
           var alphabetLabel=view.querySelector('#cmdLanguageAlphabetLabel');
           if(alphabetLabel)alphabetLabel.textContent=allLanguages
