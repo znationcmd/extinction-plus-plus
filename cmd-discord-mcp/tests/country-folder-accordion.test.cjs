@@ -1,0 +1,42 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..');
+const ui=fs.readFileSync(path.join(root,'settings-ui.js'),'utf8');
+const world=JSON.parse(fs.readFileSync(path.join(root,'cmd-language-catalog.json'),'utf8'));
+const country=JSON.parse(fs.readFileSync(path.join(root,'cmd-country-language-catalog.json'),'utf8'));
+test('A, B, C are separate closed expandable country folders, not alphabet filters',()=>{
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
+ assert.match(ui,/function renderCountryFolders\(\)/);
+ assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
+ assert.match(ui,/document\.createElement\('details'\)/);
+ assert.match(ui,/document\.createElement\('summary'\)/);
+ assert.match(ui,/folder\.className='cmd-country-folder'/);
+ assert.match(ui,/header\.textContent=letter\+' · '\+matching\.length\+' pays'/);
+ assert.match(ui,/folder\.append\(inside\);alphabet\.append\(folder\)/);
+ assert.match(ui,/button\.dataset\.cmdCountry=country\.code/);
+ assert.match(ui,/chosenCountry=countryCatalogue\.find/);
+ assert.match(ui,/results\.hidden=true/);
+ assert.match(ui,/\.cmd-language-alphabet\[hidden\],\.cmd-language-results\[hidden\]\{display:none!important\}/);
+});
+test('all A and B country names are included; each belongs in only its own folder',()=>{
+ const letter=name=>name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').charAt(0).toUpperCase();
+ const A=country.countries.filter(c=>letter(c.name)==='A');
+ const B=country.countries.filter(c=>letter(c.name)==='B');
+ for(const name of ['Allemagne','Algérie','Argentine'])assert.ok(A.some(c=>c.name===name),name);
+ for(const name of ['Belgique','Brésil'])assert.ok(B.some(c=>c.name===name),name);
+ assert.ok(!B.some(c=>c.name==='Allemagne'));
+ assert.equal(new Set(country.countries.map(c=>c.code)).size,country.countries.length);
+});
+test('country drilldown, manual/auto and optional global 8148 languages retained',()=>{
+ assert.ok(world.languages.length>=8000);
+ assert.match(ui,/function listCountryLanguages\(country\)/);
+ assert.match(ui,/if\(allLanguages\)\{/);
+ assert.match(ui,/function appendLanguageFolder\(folder\)/);
+ assert.match(ui,/id="cmdLanguageAutomatic"/);
+ assert.match(ui,/CMDSphereLocale\?\.manual\(code\)/);
+ assert.match(ui,/CMDSphereLocale\?\.automatic\(\)/);
+ assert.match(ui,/allLanguagesButton\.addEventListener\('click'/);
+ assert.match(ui,/id="cmdShowAllLanguages">🌐 Toutes les 8 148 langues/);
+ assert.doesNotMatch(ui,/<select id="cmdLanguageChoice"/);
+});
