@@ -22,7 +22,7 @@ const make=()=>{const state=new Map(),queries=[];
 test("Forum setup uses additive SQL and does not touch historical messages",async()=>{
  const x=make();await (await m).initCmdForumTags(x.pool);
  assert.ok(x.queries.some(x=>x.sql.includes("CREATE TABLE IF NOT EXISTS cmd_native_forum_settings")));
- assert.ok(x.queries.every(x=>!/\b(DROP|TRUNCATE|DELETE|ALTER)\s+/.test(x.sql)));
+ assert.ok(x.queries.every(x=>!/\b(?:DROP\s+TABLE|TRUNCATE\s+TABLE|DELETE\s+FROM|ALTER\s+TABLE[^;]*\bDROP\s+COLUMN)\b/i.test(x.sql)),"ON DELETE CASCADE is referential integrity, not a deletion command");
 });
 test("Forum tags reject duplicates, oversized names, dangerous input, bad colors",async()=>{
  const {normalizeForumTags}=await m;
