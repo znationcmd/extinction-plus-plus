@@ -23,9 +23,9 @@ test('every worldwide language belongs to precisely one A to Z or Other letter, 
  assert.equal(group('A').some(row=>row[0]==='alu'),true,"'Are'are must appear in A");
  assert.equal(group('B').some(row=>row[0]==='alu'),false);
 });
-test('A and B country folders are the default; global languages are still available under optional A-Z folders',()=>{
+test('A and B language folders open by default; A and B country folders remain selectable',()=>{
  assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
- assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=true/);
  assert.match(ui,/function renderCountryFolders\(\)/);
  assert.match(ui,/if\(allLanguages\)\{/);
  assert.match(ui,/letterGroups\.get\(letter\)\.push\(entry\)/);
