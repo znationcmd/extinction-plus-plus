@@ -51,6 +51,8 @@ on:
       - 'cmd-discord-mcp/cmd-native-media-channels.js'
       - 'cmd-discord-mcp/tests/native-media-channels.test.cjs'
       - 'cmd-discord-mcp/tests/native-forum-tags.test.cjs'
+      - 'cmd-discord-mcp/cmd-forum-thread-controls.js'
+      - 'cmd-discord-mcp/tests/native-forum-thread-controls.test.cjs'
       - 'cmd-discord-mcp/server.js'
       - 'cmd-discord-mcp/call-ui.js'
       - 'cmd-discord-mcp/tests/voice-peer-volume.test.cjs'
@@ -232,3 +234,22 @@ jobs:
           node --check cmd-native-media-channels.js
       - name: Test original data preservation and media-only messages
         run: node --test tests/native-media-channels.test.cjs
+
+  validate-forum-threads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check forum lifecycle server and UI JavaScript
+        run: |
+          node --check server.js
+          node --check cmd-forum-thread-controls.js
+          node --check cmd-social-message-actions.js
+      - name: Test forum lifecycle without touching a production database
+        run: node --test tests/native-forum-thread-controls.test.cjs tests/native-forum-tags.test.cjs
