@@ -21,7 +21,7 @@ function makeEditor(){
    this._html=html;this.nodes=[];
    for(const tag of html.match(/<(?:button|input|select)\b[^>]*>/g)||[]){
     const data={};
-    for(const match of tag.matchAll(/\bdata-([a-z-]+)="([^"]+)"/g))
+    for(const match of tag.matchAll(/\bdata-([a-z-]+)="([^"]*)"/g))
      data[match[1].replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=match[2];
     if(Object.keys(data).length)this.nodes.push(new ClickTarget(data));
    }
@@ -30,7 +30,8 @@ function makeEditor(){
   querySelectorAll(selector){
    const key=selector.match(/data-([a-z-]+)/)?.[1]?.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
    return key?this.nodes.filter(node=>key in node.dataset):[];
-  }
+  },
+  querySelector(selector){return this.querySelectorAll(selector)[0]||null}
  };
  const document={
   readyState:"loading",
@@ -53,7 +54,17 @@ function makeEditor(){
 }
 
 test("CMD Sphere only offers the 68 approved complete avatars",()=>{
- const {area,render}=makeEditor();render("avatar");assert.equal(area.querySelectorAll("[data-imported-avatar]").length,68);assert.equal(area.querySelectorAll("[data-avatar-part]").length,0);
+ const {area,click,render}=makeEditor();render("avatar");
+ assert.equal(area.querySelectorAll("[data-avatar-folder]").length,2,"Two folder entry buttons expected");
+ assert.equal(area.querySelectorAll("[data-imported-avatar]").length,0);
+ click("avatar-folder","femme");
+ const women=area.querySelectorAll("[data-imported-avatar]").map(x=>x.dataset.importedAvatar);
+ assert.equal(women.length,34);
+ click("avatar-folder","");click("avatar-folder","homme");
+ const men=area.querySelectorAll("[data-imported-avatar]").map(x=>x.dataset.importedAvatar);
+ assert.equal(men.length,34);
+ assert.equal(new Set([...women,...men]).size,68);
+ assert.equal(area.querySelectorAll("[data-avatar-part]").length,0);
 });
 
 test("CMD Sphere dressing, scene and pet/vehicle switches remain clickable",()=>{
@@ -77,16 +88,24 @@ test("CMD Sphere dressing, scene and pet/vehicle switches remain clickable",()=>
 test("CMD Sphere renders and selects each of the 68 distinct avatars, including last",()=>{
  const {area,window,click,render}=makeEditor();
  render("avatar");
- const avatarButtons=area.querySelectorAll("[data-imported-avatar]");
- assert.equal(avatarButtons.length,68,"All 68 unique avatar choices must be present");
- assert.equal(new Set(avatarButtons.map(button=>button.dataset.importedAvatar)).size,68);
- for(let i=0;i<68;i++){
-  click("imported-avatar",String(i));
-  const state=window.cmdSphereSceneState();
-  assert.equal(state.avatarPreset,"reference-avatar-"+i);
-  assert.equal(state.avatarStyle,"2d");
-  assert.equal(area.querySelectorAll("[data-imported-avatar]").length,68);
+ const all=[];
+ for(const folder of ["femme","homme"]){
+  if(folder==="homme")click("avatar-folder","");
+  click("avatar-folder",folder);
+  const avatarButtons=area.querySelectorAll("[data-imported-avatar]");
+  assert.equal(avatarButtons.length,34);
+  const ids=avatarButtons.map(x=>Number(x.dataset.importedAvatar));
+  all.push(...ids);
+  for(const i of ids){
+   click("imported-avatar",String(i));
+   const state=window.cmdSphereSceneState();
+   assert.equal(state.avatarPreset,"reference-avatar-"+i);
+   assert.equal(state.avatarStyle,"2d");
+   assert.equal(area.querySelectorAll("[data-imported-avatar]").length,34);
+  }
  }
+ assert.equal(new Set(all).size,68);
+ assert.ok(all.includes(67));
 });
 
 
