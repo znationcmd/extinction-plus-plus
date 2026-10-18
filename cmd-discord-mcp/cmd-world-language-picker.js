@@ -106,7 +106,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
   const buckets=new Map();
   for(const [code,name] of status.languages){
    if(needle&&!normalized(code+" "+name).includes(needle))continue;
-   const first=normalized(name).charAt(0).toUpperCase();
+   const first=normalized(name).replace(/^[^a-z0-9]+/i,"").charAt(0).toUpperCase();
    const letter=/^[A-Z]$/.test(first)?first:"#";
    if(!buckets.has(letter))buckets.set(letter,[]);
    buckets.get(letter).push([code,name]);
