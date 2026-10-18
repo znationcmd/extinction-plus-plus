@@ -23,18 +23,22 @@ test('every worldwide language belongs to precisely one A to Z or Other letter, 
  assert.equal(group('A').some(row=>row[0]==='alu'),true,"'Are'are must appear in A");
  assert.equal(group('B').some(row=>row[0]==='alu'),false);
 });
-test('all A and all B languages open directly from letter buttons, never country list',()=>{
- assert.match(ui,/var activeLetter='A'/);
- assert.match(ui,/chosenCountry=null,allLanguages=true/);
- assert.match(ui,/if\(!query&&activeLetter\)/);
- assert.match(ui,/initial===activeLetter/);
- assert.match(ui,/listMatches\(query\)/);
- assert.match(ui,/alphabet\.addEventListener\('click'/);
- assert.match(ui,/activeLetter=button\.dataset\.cmdLetter/);
- assert.doesNotMatch(ui,/chosenCountry=null;allLanguages=false;searchInput\.value='';\s*updateLetters\(\)/);
- assert.match(ui,/Toutes les langues par lettre/);
- assert.match(ui,/🌍 Rechercher par pays/);
- assert.match(ui,/Revenir aux langues \(A–Z\)/);
+test('A and B open complete language folders, independently from country folders',()=>{
+ assert.match(ui,/var alphabetLetters=\[\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
+ assert.match(ui,/countryCataloguePromise=null,chosenCountry=null,allLanguages=false/);
+ assert.match(ui,/function renderCountryFolders\(\)/);
+ assert.match(ui,/if\(allLanguages\)\{/);
+ assert.match(ui,/letterGroups\.get\(letter\)\.push\(entry\)/);
+ assert.match(ui,/folder\.className='cmd-country-folder cmd-language-folder'/);
+ assert.match(ui,/header\.textContent=letter\+' · '\+items\.length/);
+ assert.match(ui,/folder\.addEventListener\('toggle'/);
+ assert.match(ui,/if\(this\.open&&this\._cmdOffset===0\)appendLanguageFolder\(this\)/);
+ assert.match(ui,/function appendLanguageFolder\(folder\)/);
+ assert.match(ui,/var items=folder\._cmdEntries,stop=Math\.min\(items\.length,folder\._cmdOffset\+75\)/);
+ assert.match(ui,/selected\.dataset\.cmdLocale/);
+ assert.match(ui,/allLanguagesButton\.textContent=allLanguages\?'🌍 Voir les pays/);
+ assert.match(ui,/label\.textContent=allLanguages/);
+ assert.match(ui,/8 148 langues classées dans les dossiers A à Z/);
 });
 test('all 8148 codes and country-specific search remain separately available without native iPhone select',()=>{
  assert.match(ui,/var alphabetLetters=\['Toutes',\.\.\.'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'\]/);
