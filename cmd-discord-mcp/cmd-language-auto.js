@@ -19,18 +19,44 @@
     if(Array.isArray(browser.languages))candidates.push.apply(candidates,browser.languages);
     candidates.push(browser.language);
     try{candidates.push(Intl.DateTimeFormat().resolvedOptions().locale)}catch{}
+    var preferred=null;
     for(var i=0;i<candidates.length;i++){
       var v=canonical(candidates[i]);
-      if(v&&v!=='und')return v;
+      if(v&&v!=='und'){preferred=v;break}
     }
-    return 'fr';
+    // The device time zone is an optional, approximate country hint.
+    // Prefer it for unambiguous locations (Germany, Italy, Japan, etc.)
+    // so an English-configured phone visiting Germany can start in German.
+    var zone='';
+    try{zone=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch{}
+    var single={
+      'Europe/Berlin':'de-DE','Europe/Rome':'it-IT','Europe/Madrid':'es-ES',
+      'Europe/Paris':'fr-FR','Europe/Lisbon':'pt-PT','Europe/Vienna':'de-AT',
+      'Europe/Amsterdam':'nl-NL','Europe/London':'en-GB','Europe/Warsaw':'pl-PL',
+      'Europe/Prague':'cs-CZ','Europe/Athens':'el-GR','Europe/Oslo':'nb-NO',
+      'Europe/Stockholm':'sv-SE','Europe/Copenhagen':'da-DK',
+      'Asia/Tokyo':'ja-JP','Asia/Seoul':'ko-KR','Asia/Kolkata':'hi-IN',
+      'Asia/Bangkok':'th-TH','America/Sao_Paulo':'pt-BR',
+      'America/Mexico_City':'es-MX'
+    };
+    if(single[zone])return single[zone];
+    // Multilingual countries (Switzerland, Belgium, Canada) MUST use
+    // the user's preferred language; country alone cannot choose dialect.
+    var shared={'Europe/Zurich':'CH','Europe/Brussels':'BE','America/Toronto':'CA'};
+    if(shared[zone]&&preferred){
+      var base=preferred.split('-')[0];
+      return canonical(base+'-'+shared[zone])||preferred;
+    }
+    return preferred||'fr';
   }
   function current(){
     var manual=read(MODE)==='manual';
     var saved=canonical(read(STORAGE));
     // Older versions saved a manual preference without a separate mode marker.
     // Never replace that user choice with geolocation or OS guesses.
-    if(!read(MODE)&&saved){write(MODE,'manual');manual=true}
+    if(!read(MODE)&&saved&&saved!=='fr'){write(MODE,'manual');manual=true}
+    // Old CMD Sphere saved French on every visit, even when the user did not choose it.
+    // Migrate that old default to automatic detection; explicitly marked manual stays manual.
     if(manual&&saved)return {code:saved,mode:'manual'};
     var detected=inferred();
     write(MODE,'auto');write(STORAGE,detected);
