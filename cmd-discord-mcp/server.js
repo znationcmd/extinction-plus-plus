@@ -6,6 +6,7 @@ import {initCmdDiscovery,handleCmdDiscovery} from "./cmd-community-discovery.js"
 import {initCmdNativeAudit,appendCmdNativeAudit,nativeAuditTarget,handleCmdNativeAudit} from "./cmd-native-audit-log.js";
 import {handleCmdAccountExport} from "./cmd-account-export.js";
 import {initCmdOnboarding,handleNativeOnboarding} from "./cmd-native-onboarding.js";
+import {initCmdNativeRules,handleCmdNativeRules,assertNativeRulesAccepted} from "./cmd-native-rules-screening.js";
 import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {initCmdNativeVoiceConfig,handleCmdNativeVoiceConfig} from "./cmd-native-voice-config.js";
 import {initCmdNativeAfk,handleNativeAfk} from "./cmd-native-afk-config.js";
@@ -1318,6 +1319,7 @@ async function initNativeDb(){
   )`);
   await pool.query('CREATE INDEX IF NOT EXISTS cmd_native_member_roles_role_idx ON cmd_native_member_roles(guild_id,role_id)');
   await initCmdOnboarding(pool);
+  await initCmdNativeRules(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channel_messages(
     id UUID PRIMARY KEY,
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -3759,6 +3761,7 @@ async function sendNativeChannelMessage(auth,input){
   if(forumTags.length)metadata.forumTags=forumTags;
   assertNativeMediaPost(ch,attachments);
   if(!body&&!attachments.length&&!metadata.poll)throw new Error("Message vide.");
+  await assertNativeRulesAccepted(pool,auth,guildId,{nativeMembership});
   await guardCmdNativeAutoMod(pool,guildId,body,auth,{nativeMembership});
   let replyTo=null;
   if(input.replyTo&&/^[0-9a-f-]{36}$/i.test(String(input.replyTo))){
@@ -4738,6 +4741,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleNativeAfk(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeVoiceConfig(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativePermission}))return;
     if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
+    if(await handleCmdNativeRules(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
     if(await handleNativeOnboarding(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
     if(await handleCmdAccountExport(req,res,url,{pool,auth:dashboardAuth(req),sendJson}))return;
     if(await handleCmdNativeAudit(req,res,url,{pool,auth:dashboardAuth(req),sendJson,requireNativeAdmin}))return;
