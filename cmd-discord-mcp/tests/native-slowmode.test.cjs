@@ -96,7 +96,7 @@ test("Server enforces permission-scoped endpoint, includes cooldown in channel a
 });
 test("Salon settings let admins configure mode lent without altering external Discord servers",()=>{
  assert.match(manager,/name="slowmodeSeconds"/);
- assert.match(manager,/isNative\(\)&&\['text','announcement','forum'\].includes\(ch.type\)/);
+ assert.match(manager,/isNative\(\)&&\['text','announcement','forum','media'\].includes\(ch.type\)/);
  assert.match(manager,/slowmodeSeconds:Number\(d.get\('slowmodeSeconds'\)\)/);
  assert.match(manager,/Désactivé/);
 });
