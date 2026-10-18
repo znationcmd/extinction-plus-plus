@@ -8,7 +8,7 @@
  history.id='cmd-history-dialog';history.className='cmd-search-dialog';
  history.setAttribute('aria-label','Recherche dans tout l’historique');
  const style=document.createElement('style');
- style.textContent='#cmd-history-dialog .cmd-history-line{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}#cmd-history-dialog .cmd-history-field{display:grid;gap:4px;flex:1 1 140px;font:12px system-ui;color:#c6b8da}#cmd-history-dialog .cmd-history-field input{min-height:40px;min-width:0;border:1px solid #8a65a5;background:#1c1329;color:#fff;padding:9px;border-radius:8px}#cmd-history-dialog button{border:1px solid #8e71b0;background:#3a2754;color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer;min-height:40px}#cmd-history-dialog button:disabled{opacity:.6;cursor:wait}#cmd-history-dialog .cmd-history-result{border-bottom:1px solid #715587;padding:12px 2px;white-space:pre-wrap;overflow-wrap:anywhere}#cmd-history-dialog .cmd-history-result small{display:block;color:#ac97bf;margin-bottom:4px}#cmd-history-open{display:block;margin:8px 0;width:100%}';
+ style.textContent='#cmd-history-dialog .cmd-history-line{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}#cmd-history-dialog .cmd-history-field{display:grid;gap:4px;flex:1 1 140px;font:12px system-ui;color:#c6b8da} #cmd-history-dialog .cmd-history-field input,#cmd-history-dialog .cmd-history-field select{min-height:40px;min-width:0;border:1px solid #8a65a5;background:#1c1329;color:#fff;padding:9px;border-radius:8px}#cmd-history-dialog button{border:1px solid #8e71b0;background:#3a2754;color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer;min-height:40px}#cmd-history-dialog button:disabled{opacity:.6;cursor:wait}#cmd-history-dialog .cmd-history-result{border-bottom:1px solid #715587;padding:12px 2px;white-space:pre-wrap;overflow-wrap:anywhere}#cmd-history-dialog .cmd-history-result small{display:block;color:#ac97bf;margin-bottom:4px}#cmd-history-open{display:block;margin:8px 0;width:100%}';
  document.head.append(style);
  const open=document.createElement('button');open.id='cmd-history-open';open.type='button';open.textContent='📚 Rechercher dans tout l’historique';
  localDialog.append(open);
@@ -24,13 +24,20 @@
  const author=field('Identifiant auteur (facultatif)','text','Identifiant du membre');
  const after=field('À partir du','date');const before=field('Avant le','date');
  const dates=document.createElement('div');dates.className='cmd-history-line';dates.append(after[0],before[0]);
+ const filesField=document.createElement('label');filesField.className='cmd-history-field';
+ filesField.textContent='Pièces jointes (salons serveur)';
+ const filesSelect=document.createElement('select');filesSelect.setAttribute('aria-label','Filtrer les pièces jointes');
+ for(const [value,label] of [['','Tous les messages'],['true','Avec pièces jointes'],['false','Sans pièces jointes']]){
+  const option=document.createElement('option');option.value=value;option.textContent=label;filesSelect.append(option);
+ }
+ filesField.append(filesSelect);
  const controls=document.createElement('div');controls.className='cmd-history-line';
  const submit=document.createElement('button');submit.type='button';submit.textContent='Rechercher dans l’historique';
  const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Effacer les filtres';
  controls.append(submit,cancel);
  const status=document.createElement('p');status.className='cmd-search-status';status.setAttribute('aria-live','polite');
  const results=document.createElement('div');results.className='cmd-search-results';
- history.append(heading,query[0],author[0],dates,controls,status,results);
+ history.append(heading,query[0],author[0],dates,filesField,controls,status,results);
  document.body.append(history);
  const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  function context(){
@@ -75,6 +82,7 @@
   if(author[1].value.trim())params.set('authorId',author[1].value.trim());
   if(after[1].value)params.set('after',after[1].value);
   if(before[1].value)params.set('before',before[1].value);
+  if(selected.scope==='server'&&filesSelect.value)params.set('hasFile',filesSelect.value);
   submit.disabled=true;status.textContent='Recherche en cours…';results.replaceChildren();
   try{
    const resp=await fetch('/api/cmd/messages/history-search?'+params.toString(),{credentials:'same-origin',cache:'no-store',signal:controller.signal});
@@ -88,13 +96,15 @@
  }
  open.addEventListener('click',()=>{
   const selected=context();if(!selected){open.textContent='Choisir une conversation CMD Sphere';return}
+  filesField.hidden=selected.scope!=='server';
+  if(filesField.hidden)filesSelect.value='';
   const localQuery=document.querySelector('.cmd-search-input');
   query[1].value=localQuery?.value||'';
   if(localDialog.open&&localDialog.close)localDialog.close();
   showDialog();query[1].focus();status.textContent='Recherche autorisée uniquement dans la conversation sélectionnée.';
  });
  close.addEventListener('click',closeDialog);
- cancel.addEventListener('click',()=>{author[1].value='';after[1].value='';before[1].value=''});
+ cancel.addEventListener('click',()=>{author[1].value='';after[1].value='';before[1].value='';filesSelect.value=''});
  submit.addEventListener('click',perform);
  query[1].addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();perform()}});
  history.addEventListener('close',()=>controller?.abort());
