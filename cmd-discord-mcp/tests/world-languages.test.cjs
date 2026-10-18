@@ -73,3 +73,24 @@ test('settings and chat UI offer searchable catalogue, custom region tags, no la
  assert.match(server,/if\(url\.pathname==="\/cmd-language-catalog\.json"\)/);
  assert.match(server,/readFileSync\(new URL\("\.\/cmd-language-catalog\.json"/);
 });
+
+
+test('iPhone language search uses in-page buttons, never a native fullscreen select',()=>{
+ const settings=fs.readFileSync(path.join(base,'settings-ui.js'),'utf8');
+ assert.match(settings,/id="cmdLanguageChoice" class="cmd-language-results" role="group"/);
+ assert.doesNotMatch(settings,/<select id="cmdLanguageChoice"/);
+ assert.doesNotMatch(settings,/<select[^>]*size="7"/);
+ assert.match(settings,/results\.replaceChildren\(\)/);
+ assert.match(settings,/document\.createElement\('button'\)/);
+ assert.match(settings,/item\.dataset\.cmdLocale=entry\[0\]/);
+ assert.match(settings,/item\.setAttribute\('aria-pressed'/);
+ assert.match(settings,/results\.addEventListener\('click'/);
+ assert.match(settings,/applySettingsLanguage\(button\.dataset\.cmdLocale\)/);
+ assert.match(settings,/var matches=\[\],seen=new Set\(\),max=30/);
+ assert.match(settings,/code\.startsWith\(query\)\|\|name\.startsWith\(query\)/);
+ assert.match(settings,/picker\.hidden=current==='language'/);
+ assert.match(settings,/favourites=\['fr','en','de','es','it','co','gsw-CH'/);
+ assert.match(settings,/id="cmdLanguageCustomCode"/);
+ assert.match(settings,/\.cmd-language-results\{display:grid/);
+ assert.match(settings,/normalize\('NFD'\)\.replace\(\/\[\\u0300-\\u036f\]\/g/);
+});
