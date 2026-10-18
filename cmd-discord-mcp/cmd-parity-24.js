@@ -14,7 +14,7 @@ export function cmdParityByCategory(category){
  return CMD_PARITY_MISSING_24.filter(f=>f.category===category).map(f=>({...f,fields:[...f.fields]}));
 }
 export function cmdParityStatus(){
- return {total:CMD_PARITY_MISSING_24.length,preinstalled:CMD_PARITY_MISSING_24.length,contractsOnly:CMD_PARITY_MISSING_24.length,implemented:CMD_PARITY_MISSING_24.filter(f=>f.implemented).length,enabled:CMD_PARITY_MISSING_24.filter(f=>f.enabled).length,verified:CMD_PARITY_MISSING_24.filter(f=>f.verified).length};
+ return {total:CMD_PARITY_MISSING_24.length,preinstalled:CMD_PARITY_MISSING_24.length,contractsOnly:CMD_PARITY_MISSING_24.filter(f=>!f.implemented).length,implemented:CMD_PARITY_MISSING_24.filter(f=>f.implemented).length,enabled:CMD_PARITY_MISSING_24.filter(f=>f.enabled).length,verified:CMD_PARITY_MISSING_24.filter(f=>f.verified).length};
 }
 export function cmdParityReady(id,gates={}){
  const record=CMD_PARITY_MISSING_24.find(f=>f.id===id);
