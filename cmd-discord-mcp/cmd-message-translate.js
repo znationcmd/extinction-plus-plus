@@ -3,16 +3,18 @@
    with a small queue and rate limit to protect free translation providers. */
 (function(){
 "use strict";
-const supported={fr:"Français",en:"English",us:"English (US)",de:"Deutsch",es:"Español",it:"Italiano",ru:"Русский",ko:"한국어",ja:"日本語",zh:"中文",co:"Corsu",pt:"Português"};
+// The catalogue is loaded in settings, but message translations can accept any
+// syntactically valid BCP47 language tag. The server checks ISO recognition.
+const languageTag=/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,7}$/i;
 const translatedCache=new Map(), failedCache=new Map();
 const waiting=[],queued=new WeakSet(),watched=new WeakSet();
 let inFlight=0,windowCount=0,windowStart=Date.now(),pausedUntil=0,epoch=0;
 const MAX_ACTIVE=2,MAX_MINUTE=12,MAX_LENGTH=1700;
 function code(){try{
  const saved=localStorage.getItem("cmd-sphere-language")||document.querySelector("#cmd-sphere-language")?.value||"fr";
- return supported[saved]?saved:"fr";
+ return languageTag.test(saved)&&saved.length<=64?saved:"fr";
 }catch{return"fr"}}
-function actualLang(){const c=code();return c==="us"?"en":c}
+function actualLang(){const c=code();return c==="us"?"en-US":c}
 function findMessage(node){return node?.closest?.(".discord-message,.bubble")||null}
 function contentNode(row){return row?.querySelector(".msg-text,.dm-text,.msg-embed")}
 function originalText(row){const el=contentNode(row);return el?String(el.innerText||el.textContent||"").trim():""}
