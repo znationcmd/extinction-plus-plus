@@ -257,6 +257,12 @@ window.cmdSphereTts={speak:speakCmdMessage,stop:stopCmdSpeech,
  setLanguage(value){const lang=String(value||'');if(lang&&!/^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/.test(lang))return false;cmdTts.language=lang;saveTtsPrefs();return true},
  getSettings(){return {...cmdTts,supported:!!speechEngine()}}
 };
+const TTS_LANGUAGES=Object.freeze([
+ ['', 'Auto'],['fr-FR','Français'],['en-US','English'],['de-DE','Deutsch'],
+ ['es-ES','Español'],['it-IT','Italiano'],['ru-RU','Русский'],
+ ['ja-JP','日本語'],['ko-KR','한국어'],['zh-CN','中文']
+]);
+const ttsLanguageLabel=()=>TTS_LANGUAGES.find(([key])=>key===cmdTts.language)?.[1]||'Auto';
 const messageSelector='#channelMessages article.discord-message';
 const interactiveSelector='button,a,input,textarea,select,video,audio,[role=button],.cmd-person-target';
 function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
@@ -314,6 +320,11 @@ function openCompactMenu(article,x,y){
    action('🔊 Lire à voix haute',()=>{if(!speakCmdMessage(content)){try{window.alert?.('Lecture vocale indisponible ou désactivée.') }catch{}}});
    action('■ Arrêter la lecture',stopCmdSpeech);
    action('🔈 Volume vocal : '+Math.round(cmdTts.volume*100)+' %',()=>{const choices=[1,.75,.5,.25,0];const current=choices.indexOf(cmdTts.volume);window.cmdSphereTts.setVolume(choices[(current+1)%choices.length])});
+   action('🌐 Langue vocale : '+ttsLanguageLabel(),()=>{
+     const index=TTS_LANGUAGES.findIndex(([key])=>key===cmdTts.language);
+     const next=TTS_LANGUAGES[(index+1)%TTS_LANGUAGES.length]?.[0]||'';
+     window.cmdSphereTts.setLanguage(next);
+   });
  }
  if(window.cmdSphereSensitiveMedia?.toggle){
    action(window.cmdSphereSensitiveMedia.get()?'🖼 Afficher les médias':'🛡️ Flouter les photos et vidéos',
