@@ -54,9 +54,9 @@ export const features=Object.freeze([
       "gain"
     ],
     "origin": "discord_feature_review_2026_10_16",
-    "stage": "preinstalled_contract",
+    "stage": "developed_pending_mobile_and_production_validation",
     "installed": true,
-    "implemented": false,
+    "implemented": true,
     "enabled": false,
     "verified": false
   },
