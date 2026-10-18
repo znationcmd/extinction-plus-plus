@@ -326,7 +326,7 @@
       voice:["Voix & Vidéo","Vérifie l'accès au microphone sur cet appareil. Les appels passent par la fonction d'appel CMD Sphere.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="mic">Tester le microphone</button><a class="cmd-set-cta secondary" href="/messages">Accéder aux appels et MP</a><p class="cmd-status" id="cmdSubStatus"></p>'],
       appearance:["Apparence","Personnalise l'affichage de CMD Sphere sur cet appareil.",'<label for="cmdThemeChoice">Thème</label><select id="cmdThemeChoice"><option value="dark">Sombre</option><option value="amoled">Noir AMOLED</option></select>'],
       accessibility:["Accessibilité","Réglages de confort visuel sur cet appareil.",'<label class="cmd-setting-toggle"><input id="cmdLessMotion" type="checkbox"> Réduire les animations</label><label class="cmd-setting-toggle"><input id="cmdBiggerType" type="checkbox"> Agrandir le texte</label>'],
-      language:["Langue","Langue automatique ou choix personnel : tous les pays et dialectes disponibles dans la recherche.",'<label class="cmd-setting-toggle cmd-language-options"><input id="cmdLanguageAutomatic" type="checkbox"> 🌍 Détecter automatiquement la langue de mon appareil</label><p class="cmd-small" id="cmdLanguageAutoInfo">La région et la langue de l’appareil sont prises en compte. Aucun accès GPS requis.</p><label for="cmdLanguageSearch">Rechercher langue, patois, dialecte ou code</label><input id="cmdLanguageSearch" type="search" placeholder="Rechercher un pays, une langue ou un dialecte…" autocomplete="off" style="width:100%;min-height:43px;margin:10px 0"><p id="cmdLanguageSelected" class="cmd-language-selection" aria-live="polite">Langue actuelle : Français</p><label id="cmdLanguageAlphabetLabel">Choisir un pays par sa première lettre</label><div id="cmdLanguageAlphabet" class="cmd-language-alphabet" role="group" aria-labelledby="cmdLanguageAlphabetLabel"></div><div class="cmd-country-controls"><button type="button" id="cmdCountryBack" hidden>‹ Retour aux pays</button><button type="button" id="cmdShowAllLanguages">🌐 Toutes les 8 148 langues</button></div><label id="cmdLanguageResultsLabel">Choisis un pays pour découvrir ses langues et dialectes</label><div id="cmdLanguageChoice" class="cmd-language-results" role="group" aria-labelledby="cmdLanguageResultsLabel"></div><details class="cmd-language-custom"><summary>Autres dialectes : saisir un code personnalisé (facultatif)</summary><label for="cmdLanguageCustomCode">Code régional BCP 47</label><input id="cmdLanguageCustomCode" type="text" maxlength="64" placeholder="Ex. gsw-CH-x-bern" style="width:100%;min-height:42px"><button type="button" data-cmd-subaction="custom-language" class="cmd-set-cta secondary">Utiliser ce code de langue</button></details><p class="cmd-small" id="cmdLanguageSupportNotice">Catalogue mondial en chargement. Les langues régionales et variantes sont enregistrées dans tes préférences. La traduction intégrale de tous les menus et les messages dans tous les dialectes dépend de traductions disponibles ; les menus peuvent utiliser une langue de secours.</p><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les fournisseurs gratuits de traduction ne couvrent pas toutes les langues et tous les patois. Le texte original reste visible.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
+      language:["Langue","Langue automatique ou choix personnel : tous les pays et dialectes disponibles dans la recherche.",'<label class="cmd-setting-toggle cmd-language-options"><input id="cmdLanguageAutomatic" type="checkbox"> 🌍 Détecter automatiquement la langue de mon appareil</label><p class="cmd-small" id="cmdLanguageAutoInfo">La région et la langue de l’appareil sont prises en compte. Aucun accès GPS requis.</p><label for="cmdLanguageSearch">Rechercher langue, patois, dialecte ou code</label><input id="cmdLanguageSearch" type="search" placeholder="Rechercher un pays, une langue ou un dialecte…" autocomplete="off" style="width:100%;min-height:43px;margin:10px 0"><p id="cmdLanguageSelected" class="cmd-language-selection" aria-live="polite">Langue actuelle : Français</p><label id="cmdLanguageAlphabetLabel">Toutes les langues par lettre : A, B, C… Z</label><div id="cmdLanguageAlphabet" class="cmd-language-alphabet" role="group" aria-labelledby="cmdLanguageAlphabetLabel"></div><div class="cmd-country-controls"><button type="button" id="cmdCountryBack" hidden>‹ Retour aux pays</button><button type="button" id="cmdShowAllLanguages">🌍 Rechercher par pays</button></div><label id="cmdLanguageResultsLabel">Choisis A pour toutes les langues en A, B pour toutes les langues en B, etc.</label><div id="cmdLanguageChoice" class="cmd-language-results" role="group" aria-labelledby="cmdLanguageResultsLabel"></div><details class="cmd-language-custom"><summary>Autres dialectes : saisir un code personnalisé (facultatif)</summary><label for="cmdLanguageCustomCode">Code régional BCP 47</label><input id="cmdLanguageCustomCode" type="text" maxlength="64" placeholder="Ex. gsw-CH-x-bern" style="width:100%;min-height:42px"><button type="button" data-cmd-subaction="custom-language" class="cmd-set-cta secondary">Utiliser ce code de langue</button></details><p class="cmd-small" id="cmdLanguageSupportNotice">Catalogue mondial en chargement. Les langues régionales et variantes sont enregistrées dans tes préférences. La traduction intégrale de tous les menus et les messages dans tous les dialectes dépend de traductions disponibles ; les menus peuvent utiliser une langue de secours.</p><label class="cmd-setting-toggle"><input id="cmdAutoTranslate" type="checkbox" checked> 🌐 Traduction automatique des messages</label><p class="cmd-small">Les fournisseurs gratuits de traduction ne couvrent pas toutes les langues et tous les patois. Le texte original reste visible.</p><p id="cmdSubStatus" class="cmd-status" role="status"></p>'],
       notifications:["Notifications","Active les notifications de messages et d'appels sur cet appareil. L'autorisation système ne garantit pas à elle seule les alertes lorsque le navigateur est fermé.",'<p id="cmdNotifState" class="cmd-small"></p><button type="button" class="cmd-set-cta" data-cmd-subaction="notif">Autoriser les notifications</button><a class="cmd-set-cta secondary" href="/messages">Messages et appels</a><p id="cmdSubStatus" class="cmd-status"></p>'],
       appicon:["Icône de l'appli","Installe CMD Sphere depuis le menu de ton navigateur : « Ajouter à l'écran d'accueil » sur iPhone ou « Installer l'application » sur les navigateurs compatibles.",'<a class="cmd-set-cta secondary" href="/dashboard">Revenir à CMD Sphere</a>'],
       advanced:["Avancés","Outils d'administration CMD Sphere. Les actions utilisent tes autorisations actuelles.",'<button type="button" class="cmd-set-cta" data-cmd-subaction="sync">Synchroniser mes serveurs liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="folders">Dossiers de serveurs</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="bots">Bots liés</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="webhooks">Webhooks</button><button type="button" class="cmd-set-cta secondary" data-cmd-subaction="backup">Sauvegarde des serveurs liés</button><a class="cmd-set-cta secondary" href="/dashboard-login?link=1&amp;next=%2Fdashboard%3Fsync%3D1">Reconnecter mon compte externe</a>'],
@@ -351,7 +351,7 @@
         var results=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
         var label=view.querySelector('#cmdLanguageResultsLabel'),alphabet=view.querySelector('#cmdLanguageAlphabet');
         var backCountry=view.querySelector('#cmdCountryBack'),allLanguagesButton=view.querySelector('#cmdShowAllLanguages');
-        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=false;
+        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=true;
         function loadCountryCatalogue(){
           if(countryCataloguePromise)return countryCataloguePromise;
           countryCataloguePromise=fetch('/cmd-country-language-catalog.json',{credentials:'same-origin'})
@@ -370,7 +370,7 @@
         for(var ch of alphabetLetters){
           var letter=document.createElement('button');letter.type='button';letter.className='cmd-language-letter';
           letter.dataset.cmdLetter=ch;letter.textContent=ch==='Toutes'?'Tout':ch==='#'?'Autres':ch;
-          letter.setAttribute('aria-label',ch==='Toutes'?'Tous les pays':ch==='#'?'Autres pays':'Pays commençant par '+ch);
+          letter.setAttribute('aria-label',ch==='Toutes'?'Toutes les langues ou tous les pays':ch==='#'?'Noms commençant par un signe ou un nombre':'Noms commençant par '+ch);
           letter.setAttribute('aria-pressed',String(ch===activeLetter));
           alphabet.append(letter);
         }
@@ -383,7 +383,7 @@
           var button=event.target.closest('button[data-cmd-letter]');
           if(!button||!alphabet.contains(button))return;
           activeLetter=button.dataset.cmdLetter==='Toutes'?'':button.dataset.cmdLetter;
-          chosenCountry=null;allLanguages=false;searchInput.value='';
+          chosenCountry=null;searchInput.value='';
           updateLetters();
           refreshCountryList('');
         });
@@ -412,7 +412,7 @@
               ' / '+matchedLanguages.length.toLocaleString('fr-FR');
             results.append(more);
           }
-          label.textContent='Langues disponibles : '+matchedLanguages.length.toLocaleString('fr-FR')+
+          label.textContent=(activeLetter&&!searchInput.value.trim()?'Langues en '+activeLetter+' : ':'Langues disponibles : ')+matchedLanguages.length.toLocaleString('fr-FR')+
             ' · '+loadedLanguages.toLocaleString('fr-FR')+' affichées';
         }
         function listMatches(term){
@@ -508,7 +508,11 @@
         function refreshCountryList(term){
           var query=String(term||'').trim();
           backCountry.hidden=!chosenCountry;
-          allLanguagesButton.textContent=allLanguages?'🌍 Revenir aux pays (A à Z)':'🌐 Toutes les 8 148 langues';
+          allLanguagesButton.textContent=allLanguages?'🌍 Rechercher par pays':'🌐 Revenir aux langues (A–Z)';
+          var alphabetLabel=view.querySelector('#cmdLanguageAlphabetLabel');
+          if(alphabetLabel)alphabetLabel.textContent=allLanguages
+            ?'Langues classées par lettre : touche A, B, C… jusqu’à Z (ou Tout)'
+            :'Pays classés par lettre : touche A, B, C… jusqu’à Z';
           allLanguagesButton.setAttribute('aria-pressed',String(allLanguages));
           if(allLanguages){listMatches(query);return}
           if(chosenCountry&&!query){listCountryLanguages(chosenCountry);return}
@@ -525,8 +529,7 @@
         });
         allLanguagesButton.addEventListener('click',function(){
           allLanguages=!allLanguages;chosenCountry=null;searchInput.value='';
-          if(allLanguages)activeLetter='';
-          else activeLetter='A';
+          activeLetter='A';
           updateLetters();refreshCountryList('');
         });
         var automatic=view.querySelector('#cmdLanguageAutomatic'),automaticInfo=view.querySelector('#cmdLanguageAutoInfo');
