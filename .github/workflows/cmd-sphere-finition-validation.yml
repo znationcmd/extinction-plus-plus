@@ -57,6 +57,10 @@ on:
       - 'cmd-discord-mcp/tests/native-community-discovery.test.cjs'
       - 'cmd-discord-mcp/cmd-native-audit-log.js'
       - 'cmd-discord-mcp/tests/native-audit-log.test.cjs'
+      - 'cmd-discord-mcp/cmd-account-export.js'
+      - 'cmd-discord-mcp/settings-ui.js'
+      - 'cmd-discord-mcp/tests/account-export.test.cjs'
+      - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
       - 'cmd-discord-mcp/tests/native-automod.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-community.js'
@@ -367,3 +371,22 @@ jobs:
           node --check server.js
       - name: Test owner-only AutoMod and preserve existing parity safety
         run: node --test tests/native-automod.test.cjs tests/cmd-parity-24.test.cjs
+
+  validate-account-export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check secure personal data export and settings JavaScript
+        run: |
+          node --check cmd-account-export.js
+          node --check settings-ui.js
+          node --check server.js
+      - name: Test authenticated bounded download and sensitive-data redaction
+        run: node --test tests/account-export.test.cjs tests/cmd-parity-59.test.cjs
