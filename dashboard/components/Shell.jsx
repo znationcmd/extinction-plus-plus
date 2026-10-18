@@ -210,19 +210,19 @@ export default function Shell({ children }) {
       </aside>
 
       <header className="ext-draft-header lg:hidden">
-        <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} onClick={()=>setMenuOpen(v=>!v)}><Menu size={34}/></button>
+        <button type="button" aria-label={menuOpen?t('Fermer le menu'):t('Ouvrir le menu')} aria-expanded={menuOpen} aria-controls="ext-mobile-modules" onClick={()=>{setAppsOpen(false);setMenuOpen(v=>!v)}}><Menu size={34}/></button>
         <img src="/extinction-logo.png?v=20261008" alt="CMD CMD Extinction++ RSS" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src="/cmd-official.svg?v=20261008"}}/>
         <a href="https://cmd-top-serveur-production.up.railway.app/" target="_blank" rel="noopener noreferrer" title="CMD Officiel" className="grid h-8 w-8 place-items-center rounded-full border border-purple-400/35 bg-purple-500/10"><img src="/cmd-official.svg?v=20261008" alt="CMD" className="h-6 w-6"/></a>
         <div className="ext-header-actions">
           <button type="button" className="ext-refresh-button" onClick={refreshApp} disabled={refreshing} aria-label={t('Actualiser')} title={t('Actualiser')}>
             <RefreshCw size={29} className={refreshing?'animate-spin':''}/>
           </button>
-          <button type="button" aria-label="Applications" title="Applications" className="ext-grid-button" onClick={()=>{setAppsOpen(v=>!v);setMenuOpen(false)}}><i/><i/><i/><i/></button>
+          <button type="button" aria-label="Applications" title="Applications" aria-expanded={appsOpen} aria-controls="ext-mobile-apps" className="ext-grid-button" onClick={()=>{setAppsOpen(v=>!v);setMenuOpen(false)}}><i/><i/><i/><i/></button>
         </div>
       </header>
 
       {(menuOpen||appsOpen)&&<div className="ext-menu-shade lg:hidden" onClick={()=>{setMenuOpen(false);setAppsOpen(false)}}/>}
-      {appsOpen&&<section className="ext-apps-drawer lg:hidden" aria-label="Toutes les applications CMD"><div className="ext-apps-heading"><strong>Applications CMD</strong><button type="button" onClick={()=>setAppsOpen(false)} aria-label="Fermer les applications">×</button></div><div className="ext-apps-list">{links.filter(([href])=>href!=='/').map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} onClick={()=>setAppsOpen(false)}><Icon size={23}/><span>{t(label)}</span></Link>)}</div></section>}
+      {appsOpen&&<section id="ext-mobile-apps" className="ext-apps-drawer lg:hidden" aria-label="Toutes les applications CMD"><div className="ext-apps-heading"><strong>Applications CMD</strong><button type="button" onClick={()=>setAppsOpen(false)} aria-label="Fermer les applications">×</button></div><div className="ext-apps-list">{links.filter(([href])=>href!=='/').map(([href,label,Icon])=><Link key={href} href={href} aria-current={currentPage(href)} prefetch={false} onClick={()=>setAppsOpen(false)}><Icon size={23}/><span>{t(label)}</span></Link>)}</div></section>}
 
       <div className={`ext-guild-rail lg:hidden ${menuOpen?'open':''}`} aria-label="Discord installés">
         {(workspace.guilds||[]).map(g=>{const installed=g.installed!==false;return <button key={g.id} type="button" title={`${g.name}${installed?'':' · Bot non installé · Cliquer pour inviter'}`} onClick={()=>selectGuild(g)} className={`ext-guild-bubble relative ${installed?'':'opacity-50 grayscale border-dashed'} ${selectedGuild?.id===g.id&&installed?'active':''}`}>
@@ -231,7 +231,7 @@ export default function Shell({ children }) {
         </button>})}
       </div>
 
-      <aside className={`ext-module-panel lg:hidden ${menuOpen?'open':''}`}>
+      <aside id="ext-mobile-modules" className={`ext-module-panel lg:hidden ${menuOpen?'open':''}`}>
         <div className="ext-module-top">
           <div className="ext-server-context">
             {selectedGuild?.icon?<img src={selectedGuild.icon} alt=""/>:<div className="ext-server-fallback">{initials(selectedGuild?.name||'EX')}</div>}
