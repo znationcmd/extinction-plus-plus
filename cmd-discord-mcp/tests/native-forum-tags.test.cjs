@@ -48,7 +48,7 @@ test("Forum mutation requires manageChannels permission, exact forum and boolean
  assert.equal(x.state.size,0);
 });
 test("API and live forum editor are wired to real permissions and no Discord writes",()=>{
- assert.match(server,/url.pathname==="/api\/forums\/tags"/);
+ assert.ok(server.includes('url.pathname==="/api/forums/tags"'));
  assert.match(server,/getCmdForumSettings\(pool,auth,gid,cid,lookup,requireNativeMember\)/);
  assert.match(server,/setCmdForumSettings\(pool,auth,await readFormBodyJson\(req\),lookup,requireNativePermission\)/);
  assert.match(server,/initCmdForumTags\(pool\)/);
