@@ -261,6 +261,46 @@ const messageSelector='#channelMessages article.discord-message';
 const interactiveSelector='button,a,input,textarea,select,video,audio,[role=button],.cmd-person-target';
 function dismissCompactMenu(){if(compactMenu){compactMenu.remove();compactMenu=null}document.removeEventListener('keydown',onCompactEscape)}
 function onCompactEscape(e){if(e.key==='Escape')dismissCompactMenu()}
+async function openForumThreadEditor(article){
+ const ctx=window.cmdSphereMessageActions?.context?.(),messageId=String(article?.dataset?.messageId||'');
+ if(!ctx||ctx.channelType!=='forum'||!messageId)return;
+ const params=new URLSearchParams({guildId:ctx.guildId,channelId:ctx.channelId,messageId});
+ try{
+  const response=await fetch('/api/native/forum-thread?'+params.toString(),{credentials:'same-origin',cache:'no-store'});
+  const state=await response.json();if(!response.ok)throw Error(state.error||'Fil inaccessible');
+  const shade=elem('div','cmd-forum-thread-shade');
+  shade.style.cssText='position:fixed;inset:0;z-index:15000;display:grid;place-items:center;background:#000c;padding:14px';
+  shade.setAttribute('role','presentation');
+  const box=elem('section','cmd-forum-thread-settings');box.setAttribute('role','dialog');box.setAttribute('aria-label','Gestion du fil de discussion');
+  box.style.cssText='color:#fff;background:#22172e;border:1px solid #a87bdc;border-radius:17px;padding:20px;max-width:430px;width:100%;box-shadow:0 12px 60px #000c';
+  box.append(elem('h3','', 'Gestion du fil'));
+  const mkCheck=(label,checked)=>{const row=elem('label');row.style.cssText='display:flex;gap:10px;align-items:center;margin:12px 0';const input=elem('input');input.type='checkbox';input.checked=Boolean(checked);row.append(input,document.createTextNode(label));box.append(row);return input};
+  const archive=mkCheck('Fil archivé',state.archived||state.autoArchived),lock=mkCheck('Verrouiller les réponses',state.locked);
+  const field=elem('label','', 'Archivage automatique');field.style.cssText='display:grid;gap:7px;margin:13px 0';
+  const select=elem('select');select.style.cssText='min-height:44px;background:#1c1028;border:1px solid #a87bdc;border-radius:9px;color:#fff';
+  for(const [value,text] of [[0,'Désactivé'],[1,'1 heure'],[24,'1 jour'],[72,'3 jours'],[168,'7 jours'],[720,'30 jours']]){
+    const option=elem('option','',text);option.value=String(value);option.selected=Number(state.autoArchiveHours)===value;select.append(option);
+  }
+  field.append(select);box.append(field);
+  const info=elem('p','', 'Les messages déjà publiés restent conservés.');info.style.fontSize='12px';box.append(info);
+  const row=elem('div');row.style.cssText='display:flex;gap:9px;justify-content:flex-end;margin-top:15px';
+  const close=elem('button','', 'Fermer'),save=elem('button','', 'Enregistrer');
+  for(const b of [close,save])b.style.cssText='min-height:44px;padding:9px 13px;background:#4d2968;color:#fff;border:1px solid #ab8ddd;border-radius:10px;cursor:pointer';
+  close.onclick=()=>shade.remove();
+  save.onclick=async()=>{
+    save.disabled=true;
+    try{
+      const result=await fetch('/api/native/forum-thread',{method:'PATCH',credentials:'same-origin',
+       headers:{'content-type':'application/json'},body:JSON.stringify({...Object.fromEntries(params),archived:archive.checked,locked:lock.checked,autoArchiveHours:Number(select.value)})});
+      const body=await result.json();if(!result.ok)throw Error(body.error||'Modification refusée');
+      shade.remove();
+    }catch(error){window.alert?.(error.message)}finally{save.disabled=false}
+  };
+  row.append(close,save);box.append(row);shade.append(box);
+  shade.addEventListener('click',e=>{if(e.target===shade)shade.remove()});
+  document.body.append(shade);close.focus();
+ }catch(error){window.alert?.(error.message)}
+}
 function openCompactMenu(article,x,y){
  dismissCompactMenu();
  const menu=elem('div','cmd-compact-action-menu');menu.setAttribute('role','menu');menu.setAttribute('aria-label','Actions du message');
@@ -294,6 +334,7 @@ function openCompactMenu(article,x,y){
  const del=article.querySelector('.cmd-message-delete');if(del)action('🗑 Supprimer',()=>del.click(),true);
  if(article.dataset.cmdAuthorId||article.dataset.cmdAuthorUser)action('Ouvrir le profil',()=>showProfile(article));
  if(content&&navigator.share)action('Partager',()=>navigator.share({text:content}).catch(()=>{}));
+ if(window.cmdSphereMessageActions?.context?.()?.channelType==='forum'&&article.dataset.messageId)action('🗂️ Gestion du fil',()=>{void openForumThreadEditor(article)});
  if(article.dataset.messageId)action('Copier le lien du message',()=>navigator.clipboard?.writeText(location.href.split('#')[0]+'#message-'+encodeURIComponent(article.dataset.messageId)).catch(()=>{}));
  if(!menu.children.length)return;
  document.body.append(menu);compactMenu=menu;const w=menu.offsetWidth,h=menu.offsetHeight;
