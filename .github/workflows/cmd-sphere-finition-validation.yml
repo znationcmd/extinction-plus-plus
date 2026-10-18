@@ -55,6 +55,8 @@ on:
       - 'cmd-discord-mcp/tests/native-community-insights.test.cjs'
       - 'cmd-discord-mcp/cmd-community-discovery.js'
       - 'cmd-discord-mcp/tests/native-community-discovery.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-audit-log.js'
+      - 'cmd-discord-mcp/tests/native-audit-log.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-community.js'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
@@ -325,3 +327,22 @@ jobs:
           node --check server.js
       - name: Test safe opt-in public directory, permissions and privacy
         run: node --test tests/native-community-discovery.test.cjs tests/cmd-parity-24.test.cjs
+
+  validate-native-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify audit chain, native server routes and mobile settings
+        run: |
+          node --check cmd-native-audit-log.js
+          node --check cmd-server-manager.js
+          node --check server.js
+      - name: Test authorization, hash chaining, read-only history and UI
+        run: node --test tests/native-audit-log.test.cjs
