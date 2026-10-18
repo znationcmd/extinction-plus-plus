@@ -60,6 +60,8 @@ on:
       - 'cmd-discord-mcp/cmd-account-export.js'
       - 'cmd-discord-mcp/settings-ui.js'
       - 'cmd-discord-mcp/tests/account-export.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-onboarding.js'
+      - 'cmd-discord-mcp/tests/native-onboarding.test.cjs'
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
       - 'cmd-discord-mcp/tests/native-automod.test.cjs'
@@ -433,3 +435,22 @@ jobs:
           node --check server.js
       - name: Validate owner-restricted AFK configuration without moving voice peers
         run: node --test tests/native-afk-config.test.cjs tests/cmd-parity-59.test.cjs
+
+  validate-native-onboarding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify native role onboarding server and browser syntax
+        run: |
+          node --check cmd-native-onboarding.js
+          node --check server.js
+          node --check cmd-server-manager.js
+      - name: Test private onboarding, owner authorization and no role escalation
+        run: node --test tests/native-onboarding.test.cjs
