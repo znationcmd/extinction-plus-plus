@@ -51,6 +51,9 @@ on:
       - 'cmd-discord-mcp/tests/cmd-message-history-search.test.cjs'
       - 'cmd-discord-mcp/tests/history-attachment-filter.test.cjs'
       - 'cmd-discord-mcp/tests/history-attachment-ui.test.cjs'
+      - 'cmd-discord-mcp/cmd-community-insights.js'
+      - 'cmd-discord-mcp/tests/native-community-insights.test.cjs'
+      - 'cmd-discord-mcp/cmd-parity-community.js'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
       - 'cmd-discord-mcp/cmd-server-verification.js'
@@ -282,3 +285,22 @@ jobs:
         run: |
           npm ci
           node --test tests/history-attachment-filter.test.cjs tests/history-attachment-ui.test.cjs tests/cmd-history-search.test.cjs tests/cmd-message-history-search.test.cjs tests/cmd-parity-24.test.cjs
+  
+  validate-community-insights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify aggregate API and dashboard syntax
+        run: |
+          node --check cmd-community-insights.js
+          node --check cmd-server-manager.js
+          node --check server.js
+      - name: Verify privacy, owner access and community statistics
+        run: node --test tests/native-community-insights.test.cjs tests/cmd-parity-24.test.cjs
