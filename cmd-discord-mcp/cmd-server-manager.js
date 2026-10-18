@@ -13,7 +13,7 @@ const config=[
  ['Personnes',['members|♟|Membres','roles|♙|Rôles','invites|♧|Invitations']],
  ['Audio',['voicecfg|🎙|Paramètres vocaux']],
  ['Modération',['moderation|⚒|Modération','automod|◈|AutoMod','audit|▤|Logs du serveur','bans|⚑|Bannissements','security|⬡|Sécurité']],
- ['Communauté',['community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
+ ['Communauté',['onboarding|✦|Accueil et rôles','community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
 const settingTitle=tab=>{for(const [,items] of config)for(const item of items){const [id,,label]=item.split('|');if(id===tab)return label}return 'Paramètres du serveur'};
 async function request(path,body,method){
@@ -134,6 +134,7 @@ function other(){
  if(currentTab==='stickers')return intro('Autocollants','Autocollants du serveur CMD Sphere.')+info('Ouvre le sélecteur de stickers dans un salon pour voir les autocollants disponibles.');
  if(currentTab==='moderation')return intro('Modération','Gestion des personnes et accès du serveur.')+btn('Gérer les membres','members','primary')+btn('Gérer les rôles','roles')+btn('Paramètres de sécurité','security');
  if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
+ if(currentTab==='onboarding')return intro('Accueil des nouveaux membres','Le propriétaire choisit des rôles sans droits de modération. Chaque membre peut choisir une seule fois.')+(isNative()?'<section id="csm-native-onboarding" aria-live="polite">'+info('Chargement de l’accueil…')+'</section>':info('Disponible sur les serveurs CMD Sphere uniquement.'));
  if(currentTab==='community')return intro('Communauté et découverte','Annuaire volontaire : ton serveur reste invisible tant que tu ne le publies pas.')+(isNative()?'<section id="csm-native-discovery" aria-live="polite">'+info('Chargement des paramètres…')+'</section>':info('Annuaire réservé aux serveurs CMD Sphere.'))+btn('Modifier la visibilité du serveur','overview');
  if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques enregistrées sur CMD Sphere, sans suivi externe.')+(isNative()?'<section id="csm-native-insights" aria-live="polite" aria-label="Statistiques de la communauté">'+info('Chargement des statistiques…')+'</section>':info('Les données du serveur externe ne sont pas accessibles ici.'));
 
@@ -318,6 +319,83 @@ async function renderNativeMembersTab(){
    }else list.append(row);
   }
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
+}
+
+async function loadNativeOnboarding(){
+ const host=$('#csm-native-onboarding'),guildId=id();
+ if(!host||!isNative())return;
+ const errorText=message=>{const p=document.createElement('p');p.setAttribute('role','status');p.textContent=message;return p};
+ host.replaceChildren(errorText('Chargement…'));
+ try{
+  const saved=await request('/api/native/onboarding?guildId='+safe(guildId));
+  if(!host.isConnected||currentTab!=='onboarding'||id()!==guildId)return;
+  host.replaceChildren();
+  const introText=document.createElement('p');introText.textContent=saved.welcomeText||'Bienvenue sur ce serveur !';
+  host.append(introText);
+  if(ctx?.owner){
+   const form=document.createElement('form');form.className='csm-form';
+   const welcome=document.createElement('label');welcome.className='csm-field';welcome.textContent='Message de bienvenue';
+   const field=document.createElement('textarea');field.name='welcomeText';field.maxLength=500;
+   field.value=saved.welcomeText||'';field.rows=3;field.style.width='100%';welcome.append(field);form.append(welcome);
+   const rolesTitle=document.createElement('h3');rolesTitle.textContent='Rôles proposés (10 maximum)';form.append(rolesTitle);
+   const choices=Array.isArray(saved.choices)?saved.choices:[];
+   const options=Array.isArray(saved.roles)?saved.roles:[];
+   const selected=new Set(choices);
+   for(const role of options){
+    const row=document.createElement('label');row.className='csm-discord-toggle';
+    const name=document.createElement('strong');name.textContent=role.name;
+    const checkbox=document.createElement('input');checkbox.type='checkbox';
+    checkbox.value=role.id;checkbox.checked=selected.has(role.id);checkbox.name='onboardingRole';
+    row.append(name,checkbox);form.append(row);
+   }
+   if(!options.length)form.append(errorText('Crée d’abord un rôle sans droits de modération dans le menu Rôles.'));
+   const enable=document.createElement('label');enable.className='csm-discord-toggle';
+   const text=document.createElement('strong');text.textContent='Autoriser le choix de rôle à l’arrivée';
+   const enabled=document.createElement('input');enabled.type='checkbox';enabled.checked=Boolean(saved.enabled);
+   enable.append(text,enabled);form.append(enable);
+   const button=document.createElement('button');button.type='submit';button.className='csm-btn primary';
+   button.textContent='Enregistrer les choix';form.append(button);
+   const status=errorText('');form.append(status);host.append(form);
+   form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const list=[...form.querySelectorAll('input[name="onboardingRole"]:checked')].map(x=>x.value);
+    button.disabled=true;
+    try{
+     if(list.length>10)throw Error('Dix rôles maximum.');
+     await request('/api/native/onboarding/config',{guildId,enabled:enabled.checked,
+       welcomeText:field.value,choices:list});
+     status.textContent='Accueil enregistré sur ce serveur CMD Sphere.';
+    }catch(error){status.textContent='Configuration refusée : '+error.message}
+    finally{button.disabled=false}
+   });
+  }
+  if(saved.enabled){
+   const title=document.createElement('h3');title.textContent='Choisir mon rôle';host.append(title);
+   if(saved.selectedRoleId){
+    const chosen=(saved.roles||[]).find(x=>x.id===saved.selectedRoleId);
+    host.append(errorText('Ton rôle d’accueil a déjà été choisi : '+(chosen?.name||'rôle conservé')+'.'));
+   }else{
+    const options=(saved.roles||[]).filter(x=>(saved.choices||[]).includes(x.id));
+    const buttons=document.createElement('div');buttons.className='csm-actions';host.append(buttons);
+    for(const role of options){
+     const button=document.createElement('button');button.type='button';button.className='csm-btn';button.textContent=role.name;
+     button.addEventListener('click',async()=>{
+      if(!confirm('Choisir définitivement le rôle « '+role.name+' » ?'))return;
+      button.disabled=true;
+      try{
+       await request('/api/native/onboarding/choose',{guildId,roleId:role.id});
+       notify('Rôle du serveur attribué.');void loadNativeOnboarding();
+      }catch(error){notify(error.message,false);button.disabled=false}
+     });
+     buttons.append(button);
+    }
+    if(!options.length)host.append(errorText('Les rôles proposés ont changé. Contacte le propriétaire.'));
+   }
+  }else host.append(errorText('Le choix des rôles à l’accueil est actuellement désactivé.'));
+ }catch(error){
+  if(host.isConnected&&currentTab==='onboarding'&&id()===guildId)
+   host.replaceChildren(errorText('Accueil indisponible : '+(error?.message||'erreur')));
+ }
 }
 
 async function loadNativeDiscovery(){
@@ -570,6 +648,7 @@ function render(){
  modal.classList.add('on','csm-open');
  if(currentTab==='analytics')void loadNativeInsights();
  if(currentTab==='community')void loadNativeDiscovery();
+ if(currentTab==='onboarding')void loadNativeOnboarding();
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
  if(currentTab==='voicecfg')void loadNativeVoiceConfig();
