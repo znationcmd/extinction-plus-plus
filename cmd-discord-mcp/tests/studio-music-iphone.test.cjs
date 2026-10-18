@@ -6,7 +6,7 @@ test("Apple mobile only accepts compatible MP3 catalog and verifies actual playb
  assert.match(js,/apple&&type!=="audio\/mpeg"/);
  assert.match(js,/studioWithTimeout\(player\.play\(\),14000/);
  // Unlicensed preview-only results remain visible but cannot be added to video.
- assert.match(js,/musicResults=.*\.filter\(x=>x\.canUseInVideo===false\|\|studioPlayableMime\(x\)\)/);
+ assert.match(js,/musicResults=.*\.filter\(studioPlayableMime\)/);
  assert.match(js,/add\.disabled=track\.canUseInVideo===false\|\|studioBadMusic\.has\(track\.id\)/);
  assert.match(js,/if\(!studioPlayableMime\(track\)\)/);
 });
