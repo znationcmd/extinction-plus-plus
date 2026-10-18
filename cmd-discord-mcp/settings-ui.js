@@ -350,13 +350,28 @@
       if(key==='language'){
         var results=view.querySelector('#cmdLanguageChoice'),searchInput=view.querySelector('#cmdLanguageSearch');
         var label=view.querySelector('#cmdLanguageResultsLabel'),alphabet=view.querySelector('#cmdLanguageAlphabet');
+        var backCountry=view.querySelector('#cmdCountryBack'),allLanguagesButton=view.querySelector('#cmdShowAllLanguages');
+        var countryCatalogue=[],countryCataloguePromise=null,chosenCountry=null,allLanguages=false;
+        function loadCountryCatalogue(){
+          if(countryCataloguePromise)return countryCataloguePromise;
+          countryCataloguePromise=fetch('/cmd-country-language-catalog.json',{credentials:'same-origin'})
+            .then(function(response){if(!response.ok)throw Error('HTTP '+response.status);return response.json()})
+            .then(function(data){
+              if(!data||!Array.isArray(data.countries)||data.countries.length<200)throw Error('Liste des pays incomplète');
+              countryCatalogue=data.countries.filter(function(item){
+                return /^[A-Z]{2}$/.test(item.code)&&typeof item.name==='string'&&Array.isArray(item.languages);
+              });
+              return countryCatalogue;
+            }).catch(function(error){countryCataloguePromise=null;throw error});
+          return countryCataloguePromise;
+        }
         var alphabetLetters=['Toutes',...'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'];
-        var activeLetter='';
+        var activeLetter='A';
         for(var ch of alphabetLetters){
           var letter=document.createElement('button');letter.type='button';letter.className='cmd-language-letter';
           letter.dataset.cmdLetter=ch;letter.textContent=ch==='Toutes'?'Tout':ch==='#'?'Autres':ch;
-          letter.setAttribute('aria-label',ch==='Toutes'?'Toutes les langues':ch==='#'?'Langues à écriture non latine ou autre début':'Langues en '+ch);
-          letter.setAttribute('aria-pressed',String(ch==='Toutes'));
+          letter.setAttribute('aria-label',ch==='Toutes'?'Tous les pays':ch==='#'?'Autres pays':'Pays commençant par '+ch);
+          letter.setAttribute('aria-pressed',String(ch===activeLetter));
           alphabet.append(letter);
         }
         function updateLetters(){
@@ -368,9 +383,9 @@
           var button=event.target.closest('button[data-cmd-letter]');
           if(!button||!alphabet.contains(button))return;
           activeLetter=button.dataset.cmdLetter==='Toutes'?'':button.dataset.cmdLetter;
-          searchInput.value='';
+          chosenCountry=null;allLanguages=false;searchInput.value='';
           updateLetters();
-          listMatches('');
+          refreshCountryList('');
         });
         var favourites=['fr','en','de','es','it','co','gsw-CH','gsw-CH-x-bern','gsw-CH-x-zueri','gsw-CH-x-basel','gsw-CH-x-wallis','gsw-CH-x-luzern','fr-CH','de-CH','pt','ar','ja','zh'];
         function normalizeLanguageQuery(value){
