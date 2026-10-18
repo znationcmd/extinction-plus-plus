@@ -7,6 +7,7 @@ import {initCmdNativeAudit,appendCmdNativeAudit,nativeAuditTarget,handleCmdNativ
 import {handleCmdAccountExport} from "./cmd-account-export.js";
 import {initCmdOnboarding,handleNativeOnboarding} from "./cmd-native-onboarding.js";
 import {initCmdNativeRules,handleCmdNativeRules,assertNativeRulesAccepted} from "./cmd-native-rules-screening.js";
+import {initCmdNativeRaidProtection,handleNativeRaidProtection,guardNativeRaidAdmission} from "./cmd-native-raid-protection.js";
 import {initCmdNativeAutoMod,guardCmdNativeAutoMod,handleCmdNativeAutoMod} from "./cmd-native-automod.js";
 import {initCmdNativeVoiceConfig,handleCmdNativeVoiceConfig} from "./cmd-native-voice-config.js";
 import {initCmdNativeAfk,handleNativeAfk} from "./cmd-native-afk-config.js";
@@ -1281,6 +1282,7 @@ async function initNativeDb(){
     joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY(guild_id,user_id)
   )`);
+  await initCmdNativeRaidProtection(pool);
   await pool.query(`CREATE TABLE IF NOT EXISTS cmd_native_channels(
     id UUID PRIMARY KEY,
     guild_id UUID NOT NULL REFERENCES cmd_native_guilds(id) ON DELETE CASCADE,
@@ -4218,7 +4220,7 @@ async function discoverNativeGuilds(){
   return [];
 }
 async function joinNativeByCode(auth,code){
-  return joinNativeInvite(pool,auth,code);
+  return joinNativeInvite(pool,auth,code,{beforeJoin:guardNativeRaidAdmission});
 }
 
 async function backend(bot,kind,{guildId,channelId,before,limit,body}={}){
@@ -4741,6 +4743,7 @@ const httpServer=createServer(async(req,res)=>{
     if(await handleNativeAfk(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeVoiceConfig(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativePermission}))return;
     if(await handleCmdNativeAutoMod(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
+    if(await handleNativeRaidProtection(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeOwner}))return;
     if(await handleCmdNativeRules(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
     if(await handleNativeOnboarding(req,res,url,{pool,auth:dashboardAuth(req),sendJson,readBody:readFormBodyJson,requireNativeMember,requireNativeOwner}))return;
     if(await handleCmdAccountExport(req,res,url,{pool,auth:dashboardAuth(req),sendJson}))return;
