@@ -4,11 +4,28 @@ const root=new URL('../',import.meta.url);
 const results=JSON.parse(readFileSync(new URL('audit/2026-10-18-tests.json',root)));
 const count={validated:0,preinstalled:0,partial:0};
 const escape=x=>String(x??'—').replaceAll('|',' / ').replaceAll('\n',' ');
+const completedSourceLots={
+ channel_slowmode:{
+  work:'Moteur de délai transactionnel PostgreSQL, API GET/PATCH, sélecteur dans les paramètres du salon et refus HTTP 429',
+  files:'cmd-native-slowmode.js ; server.js ; cmd-server-manager.js',
+  api:'PATCH /api/native/slowmode ; cmd_native_channels.slowmode_seconds ; cmd_native_slowmode_state',
+  tests:'native-slowmode.test.cjs : 8 scénarios réussis ; CI 39106018069',
+  evidence:'Commits 6bd43dd, 637f2e0, f41b330 ; tests GitHub Actions (simulation SQL)'
+ },
+ server_template_cloning:{
+  work:'Six modèles de serveur avec salons, rôles nouveaux et identifiants uniques ; API GET/POST sécurisée ; aucun secret copié',
+  files:'server.js',
+  api:'GET/POST /api/native/templates ; tables natives existantes',
+  tests:'native-templates-contract.test.cjs : 3 scénarios réussis ; CI 39106018069',
+  evidence:'Commits 90da1e0 et 19893f2 ; tests GitHub Actions'
+ }
+};
 const rows=CMD_PARITY_59.map(f=>{
  const validated=f.implemented&&f.enabled&&f.verified;
  const state=validated?'✅':f.implemented?'🟡':'🟠';
  count[validated?'validated':f.implemented?'partial':'preinstalled']++;
- return [f.id,f.category,f.title,'Contrat préparatoire','Inventaire du contrat ; aucune clôture déclarée','cmd-parity-59.js',f.apiContract,f.acceptance+' : non exécuté','Non vérifié',state,'Commit source dd343a9286e202dd038f432279451f35c0c5c033'];
+ const lot=completedSourceLots[f.id];
+ return [f.id,f.category,f.title,'Contrat préparatoire',lot?.work||'Inventaire du contrat ; aucune clôture déclarée',lot?.files||'cmd-parity-59.js',lot?.api||f.apiContract,lot?.tests||(f.acceptance+' : non exécuté'),'Non déployé sur Railway',state,lot?.evidence||'Commit source dd343a9286e202dd038f432279451f35c0c5c033'];
 });
 const fixes=[
  ['SEC-ORIGIN','Sécurité','Contrôle d’origine des mutations API','Partiel','Contrôle avant les gestionnaires API','cmd-request-safety.js; server.js','API /api/* ; aucune migration','request-safety.test.cjs : réussi'],
@@ -58,9 +75,16 @@ ${results.runtime_after.failures.map(s=>'- '+s).join('\n')}
 
 ${header}${table(fixes)}
 
+## Dernier cycle de tests GitHub Actions
+
+- Workflow [39106018069](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39106018069) : tests de la suite complète 224/224 réussis, sans échec.
+- Le moteur de mode lent et les modèles natifs ont passé leurs tests dédiés ; les tests de requêtes utilisent des doubles et ne constituent pas une validation PostgreSQL ni navigateur réelle.
+- La branche de finition n'est pas la branche de production. Aucun déploiement, activation publique ou paiement n'est attesté pour ces nouveaux contrats.
+- La phase 0 exige toujours une sauvegarde restaurée dans une base isolée avant migration de production.
+
 ## 59 contrats — compteurs calculés
 
-✅ ${count.validated} ; 🟡 ${count.partial} ; 🟠 ${count.preinstalled}. Aucun contrat clôturé durant ce lot. Le nombre global de fonctions ❌ est indéterminé tant que l’inventaire exhaustif n’est pas terminé. Les 5 corrections partielles ci-dessus ne sont pas ajoutées au décompte des contrats.
+✅ ${count.validated} ; 🟡 ${count.partial} ; 🟠 ${count.preinstalled}. Aucun contrat vérifié en production durant ce lot. Le nombre global de fonctions ❌ est indéterminé tant que l’inventaire exhaustif n’est pas terminé. Les 5 corrections partielles ci-dessus ne sont pas ajoutées au décompte des contrats.
 
 ${header}${table(rows)}
 
