@@ -75,6 +75,8 @@ on:
       - 'cmd-discord-mcp/tests/native-raid-protection.test.cjs'
       - 'cmd-discord-mcp/cmd-native-announcement-follows.js'
       - 'cmd-discord-mcp/tests/native-announcement-follows.test.cjs'
+      - 'cmd-discord-mcp/unpack-profile-assets.cjs'
+      - 'cmd-discord-mcp/tests/profile-asset-atomic.test.cjs'
       - 'cmd-discord-mcp/cmd-native-invites.js'
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
@@ -565,3 +567,19 @@ jobs:
           node --check cmd-server-manager.js
       - name: Test explicit two-server admin rights and private-data protection
         run: node --test tests/native-announcement-follows.test.cjs
+
+  validate-profile-atomic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate original profile asset extractor syntax
+        run: node --check unpack-profile-assets.cjs
+      - name: Verify profile manifests stay valid during concurrent asset replacement
+        run: node --test tests/profile-asset-atomic.test.cjs
