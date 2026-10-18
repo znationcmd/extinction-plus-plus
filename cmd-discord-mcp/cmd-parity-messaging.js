@@ -18,9 +18,10 @@ export const features=Object.freeze([
       "before",
       "has_file"
     ],
+    "stage": "developed_pending_multidevice_and_production_validation",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "large_file_upload",
