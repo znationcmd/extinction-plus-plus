@@ -341,7 +341,7 @@
         var label=view.querySelector('#cmdLanguageResultsLabel');
         var favourites=['fr','en','de','es','it','co','gsw-CH','gsw-CH-x-bern','gsw-CH-x-zueri','gsw-CH-x-basel','gsw-CH-x-wallis','gsw-CH-x-luzern','fr-CH','de-CH','pt','ar','ja','zh'];
         function normalizeLanguageQuery(value){
-          return String(value||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase();
+          return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
         }
         function listMatches(term){
           var query=normalizeLanguageQuery(term).trim(),chosen=activeSettingsLanguage();
