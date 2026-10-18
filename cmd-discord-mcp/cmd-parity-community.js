@@ -31,9 +31,10 @@ export const features=Object.freeze([
       "version",
       "accepted_at"
     ],
+    "stage": "partially_implemented_versioned_native_rules_acceptance_before_messages_pending_other_surfaces",
     "enabled": false,
     "verified": false,
-    "implemented": false
+    "implemented": true
   },
   {
     "id": "automod_engine",
