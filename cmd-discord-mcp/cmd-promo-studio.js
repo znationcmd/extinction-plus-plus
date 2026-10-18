@@ -575,7 +575,7 @@ async function searchMusic(value){
   const response=await fetch("/api/cmd-studio-music/search?q="+encodeURIComponent(query)+"&source="+encodeURIComponent(musicProvider),{credentials:"same-origin",cache:"no-store"});
   const result=await response.json();if(!response.ok)throw Error(result.error||"Recherche indisponible");
   if(ticket!==musicSearchId)return;
-  musicResults=(Array.isArray(result.items)?result.items:[]).filter(x=>x.canUseInVideo===false||studioPlayableMime(x));
+  musicResults=(Array.isArray(result.items)?result.items:[]).filter(studioPlayableMime);
   if(!musicResults.length&&result.notice)note(result.notice);
   renderMusicSearch();
  }catch(error){if(ticket===musicSearchId){container.textContent="Recherche indisponible : "+(error.message||error)+". Tu peux toujours importer ton propre son.";musicResults=[]}}
