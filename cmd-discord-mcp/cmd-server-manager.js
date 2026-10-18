@@ -13,7 +13,7 @@ const config=[
  ['Personnes',['members|♟|Membres','roles|♙|Rôles','invites|♧|Invitations']],
  ['Audio',['voicecfg|🎙|Paramètres vocaux']],
  ['Modération',['moderation|⚒|Modération','automod|◈|AutoMod','audit|▤|Logs du serveur','bans|⚑|Bannissements','security|⬡|Sécurité']],
- ['Communauté',['onboarding|✦|Accueil et rôles','community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
+ ['Communauté',['rules|▤|Règlement du serveur','onboarding|✦|Accueil et rôles','community|⌂|Paramètres de communauté','analytics|↗|Analyses de serveur']]
 ];
 const settingTitle=tab=>{for(const [,items] of config)for(const item of items){const [id,,label]=item.split('|');if(id===tab)return label}return 'Paramètres du serveur'};
 async function request(path,body,method){
@@ -134,6 +134,7 @@ function other(){
  if(currentTab==='stickers')return intro('Autocollants','Autocollants du serveur CMD Sphere.')+info('Ouvre le sélecteur de stickers dans un salon pour voir les autocollants disponibles.');
  if(currentTab==='moderation')return intro('Modération','Gestion des personnes et accès du serveur.')+btn('Gérer les membres','members','primary')+btn('Gérer les rôles','roles')+btn('Paramètres de sécurité','security');
  if(currentTab==='bans')return intro('Bannissements','Gestion des membres bannis.')+info('Le panneau de bannissements doit être relié à la liste des membres bannis du serveur avant de permettre la levée d’un bannissement.');
+ if(currentTab==='rules')return intro('Règlement du serveur','Le propriétaire définit le règlement. Les membres acceptent sa version en vigueur avant d’écrire.')+(isNative()?'<section id="csm-native-rules" aria-live="polite">'+info('Chargement du règlement…')+'</section>':info('Disponible sur les serveurs CMD Sphere.'));
  if(currentTab==='onboarding')return intro('Accueil des nouveaux membres','Le propriétaire choisit des rôles sans droits de modération. Chaque membre peut choisir une seule fois.')+(isNative()?'<section id="csm-native-onboarding" aria-live="polite">'+info('Chargement de l’accueil…')+'</section>':info('Disponible sur les serveurs CMD Sphere uniquement.'));
  if(currentTab==='community')return intro('Communauté et découverte','Annuaire volontaire : ton serveur reste invisible tant que tu ne le publies pas.')+(isNative()?'<section id="csm-native-discovery" aria-live="polite">'+info('Chargement des paramètres…')+'</section>':info('Annuaire réservé aux serveurs CMD Sphere.'))+btn('Modifier la visibilité du serveur','overview');
  if(currentTab==='analytics')return intro('Analyses de serveur','Statistiques enregistrées sur CMD Sphere, sans suivi externe.')+(isNative()?'<section id="csm-native-insights" aria-live="polite" aria-label="Statistiques de la communauté">'+info('Chargement des statistiques…')+'</section>':info('Les données du serveur externe ne sont pas accessibles ici.'));
@@ -319,6 +320,63 @@ async function renderNativeMembersTab(){
    }else list.append(row);
   }
  }catch(error){host.textContent='Liste des membres inaccessible : '+error.message}
+}
+
+async function loadNativeRules(){
+ const host=$('#csm-native-rules'),guildId=id();
+ if(!host||!isNative())return;
+ const statusLine=value=>{const p=document.createElement('p');p.setAttribute('role','status');p.textContent=value;return p};
+ host.replaceChildren(statusLine('Chargement…'));
+ try{
+  const rule=await request('/api/native/rules?guildId='+safe(guildId));
+  if(!host.isConnected||currentTab!=='rules'||id()!==guildId)return;
+  host.replaceChildren();
+  if(ctx?.owner){
+   const form=document.createElement('form');form.className='csm-form';
+   const label=document.createElement('label');label.className='csm-field';label.textContent='Texte du règlement';
+   const editor=document.createElement('textarea');editor.name='rulesText';editor.rows=8;editor.maxLength=5000;
+   editor.style.cssText='width:100%;min-height:180px;resize:vertical';editor.value=rule.rulesText||'';
+   label.append(editor);form.append(label);
+   const row=document.createElement('label');row.className='csm-discord-toggle';
+   const name=document.createElement('strong');name.textContent='Demander l’acceptation avant de publier';
+   const enabled=document.createElement('input');enabled.type='checkbox';enabled.checked=!!rule.enabled;
+   row.append(name,enabled);form.append(row);
+   const save=document.createElement('button');save.type='submit';save.className='csm-btn primary';
+   save.textContent='Enregistrer le règlement';form.append(save);
+   const notice=statusLine('Une modification du règlement oblige les membres à l’accepter à nouveau.');
+   form.append(notice);host.append(form);
+   form.addEventListener('submit',async event=>{
+    event.preventDefault();save.disabled=true;
+    try{
+     const result=await request('/api/native/rules/config',{guildId,enabled:enabled.checked,rulesText:editor.value});
+     notice.textContent='Règlement enregistré — version '+result.version+'.';
+     void loadNativeRules();
+    }catch(error){notice.textContent='Enregistrement refusé : '+error.message}
+    finally{save.disabled=false}
+   });
+  }
+  const title=document.createElement('h3');title.textContent='Règlement actuel · version '+rule.version;
+  host.append(title);
+  const text=document.createElement('p');text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';
+  text.textContent=rule.rulesText||'Le propriétaire n’a pas encore rédigé de règlement.';
+  host.append(text);
+  if(!rule.enabled){host.append(statusLine('Acceptation facultative : le propriétaire n’a pas activé le contrôle.'));return}
+  if(rule.accepted){host.append(statusLine('Règlement accepté pour ton compte.'));return}
+  const button=document.createElement('button');button.type='button';button.className='csm-btn primary';
+  button.textContent='J’ai lu et j’accepte le règlement';host.append(button);
+  const notice=statusLine('Tu dois accepter ce texte avant de publier des messages.');host.append(notice);
+  button.addEventListener('click',async()=>{
+   button.disabled=true;
+   try{
+    await request('/api/native/rules/accept',{guildId,version:rule.version});
+    notice.textContent='Règlement accepté. Tu peux maintenant publier.';
+    button.remove();
+   }catch(error){notice.textContent='Acceptation impossible : '+error.message;button.disabled=false}
+  });
+ }catch(error){
+  if(host.isConnected&&currentTab==='rules'&&id()===guildId)
+   host.replaceChildren(statusLine('Règlement indisponible : '+(error?.message||'erreur')));
+ }
 }
 
 async function loadNativeOnboarding(){
@@ -649,6 +707,7 @@ function render(){
  if(currentTab==='analytics')void loadNativeInsights();
  if(currentTab==='community')void loadNativeDiscovery();
  if(currentTab==='onboarding')void loadNativeOnboarding();
+ if(currentTab==='rules')void loadNativeRules();
  if(currentTab==='audit')void loadNativeAudit();
  if(currentTab==='automod')void loadNativeAutoMod();
  if(currentTab==='voicecfg')void loadNativeVoiceConfig();
