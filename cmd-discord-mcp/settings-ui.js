@@ -180,7 +180,7 @@
     var cmdSettingsNativeNames={fr:'Français',en:'English',us:'English (US)',de:'Deutsch',es:'Español',it:'Italiano',ru:'Русский',ko:'한국어',ja:'日本語',zh:'中文',co:'Corsu',
       'gsw-CH':'Schwiizertüütsch / Suisse allemand','de-CH':'Schweizer Hochdeutsch'};
     var languageCatalogue=[],languageCataloguePromise=null,settingsChosenLanguage='';
-    function validLocaleCode(v){return /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,7}$/i.test(String(v||''))&&String(v).length<=64}
+    function validLocaleCode(v){return /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,5}(?:-x(?:-[a-z0-9]{1,8}){1,5})?$/i.test(String(v||''))&&String(v).length<=64}
     function nativeLanguageLabel(code){
       if(cmdSettingsNativeNames[code])return cmdSettingsNativeNames[code];
       var found=languageCatalogue.find(function(entry){return entry[0]===code});
