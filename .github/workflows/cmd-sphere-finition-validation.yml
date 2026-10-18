@@ -42,6 +42,14 @@ on:
       - 'cmd-discord-mcp/tests/message-reminders-*.test.cjs'
       - 'cmd-discord-mcp/tests/message-tts.test.cjs'
       - 'cmd-discord-mcp/tests/cmd-parity-59.test.cjs'
+      - 'cmd-discord-mcp/cmd-message-history-search.js'
+      - 'cmd-discord-mcp/cmd-chat-history-ui.js'
+      - 'cmd-discord-mcp/cmd-parity-messaging.js'
+      - 'cmd-discord-mcp/cmd-parity-24.js'
+      - 'cmd-discord-mcp/tests/cmd-parity-24.test.cjs'
+      - 'cmd-discord-mcp/tests/cmd-history-search.test.cjs'
+      - 'cmd-discord-mcp/tests/cmd-message-history-search.test.cjs'
+      - 'cmd-discord-mcp/tests/history-attachment-filter.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
       - 'cmd-discord-mcp/cmd-server-verification.js'
@@ -253,3 +261,22 @@ jobs:
           node --check cmd-social-message-actions.js
       - name: Test forum lifecycle without touching a production database
         run: node --test tests/native-forum-thread-controls.test.cjs tests/native-forum-tags.test.cjs
+
+  validate-history-attachments:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check search engine and browser source syntax
+        run: |
+          node --check cmd-message-history-search.js
+          node --check cmd-chat-history-ui.js
+      - name: Test searchable message history, attachments and privacy boundaries
+        run: |
+          node --test tests/history-attachment-filter.test.cjs tests/cmd-history-search.test.cjs tests/cmd-message-history-search.test.cjs tests/cmd-parity-24.test.cjs
