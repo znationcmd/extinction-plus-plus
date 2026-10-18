@@ -142,7 +142,9 @@ function other(){
   (isNative()?'<div id="csm-native-members" aria-live="polite">'+info('Chargement des membres du serveur CMD Sphere…')+'</div>':info('Les membres du serveur externe doivent être gérés sur sa plateforme.')+toDiscord());
  if(currentTab==='security')return intro('Permissions et sécurité','Permissions d’accès et sécurité du serveur.')+btn('Configurer les rôles','roles','primary')+info('Pour les permissions propres à un salon, ouvre la rubrique Salons et catégories. Les paramètres de sécurité externes restent dans la plateforme liée.')+toDiscord();
  if(currentTab==='automod')return intro('AutoMod','Modération automatisée du serveur.')+info('L’édition des règles AutoMod externe n’est pas accessible depuis ce panneau.')+toDiscord();
- return intro('Journal d’audit','Suivi de la configuration et des événements.')+info('Le journal d’audit externe ne peut pas être modifié dans CMD Sphere.')+toDiscord();
+ return intro('Journal d’audit','Historique privé des modifications des salons et des rôles du serveur.')+
+  (isNative()?'<section id="csm-native-audit" aria-live="polite">'+info('Chargement du journal…')+'</section>':
+  info('Pour les serveurs externes, utilise le journal de leur plateforme.')+toDiscord());
 }
 
 async function loadHostingRoles(){
@@ -371,6 +373,53 @@ async function loadNativeDiscovery(){
  void lookup();
 }
 
+const CMD_AUDIT_ACTION_LABELS={
+ create_category:'Catégorie créée',create_channel:'Salon créé',update_channel:'Salon modifié',
+ reorder_channels:'Salons réorganisés',delete_channel:'Salon supprimé',
+ create_role:'Rôle créé',update_role:'Rôle modifié',delete_role:'Rôle supprimé',
+ set_channel_permissions:'Permissions du salon modifiées'
+};
+async function loadNativeAudit(before=null,append=false){
+ const host=$('#csm-native-audit'),guildId=id();
+ if(!host||!isNative())return;
+ if(!ctx?.admin){host.textContent='Journal réservé aux administrateurs du serveur.';return}
+ if(!append)host.replaceChildren();
+ const status=document.createElement('p');status.setAttribute('role','status');
+ status.textContent='Chargement des événements…';host.append(status);
+ const params=new URLSearchParams({guildId,limit:'30'});
+ if(before)params.set('before',before);
+ try{
+  const result=await request('/api/native/audit-log?'+params.toString());
+  if(!host.isConnected||currentTab!=='audit'||id()!==guildId)return;
+  host.querySelector('[data-cmd-audit-more]')?.remove();
+  let list=host.querySelector('[data-cmd-audit-items]');
+  if(!list){list=document.createElement('ol');list.dataset.cmdAuditItems='true';
+   list.style.cssText='list-style:none;padding:0;display:grid;gap:10px';host.prepend(list)}
+  const entries=Array.isArray(result.entries)?result.entries:[];
+  for(const entry of entries){
+   const row=document.createElement('li');row.className='csm-info';
+   const heading=document.createElement('strong');
+   heading.textContent=CMD_AUDIT_ACTION_LABELS[entry.action]||'Action administrative';
+   const summary=document.createElement('p');
+   summary.textContent='Auteur : '+String(entry.actorId||'—')+
+     (entry.targetId?' · Cible : '+String(entry.targetId):'');
+   const time=document.createElement('small');
+   const date=new Date(entry.occurredAt);
+   time.textContent=Number.isFinite(date.getTime())?date.toLocaleString('fr-FR'):'Date indisponible';
+   row.append(heading,summary,time);list.append(row);
+  }
+  status.textContent=entries.length?'Événements enregistrés sur CMD Sphere.':'Aucune nouvelle action enregistrée.';
+  if(result.morePossible&&result.nextCursor){
+   const more=document.createElement('button');more.type='button';more.className='csm-btn';
+   more.dataset.cmdAuditMore='true';more.textContent='Afficher les événements précédents';
+   more.addEventListener('click',()=>{more.disabled=true;void loadNativeAudit(String(result.nextCursor),true)});
+   host.append(more);
+  }
+ }catch(error){
+  if(host.isConnected&&currentTab==='audit'&&id()===guildId)
+   status.textContent='Journal indisponible : '+(error?.message||'erreur inconnue');
+ }
+}
 async function loadNativeInsights(period='7d'){
  const host=$('#csm-native-insights'),guildId=id();
  if(!host||!isNative()||!ctx?.admin)return void(host&&(host.textContent='Accès réservé aux administrateurs du serveur.'));
@@ -415,6 +464,7 @@ function render(){
  modal.classList.add('on','csm-open');
  if(currentTab==='analytics')void loadNativeInsights();
  if(currentTab==='community')void loadNativeDiscovery();
+ if(currentTab==='audit')void loadNativeAudit();
  box.querySelector('#csm-close')?.addEventListener('click',close);
  box.querySelector('#csm-back')?.addEventListener('click',()=>{currentTab='home';editing=null;render()});
  box.querySelectorAll('[data-csm-tab]').forEach(e=>e.addEventListener('click',()=>{currentTab=e.dataset.csmTab;editing=null;render()}));
