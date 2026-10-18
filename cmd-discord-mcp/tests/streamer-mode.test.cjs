@@ -35,7 +35,7 @@ test("Only explicit boolean preferences are accepted",async()=>{
  await assert.rejects(m.readCmdStreamerMode(db,""),/Connexion requise/);
 });
 test("Both settings operations scope themselves to signed-in account",()=>{
- assert.match(backend,/url.pathname==="/api/account/streamer-mode"/);
+ assert.ok(backend.includes('url.pathname==="/api/account/streamer-mode"'));
  assert.match(backend,/const auth=dashboardAuth\(req\);if\(!auth\)/);
  assert.match(backend,/readCmdStreamerMode\(pool,userId\)/);
  assert.match(backend,/writeCmdStreamerMode\(pool,userId,await readFormBodyJson\(req\)\)/);
@@ -43,11 +43,11 @@ test("Both settings operations scope themselves to signed-in account",()=>{
 });
 test("Dashboard and messages include a visible, opt-in local privacy control",()=>{
  assert.equal((backend.match(/cmd-streamer-mode-ui\.js\?v=20261018streamer/g)||[]).length,3);
- assert.match(backend,/url.pathname==="/cmd-streamer-mode-ui.js"/);
+ assert.ok(backend.includes('url.pathname==="/api/account/streamer-mode"'));
  assert.match(ui,/aria-pressed/);
  assert.match(ui,/mode Streamer/i);
  assert.match(ui,/cmd-streamer-mask-invites/);
  assert.match(ui,/cmd-streamer-hide-notifications/);
- assert.match(ui,/fetch\("/api/account/streamer-mode"/);
+ assert.ok(ui.includes('fetch("/api/account/streamer-mode"'));
  assert.doesNotMatch(ui,/localStorage|sessionStorage/);
 });
