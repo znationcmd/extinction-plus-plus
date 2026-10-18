@@ -100,3 +100,18 @@ test("Visible privacy controls are wired to real APIs and do not disclose secret
  assert.doesNotMatch(ui,/localStorage|access_token|bearer/i);
  assert.doesNotThrow(()=>new Function(ui));
 });
+
+test("Friend requests are rate-limited and repeated pending requests are idempotent",()=>{
+ assert.match(server,/existingRequest=await pool\.query\("SELECT id FROM cmd_friend_requests/);
+ assert.match(server,/if\(existingRequest\.rows\.length\)return \{ok:true,pending:true,user:target\}/);
+ assert.match(server,/created_at>NOW\(\)-INTERVAL '1 hour'/);
+ assert.match(server,/Number\(outbound\.rows\[0\]\?\.n\|\|0\)>=20/);
+ assert.match(server,/status:429/);
+});
+test("Blocks cannot be bypassed by group DMs, search or channel mention notifications",()=>{
+ assert.match(server,/async function createGroupDm[\s\S]*?for\(const uid of ids\)await assertNotBlocked\(pool,me,uid\)/);
+ assert.match(server,/async function sendGroupDmMessage[\s\S]*?for\(const peer of peers\.rows\)await assertNotBlocked/);
+ assert.match(server,/AND NOT EXISTS \(SELECT 1 FROM cmd_user_blocks b WHERE/);
+ assert.match(server,/const permittedRecipients=\[\]/);
+ assert.match(server,/if\(!\(await isBlockedPair\(pool,String\(auth.user.id\),String\(recipient.user_id\)\)\)\)permittedRecipients.push/);
+});
