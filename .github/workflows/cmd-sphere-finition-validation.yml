@@ -8,6 +8,9 @@ on:
       - 'cmd-discord-mcp/cmd-profile-scene.js'
       - 'cmd-discord-mcp/tests/profile-scene-*.test.cjs'
       - 'cmd-discord-mcp/tests/profile-3d.test.cjs'
+      - 'cmd-discord-mcp/cmd-promo-studio.js'
+      - 'cmd-discord-mcp/tests/studio-music-iphone.test.cjs'
+      - 'cmd-discord-mcp/tests/server-icon-hosting.test.cjs'
       - '.github/workflows/cmd-sphere-finition-validation.yml'
   workflow_dispatch:
 permissions:
