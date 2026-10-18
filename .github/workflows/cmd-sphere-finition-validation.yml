@@ -73,6 +73,8 @@ on:
       - 'cmd-discord-mcp/tests/native-rules-screening.test.cjs'
       - 'cmd-discord-mcp/cmd-native-raid-protection.js'
       - 'cmd-discord-mcp/tests/native-raid-protection.test.cjs'
+      - 'cmd-discord-mcp/cmd-native-announcement-follows.js'
+      - 'cmd-discord-mcp/tests/native-announcement-follows.test.cjs'
       - 'cmd-discord-mcp/cmd-native-invites.js'
       - 'cmd-discord-mcp/cmd-parity-expansion-accounts.js'
       - 'cmd-discord-mcp/cmd-native-automod.js'
@@ -544,3 +546,22 @@ jobs:
           node --check cmd-parity-extra-media.js
       - name: Ensure voice-room messages preserve permissions and messaging safety
         run: node --test tests/native-voice-text.test.cjs tests/cmd-parity-59.test.cjs
+
+  validate-announcement-follows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse native public announcement follows, message relay and controls
+        run: |
+          node --check cmd-native-announcement-follows.js
+          node --check server.js
+          node --check cmd-server-manager.js
+      - name: Test explicit two-server admin rights and private-data protection
+        run: node --test tests/native-announcement-follows.test.cjs
