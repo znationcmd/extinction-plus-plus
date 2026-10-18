@@ -50,6 +50,7 @@ on:
       - 'cmd-discord-mcp/tests/cmd-history-search.test.cjs'
       - 'cmd-discord-mcp/tests/cmd-message-history-search.test.cjs'
       - 'cmd-discord-mcp/tests/history-attachment-filter.test.cjs'
+      - 'cmd-discord-mcp/tests/history-attachment-ui.test.cjs'
       - 'cmd-discord-mcp/cmd-server-manager.js'
       - 'cmd-discord-mcp/cmd-forum-tags.js'
       - 'cmd-discord-mcp/cmd-server-verification.js'
@@ -279,4 +280,5 @@ jobs:
           node --check cmd-chat-history-ui.js
       - name: Test searchable message history, attachments and privacy boundaries
         run: |
-          node --test tests/history-attachment-filter.test.cjs tests/cmd-history-search.test.cjs tests/cmd-message-history-search.test.cjs tests/cmd-parity-24.test.cjs
+          npm ci
+          node --test tests/history-attachment-filter.test.cjs tests/history-attachment-ui.test.cjs tests/cmd-history-search.test.cjs tests/cmd-message-history-search.test.cjs tests/cmd-parity-24.test.cjs
