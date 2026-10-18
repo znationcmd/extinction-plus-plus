@@ -62,7 +62,7 @@ test('settings and chat UI offer searchable catalogue, custom region tags, no la
  assert.match(settings,/id="cmdLanguageCustomCode"/);
  assert.match(settings,/loadLanguageCatalogue\(\)/);
  assert.match(settings,/fetch\('\/cmd-language-catalog\.json'/);
- assert.match(settings,/languageCatalogue\.length<7000/);
+ assert.match(settings,/payload\.languages\.length<7000/);
  assert.match(settings,/applySettingsLanguage\(code\)/);
  assert.match(settings,/ensureLanguageOption\(globalPicker,code\)/);
  assert.match(settings,/cmdSettingsLocales\[base\]/);
