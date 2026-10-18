@@ -807,12 +807,37 @@ function editChannel(chId){
  (ch.type==='category'?'':'<label class="csm-field">Catégorie<select name="parentId">'+options(parent,[['','Aucune'],...cats.map(x=>[x.source_channel_id||x.id,x.name])])+'</select></label>')+
  (ch.type==='category'?'':'<label class="csm-field">Sujet<textarea name="topic" maxlength="1024">'+escapeHtml(ch.topic||'')+'</textarea></label>')+
  (isNative()&&['text','announcement','forum'].includes(ch.type)?'<label class="csm-field">Mode lent · délai entre messages<select name="slowmodeSeconds">'+options(String(ch.slowmode_seconds||0),[['0','Désactivé'],['5','5 secondes'],['10','10 secondes'],['15','15 secondes'],['30','30 secondes'],['60','1 minute'],['120','2 minutes'],['300','5 minutes'],['600','10 minutes'],['900','15 minutes'],['1800','30 minutes'],['3600','1 heure'],['7200','2 heures'],['21600','6 heures']])+'</select></label><p class="csm-lead">Délai appliqué sur le serveur pour chaque membre. Les administrateurs et rôles de gestion sont exemptés.</p>':'')+
- '<div class="csm-actions"><button type="submit" class="csm-btn primary">Enregistrer</button>'+btn('Supprimer','delete-channel','danger')+btn('Annuler','cancel-channel')+'</div></form>';
+ '<div class="csm-actions"><button type="submit" class="csm-btn primary">Enregistrer</button>'+btn('Supprimer','delete-channel','danger')+btn('Annuler','cancel-channel')+'</div></form>'+
+ (isNative()&&ch.type==='forum'?'<section id="csm-forum-tags-editor" class="csm-form csm-sub" aria-label="Tags du forum"><h3>Tags et galerie du forum</h3><label class="csm-field">Tags (un nom par ligne, 20 maximum)<textarea id="csm-forum-tags-list" maxlength="1200" rows="5" placeholder="Questions&#10;Annonces&#10;Tutoriels"></textarea></label><label class="csm-field"><input type="checkbox" id="csm-forum-gallery"> Affichage en galerie</label><div class="csm-actions"><button id="csm-forum-tags-save" type="button" class="csm-btn primary">Enregistrer les tags</button></div><p id="csm-forum-tags-status" role="status" aria-live="polite"></p></section>':'');
  panel.querySelector('form').addEventListener('submit',async e=>{
   e.preventDefault();const d=new FormData(e.currentTarget);
   try{await mutate('update_channel',{channelId:ch.id,name:String(d.get('name')||'').trim(),type:ch.type==='category'?'category':String(d.get('type')||'text'),parentId:ch.type==='category'?'':String(d.get('parentId')||''),topic:ch.type==='category'?'':String(d.get('topic')||''),...(isNative()&&d.has('slowmodeSeconds')?{slowmodeSeconds:Number(d.get('slowmodeSeconds'))}:{})})}catch(e){notify(e.message,false)}
  });
  panel.querySelectorAll('[data-csm-action]').forEach(e=>e.addEventListener('click',()=>action(e.dataset.csmAction)));
+ const forumBox=panel.querySelector('#csm-forum-tags-editor');
+ if(forumBox){
+  const output=forumBox.querySelector('#csm-forum-tags-status'),list=forumBox.querySelector('#csm-forum-tags-list'),gallery=forumBox.querySelector('#csm-forum-gallery'),save=forumBox.querySelector('#csm-forum-tags-save');
+  const endpoint='/api/forums/tags',guildId=id(),channelId=String(ch.id);
+  const report=(message)=>{output.textContent=message};
+  fetch(endpoint+'?guildId='+safe(guildId)+'&channelId='+safe(channelId),{credentials:'same-origin',cache:'no-store'}).then(async response=>{
+   const data=await response.json();if(!response.ok)throw Error(data.error||'Chargement impossible.');
+   if(!forumBox.isConnected)return;
+   list.value=(Array.isArray(data.tags)?data.tags:[]).map(t=>t.name+(t.color&&t.color!=='#9863d5'?' | '+t.color:'')).join('\n');
+   gallery.checked=data.gallery===true;
+  }).catch(e=>report(e.message));
+  save.addEventListener('click',async()=>{
+   const tags=list.value.split(/\r?\n/).map(t=>t.trim()).filter(Boolean).map(line=>{
+    const split=line.lastIndexOf('|');
+    return {name:(split<0?line:line.slice(0,split)).trim(),color:(split<0?'#9863d5':line.slice(split+1)).trim()};
+   });
+   save.disabled=true;report('Enregistrement…');
+   try{
+    const response=await fetch(endpoint,{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({guildId,channelId,tags,gallery:gallery.checked})});
+    const data=await response.json();if(!response.ok)throw Error(data.error||'Échec de la sauvegarde.');
+    report('Tags et galerie enregistrés pour ce forum CMD Sphere.');
+   }catch(e){report(e.message);notify(e.message,false)}finally{save.disabled=false}
+  });
+ }
  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function editRole(roleId){
