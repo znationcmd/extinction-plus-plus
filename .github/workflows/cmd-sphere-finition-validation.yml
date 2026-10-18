@@ -37,3 +37,21 @@ jobs:
         run: npm ci
       - name: Test account isolation, decoration saves, legacy avatars and 3D compatibility
         run: node --test tests/profile-scene-preservation.test.cjs tests/profile-scene-controls.test.cjs tests/profile-3d.test.cjs tests/profile-scene-ui-save.test.cjs
+
+  validate-all:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: cmd-discord-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cmd-discord-mcp/package-lock.json
+      - name: Install dependencies and source assets
+        run: npm ci
+      - name: Run entire CMD Sphere automated test suite
+        run: npm test
