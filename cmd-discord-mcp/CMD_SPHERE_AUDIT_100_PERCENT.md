@@ -215,3 +215,13 @@ La capacité complète « tags et galerie avancés des forums » n'est **pas** d
 **Clôture de ce lot :** GitHub Actions 39111050003 a validé neuf contrôles CI indépendants et 288 tests sur 288 dans la suite générale. Les capacités nouvelles sont **développées** mais pas activées/vérifiées en production. Les registres correspondants conservent `enabled: false`, `verified: false`, et les autres contrats non traités restent inchangés. Aucun déploiement Railway, achat, facturation, réinitialisation de base, migration destructive ou suppression de ressource existante.
 
 **Blocage restant :** avant toute activation Railway, obtenir une sauvegarde PostgreSQL restaurée et contrôlée sur base isolée, puis tester avec plusieurs comptes CMD et sur iPhone, Android et PC. Pour les salons médias, la gestion avancée des tags, les quotas à l'échelle des utilisateurs et le stockage externe durable restent à approfondir.
+
+## Lot Forums — publications taguées et galerie filtrable (18 octobre 2026)
+
+- Le panneau des salons forums conserve l'édition des tags et de l'affichage galerie.
+- Ajout d'une validation à chaque envoi : les tags d'une publication doivent appartenir à la liste autorisée de son forum, limitée à 5 tags, sans doublons. Une publication sans tag reste possible. Les salons hors forum refusent ces tags.
+- Le compositeur CMD natif propose les tags réellement autorisés ; les messages affichent leurs badges avec échappement HTML ; le filtrage par tag est propre au salon et se remet à zéro lors du changement de canal. Les anciens messages ne sont ni altérés ni supprimés.
+- Commits : `f581dc6`, `d6d5921`, `f9f4852`, `1beeec7`, `f634320`, `eb24069`, `c39ebc8`.
+- Preuve de régression : [GitHub Actions 39112027209](https://github.com/znationcmd/extinction-plus-plus/actions/runs/39112027209), **291 tests réussis, 0 échec** (9 groupes de validation verts).
+- État contractuel `forum_advanced_tags_gallery` : `implemented: true`, `enabled: false`, `verified: false`. L'intégration sur GitHub est testée mais ni la base PostgreSQL réelle ni le rendu sur iPhone/Android/PC ne sont certifiés en production. Aucune suppression ni activation de paiement.
+
