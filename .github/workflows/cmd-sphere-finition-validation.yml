@@ -66,6 +66,7 @@ on:
       - 'cmd-discord-mcp/cmd-country-language-catalog.json'
       - 'cmd-discord-mcp/tests/country-language-navigation.test.cjs'
       - 'cmd-discord-mcp/tests/language-alphabet-navigation.test.cjs'
+      - 'cmd-discord-mcp/tests/language-alphabet-navigation.test.cjs'
       - 'cmd-discord-mcp/cmd-world-language-codes.js'
       - 'cmd-discord-mcp/tests/world-languages.test.cjs'
       - 'cmd-discord-mcp/cmd-language-auto.js'
