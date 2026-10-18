@@ -378,4 +378,19 @@ body{background:#0c0b11;font-family:Inter,system-ui,-apple-system,sans-serif}
 .page .hero>.avatarWrap>img.cmd-profile-art-avatar{z-index:8!important}
 
 
+/* Single CMD avatar decoration alignment: the personal photo is 106px,
+   so frame width 126px must be centred at the same point (70, 0). */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+ position:absolute!important;
+ left:7px!important;
+ top:-63px!important;
+ width:126px!important;
+ height:126px!important;
+ max-width:none!important;
+ max-height:none!important;
+ object-fit:contain!important;
+ pointer-events:none!important;
+ z-index:8!important;
+}
+
 `;
