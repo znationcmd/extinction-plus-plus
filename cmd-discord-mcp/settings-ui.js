@@ -13,7 +13,14 @@
       '.cmd-settings-local-language{flex:none;width:136px;min-width:108px;max-width:35vw;border:1px solid #666175;background:#19141f;color:white;border-radius:10px;padding:9px 6px;font-weight:700;font-size:13px;min-height:39px}',
       '.cmd-language-results{display:grid;gap:7px;max-height:48dvh;min-height:80px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:7px 4px;margin:10px 0 16px;border:1px solid #70608077;background:#0b0912;border-radius:16px}',
       '.cmd-language-more{border:1px solid #9b85d9;background:#24173a;color:#fff;border-radius:12px;font:inherit;font-weight:750;padding:14px;width:100%;min-height:46px}',
-      '.cmd-language-alphabet{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:12px 0 7px}',
+      '.cmd-language-alphabet{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;max-height:58dvh;overflow-y:auto;overscroll-behavior:contain;margin:12px 0 7px;padding:4px}',
+      '.cmd-country-folder{border:1px solid #63518a;background:#191425;border-radius:14px;overflow:hidden}',
+      '.cmd-country-folder summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:12px 15px;font-size:17px;font-weight:800;color:#f5edff}',
+      '.cmd-country-folder summary::-webkit-details-marker{display:none}',
+      '.cmd-country-folder summary:focus-visible{outline:2px solid #c3a9ff}',
+      '.cmd-country-folder[open] summary{background:#322146;border-bottom:1px solid #665188}',
+      '.cmd-country-folder-content{display:grid;gap:6px;padding:10px;max-height:44dvh;overflow-y:auto;overscroll-behavior:contain}',
+      '.cmd-country-folder-content button{width:100%;min-height:46px;box-sizing:border-box}',
       '.cmd-country-divider{margin:10px 0 4px;padding:3px 0;color:#cabbef;font-weight:750}',
       '.cmd-country-controls{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0}',
       '.cmd-country-controls button{min-height:44px;padding:10px 12px;border:1px solid #705694;background:#20172c;color:white;border-radius:10px;font-weight:700}',
@@ -365,27 +372,48 @@
             }).catch(function(error){countryCataloguePromise=null;throw error});
           return countryCataloguePromise;
         }
-        var alphabetLetters=['Toutes',...'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'];
+        var alphabetLetters=[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ','#'];
         var activeLetter='A';
-        for(var ch of alphabetLetters){
-          var letter=document.createElement('button');letter.type='button';letter.className='cmd-language-letter';
-          letter.dataset.cmdLetter=ch;letter.textContent=ch==='Toutes'?'Tout':ch==='#'?'Autres':ch;
-          letter.setAttribute('aria-label',ch==='Toutes'?'Toutes les langues ou tous les pays':ch==='#'?'Noms commençant par un signe ou un nombre':'Noms commençant par '+ch);
-          letter.setAttribute('aria-pressed',String(ch===activeLetter));
-          alphabet.append(letter);
-        }
-        function updateLetters(){
-          alphabet.querySelectorAll('[data-cmd-letter]').forEach(function(button){
-            button.setAttribute('aria-pressed',String((button.dataset.cmdLetter==='Toutes'?'':button.dataset.cmdLetter)===activeLetter));
-          });
+        function updateLetters(){renderCountryFolders()}
+        function renderCountryFolders(){
+          var visible=!chosenCountry&&!allLanguages&&!searchInput.value.trim();
+          alphabet.hidden=!visible;
+          if(!visible)return;
+          alphabet.replaceChildren();
+          for(var letter of alphabetLetters){
+            var matching=countryCatalogue.filter(function(country){
+              var initial=normalizeLanguageQuery(country.name).charAt(0).toUpperCase();
+              return letter==='#'?!/^[A-Z]$/.test(initial):initial===letter;
+            });
+            if(!matching.length)continue;
+            var folder=document.createElement('details');folder.className='cmd-country-folder';
+            folder.dataset.cmdLetter=letter;
+            var header=document.createElement('summary');
+            header.textContent=letter+' · '+matching.length+' pays';
+            header.setAttribute('aria-label','Ouvrir les pays commençant par '+letter);
+            folder.append(header);
+            var inside=document.createElement('div');inside.className='cmd-country-folder-content';
+            for(var country of matching){
+              var button=document.createElement('button');button.type='button';
+              button.className='cmd-language-result cmd-country-item';
+              button.dataset.cmdCountry=country.code;
+              var name=document.createElement('span');name.textContent=country.name;
+              var count=document.createElement('span');count.className='cmd-language-code';
+              count.textContent=country.languages.length+' langues ›';
+              button.append(name,count);inside.append(button);
+            }
+            folder.append(inside);alphabet.append(folder);
+          }
+          if(!countryCatalogue.length){
+            var loading=document.createElement('p');loading.textContent='Chargement des pays et territoires…';
+            alphabet.append(loading);
+          }
         }
         alphabet.addEventListener('click',function(event){
-          var button=event.target.closest('button[data-cmd-letter]');
+          var button=event.target.closest('button[data-cmd-country]');
           if(!button||!alphabet.contains(button))return;
-          activeLetter=button.dataset.cmdLetter==='Toutes'?'':button.dataset.cmdLetter;
-          chosenCountry=null;searchInput.value='';
-          updateLetters();
-          refreshCountryList('');
+          chosenCountry=countryCatalogue.find(function(country){return country.code===button.dataset.cmdCountry})||null;
+          searchInput.value='';allLanguages=false;refreshCountryList('');
         });
         var favourites=['fr','en','de','es','it','co','gsw-CH','gsw-CH-x-bern','gsw-CH-x-zueri','gsw-CH-x-basel','gsw-CH-x-wallis','gsw-CH-x-luzern','fr-CH','de-CH','pt','ar','ja','zh'];
         function normalizeLanguageQuery(value){
