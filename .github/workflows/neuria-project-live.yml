@@ -1,0 +1,38 @@
+name: CMD NEURIA - Live project creation check
+on:
+  push:
+    branches: [cmd-neuria-railway-backup-20261013]
+    paths: [".github/workflows/neuria-project-live.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Generate a project on the real CMD NEURIA service
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://cmd-ai-cpu-web-production.up.railway.app"
+          curl --fail --silent --show-error --retry 2 --max-time 25 "$BASE/health" > /tmp/health.json
+          curl --fail --silent --show-error --max-time 100 -X POST "$BASE/api/work/projects/generate" \
+            -H "Content-Type: application/json" \
+            --data '{"kind":"website","name":"essai CMD NEURIA","description":"Crée une vraie page web de présentation pour une petite communauté gaming, avec formulaire interactif et thème sombre.","useAI":true}' > /tmp/project.json
+          node - <<'NODE'
+          const fs=require("node:fs");
+          const p=JSON.parse(fs.readFileSync("/tmp/project.json","utf8"));
+          if(p.error||p.files?.length<2||!p.canDownload||p.deployed||p.executed)throw Error("Invalid project generation");
+          for(const f of p.files){if(typeof f.path!=="string"||!f.content)throw Error("Invalid file");}
+          console.log(JSON.stringify({project:p.name,type:p.kind,fileCount:p.files.length,starter:p.starter,engine:p.engine,files:p.files.map(x=>x.path),warningCount:p.warnings.length}));
+          fs.writeFileSync("/tmp/zip-request.json",JSON.stringify({name:p.name,files:p.files}));
+          NODE
+          curl --fail --silent --show-error --max-time 25 -X POST "$BASE/api/work/projects/download" \
+            -H "Content-Type: application/json" --data-binary @/tmp/zip-request.json > /tmp/project.zip
+          node - <<'NODE'
+          const fs=require("node:fs");const b=fs.readFileSync("/tmp/project.zip");
+          if(b.subarray(0,4).toString("hex")!=="504b0304"||b.length<180)throw Error("Not a ZIP file");
+          console.log("Valid ZIP created, bytes:",b.length);
+          NODE
+          curl --fail --silent --show-error --max-time 20 "$BASE/client.js" | grep -q "cmdNeuriaProjectStudio"
