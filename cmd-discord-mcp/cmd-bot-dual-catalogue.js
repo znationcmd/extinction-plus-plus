@@ -20,7 +20,8 @@ const categories={
 const validDiscord=id=>/^\d{15,22}$/.test(String(id||""));
 const validCmd=id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id||""));
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-const state={tab:"cmd",q:"",category:"all",page:1,apps:[],loaded:false,error:"",discordId:"",idResult:null,looking:false};
+const state={tab:"cmd",q:"",category:"all",page:1,apps:[],loaded:false,error:"",discordId:"",idResult:null,looking:false,remoteBots:[],remoteCount:0,remotePage:0,remoteLoading:false,remoteError:"",remoteQuery:""};
+let remoteTimer=null,remoteController=null,remoteSerial=0;
 let active=false;
 function classification(app){
  const description=String(app.name||"")+" "+String(app.description||"");
@@ -73,7 +74,8 @@ function layout(){
  '<label>Catégories<select id="cat-category">'+groups.map(([id,name])=>'<option value="'+id+'">'+esc(name)+'</option>').join("")+'</select></label>'+
  '<button type="button" class="cat-btn" id="cat-refresh">Actualiser</button></div>'+
  '<p class="cat-info" id="cat-summary" role="status"></p></section>'+
- '<section id="cat-discord-providers" hidden></section>'+
+ '<section id="cat-discord-providers" hidden></section>'+ 
+ '<section id="cat-external-results" class="cat-panel" hidden><h2>Bots Discord publics</h2><p id="cat-external-summary" class="cat-info" role="status">Chargement du catalogue Discord…</p><div id="cat-external-grid" class="cat-grid"></div><div class="cat-actions"><button type="button" class="cat-btn secondary" id="cat-external-prev" hidden>← Précédent</button><button type="button" class="cat-btn secondary" id="cat-external-next" hidden>Suivant →</button></div><small class="cat-info">Source : discord.bots.gg, annuaire tiers. Les invitations Discord et CMD sont indépendantes.</small></section>'+
  '<section id="cat-discord-lookup" class="cat-panel" hidden><h2>Rechercher un bot Discord par Client ID</h2>'+
  '<form id="cat-id-form" class="cat-filters"><label>Client ID Discord (15 à 22 chiffres)<input id="cat-discord-id" inputmode="numeric" pattern="[0-9]{15,22}" maxlength="22" required placeholder="Identifiant fourni par le développeur"></label>'+
  '<button class="cat-btn" type="submit">Rechercher la version CMD</button></form>'+
@@ -86,11 +88,13 @@ function layout(){
  root.querySelectorAll("[data-cat-platform]").forEach(button=>button.addEventListener("click",()=>{
   state.tab=button.dataset.catPlatform;state.page=1;state.q="";state.category="all";
   root.querySelector("#cat-search").value="";root.querySelector("#cat-category").value="all";
-  repaint();
+  repaint();if(state.tab==="discord")loadDiscordBots(0);
  }));
- root.querySelector("#cat-search").addEventListener("input",e=>{state.q=e.target.value;state.page=1;repaint()});
+ root.querySelector("#cat-search").addEventListener("input",e=>{state.q=e.target.value;state.page=1;repaint();clearTimeout(remoteTimer);if(state.tab==="discord")remoteTimer=setTimeout(()=>loadDiscordBots(0),550)});
  root.querySelector("#cat-category").addEventListener("change",e=>{state.category=e.target.value;state.page=1;repaint()});
- root.querySelector("#cat-refresh").addEventListener("click",()=>refresh(true));
+ root.querySelector("#cat-refresh").addEventListener("click",()=>{refresh(true);if(state.tab==="discord")loadDiscordBots(state.remotePage)});
+ root.querySelector("#cat-external-prev").addEventListener("click",()=>loadDiscordBots(Math.max(0,state.remotePage-1)));
+ root.querySelector("#cat-external-next").addEventListener("click",()=>loadDiscordBots(state.remotePage+1));
  root.querySelector("#cat-prev").addEventListener("click",()=>{state.page--;repaint()});
  root.querySelector("#cat-next").addEventListener("click",()=>{state.page++;repaint()});
  root.querySelector("#cat-id-form").addEventListener("submit",lookup);
@@ -102,6 +106,8 @@ function repaint(){
  root.querySelectorAll("[data-cat-platform]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.catPlatform===state.tab)));
  root.querySelector("#cat-discord-lookup").hidden=!discord;
  root.querySelector("#cat-discord-providers").hidden=!discord;
+ root.querySelector("#cat-external-results").hidden=!discord;
+ if(discord)renderDiscordBots();
  if(discord)root.querySelector("#cat-discord-providers").innerHTML=externalLinks();
  const list=root.querySelector("#cat-list"),summary=root.querySelector("#cat-summary"),items=filterApps();
  const pageSize=12,totalPages=Math.max(1,Math.ceil(items.length/pageSize));
