@@ -421,7 +421,8 @@ const categories={
 const validDiscord=id=>/^\d{15,22}$/.test(String(id||""));
 const validCmd=id=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id||""));
 const esc=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-const state={tab:"cmd",q:"",category:"all",page:1,apps:[],loaded:false,error:"",discordId:"",idResult:null,looking:false};
+const state={tab:"cmd",q:"",category:"all",page:1,apps:[],loaded:false,error:"",discordId:"",idResult:null,looking:false,remoteBots:[],remoteCount:0,remotePage:0,remoteLoading:false,remoteError:"",remoteQuery:""};
+let remoteTimer=null,remoteController=null,remoteSerial=0;
 let active=false;
 function classification(app){
  const description=String(app.name||"")+" "+String(app.description||"");
@@ -450,6 +451,67 @@ function filterApps(){
  (!term||(String(a.name||"")+" "+String(a.description||"")+" "+String(a.discord_client_id||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").includes(term)));
  return matches;
 }
+
+function externalBotCard(bot){
+ const id=String(bot.userId||bot.clientId||""),discordId=String(bot.clientId||bot.userId||"");
+ if(!validDiscord(id))return "";
+ const name=String(bot.globalName||bot.username||"Bot Discord").slice(0,90);
+ const description=String(bot.shortDescription||"Bot référencé sur Discord Bots").slice(0,340);
+ const registered=state.apps.find(a=>validCmd(a.id)&&a.discord_client_id===discordId);
+ const servers=Number(bot.guildCount);
+ return '<article class="cat-card"><div class="cat-head"><span class="cat-avatar" aria-hidden="true">'+esc(name[0]?.toUpperCase()||"D")+'</span><div>'+
+ '<div class="cat-name">'+esc(name)+'</div><small class="cat-meta">'+(Number.isFinite(servers)?servers.toLocaleString("fr-FR")+" serveurs":"Bot Discord")+'</small></div></div>'+
+ '<span class="cat-tag discord">'+(registered?"Version CMD enregistrée":"Discord · adaptation CMD nécessaire")+'</span>'+
+ '<p class="cat-description">'+esc(description)+'</p><div class="cat-actions">'+
+ '<a class="cat-btn secondary" href="https://discord.bots.gg/bots/'+encodeURIComponent(id)+'" target="_blank" rel="noopener noreferrer">Voir sur Discord Bots ↗</a>'+
+ (registered?'<a class="cat-btn" href="/apps/invite?client_id='+encodeURIComponent(registered.id)+'">Inviter sur CMD Sphere</a>':"")+
+ '</div></article>';
+}
+function renderDiscordBots(){
+ const root=document.getElementById(mountId);if(!root)return;
+ const summary=root.querySelector("#cat-external-summary"),grid=root.querySelector("#cat-external-grid");
+ if(!summary||!grid)return;
+ const totalPages=Math.max(1,Math.ceil(state.remoteCount/24));
+ const visible=state.remoteBots.filter(bot=>state.category==="all"||classification({name:bot.username,description:bot.shortDescription})===state.category);
+ if(state.remoteLoading)summary.textContent="Recherche dans le catalogue Discord…";
+ else if(state.remoteError)summary.textContent=state.remoteError+" Les annuaires externes restent accessibles.";
+ else summary.textContent=state.remoteCount.toLocaleString("fr-FR")+" bots Discord référencés · Page "+(state.remotePage+1)+"/"+totalPages+
+ (state.category!=="all"?" · Catégorie estimée sur cette page uniquement.":"");
+ grid.innerHTML=visible.length?visible.map(externalBotCard).join(""):'<p class="cat-message">'+
+ (state.remoteLoading?"Chargement…":state.remoteError?"Le fournisseur est temporairement indisponible.":"Aucun bot correspondant sur cette page.")+'</p>';
+ root.querySelector("#cat-external-prev").hidden=state.remoteLoading||state.remotePage<=0;
+ root.querySelector("#cat-external-next").hidden=state.remoteLoading||(state.remotePage+1)>=totalPages;
+}
+async function loadDiscordBots(page=0){
+ const root=document.getElementById(mountId);
+ if(!root||state.tab!=="discord")return;
+ remoteController?.abort();
+ remoteController=new AbortController();
+ const serial=++remoteSerial;
+ state.remotePage=Math.max(0,Math.floor(Number(page)||0));
+ state.remoteQuery=state.q.trim().slice(0,100);
+ state.remoteLoading=true;state.remoteError="";renderDiscordBots();
+ try{
+  const params=new URLSearchParams({page:String(state.remotePage),limit:"24"});
+  if(state.remoteQuery)params.set("q",state.remoteQuery);
+  const response=await fetch("https://discord.bots.gg/api/v1/bots?"+params,{
+   method:"GET",mode:"cors",credentials:"omit",headers:{Accept:"application/json"},cache:"no-store",
+   signal:remoteController.signal
+  });
+  if(!response.ok)throw Error("Annuaire Discord HTTP "+response.status);
+  const data=await response.json();
+  if(serial!==remoteSerial)return;
+  if(!Array.isArray(data.bots))throw Error("Catalogue Discord indisponible");
+  state.remoteBots=data.bots.slice(0,24);
+  state.remoteCount=Math.max(state.remoteBots.length,Number(data.count)||0);
+ }catch(err){
+  if(serial!==remoteSerial)return;
+  if(err.name!=="AbortError"){state.remoteBots=[];state.remoteError="Catalogue Discord temporairement inaccessible."}
+ }finally{
+  if(serial===remoteSerial){state.remoteLoading=false;renderDiscordBots()}
+ }
+}
+
 function externalLinks(){
  const q=state.q.trim().slice(0,100);
  return '<section class="cat-panel"><h2>Découvrir les bots sur Discord</h2>'+
@@ -474,7 +536,8 @@ function layout(){
  '<label>Catégories<select id="cat-category">'+groups.map(([id,name])=>'<option value="'+id+'">'+esc(name)+'</option>').join("")+'</select></label>'+
  '<button type="button" class="cat-btn" id="cat-refresh">Actualiser</button></div>'+
  '<p class="cat-info" id="cat-summary" role="status"></p></section>'+
- '<section id="cat-discord-providers" hidden></section>'+
+ '<section id="cat-discord-providers" hidden></section>'+ 
+ '<section id="cat-external-results" class="cat-panel" hidden><h2>Bots Discord publics</h2><p id="cat-external-summary" class="cat-info" role="status">Chargement du catalogue Discord…</p><div id="cat-external-grid" class="cat-grid"></div><div class="cat-actions"><button type="button" class="cat-btn secondary" id="cat-external-prev" hidden>← Précédent</button><button type="button" class="cat-btn secondary" id="cat-external-next" hidden>Suivant →</button></div><small class="cat-info">Source : discord.bots.gg, annuaire tiers. Les invitations Discord et CMD sont indépendantes.</small></section>'+
  '<section id="cat-discord-lookup" class="cat-panel" hidden><h2>Rechercher un bot Discord par Client ID</h2>'+
  '<form id="cat-id-form" class="cat-filters"><label>Client ID Discord (15 à 22 chiffres)<input id="cat-discord-id" inputmode="numeric" pattern="[0-9]{15,22}" maxlength="22" required placeholder="Identifiant fourni par le développeur"></label>'+
  '<button class="cat-btn" type="submit">Rechercher la version CMD</button></form>'+
@@ -487,11 +550,13 @@ function layout(){
  root.querySelectorAll("[data-cat-platform]").forEach(button=>button.addEventListener("click",()=>{
   state.tab=button.dataset.catPlatform;state.page=1;state.q="";state.category="all";
   root.querySelector("#cat-search").value="";root.querySelector("#cat-category").value="all";
-  repaint();
+  repaint();if(state.tab==="discord")loadDiscordBots(0);
  }));
- root.querySelector("#cat-search").addEventListener("input",e=>{state.q=e.target.value;state.page=1;repaint()});
+ root.querySelector("#cat-search").addEventListener("input",e=>{state.q=e.target.value;state.page=1;repaint();clearTimeout(remoteTimer);if(state.tab==="discord")remoteTimer=setTimeout(()=>loadDiscordBots(0),550)});
  root.querySelector("#cat-category").addEventListener("change",e=>{state.category=e.target.value;state.page=1;repaint()});
- root.querySelector("#cat-refresh").addEventListener("click",()=>refresh(true));
+ root.querySelector("#cat-refresh").addEventListener("click",()=>{refresh(true);if(state.tab==="discord")loadDiscordBots(state.remotePage)});
+ root.querySelector("#cat-external-prev").addEventListener("click",()=>loadDiscordBots(Math.max(0,state.remotePage-1)));
+ root.querySelector("#cat-external-next").addEventListener("click",()=>loadDiscordBots(state.remotePage+1));
  root.querySelector("#cat-prev").addEventListener("click",()=>{state.page--;repaint()});
  root.querySelector("#cat-next").addEventListener("click",()=>{state.page++;repaint()});
  root.querySelector("#cat-id-form").addEventListener("submit",lookup);
@@ -503,6 +568,8 @@ function repaint(){
  root.querySelectorAll("[data-cat-platform]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.catPlatform===state.tab)));
  root.querySelector("#cat-discord-lookup").hidden=!discord;
  root.querySelector("#cat-discord-providers").hidden=!discord;
+ root.querySelector("#cat-external-results").hidden=!discord;
+ if(discord)renderDiscordBots();
  if(discord)root.querySelector("#cat-discord-providers").innerHTML=externalLinks();
  const list=root.querySelector("#cat-list"),summary=root.querySelector("#cat-summary"),items=filterApps();
  const pageSize=12,totalPages=Math.max(1,Math.ceil(items.length/pageSize));
