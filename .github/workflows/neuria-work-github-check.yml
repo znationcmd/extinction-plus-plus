@@ -1,0 +1,20 @@
+name: NEURIA Work GitHub test
+on:
+  push:
+    branches: [cmd-neuria-railway-backup-20261013]
+    paths:
+      - 'cmd-neuria-railway/neuria-work-*'
+      - '.github/workflows/neuria-work-github-check.yml'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --no-save
+        working-directory: cmd-neuria-railway
+      - run: bun test ./neuria-work-github.test.ts
+        working-directory: cmd-neuria-railway
+      - run: bun -e "import {NEURIA_WORK_GITHUB_UI} from './neuria-work-project-client.ts'; new Function(NEURIA_WORK_GITHUB_UI)"
+        working-directory: cmd-neuria-railway
