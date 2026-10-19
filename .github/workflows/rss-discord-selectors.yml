@@ -1,0 +1,38 @@
+name: EXTINCTION RSS - Discord role and channel dropdowns
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard/components/ModuleEditor.jsx"
+      - "dashboard/app/discord-module/**"
+      - "dashboard/app/api/discord-resources/**"
+      - "tests/discord-resource-pickers.test.js"
+      - ".github/workflows/rss-discord-selectors.yml"
+  pull_request:
+    paths:
+      - "dashboard/components/ModuleEditor.jsx"
+      - "dashboard/app/discord-module/**"
+      - "dashboard/app/api/discord-resources/**"
+      - "tests/discord-resource-pickers.test.js"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Check new selector regression tests
+        run: node --test tests/discord-resource-pickers.test.js
+      - name: Install Dashboard dependencies
+        run: npm ci --prefix dashboard --no-audit --no-fund
+      - name: Verify Next.js dashboard builds
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build --prefix dashboard
