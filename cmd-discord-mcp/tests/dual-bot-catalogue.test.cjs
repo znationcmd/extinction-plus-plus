@@ -44,7 +44,7 @@ test("Discord tab does not pretend all Discord bots are CMD compatible",async()=
  root.querySelector("#cat-tab-discord").click();
  assert.equal(root.querySelector("#cat-tab-discord").getAttribute("aria-selected"),"true");
  assert.equal(root.querySelectorAll(".cat-card").length,1,"only CMD-listed linked Discord apps are displayed");
- assert.match(root.textContent,/annuaire Discord/i);
+ assert.match(root.textContent,/Annuaire officiel Discord/i);
  const hrefs=[...root.querySelectorAll(".cat-source-list a")].map(x=>x.href);
  assert.ok(hrefs.some(x=>x.includes("discord.com/application-directory")));
  assert.ok(hrefs.some(x=>x.includes("discord.bots.gg/search")));
