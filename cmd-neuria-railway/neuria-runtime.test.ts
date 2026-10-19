@@ -15,6 +15,7 @@ const originalFetch=globalThis.fetch;
 let mode='fail',workerCalls=0;
 globalThis.fetch=(async(input,init)=>{
  const url=String(input);
+ if(url.startsWith('https://search.test/api/search'))return Response.json({results:[{title:'Documentation officielle test',url:'https://example.com/docs',description:'Document de test vérifié'}]});
  if(url==='https://api.github.com/user')return Response.json({id:123456});
  if(url.startsWith('https://worker.test/')){
   workerCalls++;
@@ -120,4 +121,13 @@ test('account deletion requires its password and invalidates all sessions',async
 test('Work accepts saved settings and returns a report when Web search is disabled',async()=>{
  const result=await fetch(base+'/api/work/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({goal:'Préparer un rapport de test',webSearch:'off',reasoningLevel:'approfondi',responseLength:'court'})});
  expect(result.status).toBe(200);const data=await result.json();expect(typeof data.summary).toBe('string');expect(data.sources).toEqual([]);expect(data.externalChanges).toBe(false);expect(data.reasoningLevel).toBe('approfondi');expect(data.webSearch).toBe('off');
+});
+
+test('Work and the search panel share the connected multi-source engine',async()=>{
+ Bun.env.NEURIA_CMD_BROWSER_SEARCH_URL='https://search.test';
+ try{
+ const result=await fetch(base+'/api/work/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({goal:'Chercher la documentation du projet',webSearch:'on'})});
+ expect(result.status).toBe(200);const data=await result.json();expect(data.sources[0].url).toBe('https://example.com/docs');expect(data.researchProvider).toBe('CMD Browser / SearXNG');expect(data.summary).toContain('Document de test vérifié');
+ const search=await (await fetch(base+'/api/search?q=documentation')).json();expect(search.items[0].url).toBe('https://example.com/docs');
+ }finally{delete Bun.env.NEURIA_CMD_BROWSER_SEARCH_URL}
 });
