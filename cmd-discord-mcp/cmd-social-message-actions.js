@@ -9,6 +9,7 @@ style.textContent+=' .discord-message.cmd-message-cosmetic{position:relative;iso
 style.textContent+=' .cmd-person-avatar-wrap{flex:none}.cmd-person-avatar-wrap .cmd-person-avatar{width:103px;height:103px;object-fit:cover;border-radius:50%;overflow:hidden}.cmd-person-avatar-deco{inset:-14%;width:128%;height:128%;max-width:none;max-height:none}.cmd-person-nameplate{margin:12px 0 8px;min-height:52px;border-radius:10px;display:flex;align-items:center;padding:12px 15px;background-position:center;background-size:cover;background-color:#22132e;border:1px solid #9355c570;overflow:hidden;isolation:isolate}.cmd-person-nameplate b{font-size:17px;overflow-wrap:anywhere;text-shadow:0 2px 7px #10091c}.cmd-message-nameplate{width:fit-content;max-width:100%;min-height:34px;background-position:center;background-size:cover;background-color:#241532;border:1px solid #8a64ad80;border-radius:8px;padding:5px 12px;overflow:hidden}.cmd-message-nameplate b{display:block;color:#f8eaff;text-shadow:0 2px 4px #150b1a;overflow-wrap:anywhere}.cmd-person-card .cmd-person-full-frame{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;object-fit:fill;z-index:4}.cmd-person-card .cmd-person-body{padding-bottom:32px}';
 style.textContent+=' .cmd-person-close{z-index:6}.cmd-person-avatar-wrap,.cmd-person-avatar-wrap .cmd-person-avatar{box-sizing:border-box;width:103px;height:103px}.cmd-person-avatar-wrap .cmd-person-avatar{margin:0}.cmd-person-avatar-deco{z-index:1}';
 style.textContent+="\n/* Other members' profile: render selected art as a real perimeter, not a full-sheet image.\n   The middle of the ornament stays transparent so content and actions remain readable. */\n.cmd-person-card>.cmd-person-full-frame{\n  display:block!important;position:absolute!important;inset:0!important;\n  box-sizing:border-box!important;width:100%!important;height:100%!important;\n  max-width:100%!important;max-height:100%!important;\n  border:clamp(14px,3.8vw,22px) solid transparent!important;\n  border-image-source:var(--cmd-person-frame-url)!important;\n  border-image-slice:29% 24% 29% 24%!important;\n  border-image-width:1!important;\n  border-image-outset:0!important;\n  border-image-repeat:stretch!important;\n  background:none!important;box-shadow:none!important;\n  pointer-events:none!important;z-index:4!important;\n}\n.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{\n  padding-inline:clamp(25px,6vw,34px);\n  padding-bottom:clamp(30px,7vw,42px);\n}\n.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-close{\n  z-index:7;right:16px;top:16px;\n}\n@media(max-width:550px){\n  .cmd-person-card>.cmd-person-full-frame{border-width:clamp(12px,3.5vw,17px)!important}\n  .cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{padding-inline:clamp(22px,6vw,28px)}\n  .cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-close{right:14px;top:14px}\n}\n";
+style.textContent+="\n/* Keep the selected frame visible but BEHIND other members' details and avatar. */\n.cmd-person-card{overflow-x:hidden;overscroll-behavior:contain;}\n.cmd-person-card>.cmd-person-full-frame{z-index:1!important;opacity:.9!important;}\n.cmd-person-card>.cmd-person-banner{position:relative;z-index:2!important;}\n.cmd-person-card>.cmd-person-body{position:relative;z-index:3!important;}\n.cmd-person-card .cmd-person-avatar-wrap{position:relative;z-index:5!important;isolation:isolate;}\n.cmd-person-card .cmd-person-avatar-wrap .cmd-person-avatar{display:block;position:relative;z-index:1!important;object-fit:cover;}\n.cmd-person-card .cmd-person-avatar-wrap .cmd-person-avatar-deco{z-index:2!important;}\n.cmd-person-card>.cmd-person-close{z-index:7!important;}\n.cmd-person-mutual-list{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(145px,100%),1fr));}\n.cmd-person-mutual{display:flex;align-items:center;text-align:left;min-width:0;gap:8px;padding:7px 9px;color:#f5f2ff;background:#ffffff10;border:1px solid #ffffff25;border-radius:11px;cursor:pointer;}\n.cmd-person-mutual:focus-visible{outline:2px solid #bca1ff;outline-offset:2px;}\n.cmd-person-mutual-avatar{display:grid;place-items:center;flex:none;width:30px;height:30px;object-fit:cover;border-radius:50%;background:#6b47ca;color:white;font-weight:800;}\n.cmd-person-mutual-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}\n@media(max-width:550px){.cmd-person-card{max-height:calc(100dvh - env(safe-area-inset-top,0px) - 12px)!important}.cmd-person-avatar-wrap{margin-top:-45px!important}.cmd-person-card>.cmd-person-body{padding-top:6px!important;}}\n";
 document.head.append(style);
 function context(){
   if(typeof CHAT!=='undefined'&&CHAT?.open)return {guildId:String(CHAT.guildId||''),channelId:String(CHAT.channelId||''),mode:String(CHAT.mode||'')};
@@ -25,7 +26,7 @@ async function access(guildId){
   return promise;
 }
 const elem=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text);return n};
-const validAvatar=v=>/^https:\/\//i.test(v||'')||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v||'');
+const validAvatar=v=>/^https:\/\//i.test(v||'')||/^\/(?!\/)[^\s]*$/.test(v||'')||/^data:image\/(png|jpeg|webp|gif);base64,/i.test(v||'');
 let closeProfile=null;
 function overlay(title){
   closeProfile?.();
@@ -51,7 +52,13 @@ async function showProfile(article){
    body.replaceChildren();
    if(validAvatar(p.banner)){banner.style.backgroundImage='url('+JSON.stringify(p.banner)+')'}else if(/^#[0-9a-f]{3,8}$/i.test(p.accentColor||'')){banner.style.background='linear-gradient(130deg,'+p.accentColor+',#191524)'}
    const avatarWrap=elem('div','cmd-person-avatar-wrap');
-   if(validAvatar(p.avatar)){const img=elem('img','cmd-person-avatar');img.src=p.avatar;img.alt='Photo de profil';avatarWrap.append(img)}else avatarWrap.append(elem('div','cmd-person-avatar',(p.displayName||name).slice(0,1).toUpperCase()));
+   const avatarFallback=()=>elem('div','cmd-person-avatar',(p.displayName||name).slice(0,1).toUpperCase());
+      const messageAvatar=article.querySelector?.('.msg-avatar img,.avatar img')?.getAttribute('src')||'';
+      const avatarSource=validAvatar(p.avatar)?p.avatar:(validAvatar(messageAvatar)?messageAvatar:'');
+      if(avatarSource){
+        const img=elem('img','cmd-person-avatar');img.src=avatarSource;img.alt='Photo de profil de '+(p.displayName||name);img.loading='eager';
+        img.onerror=()=>{if(img.isConnected)img.replaceWith(avatarFallback())};avatarWrap.append(img);
+      }else avatarWrap.append(avatarFallback());
    if(p.avatarDecoration&&/^[a-z0-9-]{1,60}$/.test(p.avatarDecoration)){const ring=elem('img','cmd-person-avatar-deco');ring.src='/cmd-art/avatar/'+p.avatarDecoration+'.svg?v=20261016person';ring.alt='';avatarWrap.append(ring)}
    body.append(avatarWrap);
    if(p.profileFrame&&p.profileFrame!=='none'&&/^[a-z0-9-]{1,60}$/.test(p.profileFrame)){const frame=elem('span','cmd-person-full-frame');frame.setAttribute('aria-hidden','true');frame.style.setProperty('--cmd-person-frame-url','url("/cmd-art/frame/'+encodeURIComponent(p.profileFrame)+'.svg?v=20261019-person-border")');card.append(frame)}
@@ -75,6 +82,27 @@ async function showProfile(article){
    if(Array.isArray(p.commonServers)&&p.commonServers.length){
      const box=elem('section','cmd-person-section'),tags=elem('div','cmd-person-tags');box.append(elem('h3','','Serveurs en commun'));
      for(const guild of p.commonServers)tags.append(elem('span','cmd-person-tag',guild.name));box.append(tags);body.append(box);
+   }
+   if(p.friendStatus!=='self'){
+     const mutual=Array.isArray(p.mutualFriends)?p.mutualFriends:[];
+     const count=Math.max(mutual.length,Number(p.mutualFriendCount)||0);
+     const section=elem('section','cmd-person-section');
+     section.append(elem('h3','','Amis en commun ('+count+')'));
+     if(!mutual.length)section.append(elem('p','cmd-person-note','Aucun ami en commun pour le moment.'));
+     else {
+       const list=elem('div','cmd-person-mutual-list');
+       for(const friend of mutual){
+         const chip=elem('button','cmd-person-mutual');chip.type='button';
+         chip.setAttribute('aria-label','Voir le profil de '+(friend.displayName||friend.username||'cet ami'));
+         const avatar=validAvatar(friend.avatar)?elem('img','cmd-person-mutual-avatar'):elem('span','cmd-person-mutual-avatar',(friend.displayName||friend.username||'?').slice(0,1).toUpperCase());
+         if(avatar.tagName==='IMG'){avatar.src=friend.avatar;avatar.alt='';avatar.onerror=()=>{if(avatar.isConnected)avatar.replaceWith(elem('span','cmd-person-mutual-avatar',(friend.displayName||'?').slice(0,1).toUpperCase()))}}
+         chip.append(avatar,elem('span','cmd-person-mutual-name',friend.displayName||friend.username||'Membre'));
+         chip.onclick=()=>showProfile({dataset:{cmdAuthorName:friend.displayName||friend.username||'Membre',cmdAuthorUser:friend.username||'',cmdAuthorId:String(friend.id||'')}});
+         list.append(chip);
+       }
+       section.append(list);
+     }
+     body.append(section);
    }
    const actions=elem('div','cmd-person-actions');body.append(actions);
    if(p.external){body.append(elem('p','cmd-person-note','Profil importé : compte CMD Sphere non identifié.'));return}
