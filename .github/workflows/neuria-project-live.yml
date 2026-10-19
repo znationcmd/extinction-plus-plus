@@ -25,7 +25,7 @@ jobs:
           const p=JSON.parse(fs.readFileSync("/tmp/project.json","utf8"));
           if(p.error||p.files?.length<2||!p.canDownload||p.deployed||p.executed)throw Error("Invalid project generation");
           for(const f of p.files){if(typeof f.path!=="string"||!f.content)throw Error("Invalid file");}
-          console.log(JSON.stringify({project:p.name,type:p.kind,fileCount:p.files.length,starter:p.starter,engine:p.engine,files:p.files.map(x=>x.path),warningCount:p.warnings.length}));
+          console.log(JSON.stringify({project:p.name,type:p.kind,fileCount:p.files.length,starter:p.starter,engine:p.engine,files:p.files.map(x=>x.path),warningCount:p.warnings.length,warnings:p.warnings}));
           fs.writeFileSync("/tmp/zip-request.json",JSON.stringify({name:p.name,files:p.files}));
           NODE
           curl --fail --silent --show-error --max-time 25 -X POST "$BASE/api/work/projects/download" \
@@ -35,4 +35,5 @@ jobs:
           if(b.subarray(0,4).toString("hex")!=="504b0304"||b.length<180)throw Error("Not a ZIP file");
           console.log("Valid ZIP created, bytes:",b.length);
           NODE
-          curl --fail --silent --show-error --max-time 20 "$BASE/client.js" | grep -q "cmdNeuriaProjectStudio"
+          curl --fail --silent --show-error --max-time 20 "$BASE/client.js" -o /tmp/neuria-client.js
+          grep -q "cmdNeuriaProjectStudio" /tmp/neuria-client.js
