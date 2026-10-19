@@ -16,10 +16,10 @@ export function safeProjectPath(input:unknown):string{
 }
 export function classifyProject(description:string,requested:string="auto"):ProjectKind{
  if(PROJECT_KINDS.includes(requested as ProjectKind))return requested as ProjectKind;
+ if(/jeu vidéo|jeu video|video game|2d game|3d game|plateforme 2d|unity|godot/i.test(description))return "game";
  if(/navigateur|browser|webview/i.test(description))return "browser";
  if(/hébergeur|hebergeur|hosting|serveurs? de jeux|game server/i.test(description))return "hosting";
  if(/bot|discord|telegram/i.test(description))return "bot";
- if(/jeu vidéo|jeu video|video game|2d game|3d game|plateforme 2d|unity|godot/i.test(description))return "game";
  if(/site|website|landing|portfolio|boutique|page web/i.test(description))return "website";
  if(/application|app mobile|tableau de bord|dashboard/i.test(description))return "app";
  return "custom";
