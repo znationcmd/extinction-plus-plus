@@ -107,17 +107,35 @@ function showMemberScene(p,body,name){
  }
  const selected=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||'');
  const avatarNumber=selected?Number(selected[1]):-1;
- let charUrl=validAvatar(p.sceneCharacterImage)?p.sceneCharacterImage:'';
- if(!charUrl&&avatarNumber>=0&&avatarNumber<68)charUrl='/avatars/v4/avatar-'+String(avatarNumber+1).padStart(2,'0')+'.webp';
- if(charUrl){
-   const ch=elem('img','cmd-person-character');ch.src=charUrl;ch.alt='Avatar de la scène';
-   ch.onerror=()=>{if(ch.isConnected){const fallback=elem('img','cmd-person-avatar-fallback');fallback.src=validAvatar(p.avatar)?p.avatar:'/app-icon.webp?v=5';fallback.alt='Avatar du membre';ch.replaceWith(fallback)}};
-   stage.append(ch);
- }else{
-  const drawing=elem('div','cmd-person-illustrated-avatar');
-  drawing.innerHTML=cmdMemberDrawPerson(state);
-  drawing.setAttribute('aria-label','Avatar illustré personnalisé du membre');stage.append(drawing);
+ // Always show the selected CHARACTER, never the account's circular profile picture.
+ // v4 WebP assets are optional (generated separately); original v3 avatars remain valid.
+ const charSources=[];
+ if(state.avatarStyle==='photo'&&validAvatar(p.sceneCharacterImage))charSources.push(p.sceneCharacterImage);
+ if(avatarNumber>=0&&avatarNumber<68){
+   const file='avatar-'+String(avatarNumber+1).padStart(2,'0');
+   charSources.push('/avatars/v4/'+file+'.webp','/avatars/v3/'+file+'.png');
  }
+ const illustratedFallback=()=>{
+   const drawing=elem('div','cmd-person-illustrated-avatar');
+   drawing.innerHTML=cmdMemberDrawPerson(state);
+   drawing.setAttribute('role','img');
+   drawing.setAttribute('aria-label','Personnage personnalisé du membre');
+   return drawing;
+ };
+ if(charSources.length){
+   const ch=elem('img','cmd-person-character');
+   ch.alt='Personnage sélectionné par '+(p.displayName||name);
+   ch.loading='eager';
+   let index=0;
+   ch.onerror=()=>{
+     if(!ch.isConnected)return;
+     index+=1;
+     if(index<charSources.length)ch.src=charSources[index];
+     else ch.replaceWith(illustratedFallback());
+   };
+   ch.src=charSources[0];
+   stage.append(ch);
+ }else stage.append(illustratedFallback());
  const petKey=String(state.pet||'none');
  if(petKey!=='none'){
    const photo=validAvatar(p.scenePetImage)?p.scenePetImage:'';
