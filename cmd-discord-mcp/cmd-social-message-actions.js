@@ -10,6 +10,7 @@ style.textContent+=' .cmd-person-avatar-wrap{flex:none}.cmd-person-avatar-wrap .
 style.textContent+=' .cmd-person-close{z-index:6}.cmd-person-avatar-wrap,.cmd-person-avatar-wrap .cmd-person-avatar{box-sizing:border-box;width:103px;height:103px}.cmd-person-avatar-wrap .cmd-person-avatar{margin:0}.cmd-person-avatar-deco{z-index:1}';
 style.textContent+="\n/* Other members' profile: render selected art as a real perimeter, not a full-sheet image.\n   The middle of the ornament stays transparent so content and actions remain readable. */\n.cmd-person-card>.cmd-person-full-frame{\n  display:block!important;position:absolute!important;inset:0!important;\n  box-sizing:border-box!important;width:100%!important;height:100%!important;\n  max-width:100%!important;max-height:100%!important;\n  border:clamp(14px,3.8vw,22px) solid transparent!important;\n  border-image-source:var(--cmd-person-frame-url)!important;\n  border-image-slice:29% 24% 29% 24%!important;\n  border-image-width:1!important;\n  border-image-outset:0!important;\n  border-image-repeat:stretch!important;\n  background:none!important;box-shadow:none!important;\n  pointer-events:none!important;z-index:4!important;\n}\n.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{\n  padding-inline:clamp(25px,6vw,34px);\n  padding-bottom:clamp(30px,7vw,42px);\n}\n.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-close{\n  z-index:7;right:16px;top:16px;\n}\n@media(max-width:550px){\n  .cmd-person-card>.cmd-person-full-frame{border-width:clamp(12px,3.5vw,17px)!important}\n  .cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{padding-inline:clamp(22px,6vw,28px)}\n  .cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-close{right:14px;top:14px}\n}\n";
 style.textContent+="\n/* Keep the selected frame visible but BEHIND other members' details and avatar. */\n.cmd-person-card{overflow-x:hidden;overscroll-behavior:contain;}\n.cmd-person-card>.cmd-person-full-frame{z-index:1!important;opacity:.9!important;}\n.cmd-person-card>.cmd-person-banner{position:relative;z-index:2!important;}\n.cmd-person-card>.cmd-person-body{position:relative;z-index:3!important;}\n.cmd-person-card .cmd-person-avatar-wrap{position:relative;z-index:5!important;isolation:isolate;}\n.cmd-person-card .cmd-person-avatar-wrap .cmd-person-avatar{display:block;position:relative;z-index:1!important;object-fit:cover;}\n.cmd-person-card .cmd-person-avatar-wrap .cmd-person-avatar-deco{z-index:2!important;}\n.cmd-person-card>.cmd-person-close{z-index:7!important;}\n.cmd-person-mutual-list{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(145px,100%),1fr));}\n.cmd-person-mutual{display:flex;align-items:center;text-align:left;min-width:0;gap:8px;padding:7px 9px;color:#f5f2ff;background:#ffffff10;border:1px solid #ffffff25;border-radius:11px;cursor:pointer;}\n.cmd-person-mutual:focus-visible{outline:2px solid #bca1ff;outline-offset:2px;}\n.cmd-person-mutual-avatar{display:grid;place-items:center;flex:none;width:30px;height:30px;object-fit:cover;border-radius:50%;background:#6b47ca;color:white;font-weight:800;}\n.cmd-person-mutual-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}\n@media(max-width:550px){.cmd-person-card{max-height:calc(100dvh - env(safe-area-inset-top,0px) - 12px)!important}.cmd-person-avatar-wrap{margin-top:-45px!important}.cmd-person-card>.cmd-person-body{padding-top:6px!important;}}\n";
+style.textContent+="/* Public member cards: show the ENTIRE ornamental image rather than a hairline border slice. */\n.cmd-person-card{isolation:isolate;}\n.cmd-person-card>.cmd-person-full-frame{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;background-image:var(--cmd-person-frame-url)!important;background-size:100% 100%!important;background-repeat:no-repeat!important;background-position:center!important;border:0!important;border-image:none!important;border-radius:inherit!important;pointer-events:none!important;z-index:5!important;opacity:1!important;}\n.cmd-person-card>.cmd-person-banner{position:relative!important;z-index:2!important;}\n.cmd-person-card>.cmd-person-body{position:relative!important;z-index:6!important;}\n.cmd-person-card>.cmd-person-close{z-index:9!important;}\n.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{padding-inline:clamp(33px,7vw,48px)!important;padding-bottom:clamp(52px,8vw,76px)!important;}\n.cmd-person-universe{margin-top:17px!important;}\n.cmd-person-stage{position:relative;isolation:isolate;overflow:hidden;min-height:225px;height:clamp(225px,62vw,310px);border-radius:15px;background-color:#211b36;background-image:linear-gradient(135deg,#5e3494,#1a162b);background-size:cover;background-position:center;}\n.cmd-person-stage[data-scene-fit='contain']{background-size:contain;background-repeat:no-repeat;}\n.cmd-person-stage img{display:block;object-fit:contain;}\n.cmd-person-stage .cmd-person-character{position:absolute;z-index:2;left:50%;bottom:0;height:94%;width:58%;transform:translateX(-50%);object-position:center bottom;filter:drop-shadow(0 7px 7px #0007);}\n.cmd-person-stage .cmd-person-pet{position:absolute;z-index:3;right:2%;bottom:3%;height:42%;max-width:40%;filter:drop-shadow(0 5px 7px #0008);}\n.cmd-person-stage .cmd-person-pet-label{position:absolute;z-index:5;right:8px;bottom:8px;background:#1b153abb;color:#fff;padding:4px 8px;border-radius:8px;font-size:11px;}\n.cmd-person-stage .cmd-person-avatar-fallback{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:95px;height:95px;border-radius:50%;object-fit:cover;}\n.cmd-person-scene-3d{position:absolute;inset:0;z-index:4;overflow:hidden;}\n.cmd-person-scene-3d .cmd-real-3d,.cmd-person-scene-3d .cmd-real-3d canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;}\n.cmd-person-scene-3d .cmd-real-3d-loading{position:absolute;z-index:4;left:8px;bottom:8px;color:#eee5ff;background:#21182bbd;border-radius:8px;padding:5px 8px;font-size:11px;}\n.cmd-person-stage .cmd-person-scene-vehicle{position:absolute;z-index:2;bottom:3%;left:3%;height:22%;max-width:32%;}\n.cmd-person-stage .cmd-person-scene-home{position:absolute;z-index:1;top:4%;left:3%;height:37%;max-width:33%;}\n.cmd-person-scene-description{margin:7px 0 0;font-size:12px;line-height:1.35;color:#c6bcd6;}\n@media(max-width:550px){.cmd-person-card:has(>.cmd-person-full-frame)>.cmd-person-body{padding-inline:clamp(30px,8vw,39px)!important}.cmd-person-stage{height:clamp(220px,68vw,285px);}}\n";
 document.head.append(style);
 function context(){
   if(typeof CHAT!=='undefined'&&CHAT?.open)return {guildId:String(CHAT.guildId||''),channelId:String(CHAT.channelId||''),mode:String(CHAT.mode||'')};
@@ -40,6 +41,48 @@ function overlay(title){
   exit.onclick=close;sheet.addEventListener('click',e=>{if(e.target===sheet)close()});document.addEventListener('keydown',escape);
   card.append(exit);sheet.append(card);document.body.append(sheet);exit.focus();return card;
 }
+function showMemberScene(p,body,name){
+ const state=p.avatarScene;
+ if(!state||typeof state!=='object'||!Object.keys(state).length)return;
+ const box=elem('section','cmd-person-section cmd-person-universe');
+ box.append(elem('h3','','Avatar & scène'));
+ const stage=elem('div','cmd-person-stage');
+ stage.setAttribute('role','group');stage.setAttribute('aria-label','Scène et compagnon de '+(p.displayName||name));
+ const sceneBackground=validAvatar(p.sceneBackground)?p.sceneBackground:'';
+ if(sceneBackground){stage.style.backgroundImage='url('+JSON.stringify(sceneBackground)+')';
+   if(/^\/universe\/|^\/cmd-restored-fonds\//.test(sceneBackground))stage.dataset.sceneFit='contain';
+ }
+ const selected=/^reference-avatar-(\d+)$/.exec(state.avatarPreset||'');
+ const avatarNumber=selected?Number(selected[1]):-1;
+ let charUrl=validAvatar(p.sceneCharacterImage)?p.sceneCharacterImage:'';
+ if(!charUrl&&avatarNumber>=0&&avatarNumber<68)charUrl='/avatars/v4/avatar-'+String(avatarNumber+1).padStart(2,'0')+'.webp';
+ if(charUrl){
+   const ch=elem('img','cmd-person-character');ch.src=charUrl;ch.alt='Avatar de la scène';
+   ch.onerror=()=>{if(ch.isConnected){const fallback=elem('img','cmd-person-avatar-fallback');fallback.src=validAvatar(p.avatar)?p.avatar:'/app-icon.webp?v=5';fallback.alt='Avatar du membre';ch.replaceWith(fallback)}};
+   stage.append(ch);
+ }else if(validAvatar(p.avatar)){const ch=elem('img','cmd-person-avatar-fallback');ch.src=p.avatar;ch.alt='Avatar du membre';stage.append(ch)}
+ const petKey=String(state.pet||'none');
+ if(petKey!=='none'){
+   const photo=validAvatar(p.scenePetImage)?p.scenePetImage:'';
+   const art=validAvatar(p.scenePetArt)?p.scenePetArt:'';
+   const petSrc=photo||art;
+   if(petSrc){const animal=elem('img','cmd-person-pet');animal.src=petSrc;animal.alt='Compagnon de '+(p.displayName||name);
+     animal.onerror=()=>{if(animal.isConnected)animal.replaceWith(elem('span','cmd-person-pet-label',state.petName||'🐾 '+petKey))};stage.append(animal)}
+   else stage.append(elem('span','cmd-person-pet-label','🐾 '+(state.petName||petKey)));
+ }
+ if(validAvatar(p.sceneVehicleArt)){const vehicle=elem('img','cmd-person-scene-vehicle');vehicle.src=p.sceneVehicleArt;vehicle.alt='Véhicule décoratif';stage.append(vehicle)}
+ if(validAvatar(p.sceneHomeArt)){const house=elem('img','cmd-person-scene-home');house.src=p.sceneHomeArt;house.alt='Maison virtuelle';stage.append(house)}
+ if(state.avatarStyle==='3d'&&state.avatarModel!=='custom'){
+   const mount=elem('div','cmd-person-scene-3d');stage.append(mount);
+   // Model 3D uses the same saved appearance and companion as the owner's editor.
+   // Keep the image preview underneath if WebGL/CDN is unavailable.
+   import('/cmd-profile-3d.js?v=20261019-member-view').then(mod=>{if(mount.isConnected)mod.mountReadOnlyAvatar?.(mount,state)}).catch(err=>console.warn('[CMD member 3D]',err));
+ }
+ box.append(stage);
+ const details=[state.pet&&state.pet!=='none'?'🐾 '+(state.petName||state.pet):'',state.label||''].filter(Boolean);
+ if(details.length)box.append(elem('p','cmd-person-scene-description',details.join(' · ')));
+ body.append(box);
+}
 async function showProfile(article){
  const ctx=context(),name=article.dataset.cmdAuthorName||'Utilisateur',id=article.dataset.cmdAuthorId||'',username=article.dataset.cmdAuthorUser||'';
  const card=overlay('Profil de '+name),banner=elem('div','cmd-person-banner'),body=elem('div','cmd-person-body');
@@ -47,7 +90,7 @@ async function showProfile(article){
  const native=ctx&&(ctx.mode==='native'||ctx.mode==='combined')&&article.dataset.cmdSource==='cmd';
  if(!id&&!username){body.lastElementChild.textContent='Profil du service externe : compte CMD Sphere non identifié.';return}
  try{
-   const {profile:p}=await request('/api/person/profile?'+new URLSearchParams({userId:id,username,guildId:native?ctx.guildId:''}));
+   const {profile:p}=await request('/api/person/profile?'+new URLSearchParams({userId:id,username,guildId:native?ctx.guildId:'',includeScene:'1'}));
    if(!card.isConnected)return;
    body.replaceChildren();
    if(validAvatar(p.banner)){banner.style.backgroundImage='url('+JSON.stringify(p.banner)+')'}else if(/^#[0-9a-f]{3,8}$/i.test(p.accentColor||'')){banner.style.background='linear-gradient(130deg,'+p.accentColor+',#191524)'}
@@ -73,6 +116,7 @@ async function showProfile(article){
    if(p.status)body.append(elem('div','cmd-person-note',p.status));
    if(p.bio)body.append(elem('p','cmd-person-bio',p.bio));
    if(Number.isInteger(p.commonServerCount))body.append(elem('p','cmd-person-note',p.commonServerCount+' serveur(s) en commun'));
+   showMemberScene(p,body,name);
    if(p.createdAt)body.append(elem('div','cmd-person-note','Membre CMD Sphere depuis le '+new Date(p.createdAt).toLocaleDateString('fr-FR')));
    if(p.friendshipSince)body.append(elem('div','cmd-person-note','Amis depuis le '+new Date(p.friendshipSince).toLocaleDateString('fr-FR')));
    if(Array.isArray(p.roles)&&p.roles.length){
