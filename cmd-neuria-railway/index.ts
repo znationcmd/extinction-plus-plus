@@ -11,6 +11,7 @@ import { compareDocuments, analyzeDocument } from "./neuria-document-tools.ts";
 import { inventoryGitHubFolder, inspectGitHubFolderFiles } from "./neuria-folder-inventory.ts";
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 import { inspectWorkRepository } from "./neuria-work-github.ts";
+import { NEURIA_WORK_GITHUB_UI } from "./neuria-work-project-client.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
 const NEURIA_OAUTH_OPEN=async(req)=>{const raw=(req.headers.get("cookie")||"").split(";").map(x=>x.trim()).find(x=>x.startsWith("neuria_github="))?.slice("neuria_github=".length);if(!raw)return "";try{const buf=Buffer.from(raw,"base64url");if(buf.length<29)return "";const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:buf.subarray(0,12)},await NEURIA_OAUTH_KEY(),buf.subarray(12));return new TextDecoder().decode(plain)}catch{return ""}};
