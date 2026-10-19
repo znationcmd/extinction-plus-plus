@@ -8,6 +8,8 @@ on:
       - "cmd-neuria-railway/neuria-project-builder.test.ts"
       - "cmd-neuria-railway/neuria-project-creator-ui.ts"
       - "cmd-neuria-railway/index.ts"
+      - "cmd-neuria-railway/neuria-swipe-new-chat.ts"
+      - "cmd-neuria-railway/neuria-swipe-new-chat.test.ts"
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +25,9 @@ jobs:
         working-directory: cmd-neuria-railway
       - name: Validate project creator and ZIP exports
         run: bun test ./neuria-project-builder.test.ts
+        working-directory: cmd-neuria-railway
+      - name: Validate mobile swipe-up new chat and safe conversation isolation
+        run: bun test ./neuria-swipe-new-chat.test.ts
         working-directory: cmd-neuria-railway
       - name: Validate existing runtime integrations
         run: bun test ./neuria-runtime.test.ts
