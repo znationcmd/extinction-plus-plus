@@ -12,7 +12,7 @@ import { inventoryGitHubFolder, inspectGitHubFolderFiles } from "./neuria-folder
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 import { inspectWorkRepository } from "./neuria-work-github.ts";
 import { NEURIA_WORK_GITHUB_UI } from "./neuria-work-project-client.ts";
-import { generateProject, projectZip, PROJECT_KINDS } from "./neuria-project-builder.ts";
+import { generateProject, improveProject, projectZip, PROJECT_KINDS } from "./neuria-project-builder.ts";
 import { NEURIA_PROJECT_CREATOR_UI } from "./neuria-project-creator-ui.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
@@ -434,6 +434,19 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
    const project=await generateProject(data);
    return response(JSON.stringify({...project,canDownload:true,deployed:false,executed:false}),"application/json");
   }catch(e){return response(JSON.stringify({error:String(e?.message||"Création impossible").slice(0,200)}),"application/json",400)}
+ }
+ if(req.method==="POST"&&path==="/api/work/projects/improve"){
+  const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>280000)return response(JSON.stringify({error:"Projet trop volumineux"}),"application/json",413);
+  const ip=server.requestIP(req)?.address||"unknown",now=Date.now();
+  const recent=(NEURIA_PROJECT_RATE.get(ip)||[]).filter(t=>now-t<600000);
+  if(recent.length>=3)return response(JSON.stringify({error:"Limite de trois opérations par dix minutes. Réessaie plus tard."}),"application/json",429);
+  recent.push(now);NEURIA_PROJECT_RATE.set(ip,recent);
+  let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  try{
+   const project=await improveProject(data);
+   return response(JSON.stringify({...project,canDownload:true,deployed:false,executed:false}),"application/json");
+  }catch(e){return response(JSON.stringify({error:String(e?.message||"Amélioration impossible").slice(0,220)}),"application/json",422)}
  }
  if(req.method==="POST"&&path==="/api/work/projects/download"){
   const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
