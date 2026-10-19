@@ -1,0 +1,34 @@
+name: CMD Sphere - live Discord CMD catalog smoke check
+on:
+  push:
+    paths: [".github/workflows/cmd-sphere-bot-catalog-live.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Check running production server and active bot catalogue files
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://cmd-sphere.up.railway.app"
+          for i in 1 2 3 4 5; do
+            status=$(curl -sSL --connect-timeout 12 --max-time 40 -o /tmp/cmd-home -w '%{http_code}' "$base/" || true)
+            echo "Homepage attempt $i: $status"
+            if [ "$status" = "200" ]; then break; fi
+            sleep 7
+          done
+          test "$status" = "200"
+          curl --fail --silent --show-error --location --retry 3 --max-time 40 "$base/cmd-developer-portal-client.js?v=20261019-3" -o /tmp/cmd-portal.js
+          curl --fail --silent --show-error --location --retry 3 --max-time 40 "$base/cmd-developer-portal.css?v=20261019-2" -o /tmp/cmd-portal.css
+          grep -q "cmd-dual-bot-catalogue-nav" /tmp/cmd-portal.js
+          grep -q "discord.bots.gg/api/v1/bots" /tmp/cmd-portal.js
+          grep -q "cat-external-next" /tmp/cmd-portal.js
+          grep -q "#cmd-dual-bot-catalogue" /tmp/cmd-portal.css
+          auth=$(curl -sS --max-time 35 -o /tmp/cmd-private -w '%{http_code}' "$base/api/cmd-apps/catalog")
+          echo "Unauthenticated private native app catalog status: $auth"
+          test "$auth" = "401"
+          echo "CMD Sphere live catalog JS CSS and auth gates verified"
