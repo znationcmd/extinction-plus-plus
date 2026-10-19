@@ -1,6 +1,6 @@
 import {test,expect} from "bun:test";
 import JSZip from "jszip";
-import {classifyProject,generateProject,projectZip,safeProjectPath,validateGeneratedFiles,slugify,PROJECT_KINDS} from "./neuria-project-builder.ts";
+import {classifyProject,generateProject,improveProject,projectZip,safeProjectPath,validateGeneratedFiles,slugify,PROJECT_KINDS} from "./neuria-project-builder.ts";
 test("types of projects automatically selected from request",()=>{
  expect(classifyProject("Crée un bot discord complet")).toBe("bot");
  expect(classifyProject("Je veux un navigateur")).toBe("browser");
@@ -52,4 +52,17 @@ test("malformed LLM output safely returns a labelled starter",async()=>{
  const p=await generateProject({kind:"website",description:"Construis mon site vitrine de jeux vidéo.",useAI:true},request,{GEMINI_API_KEY:"test"});
  expect(p.starter).toBe(true);expect(p.engine).toBe("starter");
  expect(p.warnings.some(w=>w.includes("non structurée"))).toBe(true);
+});
+
+test("iterative AI code improvements preserve all untouched source files",async()=>{
+ const original=[{path:"index.html",content:"<h1>Avant</h1>"},{path:"styles.css",content:"body { color: white }"},{path:"README.md",content:"# Mode d'emploi"}];
+ let calls=0;
+ const request=(async()=>{calls++;return Response.json({choices:[{message:{content:JSON.stringify({changes:[{path:"index.html",content:"<h1>Après</h1>",reason:"Corriger le titre"}],summary:"Titre modifié"})}}]})}) as typeof fetch;
+ const p=await improveProject({kind:"website",name:"Mon site",description:"Améliore le titre visible sur la page d'accueil",files:original},request,{GEMINI_API_KEY:"fake-key"});
+ expect(calls).toBe(1);
+ expect(p.changes).toHaveLength(1);
+ expect(p.files).toHaveLength(3);
+ expect(p.files.find(f=>f.path==="index.html")?.content).toContain("Après");
+ expect(p.files.find(f=>f.path==="styles.css")?.content).toBe(original[1].content);
+ expect(p.files.find(f=>f.path==="README.md")?.content).toBe(original[2].content);
 });
