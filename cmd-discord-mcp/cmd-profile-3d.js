@@ -50,7 +50,7 @@ function createCanvas(mount,kind){
   renderer.setSize(w,h,false);
  };
  frame.render=()=>{
-  if(!frame.wrapper.isConnected){frame.running=false;return}
+  if(!frame.wrapper.isConnected){frame.running=false;window.removeEventListener("resize",frame.resize);renderer.dispose();return}
   const now=performance.now(),delta=Math.min((now-frame.last)/1000,.06);frame.last=now;
   const insideHidden=!!wrapper.closest("[hidden]");
   if(!document.hidden&&visible&&!insideHidden&&now-frame.lastDraw>(reduced?140:35)){
@@ -598,5 +598,13 @@ function refresh(){
 }
 document.addEventListener("cmd-avatar-3d:update",refresh);
 document.addEventListener("visibilitychange",()=>visible=!document.hidden);
+/* Read-only public viewer: re-use the exact civilian and pet meshes of the saved profile.
+   Never open the editor or access another member's private custom GLB endpoint. */
+export function mountReadOnlyAvatar(mount,state){
+ if(!mount?.isConnected||state?.avatarStyle!=='3d'||state?.avatarModel==='custom')return null;
+ const frame=createCanvas(mount,'public');
+ if(frame)update(frame,{...state,avatarModel:'civilian'});
+ return frame;
+}
 window.cmdProfile3D={refresh,renderLookCards,renderAvatarCards,invalidateCustom:kind=>{const url=modelUrls[kind==="pet"?"customPet":"customAvatar"];models.delete(url);if(editor){if(kind==="pet")editor.petKey="";else editor.modelKey=""}if(banner){if(kind==="pet")banner.petKey="";else banner.modelKey=""}refresh()}};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",refresh);else refresh();
