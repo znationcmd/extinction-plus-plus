@@ -49,7 +49,7 @@ export default async function RadioPage(){
         {name:'kind',label:'Type',options:{rp:'RP / ambiance',server:'Info serveur',admin:'Annonce admin',emergency:'Urgence'},required:true},
         {name:'game',label:'Jeu'},
         {name:'serverId',label:'ID serveur (facultatif)'},
-        {name:'channelId',label:'ID salon Discord (facultatif)'},
+        {name:'channelId',label:'Choisir un salon Discord (facultatif)'},
         {name:'nextRunAt',label:'Prochaine diffusion (ISO avec fuseau)',required:true},
         {name:'intervalMinutes',label:'Répétition en minutes (0 = une fois)',type:'integer'},
         {name:'enabled',label:'Activé',type:'boolean'}
