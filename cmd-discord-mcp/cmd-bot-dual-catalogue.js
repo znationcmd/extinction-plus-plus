@@ -50,6 +50,67 @@ function filterApps(){
  (!term||(String(a.name||"")+" "+String(a.description||"")+" "+String(a.discord_client_id||"")).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("fr").includes(term)));
  return matches;
 }
+
+function externalBotCard(bot){
+ const id=String(bot.userId||bot.clientId||""),discordId=String(bot.clientId||bot.userId||"");
+ if(!validDiscord(id))return "";
+ const name=String(bot.globalName||bot.username||"Bot Discord").slice(0,90);
+ const description=String(bot.shortDescription||"Bot référencé sur Discord Bots").slice(0,340);
+ const registered=state.apps.find(a=>validCmd(a.id)&&a.discord_client_id===discordId);
+ const servers=Number(bot.guildCount);
+ return '<article class="cat-card"><div class="cat-head"><span class="cat-avatar" aria-hidden="true">'+esc(name[0]?.toUpperCase()||"D")+'</span><div>'+
+ '<div class="cat-name">'+esc(name)+'</div><small class="cat-meta">'+(Number.isFinite(servers)?servers.toLocaleString("fr-FR")+" serveurs":"Bot Discord")+'</small></div></div>'+
+ '<span class="cat-tag discord">'+(registered?"Version CMD enregistrée":"Discord · adaptation CMD nécessaire")+'</span>'+
+ '<p class="cat-description">'+esc(description)+'</p><div class="cat-actions">'+
+ '<a class="cat-btn secondary" href="https://discord.bots.gg/bots/'+encodeURIComponent(id)+'" target="_blank" rel="noopener noreferrer">Voir sur Discord Bots ↗</a>'+
+ (registered?'<a class="cat-btn" href="/apps/invite?client_id='+encodeURIComponent(registered.id)+'">Inviter sur CMD Sphere</a>':"")+
+ '</div></article>';
+}
+function renderDiscordBots(){
+ const root=document.getElementById(mountId);if(!root)return;
+ const summary=root.querySelector("#cat-external-summary"),grid=root.querySelector("#cat-external-grid");
+ if(!summary||!grid)return;
+ const totalPages=Math.max(1,Math.ceil(state.remoteCount/24));
+ const visible=state.remoteBots.filter(bot=>state.category==="all"||classification({name:bot.username,description:bot.shortDescription})===state.category);
+ if(state.remoteLoading)summary.textContent="Recherche dans le catalogue Discord…";
+ else if(state.remoteError)summary.textContent=state.remoteError+" Les annuaires externes restent accessibles.";
+ else summary.textContent=state.remoteCount.toLocaleString("fr-FR")+" bots Discord référencés · Page "+(state.remotePage+1)+"/"+totalPages+
+ (state.category!=="all"?" · Catégorie estimée sur cette page uniquement.":"");
+ grid.innerHTML=visible.length?visible.map(externalBotCard).join(""):'<p class="cat-message">'+
+ (state.remoteLoading?"Chargement…":state.remoteError?"Le fournisseur est temporairement indisponible.":"Aucun bot correspondant sur cette page.")+'</p>';
+ root.querySelector("#cat-external-prev").hidden=state.remoteLoading||state.remotePage<=0;
+ root.querySelector("#cat-external-next").hidden=state.remoteLoading||(state.remotePage+1)>=totalPages;
+}
+async function loadDiscordBots(page=0){
+ const root=document.getElementById(mountId);
+ if(!root||state.tab!=="discord")return;
+ remoteController?.abort();
+ remoteController=new AbortController();
+ const serial=++remoteSerial;
+ state.remotePage=Math.max(0,Math.floor(Number(page)||0));
+ state.remoteQuery=state.q.trim().slice(0,100);
+ state.remoteLoading=true;state.remoteError="";renderDiscordBots();
+ try{
+  const params=new URLSearchParams({page:String(state.remotePage),limit:"24"});
+  if(state.remoteQuery)params.set("q",state.remoteQuery);
+  const response=await fetch("https://discord.bots.gg/api/v1/bots?"+params,{
+   method:"GET",mode:"cors",credentials:"omit",headers:{Accept:"application/json"},cache:"no-store",
+   signal:remoteController.signal
+  });
+  if(!response.ok)throw Error("Annuaire Discord HTTP "+response.status);
+  const data=await response.json();
+  if(serial!==remoteSerial)return;
+  if(!Array.isArray(data.bots))throw Error("Catalogue Discord indisponible");
+  state.remoteBots=data.bots.slice(0,24);
+  state.remoteCount=Math.max(state.remoteBots.length,Number(data.count)||0);
+ }catch(err){
+  if(serial!==remoteSerial)return;
+  if(err.name!=="AbortError"){state.remoteBots=[];state.remoteError="Catalogue Discord temporairement inaccessible."}
+ }finally{
+  if(serial===remoteSerial){state.remoteLoading=false;renderDiscordBots()}
+ }
+}
+
 function externalLinks(){
  const q=state.q.trim().slice(0,100);
  return '<section class="cat-panel"><h2>Découvrir les bots sur Discord</h2>'+
