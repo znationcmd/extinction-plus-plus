@@ -12,3 +12,18 @@ export function aiPublicStatus(env:Record<string,string|undefined>=Bun.env){
 export function aiGenerationOptions(provider:string,length:string='normal'){
  return provider==='google'?{max_tokens:length==='court'?1024:length==='detaille'?4096:2048,reasoning_effort:'low'}:{};
 }
+
+/** Retry a temporary Gemini refusal through the existing configured provider. */
+export async function fetchAI(endpoint:string,options:RequestInit,env:Record<string,string|undefined>=Bun.env,request:typeof fetch=fetch){
+ const selected=aiConfiguration(env);
+ const response=await request(endpoint,options);
+ if(selected.provider==='google'&&[429,500,502,503,504].includes(response.status)&&!options.signal?.aborted){
+  const fallback=aiConfiguration(Object.fromEntries(Object.entries(env).filter(([name])=>name.trim()!=='GEMINI_API_KEY')));
+  if(fallback.endpoint&&fallback.token&&fallback.model&&!fallback.token.includes('${{')){
+   const body=JSON.parse(String(options.body||'{}'));body.model=fallback.model;delete body.reasoning_effort;
+   const result=await request(fallback.endpoint,{...options,headers:{'content-type':'application/json',authorization:'Bearer '+fallback.token},body:JSON.stringify(body)});
+   return Object.assign(result,{neuriaModel:fallback.model,neuriaProvider:fallback.provider,neuriaFallback:true,neuriaPrimaryStatus:response.status});
+  }
+ }
+ return Object.assign(response,{neuriaModel:selected.model,neuriaProvider:selected.provider,neuriaFallback:false,neuriaPrimaryStatus:response.status});
+}
