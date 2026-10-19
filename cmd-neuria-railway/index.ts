@@ -12,6 +12,7 @@ import { inventoryGitHubFolder, inspectGitHubFolderFiles } from "./neuria-folder
 import { listNeuriaProjects } from "./neuria-project-inventory.ts";
 import { inspectWorkRepository } from "./neuria-work-github.ts";
 import { NEURIA_WORK_GITHUB_UI } from "./neuria-work-project-client.ts";
+import { generateProject, projectZip, PROJECT_KINDS } from "./neuria-project-builder.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
 const NEURIA_OAUTH_OPEN=async(req)=>{const raw=(req.headers.get("cookie")||"").split(";").map(x=>x.trim()).find(x=>x.startsWith("neuria_github="))?.slice("neuria_github=".length);if(!raw)return "";try{const buf=Buffer.from(raw,"base64url");if(buf.length<29)return "";const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:buf.subarray(0,12)},await NEURIA_OAUTH_KEY(),buf.subarray(12));return new TextDecoder().decode(plain)}catch{return ""}};
@@ -235,6 +236,7 @@ const sw='self.addEventListener("install",e=>self.skipWaiting());self.addEventLi
 const NEURIA_EMBED=`(()=>{if(window.__cmdNeuriaEmbed)return;window.__cmdNeuriaEmbed=true;const origin="https://cmd-ai-cpu-web-production.up.railway.app";const current=document.currentScript;const label=current?.dataset?.label||"CMD NEURIA";const existingSelector=current?.dataset?.target;let btn=null;try{if(existingSelector)btn=document.querySelector(existingSelector)}catch{}const isExisting=!!btn;if(!btn){btn=document.createElement("button");btn.type="button";btn.textContent=label;btn.style.cssText="position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:2147483000;border:0;border-radius:999px;padding:12px 17px;background:#6b35b7;color:white;font:600 14px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer"}btn.setAttribute("aria-label","Ouvrir CMD NEURIA");const panel=document.createElement("section");panel.hidden=true;panel.style.cssText="position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom));width:min(420px,calc(100vw - 24px));height:min(660px,calc(100dvh - 105px));background:#19112a;border:1px solid #6b35b7;border-radius:18px;overflow:hidden;z-index:2147483001;box-shadow:0 10px 40px #0008";const grip=document.createElement("div");grip.textContent="⋮⋮  CMD NEURIA — déplacer";grip.style.cssText="height:40px;display:flex;align-items:center;padding:0 48px 0 15px;background:#292038;color:white;font:600 13px system-ui;cursor:grab;touch-action:none;user-select:none";const move=(handle,target)=>{let start=null;handle.addEventListener("pointerdown",e=>{if(e.button!==0)return;const r=target.getBoundingClientRect();start={x:e.clientX,y:e.clientY,left:r.left,top:r.top};handle.setPointerCapture(e.pointerId);e.preventDefault()});handle.addEventListener("pointermove",e=>{if(!start)return;const x=Math.max(0,Math.min(innerWidth-target.offsetWidth,start.left+e.clientX-start.x));const y=Math.max(0,Math.min(innerHeight-target.offsetHeight,start.top+e.clientY-start.y));target.style.left=x+"px";target.style.top=y+"px";target.style.right="auto";target.style.bottom="auto"});const end=()=>{start=null};handle.addEventListener("pointerup",end);handle.addEventListener("pointercancel",end)};move(grip,panel);const close=document.createElement("button");close.type="button";close.textContent="✕";close.setAttribute("aria-label","Fermer CMD NEURIA");close.style.cssText="position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:8px;padding:7px 10px;cursor:pointer";const frame=document.createElement("iframe");frame.title="CMD NEURIA";frame.loading="lazy";frame.referrerPolicy="no-referrer";frame.style.cssText="border:0;width:100%;height:calc(100% - 40px)";close.onclick=()=>{panel.hidden=true;btn.setAttribute("aria-expanded","false")};const toggle=()=>{panel.hidden=!panel.hidden;btn.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden&&!frame.src)frame.src=origin+"/"};if(isExisting)btn.addEventListener("click",e=>{e.preventDefault();e.stopImmediatePropagation();toggle()},true);else btn.onclick=toggle;panel.append(grip,frame,close);document.body.append(panel);if(!isExisting)document.body.append(btn)})();`;
 // Run metadata-only provider validation at startup, without printing credentials.
 void probeGeminiAccess().then(result=>console.info("[NEURIA_GOOGLE_MODEL_PROBE]",JSON.stringify(result))).catch(()=>console.info("[NEURIA_GOOGLE_MODEL_PROBE] unavailable"));
+const NEURIA_PROJECT_RATE=new Map<string,number[]>();
 export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  const u=new URL(req.url),path=u.pathname;
  if(req.method==="GET"&&path==="/cmd-world-language-picker.js")return new Response(Bun.file(new URL("./cmd-world-language-picker.js",import.meta.url)),{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=3600"}});
@@ -414,6 +416,33 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   if(q.length<3)return response(JSON.stringify({error:"Requête trop courte"}),"application/json",400);
   const found=await NEURIA_SEARCH_MULTI(q);
   return response(JSON.stringify({query:q,source:found.provider,results:found.results,limited:true}),"application/json");
+ }
+ if(req.method==="GET"&&path==="/api/work/projects/kinds"){
+  return response(JSON.stringify({kinds:PROJECT_KINDS,automatic:true,creation:"source_files",deployment:false}),"application/json");
+ }
+ if(req.method==="POST"&&path==="/api/work/projects/generate"){
+  const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>7200)return response(JSON.stringify({error:"Description trop longue"}),"application/json",413);
+  const ip=server.requestIP(req)?.address||"unknown",now=Date.now();
+  const recent=(NEURIA_PROJECT_RATE.get(ip)||[]).filter(t=>now-t<600000);
+  if(recent.length>=3)return response(JSON.stringify({error:"Limite : trois créations par dix minutes. Réessaie plus tard."}),"application/json",429);
+  recent.push(now);NEURIA_PROJECT_RATE.set(ip,recent);
+  if(NEURIA_PROJECT_RATE.size>1000)for(const [key,value] of NEURIA_PROJECT_RATE)if(value.every(t=>now-t>=600000))NEURIA_PROJECT_RATE.delete(key);
+  let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  try{
+   const project=await generateProject(data);
+   return response(JSON.stringify({...project,canDownload:true,deployed:false,executed:false}),"application/json");
+  }catch(e){return response(JSON.stringify({error:String(e?.message||"Création impossible").slice(0,200)}),"application/json",400)}
+ }
+ if(req.method==="POST"&&path==="/api/work/projects/download"){
+  const origin=req.headers.get("origin");if(origin&&origin!==new URL(req.url).origin)return response(JSON.stringify({error:"Origine refusée"}),"application/json",403);
+  if(Number(req.headers.get("content-length")||0)>350000)return response(JSON.stringify({error:"Projet trop volumineux"}),"application/json",413);
+  let data;try{data=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
+  try{
+   const zip=await projectZip(data?.files,data?.name||"projet");
+   const filename=String(data?.name||"cmd-neuria-projet").normalize("NFKD").replace(/[^a-zA-Z0-9_-]/g,"-").slice(0,55)||"cmd-neuria-projet";
+   return new Response(zip,{headers:{"content-type":"application/zip","content-disposition":'attachment; filename="'+filename+'.zip"',"cache-control":"no-store","x-content-type-options":"nosniff"}});
+  }catch(e){return response(JSON.stringify({error:String(e?.message||"Export impossible").slice(0,200)}),"application/json",400)}
  }
  if(req.method==="GET"&&path==="/api/work/capabilities"){
   const github=!!(Bun.env.NEURIA_GITHUB_CLIENT_ID&&Bun.env.NEURIA_GITHUB_CLIENT_SECRET);
