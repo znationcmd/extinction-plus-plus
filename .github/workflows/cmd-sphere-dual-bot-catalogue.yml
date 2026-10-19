@@ -1,0 +1,34 @@
+name: CMD Sphere - dual Discord CMD bot catalogue
+on:
+  push:
+    branches: [cmd-sphere/dossiers-pays-20261018]
+    paths:
+      - "cmd-discord-mcp/cmd-bot-dual-catalogue.*"
+      - "cmd-discord-mcp/cmd-developer-portal-client.js"
+      - "cmd-discord-mcp/cmd-developer-portal.css"
+      - "cmd-discord-mcp/cmd-developer-portal-page.js"
+      - "cmd-discord-mcp/tests/dual-bot-catalogue.test.cjs"
+      - ".github/workflows/cmd-sphere-dual-bot-catalogue.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cmd-discord-mcp/package-lock.json
+      - name: Install portal test dependencies
+        run: npm ci --prefix cmd-discord-mcp --ignore-scripts --no-audit --no-fund
+      - name: Verify browser JavaScript syntax
+        run: |
+          node --check cmd-discord-mcp/cmd-bot-dual-catalogue.js
+          node --check cmd-discord-mcp/cmd-developer-portal-client.js
+          node --check cmd-discord-mcp/cmd-developer-portal-page.js
+      - name: Test dual-platform bot catalogue
+        run: node --test cmd-discord-mcp/tests/dual-bot-catalogue.test.cjs
