@@ -214,7 +214,7 @@ const CMD_APP_RELEASE=String(process.env.RAILWAY_GIT_COMMIT_SHA||process.env.GIT
 function html(res,body,status=200,headers={}){
   // Every native CMD Sphere page exposes the same alphabetic language selector.
   if(typeof body==="string"&&/<html\b/i.test(body)&&/<\/body>/i.test(body)&&/CMD Sphere/.test(body)&&!body.includes('src="/cmd-world-language-picker.js')){
-    body=body.replace(/<\/body>/i,'<script defer src="/cmd-world-language-picker.js?v=20261018-az"></script></body>');
+    body=body.replace(/<\/body>/i,'<script defer src="/cmd-world-language-picker.js?v=20261019-profile-lang-full"></script></body>');
   }
 
     if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
