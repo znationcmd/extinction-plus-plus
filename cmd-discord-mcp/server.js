@@ -246,7 +246,7 @@ function html(res,body,status=200,headers={}){
   }
 
     if(typeof body==="string"&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
-      body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261016menus1"></script></body>');
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-social-message-actions.js?v=20261019avatar-character-fix"></script></body>');
       if(body.includes('id="channelMessages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-forward-ui.js?v=20261018forward1"></script></body>');
       if(body.includes('id="channelMessages"'))body=body.replace(/<\/body>/i,'<script defer src="/cmd-sensitive-media-ui.js?v=20261018media1"></script></body>');
       body=body.replace(/<\/body>/i,'<script defer src="/cmd-conversation-frames.js?v=20261017-text-safe-frame7"></script></body>');
@@ -5180,7 +5180,7 @@ const httpServer=createServer(async(req,res)=>{
       const auth=dashboardAuth(req);if(!auth){redirect(res,baseUrl+"/dashboard-login?next="+encodeURIComponent("/messages"));return}
       try{
         const [threads,prefs,native,discord,folders,layout,friends,profile,groups]=await Promise.all([listDmThreads(auth),getDmPreferences(auth),listNativeGuilds(auth),linkedDiscordGuilds(auth),getServerFolders(auth),getServerLayout(auth),listFriends(auth),getGlobalProfile(auth),listGroupDms(auth)]);
-        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script><script src="/cmd-social-message-actions.js?v=20261016menus1" defer></script><script src="/cmd-social-privacy-ui.js?v=20261018privacy" defer></script><script src="/cmd-streamer-mode-ui.js?v=20261018streamer" defer></script></body>'));
+        html(res,messagesPage(auth,threads,prefs,{native,discord,folders,layout},friends,profile,groups).replace("</head>",'<link rel="stylesheet" href="/cmd-message-compose.css?v=20261010dm2"></head>').replace("</body>",'<script src="/cmd-invite-ui.js?v=20261010slugfix1" defer></script><script src="/cmd-message-compose.js?v=20261010dm2" defer></script><script src="/cmd-social-message-actions.js?v=20261019avatar-character-fix" defer></script><script src="/cmd-social-privacy-ui.js?v=20261018privacy" defer></script><script src="/cmd-streamer-mode-ui.js?v=20261018streamer" defer></script></body>'));
       }catch(e){html(res,"<h1>Messages indisponibles</h1><p>"+escHtml(e.message)+"</p>",500)}return;
     }
     if(req.method==="GET"&&url.pathname==="/api/person/profile"){
