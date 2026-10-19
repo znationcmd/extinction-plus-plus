@@ -1,0 +1,25 @@
+name: CMD NEURIA - Project creator verification
+on:
+  push:
+    branches: [cmd-neuria-railway-backup-20261013]
+    paths:
+      - ".github/workflows/neuria-project-builder-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install project dependencies
+        run: bun install --no-save
+        working-directory: cmd-neuria-railway
+      - name: Validate project creator and ZIP exports
+        run: bun test ./neuria-project-builder.test.ts
+        working-directory: cmd-neuria-railway
+      - name: Validate existing runtime integrations
+        run: bun test ./neuria-runtime.test.ts
+        working-directory: cmd-neuria-railway
