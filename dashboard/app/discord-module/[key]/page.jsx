@@ -48,7 +48,7 @@ export default function DiscordModulePage(){
       fields={[
         {name:'name',label:'Nom du module',type:'text',required:true},
         {name:'enabled',label:'Activé',type:'boolean',defaultValue:true},
-        {name:'channelId',label:'Choisir un salon Discord',type:'discord-channel'},
+        {name:'channelId',label:'Choisir un salon Discord',type:'discord-channel',allowVoice:key==='tempvoice'},
         {name:'roleIds',label:'Choisir les rôles Discord autorisés',type:'discord-roles'},
         {name:'message',label:'Message / texte du module',type:'text'},
         {name:'config',label:'Configuration avancée',type:'text'}
