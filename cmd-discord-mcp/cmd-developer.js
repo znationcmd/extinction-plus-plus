@@ -45,5 +45,31 @@ async function invite(){
   }
  }catch(e){status(e.message)}
 }
-apps();choose();invite();
+async function searchDiscordBot(){
+ const form=$("#cmd-find-discord-bot"),box=$("#cmd-third-party-result");if(!form||!box)return;
+ form.onsubmit=async event=>{
+  event.preventDefault();
+  const id=String(new FormData(form).get("clientId")||"").trim();
+  if(!/^\d{15,22}$/.test(id)){box.textContent="Client ID Discord invalide.";return}
+  box.textContent="Vérification des applications CMD Sphere…";
+  try{
+   const d=await api("/api/cmd-apps/catalog?discordClientId="+encodeURIComponent(id));
+   const matches=d.apps||[];
+   if(!matches.length){
+    box.replaceChildren();
+    box.append(document.createTextNode("Ce bot Discord n'a pas encore de version CMD Sphere enregistrée. Son développeur doit créer une application CMD et adapter son code. "));
+    const link=document.createElement("a");link.href="/developers";link.textContent="Portail développeur";box.append(link);
+    return;
+   }
+   box.replaceChildren();
+   for(const app of matches){
+    const item=document.createElement("div");item.className="item";
+    const name=document.createElement("b");name.textContent=app.name;item.append(name);
+    const link=document.createElement("a");link.className="button";link.href="/apps/invite?client_id="+encodeURIComponent(app.id);
+    link.textContent="Choisir un serveur CMD Sphere";item.append(link);box.append(item);
+   }
+  }catch(e){box.textContent=e.message}
+ };
+}
+apps();choose();invite();searchDiscordBot();
 })();
