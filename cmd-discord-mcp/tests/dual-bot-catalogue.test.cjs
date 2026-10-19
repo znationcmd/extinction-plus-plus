@@ -11,6 +11,7 @@ async function fixture(){
  window.fetch=async url=>{
    const loc=new URL(url,window.location.origin);calls.push(loc.pathname+loc.search);
    const params=loc.searchParams;
+   if(loc.hostname==="discord.bots.gg")return {ok:true,json:async()=>({count:53,bots:[{userId:"123456789012345678",clientId:"123456789012345678",username:"CMD BOT ARK",shortDescription:"Gaming Ark",guildCount:100},{userId:"888888888888888888",clientId:"888888888888888888",username:"Other Discord Bot",shortDescription:"Moderation",guildCount:500}]})};
    const apps=params.has("discordClientId")?(params.get("discordClientId")==="123456789012345678"?[cmdApp]:[]):[cmdApp,nativeApp];
    return {ok:true,json:async()=>({apps})};
  };
@@ -24,7 +25,7 @@ async function fixture(){
 }
 test("portal loads catalog from already served assets with cache busting",()=>{
  const page=read("cmd-developer-portal-page.js"),css=read("cmd-developer-portal.css"),js=read("cmd-developer-portal-client.js");
- assert.match(page,/cmd-developer-portal-client\.js\?v=20261019-2/);
+ assert.match(page,/cmd-developer-portal-client\.js\?v=20261019-3/);
  assert.match(page,/cmd-developer-portal\.css\?v=20261019-2/);
  assert.ok(!page.includes('src="/cmd-bot-dual-catalogue.js'),"no unserved independent script route");
  assert.match(css,/#cmd-dual-bot-catalogue/);
@@ -42,8 +43,12 @@ test("CMD Sphere tab lists installed-capable CMD apps with permissioned invitati
 test("Discord tab does not pretend all Discord bots are CMD compatible",async()=>{
  const {window}=await fixture();const root=window.document.getElementById("cmd-dual-bot-catalogue");
  root.querySelector("#cat-tab-discord").click();
+ await new Promise(resolve=>setTimeout(resolve,15));
  assert.equal(root.querySelector("#cat-tab-discord").getAttribute("aria-selected"),"true");
- assert.equal(root.querySelectorAll(".cat-card").length,1,"only CMD-listed linked Discord apps are displayed");
+ assert.equal(root.querySelectorAll("#cat-list .cat-card").length,1,"only CMD-linked Discord apps appear in CMD-compatible subsection");
+ assert.equal(root.querySelectorAll("#cat-external-grid .cat-card").length,2,"real public Discord bots displayed");
+ assert.equal(root.querySelectorAll("#cat-external-grid a[href^='/apps/invite']").length,1,"only linked bot can be invited to CMD");
+ assert.match(root.querySelector("#cat-external-summary").textContent,/53 bots Discord/);
  assert.match(root.textContent,/Annuaire officiel Discord/i);
  const hrefs=[...root.querySelectorAll(".cat-source-list a")].map(x=>x.href);
  assert.ok(hrefs.some(x=>x.includes("discord.com/application-directory")));
@@ -73,5 +78,19 @@ test("Discord Client ID lookup finds existing CMD version but does not invent an
  await new Promise(resolve=>setTimeout(resolve,15));
  assert.match(root.querySelector("#cat-id-result").textContent,/Aucune version CMD Sphere enregistrée/);
  assert.equal(root.querySelectorAll("#cat-id-result a").length,0);
+ window.close();
+});
+
+
+test("public Discord catalogue pages are fetched separately and do not auto-install third-party bots",async()=>{
+ const {window,calls}=await fixture(),root=window.document.getElementById("cmd-dual-bot-catalogue");
+ root.querySelector("#cat-tab-discord").click();
+ await new Promise(resolve=>setTimeout(resolve,15));
+ assert.ok(calls.some(x=>x.startsWith("/api/v1/bots?page=0&limit=24")));
+ assert.ok(root.querySelector('#cat-external-grid a[href="https://discord.bots.gg/bots/888888888888888888"]'));
+ root.querySelector("#cat-external-next").click();
+ await new Promise(resolve=>setTimeout(resolve,15));
+ assert.ok(calls.some(x=>x.startsWith("/api/v1/bots?page=1&limit=24")));
+ assert.match(root.querySelector("#cat-external-summary").textContent,/Page 2/);
  window.close();
 });
