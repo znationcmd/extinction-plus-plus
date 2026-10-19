@@ -1,4 +1,21 @@
+import {readFileSync} from 'node:fs';
 /* Read-only CMD Sphere member cards. Shared guilds only, no external Discord writes. */
+// Use the exact same installed catalogues as the private profile editor.
+let publicCatalogue=null;
+function publicAssets(){
+ if(publicCatalogue)return publicCatalogue;
+ const read=(file)=>{try{return JSON.parse(readFileSync(new URL(file,import.meta.url),"utf8"))}catch{return null}};
+ const catalogue=read("./public/universe/v1/manifest.json")||{};
+ const hd=read("./cmd-hd-scenes.json")||[];
+ const restored=read("./public/cmd-restored-fonds/manifest.json")||[];
+ const byKind={scene:[...(catalogue.scenes||[]),...(Array.isArray(hd)?hd:[]),...(Array.isArray(restored)?restored:[])],pet:catalogue.pets||[],vehicle:catalogue.vehicles||[],home:catalogue.homes||[]};
+ publicCatalogue=Object.fromEntries(Object.entries(byKind).map(([kind,items])=>[kind,new Map(items.filter(x=>x?.id&&x?.src).map(x=>[String(x.id),String(x.src)]))]));
+ return publicCatalogue;
+}
+function publicAsset(kind,id){
+ const src=publicAssets()[kind]?.get(String(id||''))||'';
+ return /^\/(?:universe\/|cmd-restored-fonds\/)[a-z0-9_./-]+\.(?:png|webp|svg|jpg|jpeg)$/i.test(src)&&!src.includes('..')?src:null;
+}
 export async function publicPersonCard(pool,auth,input={}){
  const viewer=String(auth.user.id),raw=String(input.userId||input.username||"").trim().slice(0,100);
  if(!raw)throw Object.assign(new Error("Compte requis"),{status:400});
@@ -53,7 +70,7 @@ export async function publicPersonCard(pool,auth,input={}){
    guildProfile=member.rows[0]||null;
    if(same.membership_role==="owner")roles.unshift({name:"Propriétaire",color:"#e5b754"});
  }
- return {id,username:u.username,displayName:guildProfile?.profile_display_name||u.display_name||u.username,
+ const card={id,username:u.username,displayName:guildProfile?.profile_display_name||u.display_name||u.username,
    avatar:guildProfile?.profile_avatar_data_url||u.avatar_data_url||null,
    banner:guildProfile?.profile_banner_data_url||u.banner_data_url||null,
    bio:guildProfile?.profile_bio||u.bio||"",status:guildProfile?.profile_status||u.status||"",
@@ -65,4 +82,21 @@ export async function publicPersonCard(pool,auth,input={}){
    mutualFriends:mutual.rows.map(f=>({id:String(f.id),username:f.username,displayName:f.display_name||f.username,avatar:f.avatar||null})),
    commonServers:common.rows.map(g=>({id:String(g.id),name:String(g.name)})),
    joinedGuildAt:same?.joined_at||null,roles,activeGuildId:same?String(same.id):null};
+ if(input.includeScene){
+   // An authenticated viewer may see the member's saved character, scene and pet.
+   // This separate opt-in read keeps large photos out of message-list decoration calls.
+   const sceneRow=await pool.query("SELECT cmd_avatar_scene,cmd_avatar_scene_image,cmd_avatar_character_image,cmd_avatar_pet_image FROM cmd_global_profiles WHERE user_id=$1 LIMIT 1",[id]);
+   const record=sceneRow.rows[0]||{};
+   const state=record.cmd_avatar_scene&&typeof record.cmd_avatar_scene==='object'&&!Array.isArray(record.cmd_avatar_scene)?{...record.cmd_avatar_scene}:{};
+   if(state.hideHome!==false)delete state.home;
+   const sceneKey=String(state.scene||'none'),petKey=String(state.pet||'none');
+   card.avatarScene=state;
+   card.sceneBackground=sceneKey==='custom'?(record.cmd_avatar_scene_image||null):publicAsset('scene',sceneKey);
+   card.sceneCharacterImage=state.avatarStyle==='photo'?record.cmd_avatar_character_image||null:null;
+   card.scenePetImage=state.petStyle==='photo'&&petKey!=='none'?record.cmd_avatar_pet_image||null:null;
+   card.scenePetArt=petKey!=='none'?publicAsset('pet',petKey):null;
+   card.sceneVehicleArt=state.vehicle&&state.vehicle!=='none'?publicAsset('vehicle',state.vehicle):null;
+   card.sceneHomeArt=state.hideHome===false&&state.home&&state.home!=='none'?publicAsset('home',state.home):null;
+ }
+ return card;
 }
