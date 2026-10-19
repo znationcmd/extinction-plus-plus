@@ -16,6 +16,16 @@ function publicAsset(kind,id){
  const src=publicAssets()[kind]?.get(String(id||''))||'';
  return /^\/(?:universe\/|cmd-restored-fonds\/)[a-z0-9_./-]+\.(?:png|webp|svg|jpg|jpeg)$/i.test(src)&&!src.includes('..')?src:null;
 }
+const LEGACY_PET_IDS={"dog":1,"cat":2,"fox":4,"bird":30,"flamingo":65,"rabbit":19,"wolf":51,"turtle":25,"hamster":18,"panda":5,"lion":68,"penguin":6,"dolphin":27,"shark":31,"butterfly":70,"dragon":9,"dog-spotted":41,"dog-golden":16,"dog-husky":51,"dog-puppy":76,"cat-tabby":59,"cat-blue":47,"cat-ginger":3,"cat-black":42,"cat-siamese":44,"dog-bulldog":75,"dog-terrier":40,"dog-shepherd":54,"dog-pug":138};
+const LEGACY_VEHICLE_IDS={"compact":1,"sportscar":2,"convertible":26,"scooter":4,"motorcycle":5,"van":16,"truck":22,"kart":27,"boat":6,"plane":7,"rocket":34,"sedan":83,"suv":3,"jeep":22,"limousine":41,"bus":146,"camper":145,"helicopter":8,"jetski":137,"yacht":46};
+const LEGACY_SCENE_PHOTOS={"forest":"photo-1448375240586-882707db888b","neonforest":"photo-1448375240586-882707db888b","beach":"photo-1507525428034-b723cf961d3e","seaside":"photo-1473116763249-2faaef81ccda","waterfall":"photo-1432405972618-c60b0225b8f9","city":"photo-1519501025264-65ba15a82390","night":"photo-1519681393784-d120267933ba","space":"photo-1462331940025-496dfbfc7564","mountains":"photo-1464822759023-fed622ff2c3b","chalet":"photo-1449158743715-0a90ebb6d2d8","desert":"photo-1509316785289-025f5b846b35","garden":"photo-1490750967868-88aa4486c946","sunset":"photo-1472120435266-53107fd0c44a","rain":"photo-1515694346937-94d85e41e6f0","snowfall":"photo-1483664852095-d6cc6870702d","aurora":"photo-1531366936337-7c912a4589a7","underwater":"photo-1546026423-cc4642628d2b","palace":"photo-1590490360182-c33d57733427"};
+function publicLegacyAsset(kind,id){
+ const name=String(id||'');
+ if(kind==='scene'&&LEGACY_SCENE_PHOTOS[name])return 'https://images.unsplash.com/'+LEGACY_SCENE_PHOTOS[name]+'?w=1920&auto=format&fit=crop&q=90';
+ const list=kind==='pet'?LEGACY_PET_IDS:kind==='vehicle'?LEGACY_VEHICLE_IDS:null;
+ if(list&&Object.prototype.hasOwnProperty.call(list,name))return '/universe/v1/'+kind+'-'+String(list[name]).padStart(3,'0')+'.png';
+ return null;
+}
 export async function publicPersonCard(pool,auth,input={}){
  const viewer=String(auth.user.id),raw=String(input.userId||input.username||"").trim().slice(0,100);
  if(!raw)throw Object.assign(new Error("Compte requis"),{status:400});
@@ -91,11 +101,11 @@ export async function publicPersonCard(pool,auth,input={}){
    if(state.hideHome!==false)delete state.home;
    const sceneKey=String(state.scene||'none'),petKey=String(state.pet||'none');
    card.avatarScene=state;
-   card.sceneBackground=sceneKey==='custom'?(record.cmd_avatar_scene_image||null):publicAsset('scene',sceneKey);
+   card.sceneBackground=sceneKey==='custom'?(record.cmd_avatar_scene_image||null):(publicAsset('scene',sceneKey)||publicLegacyAsset('scene',sceneKey));
    card.sceneCharacterImage=state.avatarStyle==='photo'?record.cmd_avatar_character_image||null:null;
    card.scenePetImage=state.petStyle==='photo'&&petKey!=='none'?record.cmd_avatar_pet_image||null:null;
-   card.scenePetArt=petKey!=='none'?publicAsset('pet',petKey):null;
-   card.sceneVehicleArt=state.vehicle&&state.vehicle!=='none'?publicAsset('vehicle',state.vehicle):null;
+   card.scenePetArt=petKey!=='none'?(publicAsset('pet',petKey)||publicLegacyAsset('pet',petKey)):null;
+   card.sceneVehicleArt=state.vehicle&&state.vehicle!=='none'?(publicAsset('vehicle',state.vehicle)||publicLegacyAsset('vehicle',state.vehicle)):null;
    card.sceneHomeArt=state.hideHome===false&&state.home&&state.home!=='none'?publicAsset('home',state.home):null;
  }
  return card;
