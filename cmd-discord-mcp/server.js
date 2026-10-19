@@ -5181,7 +5181,7 @@ const httpServer=createServer(async(req,res)=>{
     }
     if(req.method==="GET"&&url.pathname==="/api/person/profile"){
       const auth=dashboardAuth(req);if(!auth){sendJson(res,401,{error:"Connexion requise"});return}
-      try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId")})})}
+      try{sendJson(res,200,{profile:await publicPersonCard(pool,auth,{userId:url.searchParams.get("userId"),username:url.searchParams.get("username"),guildId:url.searchParams.get("guildId"),includeScene:url.searchParams.get("includeScene")==="1"})})}
       catch(e){sendJson(res,e.status||400,{error:e.message})}return;
     }
     if(url.pathname==="/api/account/sensitive-media"&&(req.method==="GET"||req.method==="PATCH")){
