@@ -76,3 +76,42 @@ button:disabled{cursor:not-allowed;opacity:.55}
  .dev-card{padding:14px}
  .dev-stat{font-size:22px}
 }
+
+
+/* Discord & CMD Sphere bot catalog */
+/* CMD Sphere Développeur — dual independent bot directories, responsive and vector-sharp. */
+#cmd-dual-bot-catalogue{--cat-stroke:#8254e7;--cat-glow:#a780ff;font-family:inherit;min-height:58vh;color:#f6f2ff}
+#cmd-dual-bot-catalogue *{box-sizing:border-box}
+#cmd-dual-bot-catalogue .cat-heading{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+#cmd-dual-bot-catalogue h1{margin:0;font-size:clamp(24px,3vw,37px)}
+#cmd-dual-bot-catalogue h2{font-size:18px;margin:0 0 12px}
+#cmd-dual-bot-catalogue .cat-sub{color:#cbc1dd;margin:6px 0 18px;line-height:1.6}
+#cmd-dual-bot-catalogue .cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 20px}
+#cmd-dual-bot-catalogue .cat-tab{border:1px solid #7c67a4;border-radius:13px;background:#262132;color:#ddcfff;padding:12px 18px;min-height:44px;box-shadow:inset 0 1px #ffffff1c;cursor:pointer}
+#cmd-dual-bot-catalogue .cat-tab[aria-selected=true]{background:linear-gradient(135deg,#6144ae,#3a5eb2);border-color:#c8a8ff;color:#fff;box-shadow:inset 0 2px #ffffff55,0 0 19px #9761fb66}
+#cmd-dual-bot-catalogue .cat-panel{background:linear-gradient(144deg,#242036,#181526);border:1px solid #5b457f;border-radius:19px;padding:clamp(14px,2vw,24px);box-shadow:inset 0 1px #ffffff1c,0 12px 33px #0006;margin:13px 0}
+#cmd-dual-bot-catalogue .cat-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+#cmd-dual-bot-catalogue label{display:grid;gap:6px;font-weight:700;flex:1 1 230px;font-size:13px;color:#ddd5ee}
+#cmd-dual-bot-catalogue input,#cmd-dual-bot-catalogue select{font:inherit;min-height:46px;width:100%;border-radius:11px;color:#fff;padding:10px 13px;border:1px solid #776497;background:#120f20}
+#cmd-dual-bot-catalogue .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,245px),1fr));gap:13px}
+#cmd-dual-bot-catalogue .cat-card{border:1px solid #694e92;border-radius:16px;background:linear-gradient(145deg,#2a2042,#1a1a30);min-width:0;padding:17px;box-shadow:0 8px 16px #0005;display:flex;flex-direction:column;gap:10px}
+#cmd-dual-bot-catalogue .cat-head{display:flex;gap:12px;align-items:center}
+#cmd-dual-bot-catalogue .cat-avatar{display:grid;place-items:center;flex:none;border-radius:16px;height:51px;width:51px;background:linear-gradient(140deg,#7250c4,#3362c1);border:1px solid #d5bbff76;font-size:23px;font-weight:800;box-shadow:inset 0 2px #ffffff32}
+#cmd-dual-bot-catalogue .cat-name{font-size:16px;font-weight:850;overflow-wrap:anywhere}
+#cmd-dual-bot-catalogue .cat-description{color:#c7bbd8;line-height:1.5;font-size:13px;min-height:43px;overflow-wrap:anywhere;flex:1;margin:0}
+#cmd-dual-bot-catalogue .cat-tag{display:inline-flex;border-radius:999px;border:1px solid #9a80d1;color:#e8dafe;font-size:11px;padding:4px 8px;align-self:flex-start}
+#cmd-dual-bot-catalogue .cat-tag.discord{border-color:#7a8ef4;background:#495da344}
+#cmd-dual-bot-catalogue .cat-tag.cmd{border-color:#b090fc;background:#5835ad44}
+#cmd-dual-bot-catalogue .cat-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto}
+#cmd-dual-bot-catalogue .cat-btn{font:700 13px system-ui;border:1px solid #a384ec;border-radius:11px;padding:10px 12px;min-height:42px;text-decoration:none;color:white;background:linear-gradient(140deg,#7851bf,#433a91);box-shadow:inset 0 2px #ffffff35,0 5px 15px #0005;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;gap:6px}
+#cmd-dual-bot-catalogue .cat-btn.secondary{background:#252032;color:#e7d7ff}
+#cmd-dual-bot-catalogue .cat-btn:focus-visible,#cmd-dual-bot-catalogue input:focus-visible,#cmd-dual-bot-catalogue select:focus-visible,#cmd-dual-bot-catalogue .cat-tab:focus-visible{outline:2px solid #e0c0ff;outline-offset:3px}
+#cmd-dual-bot-catalogue .cat-message{color:#dad0e9;border:1px solid #6a568e;padding:13px 16px;background:#221d32;border-radius:12px;margin:14px 0}
+#cmd-dual-bot-catalogue .cat-message[hidden]{display:none}
+#cmd-dual-bot-catalogue .cat-message.warn{border-color:#b69463;color:#ffe1ba}
+#cmd-dual-bot-catalogue .cat-source-list{display:flex;gap:10px;flex-wrap:wrap}
+#cmd-dual-bot-catalogue .cat-meta{color:#c4b8d9;font-size:13px;padding:9px 0}
+#cmd-dual-bot-catalogue .cat-info{font-size:13px;color:#d2c8df;margin:8px 0 16px}
+#cmd-dual-bot-catalogue button[disabled]{opacity:.48;cursor:not-allowed}
+@media(max-width:650px){#cmd-dual-bot-catalogue .cat-tab{flex:1}#cmd-dual-bot-catalogue .cat-actions .cat-btn{flex:1}}
+@media(prefers-reduced-motion:reduce){#cmd-dual-bot-catalogue *{transition:none!important;animation:none!important}}
