@@ -226,6 +226,9 @@ function html(res,body,status=200,headers={}){
     if(typeof body==="string"&&!body.includes('type="importmap"')&&(body.includes('id="channelMessages"')||body.includes('id="messages"')||body.includes('id="msgs"'))){
       body=body.replace(/<\/head>/i,'<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script></head>');
     }
+    // The profile owns the world-language control beside Streamer mode.
+    if(typeof body==="string"&&body.includes("<title>Profil · CMD Sphere</title>")&&!body.includes('src="/cmd-streamer-mode-ui.js'))
+      body=body.replace(/<\/body>/i,'<script defer src="/cmd-streamer-mode-ui.js?v=20261019-profile-streamer-language"></script></body>');
     if(typeof body==="string"&&body.includes("<title>Messages · CMD Sphere</title>"))body=body.replace(/<\/body>/i,'<script defer src="/cmd-message-translate.js?v=20261008auto5"></script><script defer src="/cmd-message-polish.js?v=20261010uifix8"></script></body>');
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-touch-organizer.js?v=20261010uifix8"></script></body>');
     if(typeof body==="string"&&(body.includes('class="sphere-app"')||body.includes("<title>Messages · CMD Sphere</title>")||body.includes("<title>Profil · CMD Sphere</title>")))body=body.replace(/<[/]body>/i,'<script defer src="/cmd-page-position.js?v=20261010keep1"></script></body>');
