@@ -1,0 +1,28 @@
+name: CMD Sphere - Discord bot compatibility bridge
+on:
+  push:
+    paths:
+      - "cmd-discord-mcp/cmd-discord-compat.js"
+      - "cmd-discord-mcp/cmd-developer-api.js"
+      - "cmd-discord-mcp/adapters/**"
+      - "cmd-discord-mcp/tests/discord-compat.test.cjs"
+      - ".github/workflows/cmd-sphere-discord-compat.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify source syntax
+        run: |
+          node --check cmd-discord-mcp/cmd-discord-compat.js
+          node --check cmd-discord-mcp/cmd-developer-api.js
+          node --check cmd-discord-mcp/adapters/cmd-discord-rest-client.mjs
+      - name: Run compatibility and tenant isolation unit tests
+        run: node --test cmd-discord-mcp/tests/discord-compat.test.cjs
