@@ -32,7 +32,7 @@ export default function ModuleEditor({endpoint,title='Gestion',fields,readKey,li
       const choices=kind==='channel'?(discordChoices?.channels||[]):(discordChoices?.roles||[]);
       const selection=kind==='roles'?(Array.isArray(value)?value:typeof value==='string'?value.split(',').map(v=>v.trim()).filter(Boolean):[]):[];
       const allowed=kind==='channel'?
-        choices.filter(c=>f.allowVoice||f.name==='voiceChannelId'?[0,2,5,13,15].includes(c.type):[0,5,13,15].includes(c.type)):
+        choices.filter(c=>(f.allowVoice||f.name==='voiceChannelId'?[2,13]:[0,5]).includes(c.type)):
         choices;
       if(kind==='roles'){
         return <fieldset key={f.name} className="sm:col-span-2 space-y-2 rounded-xl border border-white/20 bg-white/[.035] p-4">
