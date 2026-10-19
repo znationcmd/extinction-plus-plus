@@ -1,0 +1,35 @@
+name: NEURIA - test Gemini et secours GPT-OSS
+on:
+  push:
+    branches: [cmd-neuria-railway-backup-20261013]
+    paths: [.github/workflows/neuria-gemini-diagnostic.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Tests fournisseur Gemini et secours
+        run: bun test ./neuria-ai-provider.test.ts
+        working-directory: cmd-neuria-railway
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Test conversation courte sur Railway (sans révéler la clé)
+        shell: bash
+        run: |
+          curl --retry 1 --retry-delay 3 -fsS --max-time 30 https://cmd-ai-cpu-web-production.up.railway.app/health >/dev/null
+          status=$(curl -sS --max-time 105 -o /tmp/neuria-live.json -w '%{http_code}' -X POST 'https://cmd-ai-cpu-web-production.up.railway.app/api/chat' -H 'Content-Type: application/json' -d '{"message":"Dis simplement bonjour.","webSearch":"off","responseLength":"court"}')
+          echo "CMD NEURIA HTTP status: $status"
+          STATUS="$status" node - <<'NODE'
+          const fs=require('node:fs');
+          const obj=JSON.parse(fs.readFileSync('/tmp/neuria-live.json','utf8'));
+          const safe={http:Number(process.env.STATUS),provider:obj.provider||null,model:obj.model||null,fallbackUsed:obj.fallbackUsed===true,primaryProviderStatus:obj.primaryProviderStatus??null,primaryProviderReason:obj.primaryProviderReason??null,engine:obj.engine||null,hasReply:typeof obj.reply==='string'&&obj.reply.trim().length>0,diagnosticError:obj.error||null};
+          console.log('Diagnostic (sans réponse ni clé):',JSON.stringify(safe));
+          if(safe.http!==200||!safe.hasReply)process.exit(1);
+          NODE
