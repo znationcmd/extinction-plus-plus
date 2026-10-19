@@ -380,16 +380,26 @@ body.cmd-premium-body .cmd-hosting-quick-access #cmdHostingLaunch{width:100%!imp
   bottom:0!important;
 }
 
-/* Avatar decoration follows the saved profile photo (106 x 106 at 17, -53).
-   Preserve the ornament's native artwork and keep the presence dot above it. */
-.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar{
+/* Keep the avatar ornament centred on the true photo centre (70px, 0px).
+   Previous left/top offsets were combined with translate(-50%, -50%),
+   shifting the saved circular decoration away from the actual avatar. */
+.page.cmd-premium-profile .hero.cmd-pm-hero .avatarWrap > img.cmd-profile-art-avatar {
  position:absolute!important;
- left:7px!important;
- top:-63px!important;
- width:126px!important;
- height:126px!important;
+ box-sizing:border-box!important;
+ inset:auto!important;
+ left:var(--cmd-avatar-center-x,70px)!important;
+ top:var(--cmd-avatar-center-y,0px)!important;
+ right:auto!important;
+ bottom:auto!important;
+ width:128px!important;
+ height:128px!important;
  max-width:none!important;
  max-height:none!important;
+ aspect-ratio:1/1!important;
  object-fit:contain!important;
+ object-position:center center!important;
+ transform:translate(-50%,-50%)!important;
+ transform-origin:center center!important;
  pointer-events:none!important;
+ z-index:32!important;
 }
