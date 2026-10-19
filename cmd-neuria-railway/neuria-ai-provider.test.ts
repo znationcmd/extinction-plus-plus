@@ -19,3 +19,8 @@ test('temporary Gemini failure uses GPT OSS without leaking Google credentials t
 test('authentication errors are reported instead of silently hiding a bad Gemini key',async()=>{
  const {fetchAI}=await import('./neuria-ai-provider.ts');let calls=0;const result=await fetchAI('https://google.test',{}, {GEMINI_API_KEY:'test'},async()=>{calls++;return new Response('{}',{status:403})});expect(result.status).toBe(403);expect(calls).toBe(1);
 });
+test('a Google network failure falls back while the overall request is still active',async()=>{
+ const {fetchAI}=await import('./neuria-ai-provider.ts');let calls=0;
+ const result=await fetchAI('https://google.test',{body:'{"model":"gemini-3.8-flash"}'},{GEMINI_API_KEY:'test-google',NEURIA_AI_ENDPOINT:'https://api.cloudflare.com/test',NEURIA_AI_API_KEY:'test-cloudflare',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'},async()=>{calls++;if(calls===1)throw new TypeError('Network unavailable');return Response.json({choices:[{message:{content:'Secours'}}]})});
+ expect(calls).toBe(2);expect(result.neuriaFallback).toBe(true);expect(result.neuriaPrimaryStatus).toBe(504);
+});

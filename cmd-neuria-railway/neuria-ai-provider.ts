@@ -16,7 +16,14 @@ export function aiGenerationOptions(provider:string,length:string='normal'){
 /** Retry a temporary Gemini refusal through the existing configured provider. */
 export async function fetchAI(endpoint:string,options:RequestInit,env:Record<string,string|undefined>=Bun.env,request:typeof fetch=fetch){
  const selected=aiConfiguration(env);
- const response=await request(endpoint,options);
+ let response:Response;
+ try{
+  const signal=selected.provider==='google'?AbortSignal.any([...(options.signal?[options.signal]:[]),AbortSignal.timeout(15000)]):options.signal;
+  response=await request(endpoint,{...options,signal});
+ }catch(error){
+  if(selected.provider!=='google'||options.signal?.aborted)throw error;
+  response=new Response('{}',{status:504});
+ }
  if(selected.provider==='google'&&[429,500,502,503,504].includes(response.status)&&!options.signal?.aborted){
   const fallback=aiConfiguration(Object.fromEntries(Object.entries(env).filter(([name])=>name.trim()!=='GEMINI_API_KEY')));
   if(fallback.endpoint&&fallback.token&&fallback.model&&!fallback.token.includes('${{')){
