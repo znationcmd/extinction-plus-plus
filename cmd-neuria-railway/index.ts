@@ -2329,13 +2329,23 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   let body;try{body=await req.json()}catch{return response(JSON.stringify({error:"JSON invalide"}),"application/json",400)}
   const goal=typeof body?.goal==="string"?body.goal.trim():"";
   if(goal.length<8||goal.length>600)return response(JSON.stringify({error:"Objectif de 8 à 600 caractères requis"}),"application/json",400);
-  const data={message:goal};const steps=[],sources=[];let summary="";
+  const data={message:goal};const steps=[],sources=[];let summary="",githubInspection=null;
   let researchProvider="none";
   if(body.webSearch!=="off"){
    const found=normalizeResearch(await NEURIA_SEARCH_MULTI(goal.slice(0,150)));
    sources.push(...found.sources);researchProvider=found.provider;
    steps.push({name:"Recherche Web",status:sources.length?"done":"unavailable",provider:researchProvider,results:sources.length});
   }else steps.push({name:"Recherche Web",status:"skipped",message:"Désactivée dans les réglages"});
+  // Explicit GitHub repo inspection. Only the visitor's OAuth cookie is used for private content.
+  if(body.repository!==undefined&&body.repository!==""){
+   try{
+    githubInspection=await inspectWorkRepository(body.repository,body.branch,await NEURIA_OAUTH_OPEN(req));
+    sources.push(...githubInspection.sources);
+    steps.push({name:"Lecture GitHub réelle",status:"done",repository:githubInspection.repository,branch:githubInspection.branch,filesIndexed:githubInspection.filesIndexed,readOnly:true});
+   }catch(e){
+    return response(JSON.stringify({error:"Analyse GitHub impossible : "+String(e?.message||"erreur de connexion").slice(0,175),externalChanges:false}),"application/json",422);
+   }
+  }
   // Live weather tool: answer weather requests with measured forecast data, not model guesses.
   const weatherQuestion=data.message.trim();
   if(body.webSearch!=="off"&&/(?:météo|meteo|quel temps|temps fait|weather|température|temperature)/i.test(weatherQuestion)){
@@ -2370,7 +2380,7 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
    }catch{steps.push({name:"Synthèse IA",status:"failed"})}
   }else steps.push({name:"Synthèse IA",status:"unavailable",message:"Configuration du moteur IA à corriger"});
   if(!summary)summary=sources.length?"Sources trouvées :\n"+sources.map(x=>"- "+x.title+" : "+x.excerpt).join("\n"):"Aucune source vérifiée disponible. Reformule l'objectif ou configure le moteur IA.";
-  return response(JSON.stringify({goal,summary,sources,steps,researchProvider,model:usedModel,provider:usedProvider,fallbackUsed,mode:"autonomous_read_only",externalChanges:false,requiresApprovalForWrites:true,reasoningLevel:body.reasoningLevel||"normal",responseLength:body.responseLength||"normal",webSearch:body.webSearch||"auto"}),"application/json");
+  return response(JSON.stringify({goal,summary,sources,steps,researchProvider,githubInspection:githubInspection?{repository:githubInspection.repository,branch:githubInspection.branch,filesIndexed:githubInspection.filesIndexed,readOnly:true,truncated:githubInspection.truncated}:null,model:usedModel,provider:usedProvider,fallbackUsed,mode:"autonomous_read_only",externalChanges:false,requiresApprovalForWrites:true,reasoningLevel:body.reasoningLevel||"normal",responseLength:body.responseLength||"normal",webSearch:body.webSearch||"auto"}),"application/json");
  }
  if(req.method==="GET"&&path==="/api/search"){
  const q=(new URL(req.url).searchParams.get("q")||"").trim();
