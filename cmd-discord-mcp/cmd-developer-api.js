@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import {developerPortalPage} from "./cmd-developer-portal-page.js";
 import {initDeveloperPortalDb,developerPortalRoute} from "./cmd-developer-portal-server.js";
+import {discordCompatRoute} from "./cmd-discord-compat.js";
 const idRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const scopeList=["view_channels","read_messages","send_messages"];
 const perms=items=>[...new Set((Array.isArray(items)?items:[]).filter(v=>scopeList.includes(v)))];
@@ -38,7 +39,7 @@ async function requireGrant(pool,app,gid,permission){
 }
 export async function developerRoute(req,res,url,ctx){
  const p=url.pathname,m=req.method;
- if(!["/developers","/apps/directory","/apps/choose","/apps/invite"].includes(p)&&!p.startsWith("/api/developer/")&&!p.startsWith("/api/cmd-apps/")&&!p.startsWith("/api/cmd-bot/"))return false;
+ if(!["/developers","/apps/directory","/apps/choose","/apps/invite"].includes(p)&&!p.startsWith("/api/developer/")&&!p.startsWith("/api/cmd-apps/")&&!p.startsWith("/api/cmd-bot/")&&!p.startsWith("/api/cmd-discord-bridge/v10/"))return false;
  const {pool,auth,baseUrl,sendJson,html,readBody,requireNativeAdmin,requireNativeMember}=ctx;
  const send=(code,data)=>sendJson(res,code,data);
  try{
@@ -46,6 +47,12 @@ export async function developerRoute(req,res,url,ctx){
   if(m==="GET"&&["/developers","/apps/directory","/apps/choose","/apps/invite"].includes(p)){
    if(!auth){res.writeHead(302,{Location:baseUrl+"/dashboard-login?next="+encodeURIComponent(p+url.search)});res.end();return true}
    html(res,page(p.split("/").pop()));return true;
+  }
+  if(p.startsWith("/api/cmd-discord-bridge/v10/")){
+   // The bridge requires a registered CMD app token; Discord bot tokens never work here.
+   let app;
+   try{app=await botAuth(pool,req)}catch{send(401,{error:"Clé de bot CMD Sphere requise ou invalide."});return true}
+   return discordCompatRoute(req,res,url,{pool,app,sendJson,readBody});
   }
   if(p.startsWith("/api/cmd-bot/")){
    const app=await botAuth(pool,req);
