@@ -1,0 +1,27 @@
+name: CMD Sphere - public Discord bot catalogue API probe
+on:
+  push:
+    paths: [".github/workflows/cmd-sphere-bot-directory-provider-probe.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify whether a public provider authorizes CORS for CMD Sphere
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error,json
+          urls=['https://discord.bots.gg/api/v1/bots?q=moderation&limit=3','https://discord.bots.gg/api/v1/bots?limit=3']
+          for url in urls:
+           req=urllib.request.Request(url,headers={'User-Agent':'CMD-Sphere-Catalogue/1.0','Origin':'https://cmd-sphere.up.railway.app','Accept':'application/json'})
+           try:
+            with urllib.request.urlopen(req,timeout=15) as response:
+             body=response.read(60000)
+             doc=json.loads(body)
+             print('PUBLIC_PROVIDER',response.status,'cors',response.headers.get('access-control-allow-origin'),'count',doc.get('count'), 'len',len(doc.get('bots') or []),'urlPath',urllib.request.urlparse(url).path)
+           except Exception as exc:print('PROVIDER_UNAVAILABLE',type(exc).__name__,str(exc)[:130])
+          PY
