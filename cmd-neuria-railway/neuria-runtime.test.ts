@@ -116,3 +116,8 @@ test('account deletion requires its password and invalidates all sessions',async
  const {quotaDatabase}=await import('./neuria-generation-quota.ts');expect(quotaDatabase().query('SELECT id FROM neuria_accounts WHERE email=?').get(credentials.email)).toBeNull();
  expect(quotaDatabase().query('SELECT id FROM neuria_accounts WHERE email=?').get('test@example.com')).not.toBeNull();
 });
+
+test('Work accepts saved settings and returns a report when Web search is disabled',async()=>{
+ const result=await fetch(base+'/api/work/run',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({goal:'Préparer un rapport de test',webSearch:'off',reasoningLevel:'approfondi',responseLength:'court'})});
+ expect(result.status).toBe(200);const data=await result.json();expect(typeof data.summary).toBe('string');expect(data.sources).toEqual([]);expect(data.externalChanges).toBe(false);expect(data.reasoningLevel).toBe('approfondi');expect(data.webSearch).toBe('off');
+});
