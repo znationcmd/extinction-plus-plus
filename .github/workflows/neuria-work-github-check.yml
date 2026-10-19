@@ -18,3 +18,5 @@ jobs:
         working-directory: cmd-neuria-railway
       - run: bun -e "import {NEURIA_WORK_GITHUB_UI} from './neuria-work-project-client.ts'; new Function(NEURIA_WORK_GITHUB_UI)"
         working-directory: cmd-neuria-railway
+      - run: bun test ./neuria-runtime.test.ts
+        working-directory: cmd-neuria-railway
