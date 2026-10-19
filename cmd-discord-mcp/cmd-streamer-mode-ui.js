@@ -10,6 +10,9 @@
  #cmdStreamerToggle:disabled{opacity:.55;cursor:not-allowed}
  #cmdStreamerToggle[aria-pressed=true]{background:linear-gradient(140deg,#522b90,#291546);outline:2px solid #ad8bf1}
  #cmdStreamerToggle:focus-visible{outline:3px solid #f1d2ff}
+ #cmdProfileWorldLanguageButton{position:static;display:flex;align-items:center;justify-content:center;flex:1 1 0;min-width:0;max-width:none;min-height:44px;padding:9px 6px;border:1px solid #9772ffb9;border-radius:14px;background:linear-gradient(150deg,#35234c,#100d1b);box-shadow:0 6px 20px #0009;color:#f4edff;font:700 clamp(11px,3vw,14px)/1.2 system-ui;cursor:pointer;white-space:normal}
+ #cmdProfileWorldLanguageButton:focus-visible{outline:3px solid #f1d2ff}
+ @media(max-width:430px){#cmdProfileMotionStreamerRow{gap:5px;margin-inline:8px;width:calc(100% - 16px)}#cmdStreamerToggle,#cmdProfileMotionStreamerRow>.cmd-photo-motion-toggle,#cmdProfileWorldLanguageButton{padding:8px 4px;font-size:11px}}
  body.cmd-streamer-enabled .msg-author,body.cmd-streamer-enabled .msg-meta .username,
  body.cmd-streamer-enabled .msg-avatar,body.cmd-streamer-enabled .cmd-profile-username,
  body.cmd-streamer-enabled .username,body.cmd-streamer-enabled .friendRow b,
@@ -27,6 +30,10 @@
  `;document.head.append(style);
  const cssClasses=["cmd-streamer-enabled","cmd-streamer-mask-invites","cmd-streamer-hide-notifications"];
  const state={enabled:false,maskInvites:true,hideNotifications:true},copy=()=>({...state});
+ const languageButton=document.createElement("button");languageButton.id="cmdProfileWorldLanguageButton";languageButton.type="button";
+ languageButton.textContent="🌐 Langues";languageButton.setAttribute("aria-label","Choisir parmi toutes les langues et dialectes");
+ languageButton.title="Langues du monde, par pays ou par ordre alphabétique";
+ languageButton.onclick=()=>{const picker=window.CMDWorldLanguagePicker;if(picker?.open)picker.open();else window.alert?.("Catalogue des langues en cours de chargement. Réessaie dans un instant.")};
  const button=document.createElement("button");button.id="cmdStreamerToggle";button.type="button";
  button.title="Masquer les informations personnelles pendant un partage d'écran";
  button.setAttribute("aria-label","Activer ou désactiver le mode Streamer");
@@ -53,6 +60,8 @@
   if(!row){row=document.createElement("div");row.id="cmdProfileMotionStreamerRow";row.setAttribute("role","group");row.setAttribute("aria-label","Options d’affichage du profil");animation.before(row)}
   if(animation.parentElement!==row)row.append(animation);
   if(button.parentElement!==row)row.append(button);
+  if(languageButton.parentElement!==row)row.append(languageButton);
+  document.dispatchEvent(new CustomEvent('cmd-profile-language-control-ready'));
   return true;
  }
  function mount(){
