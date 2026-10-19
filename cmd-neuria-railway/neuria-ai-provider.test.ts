@@ -12,15 +12,49 @@ test('Gemini receives bounded output parameters while existing provider options 
 test('temporary Gemini failure uses GPT OSS without leaking Google credentials to the fallback',async()=>{
  const {fetchAI}=await import('./neuria-ai-provider.ts');const calls=[];
  const env={GEMINI_API_KEY:'test-google',NEURIA_AI_ENDPOINT:'https://api.cloudflare.com/test',NEURIA_AI_API_KEY:'test-cloudflare',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'};
- const request=async(url,options)=>{calls.push({url,options});return calls.length===1?new Response('{}',{status:503}):Response.json({choices:[{message:{content:'Secours'}}]})};
+ const request=async(url,options)=>{calls.push({url,options});return calls.length<=2?new Response('{}',{status:503}):Response.json({choices:[{message:{content:'Secours'}}]})};
  const response=await fetchAI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{body:JSON.stringify({model:'gemini-3.8-flash',messages:[],reasoning_effort:'low'})},env,request);
- expect(response.ok).toBe(true);expect(response.neuriaModel).toBe('@cf/openai/gpt-oss-120b');expect(response.neuriaFallback).toBe(true);expect(calls[1].options.headers.authorization).toBe('Bearer test-cloudflare');expect(calls[1].options.body).not.toContain('test-google');
+ expect(calls).toHaveLength(3);expect(response.ok).toBe(true);expect(response.neuriaModel).toBe('@cf/openai/gpt-oss-120b');expect(response.neuriaFallback).toBe(true);expect(calls[2].options.headers.authorization).toBe('Bearer test-cloudflare');expect(calls[2].options.body).not.toContain('test-google');
 });
 test('authentication errors are reported instead of silently hiding a bad Gemini key',async()=>{
  const {fetchAI}=await import('./neuria-ai-provider.ts');let calls=0;const result=await fetchAI('https://google.test',{}, {GEMINI_API_KEY:'test'},async()=>{calls++;return new Response('{}',{status:403})});expect(result.status).toBe(403);expect(calls).toBe(1);
 });
 test('a Google network failure falls back while the overall request is still active',async()=>{
  const {fetchAI}=await import('./neuria-ai-provider.ts');let calls=0;
- const result=await fetchAI('https://google.test',{body:'{"model":"gemini-3.8-flash"}'},{GEMINI_API_KEY:'test-google',NEURIA_AI_ENDPOINT:'https://api.cloudflare.com/test',NEURIA_AI_API_KEY:'test-cloudflare',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'},async()=>{calls++;if(calls===1)throw new TypeError('Network unavailable');return Response.json({choices:[{message:{content:'Secours'}}]})});
- expect(calls).toBe(2);expect(result.neuriaFallback).toBe(true);expect(result.neuriaPrimaryStatus).toBe(504);
+ const result=await fetchAI('https://google.test',{body:'{"model":"gemini-3.8-flash"}'},{GEMINI_API_KEY:'test-google',NEURIA_AI_ENDPOINT:'https://api.cloudflare.com/test',NEURIA_AI_API_KEY:'test-cloudflare',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'},async()=>{calls++;if(calls<=2)throw new TypeError('Network unavailable');return Response.json({choices:[{message:{content:'Secours'}}]})});
+ expect(calls).toBe(3);expect(result.neuriaFallback).toBe(true);expect(result.neuriaPrimaryStatus).toBe(504);
+});
+
+test('Google model metadata probe confirms key and model without generating text or exposing secrets',async()=>{
+ const {probeGeminiAccess}=await import('./neuria-ai-provider.ts');
+ const env={GEMINI_API_KEY:'private-test-key',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'};
+ let calls=0;
+ const result=await probeGeminiAccess(env,async(url,options)=>{
+  calls++;
+  expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash');
+  expect(options.method).toBe('GET');
+  expect(options.headers['x-goog-api-key']).toBe('private-test-key');
+  return new Response('{}',{status:200});
+ });
+ expect(calls).toBe(1);
+ expect(result.status).toBe('model_accessible');
+ expect(result.httpStatus).toBe(200);
+ expect(JSON.stringify(result)).not.toContain('private-test-key');
+});
+test('Google model probe identifies rejected or model-inaccessible credentials',async()=>{
+ const {probeGeminiAccess}=await import('./neuria-ai-provider.ts');
+ const env={GEMINI_API_KEY:'private-test-key'};
+ expect((await probeGeminiAccess(env,async()=>new Response('{}',{status:403}))).status).toBe('access_forbidden');
+ expect((await probeGeminiAccess(env,async()=>new Response('{}',{status:404}))).status).toBe('model_not_accessible');
+ expect((await probeGeminiAccess(env,async()=>new Response('{}',{status:503}))).status).toBe('google_unavailable');
+});
+test('Google 503 retry can succeed without invoking GPT-OSS',async()=>{
+ const {fetchAI}=await import('./neuria-ai-provider.ts');
+ let calls=0;
+ const env={GEMINI_API_KEY:'test-google',NEURIA_AI_ENDPOINT:'https://api.cloudflare.com/test',NEURIA_AI_API_KEY:'test-cloudflare',NEURIA_AI_MODEL:'@cf/openai/gpt-oss-120b'};
+ const response=await fetchAI('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{method:'POST',body:JSON.stringify({model:'gemini-3.8-flash',messages:[]})},env,async()=>{calls++;return calls===1?new Response('{}',{status:503}):Response.json({choices:[{message:{content:'Gemini est disponible'}}]})});
+ expect(calls).toBe(2);
+ expect(response.neuriaFallback).toBe(false);
+ expect(response.neuriaProvider).toBe('google');
+ expect(response.ok).toBe(true);
 });
