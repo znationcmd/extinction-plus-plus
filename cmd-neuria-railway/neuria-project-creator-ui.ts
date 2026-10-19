@@ -69,7 +69,24 @@ export const NEURIA_PROJECT_CREATOR_UI=String.raw`(()=>{
     }catch(e){status.textContent="Téléchargement impossible : "+e.message}
     finally{download.disabled=false}
    };
-   reuse.onclick=()=>{flushEditor();const message="Améliore ce projet "+(project?.name||"")+" ("+(project?.kind||"")+"). Je veux : ";spec.value=message;spec.focus();spec.setSelectionRange(message.length,message.length);status.textContent="Décris les améliorations puis recrée une nouvelle version. Enregistre l'ancienne archive pour conserver tes modifications."};
+   reuse.textContent="🛠 Améliorer ce projet";
+   reuse.onclick=async()=>{
+     if(!project){status.textContent="Crée d'abord un projet.";return}
+     flushEditor();
+     const improvement=spec.value.trim();
+     if(improvement.length<12){status.textContent="Décris précisément les améliorations à apporter.";spec.focus();return}
+     reuse.disabled=true;button.disabled=true;
+     status.textContent="CMD NEURIA examine les fichiers existants et prépare les changements…";
+     try{
+       const response=await fetch("/api/work/projects/improve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:project.name,kind:project.kind,description:improvement,files:project.files})});
+       const data=await response.json();
+       if(!response.ok)throw Error(data.error||"Modification impossible");
+       showProject(data);
+       status.textContent=(data.summary||"Version modifiée.")+" · "+(data.changes?.length||0)+" fichier(s) modifié(s). Les autres fichiers ont été conservés.";
+       spec.value="";
+     }catch(e){status.textContent="Projet conservé sans modification : "+e.message}
+     finally{reuse.disabled=false;button.disabled=false}
+   };
    results.append(stats,label("Fichiers du projet",fileList),label("Contenu modifiable avant téléchargement",code),download,reuse,warning);
    root.append(title,desc,label("Type de projet",kind),label("Nom",name),label("Que doit créer NEURIA ?",spec),button,status,results);
    panel.append(root);
