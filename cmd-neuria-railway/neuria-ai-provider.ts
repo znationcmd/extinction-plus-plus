@@ -72,6 +72,7 @@ export async function fetchAI(endpoint:string,options:RequestInit,env:Record<str
   const body=JSON.parse(String(options.body||'{}'));
   body.model=fallback.model;
   delete body.reasoning_effort;
+  delete body.response_format; // Google structured-output hint must not break the GPT-OSS fallback.
   const result=await request(fallback.endpoint,{...options,headers:{'content-type':'application/json',authorization:'Bearer '+fallback.token},body:JSON.stringify(body)});
   return annotate(result,{model:fallback.model,provider:fallback.provider,fallback:true,status,reason});
  }
