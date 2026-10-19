@@ -11,7 +11,7 @@ const MAX_FILE=32000,MAX_FILES=32,MAX_TOTAL=220000;
 const DEFAULT_NAME:Record<ProjectKind,string>={website:"mon-site",bot:"mon-bot",browser:"mon-navigateur",hosting:"mon-hebergement",game:"mon-jeu",app:"mon-application",custom:"mon-projet"};
 export function safeProjectPath(input:unknown):string{
  if(typeof input!=="string"||input.length>160||!input||input.startsWith("/")||input.includes("\\")||input.includes("\0")||input.includes("%")||input.includes(":"))throw Error("Chemin de fichier interdit");
- if(input.split("/").some(p=>!p||p==="."||p===".."||p.startsWith("."))||SENSITIVE.test(input)||!EXT.test(input))throw Error("Type de fichier ou chemin non autorisé");
+ if(input.split("/").some(p=>!p||p==="."||p===".."||(p.startsWith(".")&&![".env.example",".gitignore"].includes(p)))||SENSITIVE.test(input)||(!EXT.test(input)&&![".env.example",".gitignore"].includes(input)))throw Error("Type de fichier ou chemin non autorisé");
  return input;
 }
 export function classifyProject(description:string,requested:string="auto"):ProjectKind{
