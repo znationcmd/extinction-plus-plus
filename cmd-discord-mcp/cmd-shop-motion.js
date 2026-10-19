@@ -40,4 +40,13 @@ window.cmdPhotoMotionEnabled=()=>enabled&&!document.hidden&&!reduced.matches;
 function start(){const anchor=document.querySelector('.cmd-shop-categories,.cmd-pm-detail-tabs,.tabs');if(anchor&&!document.querySelector('.cmd-photo-motion-toggle')){const b=document.createElement('button');b.type='button';b.className='cmd-photo-motion-toggle';b.onclick=()=>{enabled=!enabled;try{localStorage.setItem('cmd-photo-motion',enabled?'on':'off')}catch{}sync()};anchor.after(b)}refresh();sync();}
 reduced.addEventListener('change',e=>{if(e.matches)enabled=false;sync()});document.addEventListener('visibilitychange',sync);document.addEventListener('cmd:photo-preview',refresh);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+
+// Profile-only entry point; keep the existing privacy settings on dashboard/messages.
+if(location.pathname==='/profile'&&!window.cmdStreamerModeReady){
+ const streamer=document.createElement('script');
+ streamer.src='/cmd-streamer-mode-ui.js?v=20261019-profile-streamer';
+ streamer.defer=true;
+ document.head.append(streamer);
+}
+
 })();
