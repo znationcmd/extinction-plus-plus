@@ -4,6 +4,10 @@ on:
     branches: [cmd-neuria-railway-backup-20261013]
     paths:
       - ".github/workflows/neuria-project-builder-ci.yml"
+      - "cmd-neuria-railway/neuria-project-builder.ts"
+      - "cmd-neuria-railway/neuria-project-builder.test.ts"
+      - "cmd-neuria-railway/neuria-project-creator-ui.ts"
+      - "cmd-neuria-railway/index.ts"
   workflow_dispatch:
 permissions:
   contents: read
