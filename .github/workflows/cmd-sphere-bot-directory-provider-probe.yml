@@ -22,6 +22,6 @@ jobs:
             with urllib.request.urlopen(req,timeout=15) as response:
              body=response.read(60000)
              doc=json.loads(body)
-             print('PUBLIC_PROVIDER',response.status,'cors',response.headers.get('access-control-allow-origin'),'count',doc.get('count'), 'len',len(doc.get('bots') or []),'urlPath',urllib.request.urlparse(url).path)
+             print('PUBLIC_PROVIDER',response.status,'cors',response.headers.get('access-control-allow-origin'),'count',doc.get('count'), 'len',len(doc.get('bots') or []),'keys',sorted(list((doc.get('bots') or [{}])[0].keys())),'sample',json.dumps({k:v for k,v in (doc.get('bots') or [{}])[0].items() if k in ('botId','id','username','shortDescription','avatar','guildCount','library','owners','invite')},ensure_ascii=False)[:1300])
            except Exception as exc:print('PROVIDER_UNAVAILABLE',type(exc).__name__,str(exc)[:130])
           PY
