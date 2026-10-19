@@ -12,9 +12,10 @@ Bun.env.NEURIA_ORACLE_WORKER_URL='https://worker.test/oracle';
 Bun.env.NEURIA_PULSE_WORKER_URL='https://worker.test/pulse';
 Bun.env.NEURIA_GENERATION_WORKER_TOKEN='test-worker-token';
 const originalFetch=globalThis.fetch;
-let mode='fail',workerCalls=0;
+let mode='fail',workerCalls=0,googleCalls=[];
 globalThis.fetch=(async(input,init)=>{
  const url=String(input);
+ if(url==='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'){googleCalls.push(JSON.parse(init.body));return Response.json({choices:[{message:{content:'Réponse Gemini de test'}}]})}
  if(url.startsWith('https://search.test/api/search'))return Response.json({results:[{title:'Documentation officielle test',url:'https://example.com/docs',description:'Document de test vérifié'}]});
  if(url==='https://api.github.com/user')return Response.json({id:123456});
  if(url.startsWith('https://worker.test/')){
@@ -130,4 +131,12 @@ test('Work and the search panel share the connected multi-source engine',async()
  expect(result.status).toBe(200);const data=await result.json();expect(data.sources[0].url).toBe('https://example.com/docs');expect(data.researchProvider).toBe('CMD Browser / SearXNG');expect(data.summary).toContain('Document de test vérifié');
  const search=await (await fetch(base+'/api/search?q=documentation')).json();expect(search.items[0].url).toBe('https://example.com/docs');
  }finally{delete Bun.env.NEURIA_CMD_BROWSER_SEARCH_URL}
+});
+
+test('chat and Work both use the configured Gemini key and report the selected model',async()=>{
+ Bun.env['    GEMINI_API_KEY']='test-google-key';
+ try{
+ for(const path of ['/api/chat','/api/work/run']){const body=path==='/api/chat'?{message:'Explique un processeur',webSearch:'off'}:{goal:'Expliquer les composants du processeur',webSearch:'off'};const r=await fetch(base+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});expect(r.status).toBe(200);const data=await r.json();expect(data.model).toBe('gemini-3.8-flash');expect(data.reply||data.summary).toBe('Réponse Gemini de test');}
+ expect(googleCalls.length).toBe(2);expect(googleCalls[0].reasoning_effort).toBe('low');expect(googleCalls[0].max_tokens).toBeGreaterThan(256);
+ }finally{delete Bun.env['    GEMINI_API_KEY']}
 });
