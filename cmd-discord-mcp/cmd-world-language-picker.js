@@ -39,13 +39,17 @@
  }
  const root=document.createElement("div");
  root.id="cmd-world-language-root";
- root.style.cssText="position:fixed;right:14px;bottom:14px;z-index:2147483000;pointer-events:none";
+ // Language is configured in the user's profile, beside Streamer mode.
+ // Keep the existing picker and its translation logic, but not the duplicate floating globe.
+ const inProfile=location.pathname==="/profile";
+ root.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;z-index:2147483000;pointer-events:none"+(inProfile?"":";display:none");
  const shadow=root.attachShadow({mode:"open"});
  const style=document.createElement("style");
  style.textContent=`
 *{box-sizing:border-box}button,input,select{font:inherit}button{cursor:pointer}
-.trigger{pointer-events:auto;display:flex;gap:6px;align-items:center;justify-content:center;min-width:51px;min-height:48px;padding:9px;border:1px solid #9772ff;color:#fff;border-radius:15px;background:linear-gradient(145deg,#281443,#111322);box-shadow:0 8px 28px #0008}
-.panel{pointer-events:auto;position:absolute;bottom:58px;right:0;width:min(360px,calc(100vw - 25px));height:min(510px,calc(100dvh - 100px));padding:16px;display:flex;flex-direction:column;gap:10px;color:#f8f4ff;border:1px solid #9b69ec;border-radius:18px;background:#111323;box-shadow:0 14px 40px #000b;font:14px/1.4 system-ui,-apple-system,Arial,sans-serif}
+.trigger{display:none!important}
+
+.panel{pointer-events:auto;position:fixed;top:max(65px,calc(env(safe-area-inset-top,0px) + 20px));bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:min(470px,calc(100vw - 28px));height:min(610px,calc(100dvh - 125px));padding:16px;display:flex;flex-direction:column;gap:10px;color:#f8f4ff;border:1px solid #9b69ec;border-radius:18px;background:#111323;box-shadow:0 14px 40px #000b;font:14px/1.4 system-ui,-apple-system,Arial,sans-serif}
 .panel[hidden]{display:none}.head{display:flex;align-items:center;justify-content:space-between;gap:12px}.head strong{font-size:16px}
 .close{border:1px solid #65517c;border-radius:10px;background:#27203b;color:#fff;padding:5px 12px}
 input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#202239;color:#fff;padding:9px;width:100%;outline-offset:2px}
@@ -313,7 +317,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  }
  async function toggle(){panel.hidden=!panel.hidden;trigger.setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden){query.focus();await load();}}
  trigger.addEventListener("click",toggle);
- close.addEventListener("click",()=>{panel.hidden=true;trigger.setAttribute("aria-expanded","false");trigger.focus()});
+ close.addEventListener("click",()=>{panel.hidden=true;trigger.setAttribute("aria-expanded","false");(document.getElementById("cmdProfileWorldLanguageButton")||trigger).focus()});
  query.addEventListener("input",()=>{
   letter="";selectedCountry=null;showLetters();
   const term=normalized(query.value.trim());
@@ -323,7 +327,7 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  checkbox.addEventListener("change",()=>{if(checkbox.checked)save(detect(),"Langue de l'appareil","auto");else save(existing(),"Langue actuelle","manual")});
  applyCustom.addEventListener("click",()=>save(custom.value,custom.value));
  custom.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();save(custom.value,custom.value)}});
- document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden){panel.hidden=true;trigger.setAttribute("aria-expanded","false")}});
+ document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!panel.hidden){panel.hidden=true;trigger.setAttribute("aria-expanded","false");document.getElementById("cmdProfileWorldLanguageButton")?.focus()}});
  document.addEventListener("DOMContentLoaded",()=>{if(!document.getElementById(root.id))document.body.append(root)},{once:true});
  if(document.readyState!=="loading")document.body.append(root);
  const saved=initLocale();checkbox.checked=read(MODE)==="auto";
@@ -395,7 +399,30 @@ input{min-height:42px;border:1px solid #604984;border-radius:10px;background:#20
  });
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>watchMenus.observe(document.body,{childList:true,subtree:true}),{once:true});
  else watchMenus.observe(document.body,{childList:true,subtree:true});
- window.CMDWorldLanguagePicker={get language(){return existing()},open:()=>{if(panel.hidden)void toggle()},set:(code)=>save(code,code)};
+ // Remove only the old compact top-right globe that opened the 11-language menu.
+ // Message-level "Traduire" actions and the full settings panel must be preserved.
+ let cleanScheduled=false;
+ function hideLegacyTopGlobe(){
+   const vw=window.innerWidth||document.documentElement.clientWidth||400;
+   const vh=window.innerHeight||document.documentElement.clientHeight||700;
+   for(const el of document.querySelectorAll("button,[role=button]")){
+     if(el.id==="cmdProfileWorldLanguageButton"||el.closest("#cmdProfileMotionStreamerRow,#cmdSettingsLayer,article,[data-message-id],.cmd-person-card"))continue;
+     if(!/^(?:🌐|🌍)$/.test(String(el.textContent||"").trim()))continue;
+     const box=el.getBoundingClientRect();
+     if(box.width<25||box.width>110||box.height<25||box.height>110||box.right<vw-125||box.top<0||box.top>Math.min(340,vh*.38))continue;
+     el.dataset.cmdOldLanguageHidden="1";
+     el.setAttribute("aria-hidden","true");
+     el.style.setProperty("display","none","important");
+   }
+ }
+ function scheduleHideLegacy(){
+   if(cleanScheduled)return;
+   cleanScheduled=true;
+   requestAnimationFrame(()=>{cleanScheduled=false;hideLegacyTopGlobe()});
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{scheduleHideLegacy();new MutationObserver(records=>{if(records.some(r=>r.addedNodes.length))scheduleHideLegacy()}).observe(document.body,{childList:true,subtree:true})},{once:true});
+ else{scheduleHideLegacy();new MutationObserver(records=>{if(records.some(r=>r.addedNodes.length))scheduleHideLegacy()}).observe(document.body,{childList:true,subtree:true})}
+ window.CMDWorldLanguagePicker={get language(){return existing()},open:()=>{if(inProfile&&panel.hidden)void toggle()},set:(code)=>save(code,code)};
 })();
 
 /* CMD UI translation bridge: localizes fixed navigation labels, NEVER user content.
