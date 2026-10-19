@@ -1,0 +1,27 @@
+name: CMD Sphere - developer portal logo
+on:
+  push:
+    branches: [cmd-sphere/dossiers-pays-20261018]
+    paths:
+      - "cmd-discord-mcp/cmd-developer-logo.js"
+      - "cmd-discord-mcp/server.js"
+      - "cmd-discord-mcp/tests/developer-portal-logo.test.cjs"
+      - ".github/workflows/cmd-sphere-developer-logo.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax
+        run: |
+          node --check cmd-discord-mcp/cmd-developer-logo.js
+          node --check cmd-discord-mcp/server.js
+      - name: Validate portal logo replacement and image format
+        run: node --test cmd-discord-mcp/tests/developer-portal-logo.test.cjs
