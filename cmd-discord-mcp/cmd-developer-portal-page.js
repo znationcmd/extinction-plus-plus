@@ -31,6 +31,6 @@ export function developerPortalPage(){
    '<button type="button" class="dev-nav" data-dev-tab="documentation">Documentation API</button>'+
    '</aside>'+
    '<main id="dev-content" aria-live="polite"><h1>Applications CMD Sphere</h1><p>Chargement…</p></main></div>'+
-   '<script defer src="/cmd-developer-portal-client.js?v=20261019-2"></script>'+ 
+   '<script defer src="/cmd-developer-portal-client.js?v=20261019-3"></script>'+ 
    '</body></html>';
 }
