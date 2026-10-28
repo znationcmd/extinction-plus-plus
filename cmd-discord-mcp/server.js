@@ -83,6 +83,8 @@ function cmdSphereRoundPwaIcon(input,size){
 }
 const cmdPwaSourceB64=readFileSync(new URL("./cmd-sphere-pwa-icon.webp",import.meta.url)).toString("base64"); // Dedicated PWA icon, leaving existing website logo unchanged.
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
+// Version only the updater script by its actual bytes; a Railway redeploy alone must not bust its cache.
+const cmdPwaScriptVersion=crypto.createHash("sha256").update(readFileSync(new URL("./cmd-pwa-update.js",import.meta.url))).digest("hex").slice(0,16);
 const cmdPwaUpdaterAsset=createPublicAssetResponder(new URL("./cmd-pwa-update.js",import.meta.url),"application/javascript; charset=utf-8");
 const cmdCountryLanguageCatalogAsset=createPublicAssetResponder(new URL("./cmd-country-language-catalog.json",import.meta.url),"application/json; charset=utf-8");
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
@@ -279,7 +281,7 @@ body=body.replace("</head>",'<style>#channelMessages.cmd-media-channel{display:g
   }
   if(typeof body==="string"&&body.includes('rel="manifest"')&&/<\/body>/i.test(body)){
     const pwaIcons='<link rel="icon" type="image/x-icon" href="/favicon.ico?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png?v='+cmdPwaRuntimeVersion+'"><link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png?v='+cmdPwaRuntimeVersion+'"><link rel="apple-touch-icon" sizes="180x180" href="/pwa-icon-180.png?v='+cmdPwaRuntimeVersion+'">';
-    body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaRuntimeVersion+'"></script></body>');
+    body=body.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>/gi,'').replace(/<\/head>/i,pwaIcons+'</head>').replace(/<\/body>/i,'<script defer src="/cmd-pwa-update.js?v='+cmdPwaScriptVersion+'"></script></body>');
   }
   if(typeof body==="string"&&/<html\b/i.test(body)){
     body=body.replace(/<html\b/i,'<html class="cmd-depth-ui"').replace(/<\/head>/i,'<link rel="stylesheet" href="/cmd-ui-depth.css?v=20261016relief1"></head>').replace(/<\/body>/i,'<script defer src="/cmd-ui-depth.js?v=20261016relief1"></script></body>');

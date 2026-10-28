@@ -6,7 +6,13 @@ const {JSDOM}=require('jsdom');
 const source=fs.readFileSync(process.env.CMD_TEST_SERVER||require('node:path').join(__dirname,'../server.js'),'utf8');
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pageFn=source.slice(source.indexOf('function dashboardPage('),source.indexOf('\nfunction bearerAuth('));
-const renderer=vm.runInNewContext(pageFn+';dashboardPage',{escHtml:escape});
+// The dashboard function is extracted into an isolated VM for UI interaction tests.
+// Provide harmless stand-ins for imported static icons; production uses the actual SVG exports.
+const renderer=vm.runInNewContext(pageFn+';dashboardPage',{
+ escHtml:escape,
+ cmdDeveloperRailIcon:'<svg data-test-icon="developer-rail"></svg>',
+ cmdDeveloperInlineIcon:'<svg data-test-icon="developer-inline"></svg>'
+});
 const guild={id:'local-guild',name:'CMD Test',owner_user_id:'test-user',source_discord_id:'1513783303285637181'};
 const channels=[{id:'category',source_channel_id:'1513783303285637182',name:'Informations',type:'category'},{id:'room',source_channel_id:'1513783303285637183',source_parent_id:'1513783303285637182',name:'général "CMD"',type:'text'},{id:'orphan',source_parent_id:'missing',name:'Salon conservé',type:'text'}];
 const detail={guild,channels,roles:[],member:{membership_role:'owner',user_id:'test-user'},inviteUrl:'https://example.test/invite/test'};
