@@ -1,3 +1,4 @@
+import {createPublicAssetResponder} from "./cmd-public-asset-etag.js";
 import {assertApiOrigin,readBoundedJson} from "./cmd-request-safety.js";
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
@@ -82,6 +83,8 @@ function cmdSphereRoundPwaIcon(input,size){
 }
 const cmdPwaSourceB64=readFileSync(new URL("./cmd-sphere-pwa-icon.webp",import.meta.url)).toString("base64"); // Dedicated PWA icon, leaving existing website logo unchanged.
 const cmdPwaRuntimeVersion=crypto.createHash("sha256").update(String(process.env.RAILWAY_DEPLOYMENT_ID||process.env.RAILWAY_GIT_COMMIT_SHA||Date.now())).digest("hex").slice(0,16);
+const cmdPwaUpdaterAsset=createPublicAssetResponder(new URL("./cmd-pwa-update.js",import.meta.url),"application/javascript; charset=utf-8");
+const cmdCountryLanguageCatalogAsset=createPublicAssetResponder(new URL("./cmd-country-language-catalog.json",import.meta.url),"application/json; charset=utf-8");
 const pool=databaseUrl?new pg.Pool({connectionString:databaseUrl,max:3,idleTimeoutMillis:10000,connectionTimeoutMillis:5000}):null;
 if(!/^https:\/\//.test(baseUrl))throw new Error("PUBLIC_BASE_URL must be HTTPS");
 if(backendSecret.length<32)throw new Error("CMD_MCP_SECRET must be at least 32 characters");
@@ -4788,10 +4791,8 @@ const httpServer=createServer(async(req,res)=>{
       res.end(readFileSync(new URL("./cmd-language-auto.js",import.meta.url),"utf8"));return;
     }
     if(url.pathname==="/cmd-country-language-catalog.json"){
-      if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
-      res.writeHead(200,{"content-type":"application/json; charset=utf-8","cache-control":"public, max-age=3600",
-        "x-content-type-options":"nosniff"});
-      res.end(readFileSync(new URL("./cmd-country-language-catalog.json",import.meta.url),"utf8"));return;
+      if(req.method!=="GET"&&req.method!=="HEAD"){sendJson(res,405,{error:"Méthode non autorisée"});return}
+      cmdCountryLanguageCatalogAsset(req,res);return;
     }
     if(url.pathname==="/cmd-language-catalog.json"){
       if(req.method!=="GET"){sendJson(res,405,{error:"Méthode non autorisée"});return}
@@ -5856,9 +5857,8 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/pwa/version"){
       sendJson(res,200,{version:cmdPwaRuntimeVersion});return;
     }
-    if(req.method==="GET"&&url.pathname==="/cmd-pwa-update.js"){
-      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
-      res.end(readFileSync(new URL("./cmd-pwa-update.js",import.meta.url),"utf8"));return;
+    if((req.method==="GET"||req.method==="HEAD")&&url.pathname==="/cmd-pwa-update.js"){
+      cmdPwaUpdaterAsset(req,res);return;
     }
     if(req.method==="GET"&&/^\/pwa-icon-(180|192|512)\.png$/.test(url.pathname)){
       if(!cmdPwaSourceB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
