@@ -29,3 +29,11 @@ Douze groupes de fichiers identiques de plus de 10 Ko représentent environ **38
 ## Ce ménage ne fait pas
 
 Il ne supprime pas automatiquement les versions historiques, les médias publics, les sauvegardes, les imports ARK/DayZ ou les données Discord. Cela nécessite une validation de dépendances supplémentaire.
+
+## Ancien sous-module non déclaré
+
+L'ancienne copie `extinction-plus-plus-rss-100MAX-BON-GIT/bot` contenait uniquement un pointeur de sous-module Git (mode `160000`, commit `69b36f876dd572ded826d3dbb5489d2493906243`) sans fichier `.gitmodules` permettant de le récupérer. Le nettoyage enlève **ce pointeur inutilisable**, et non des fichiers du bot actif. Le serveur Railway Extinction++ RSS démarre avec le répertoire racine `.`, et le tableau de bord avec `/dashboard`.
+
+Le pointeur historique reste récupérable dans l'historique Git antérieur au nettoyage. Un contrôle GitHub Actions bloque désormais la réapparition d'un sous-module non déclaré.
+
+**Ne pas supprimer les autres fichiers historiques ni les copies des ressources publiques sur la seule base de leur hash.**
