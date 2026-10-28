@@ -29,3 +29,8 @@ jobs:
           node --check cmd-discord-mcp/tests/public-asset-etag.test.cjs
       - name: Verify unchanged assets return 304 and updated assets return 200
         run: node --test cmd-discord-mcp/tests/public-asset-etag.test.cjs
+      - name: Install UI testing dependencies
+        run: npm ci
+        working-directory: cmd-discord-mcp
+      - name: Verify dashboard interactions against production icon imports
+        run: node --test cmd-discord-mcp/tests/interactions.test.cjs
