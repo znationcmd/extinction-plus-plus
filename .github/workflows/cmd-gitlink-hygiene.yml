@@ -1,0 +1,33 @@
+name: CMD - reject undeclared Git submodules
+on:
+  pull_request:
+    paths:
+      - 'extinction-plus-plus-rss-100MAX-BON-GIT/**'
+      - '.gitmodules'
+      - '.github/workflows/cmd-gitlink-hygiene.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'extinction-plus-plus-rss-100MAX-BON-GIT/**'
+      - '.gitmodules'
+      - '.github/workflows/cmd-gitlink-hygiene.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-orphan-gitlinks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject orphan Git links without .gitmodules
+        shell: bash
+        run: |
+          git ls-files --stage | awk '$1 == "160000" { print $4 }' > /tmp/cmd-gitlinks.txt
+          if [ -s /tmp/cmd-gitlinks.txt ] && [ ! -f .gitmodules ]; then
+            echo "::error::Dangling submodule entries without .gitmodules"
+            cat /tmp/cmd-gitlinks.txt
+            exit 1
+          fi
+          echo "CMD gitlink metadata check passed"
