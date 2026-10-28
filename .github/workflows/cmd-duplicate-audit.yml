@@ -1,0 +1,28 @@
+name: CMD - read-only duplicate asset audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/cmd-duplicate-audit.mjs'
+      - 'tests/cmd-duplicate-audit.test.mjs'
+      - '.github/workflows/cmd-duplicate-audit.yml'
+      - 'docs/INDEX.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-tracked-blobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate audit syntax and regression checks
+        run: |
+          node --check scripts/cmd-duplicate-audit.mjs
+          node --test tests/cmd-duplicate-audit.test.mjs
+      - name: Print read-only tracked-blob duplicates (no deletions)
+        run: node scripts/cmd-duplicate-audit.mjs

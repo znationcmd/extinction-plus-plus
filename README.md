@@ -24,4 +24,4 @@ Ce dépôt contient **plusieurs applications CMD distinctes**. Ne pas les fusion
 - Les fichiers cachés de configuration locale et les secrets ne doivent jamais être ajoutés à Git.
 - Le nettoyage du dépôt **ANOMALIA** relève uniquement de ChatGPT Work.
 
-Voir [la carte de maintenance](docs/CMD-REPOSITORY-MAINTENANCE.md).
+Consulter [l'index des guides et l'audit des doublons](docs/INDEX.md) ou [la carte de maintenance](docs/CMD-REPOSITORY-MAINTENANCE.md).
