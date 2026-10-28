@@ -4,7 +4,7 @@ const {mkdtempSync,writeFileSync,rmSync}=require("node:fs");
 const {tmpdir}=require("node:os");
 const path=require("node:path");
 const {pathToFileURL}=require("node:url");
-let createPublicAssetResponder;\nrequire("../cmd-public-asset-etag.js");
+
 
 function response() {
   return {status:null,headers:null,body:null,
@@ -12,7 +12,8 @@ function response() {
     end(body){this.body=body;return this}
   };
 }
-test("fresh public asset carries content bytes and a SHA-256 ETag",()=>{
+test("fresh public asset carries content bytes and a SHA-256 ETag",async()=>{
+ const {createPublicAssetResponder}=await import("../cmd-public-asset-etag.js");
  const dir=mkdtempSync(path.join(tmpdir(),"cmd-sphere-asset-"));
  try {
   const file=path.join(dir,"client.js");
@@ -35,7 +36,8 @@ test("fresh public asset carries content bytes and a SHA-256 ETag",()=>{
   assert.equal(serve({method:"POST",headers:{}},response()),false);
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
-test("new deployment content changes ETag; old clients download new content",()=>{
+test("new deployment content changes ETag; old clients download new content",async()=>{
+ const {createPublicAssetResponder}=await import("../cmd-public-asset-etag.js");
  const dir=mkdtempSync(path.join(tmpdir(),"cmd-sphere-asset-"));
  try {
   const file=path.join(dir,"client.json");
