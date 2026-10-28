@@ -1,0 +1,30 @@
+name: CMD Sphere - safe incremental PWA script updates
+on:
+  pull_request:
+    branches:
+      - cmd-sphere/dossiers-pays-20261018
+    paths:
+      - 'cmd-discord-mcp/cmd-static-revalidate.mjs'
+      - 'cmd-discord-mcp/cmd-pwa-update.js'
+      - 'cmd-discord-mcp/server.js'
+      - 'cmd-discord-mcp/tests/cmd-static-revalidate.test.cjs'
+      - '.github/workflows/cmd-sphere-incremental-update.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-pwa-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax
+        run: |
+          node --check cmd-discord-mcp/cmd-static-revalidate.mjs
+          node --check cmd-discord-mcp/cmd-pwa-update.js
+          node --check cmd-discord-mcp/server.js
+      - name: Test changed and unchanged asset responses
+        run: node --test cmd-discord-mcp/tests/cmd-static-revalidate.test.cjs
