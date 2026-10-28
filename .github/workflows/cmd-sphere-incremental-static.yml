@@ -1,0 +1,31 @@
+name: CMD Sphere — incremental public assets
+on:
+  pull_request:
+    branches:
+      - cmd-sphere/dossiers-pays-20261018
+    paths:
+      - 'cmd-discord-mcp/cmd-public-asset-etag.js'
+      - 'cmd-discord-mcp/server.js'
+      - 'cmd-discord-mcp/tests/public-asset-etag.test.cjs'
+      - '.github/workflows/cmd-sphere-incremental-static.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-sphere-updates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate ETag helper and Sphere server syntax
+        run: |
+          node --check cmd-discord-mcp/cmd-public-asset-etag.js
+          node --check cmd-discord-mcp/server.js
+          node --check cmd-discord-mcp/tests/public-asset-etag.test.cjs
+      - name: Verify unchanged assets return 304 and updated assets return 200
+        run: node --test cmd-discord-mcp/tests/public-asset-etag.test.cjs
