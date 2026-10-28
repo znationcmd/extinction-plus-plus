@@ -9,3 +9,18 @@ dashboard/.next/
 .DS_Store
 Thumbs.db
 .railway/
+
+# CMD — fichiers de travail locaux (jamais de suppression de fichiers suivis)
+.env.*
+!.env.example
+coverage/
+test-results/
+playwright-report/
+*.tmp
+*.swp
+*.swo
+*.bak
+*.orig
+*.sqlite
+*.sqlite3
+*.db
