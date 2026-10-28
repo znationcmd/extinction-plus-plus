@@ -1,3 +1,4 @@
+import {createConditionalStaticHandler} from "./cmd-static-revalidate.mjs";
 import {assertApiOrigin,readBoundedJson} from "./cmd-request-safety.js";
 import {awardMessageXp,levelStatus,openLevelChest} from "./cmd-levels.js";
 import {handleCmdHistorySearch} from "./cmd-message-history-search.js";
@@ -4721,6 +4722,7 @@ function createCmdServer(auth){
   return server;
 }
 
+const cmdPwaScriptAsset=createConditionalStaticHandler(new URL("./cmd-pwa-update.js",import.meta.url),"application/javascript; charset=utf-8");
 const httpServer=createServer(async(req,res)=>{
   try{
     if(!req.url){res.writeHead(400).end("Missing URL");return}
@@ -5856,9 +5858,8 @@ const httpServer=createServer(async(req,res)=>{
     if(req.method==="GET"&&url.pathname==="/api/pwa/version"){
       sendJson(res,200,{version:cmdPwaRuntimeVersion});return;
     }
-    if(req.method==="GET"&&url.pathname==="/cmd-pwa-update.js"){
-      res.writeHead(200,{"content-type":"application/javascript; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});
-      res.end(readFileSync(new URL("./cmd-pwa-update.js",import.meta.url),"utf8"));return;
+    if((req.method==="GET"||req.method==="HEAD")&&url.pathname==="/cmd-pwa-update.js"){
+      cmdPwaScriptAsset(req,res);return;
     }
     if(req.method==="GET"&&/^\/pwa-icon-(180|192|512)\.png$/.test(url.pathname)){
       if(!cmdPwaSourceB64){res.writeHead(404).end("CMD Sphere icon not configured");return}
