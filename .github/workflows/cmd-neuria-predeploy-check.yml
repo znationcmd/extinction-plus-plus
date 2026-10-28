@@ -1,0 +1,29 @@
+name: CMD NEURIA — pre-deploy checks
+on:
+  pull_request:
+    branches:
+      - cmd-neuria-railway-backup-20261013
+    paths:
+      - 'cmd-neuria-railway/**'
+      - '.github/workflows/cmd-neuria-predeploy-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-neuria:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: cmd-neuria-railway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install Neuria dependencies
+        run: bun install --no-save
+      - name: TypeScript syntax/build entrypoint check
+        run: bun build ./index.ts --target=bun --outdir /tmp/cmd-neuria-check --external playwright-core
+      - name: Run NEURIA regression tests
+        run: bun test ./neuria*.test.ts
