@@ -1,8 +1,8 @@
 'use client';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {BUNKERS, ANTENNAS, SOURCE_URL, MAP_URL, decodeTransmission} from '../../shared/nasdara-data';
-import {createMorseStream} from '../../shared/nasdara-stream';
+import {BUNKERS, ANTENNAS, SOURCE_URL, MAP_URL, decodeTransmission} from '../lib/nasdara-data.cjs';
+import {createMorseStream} from '../lib/nasdara-stream.cjs';
 import NasdasMorseWorkbench from './NasdasMorseWorkbench';
 
 function bunkerLine(b){
