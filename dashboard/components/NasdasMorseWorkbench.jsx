@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect,useRef,useState} from 'react';
-import {BUNKERS,MORSE_DIGITS,decodeTransmission} from '../../shared/nasdara-data';
+import {BUNKERS,MORSE_DIGITS,decodeTransmission} from '../lib/nasdara-data.cjs';
 
 const ALPHABET={
   A:'.-', B:'-...', C:'-.-.', D:'-..', E:'.', F:'..-.', G:'--.', H:'....', I:'..',

@@ -1,7 +1,7 @@
 import {guarded,activeGuild} from '../../../lib/dashboard-auth';
 import {allServers} from '../../../lib/servers';
 import {readDb, writeDb} from '../../../lib/db';
-import nasdara from '../../../../shared/nasdara-data';
+import nasdara from '../../../lib/nasdara-data.cjs';
 import crypto from 'node:crypto';
 
 const TTL = 2 * 60 * 60 * 1000;
