@@ -10,6 +10,7 @@ const command = new SlashCommandBuilder()
   .addSubcommand(s => s.setName('bunkers').setDescription('Voir les 23 emplacements connus')
     .addIntegerOption(o => o.setName('page').setDescription('Page 1 à 3').setMinValue(1).setMaxValue(3)))
   .addSubcommand(s => s.setName('antennes').setDescription('Trouver les tours TC6 et les autres antennes'))
+  .addSubcommand(s => s.setName('codes').setDescription('Voir les codes reçus par le récepteur audio Extinction++ RSS'))
   .addSubcommand(s => s.setName('decoder').setDescription('Décoder une transmission en chiffres ou en Morse')
     .addStringOption(o => o.setName('signal').setDescription('Ex. 1001210481 ou Morse séparé par espaces').setMaxLength(300).setRequired(true)))
   .addSubcommand(s => s.setName('position').setDescription('Chercher un bunker par sa position')
@@ -34,7 +35,7 @@ function formatBunker(b) {
   return '**' + b.grid.slice(0, 3) + ' ' + b.grid.slice(3) + '** · ' + b.type + ' · X ' + b.x + ' / Z ' + b.z;
 }
 
-async function handle(interaction) {
+async function handle(interaction, {db}={}) {
   if (interaction.commandName !== 'nasdara') return false;
   const sub = interaction.options.getSubcommand();
   let message;
@@ -46,7 +47,7 @@ async function handle(interaction) {
       '3. Utilise **/nasdara decoder** pour trouver le bunker et afficher le code entendu.\n\n' +
       '🗺️ **23 positions** répertoriées, mais seules certaines sont ouvertes à la fois. Les bunkers actifs changent au fil des cycles du jeu.\n' +
       '⚠️ Le bot **ne connaît pas les codes actifs en direct** : ils viennent exclusivement de la transmission que tu saisis.\n\n' +
-      'Commandes : /nasdara bunkers · /nasdara antennes · /nasdara decoder · /nasdara position.'
+      'Commandes : /nasdara bunkers · /nasdara antennes · /nasdara decoder · /nasdara position · /nasdara codes.'
     );
   } else if (sub === 'bunkers') {
     const page = interaction.options.getInteger('page') || 1;
@@ -61,6 +62,18 @@ async function handle(interaction) {
     message = embed('📻 Nasdara · Antennes radio',
       data.ANTENNAS.map(a => '📡 **' + a.type + '** · X ' + a.x + ' / Z ' + a.z).join('\n') +
       '\n\nPour écouter la transmission des bunkers, privilégie les **tours TC6**, radio allumée et pile installée.'
+    );
+  } else if (sub === 'codes') {
+    const received=(Array.isArray(db?.nasdaraSignals)?db.nasdaraSignals:[])
+      .filter(x=>Date.now()-Date.parse(x.observedAt)<2*60*60*1000)
+      .sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt)).slice(0,8);
+    message=embed('📻 Bunker Nasdas · Codes captés',
+      received.length?received.map(r=>{
+        const bunker=data.findBunker(r.position);
+        return '🔐 **'+r.position.slice(0,3)+' '+r.position.slice(3)+'** · code **'+r.code+'** · '+(bunker?.type||'Bunker')+
+          '\\n'+(r.count>=2?'Répété '+r.count+' fois':'Capté une fois')+' · '+new Date(r.observedAt).toLocaleString('fr-FR');
+      }).join('\\n\\n')+'\\n\\nCodes signalés par le navigateur audio du Discord ; non certifiés directement par le serveur DayZ.'
+        :'Aucune transmission audio complète enregistrée dans les deux dernières heures. Ouvre la rubrique **Bunker Nasdas** du Dashboard et active la capture du son du jeu.'
     );
   } else if (sub === 'position') {
     try {
