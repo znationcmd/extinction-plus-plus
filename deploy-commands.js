@@ -16,6 +16,7 @@ const games = [
 
 const commands = [
   ...require('./shared/radio').commands(),
+  ...require('./shared/nasdara').commands(),
   ...require('./shared/community-commands').commands(),
   ...require('./shared/extra-tools').commands(),
   new SlashCommandBuilder().setName('shoplink').setDescription('Ouvrir le Shop public Extinction++ RSS'),
