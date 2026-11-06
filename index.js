@@ -154,6 +154,7 @@ client.once('clientReady', () => {
   require('./shared/bot-job-worker').start({client,loadDb,saveDb});
   require('./shared/game-log-worker').start({client,loadDb,saveDb});
   require('./shared/radio').start({client,loadDb,saveDb});
+  require('./shared/nasdara').register(client).then(()=>console.log('Commande Nasdas enregistrée.')).catch(e=>console.error('Commande Nasdas indisponible :', e.message));
 });
 
 client.on('shardDisconnect',()=>{if(process.send)process.send({type:'discordReady',ready:false});});
@@ -166,6 +167,7 @@ client.on('interactionCreate', async interaction => {
     if(interaction.isChatInputCommand()&&await require('./shared/arcade-commands').handle(interaction,{db,saveDb}))return;
     if(interaction.isChatInputCommand()&&await require('./shared/community-commands').handle(interaction,{db,saveDb,isAdmin,client}))return;
     if(interaction.isChatInputCommand()&&await require('./shared/radio').handle(interaction,{db,saveDb,isAdmin,client}))return;
+    if(interaction.isChatInputCommand()&&await require('./shared/nasdara').handle(interaction,{db,saveDb,isAdmin,client}))return;
 
     if (interaction.isButton()) {
       if (interaction.customId === 'panel_shop') return interaction.reply({ ephemeral:true, content:'Utilise `/shop list` pour voir le shop.' });
