@@ -160,3 +160,30 @@
   .radioTop,.inscription{font-size:8px}
 }
 @media (prefers-reduced-motion:reduce){.soundbars span.playing{animation:none}.scene,.sceneActive,.needle{transition:none}}
+
+/* Manipulateur mécanique : le bouton reste un vrai contrôle tactile / clavier. */
+.morseBase{display:flex;flex-direction:column;align-items:center;gap:8px;width:215px;max-width:100%;padding:14px 10px 10px;
+  border-radius:16px;border:2px solid #635461;
+  background:repeating-linear-gradient(45deg,#231e28 0 5px,#27212c 5px 6px);
+  box-shadow:inset 0 2px #b9a3aa25,0 9px 16px #0007}
+.morseLabel,.morseLegends{font-size:9px;letter-spacing:.1em;color:#c9b5c7;font-weight:800;text-align:center}
+.morseLegends{color:#95879a;font-size:8px}
+.morseKey,.morsePressed{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:end;isolation:isolate;
+  width:160px;height:120px;padding:7px 4px 12px;
+  touch-action:none;
+  border:1px solid #594652;border-radius:11px;background:radial-gradient(ellipse at 50% 35%,#463c46,#211b28 74%);
+  color:#f3e3dc;box-shadow:inset 0 4px 6px #0007,0 2px 3px #0008;cursor:pointer}
+.morseKey:before,.morsePressed:before{content:"";position:absolute;z-index:-1;bottom:25px;width:120px;height:12px;
+  border-radius:50%;background:#110f14;box-shadow:0 0 12px #08080c}
+.morseGrip{display:block;position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:88px;height:62px;border-radius:50%;border:7px solid #463038;
+  background:radial-gradient(circle at 40% 27%,#d0a888,#75515b 48%,#2a1e2b 82%);
+  box-shadow:inset 0 3px 10px #fff4,inset 0 -8px #150e18,0 7px 1px #09070b,0 8px 8px #000c}
+.morseGripCore{display:block;width:25px;height:25px;border:4px solid #41313b;border-radius:50%;background:#251922;margin:11px auto}
+.morseArm{position:absolute;top:64px;width:125px;height:9px;background:linear-gradient(#d7b3a2,#5b4b55);box-shadow:0 2px #0b090d;border-radius:4px}
+.morseKey strong,.morsePressed strong{position:relative;font-size:11px;letter-spacing:.15em;margin-top:79px}
+.morseKey small,.morsePressed small{position:relative;font-size:9px;letter-spacing:.02em;color:#b3a8b0}
+.morsePressed{border-color:#de997c;background:radial-gradient(ellipse at 50% 35%,#6c4d56,#34252e 74%)}
+.morsePressed .morseGrip{transform:translateX(-50%) translateY(5px);box-shadow:inset 0 3px 10px #fff4,inset 0 -8px #150e18,0 2px #09070b}
+.morsePressed strong{color:#ffc9a0}
+@media(max-width:650px){.morseBase{width:100%;margin-bottom:8px}.morseKey,.morsePressed{width:190px}}
