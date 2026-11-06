@@ -4,6 +4,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {BUNKERS, ANTENNAS, SOURCE_URL, MAP_URL, decodeTransmission} from '../lib/nasdara-data.cjs';
 import {createMorseStream} from '../lib/nasdara-stream.cjs';
 import NasdasMorseWorkbench from './NasdasMorseWorkbench';
+import NasdasTowerRadio from './NasdasTowerRadio';
 
 function bunkerLine(b){
   return b.grid.slice(0,3)+' '+b.grid.slice(3)+' · '+b.type+' · X '+b.x+' / Z '+b.z;
@@ -189,21 +190,39 @@ export default function BunkerNasdasReceiver(){
   }
 
   return <div className="space-y-6">
-    <section className="card">
-      <p className="text-sm font-black uppercase tracking-[.2em] text-amber-300">DayZ Badlands · Nasdara · Fréquence 80,0 MHz</p>
-      <h2 className="mt-2 text-3xl font-black sm:text-4xl">🔐 Bunker Nasdas</h2>
-      <p className="mt-2 text-white/70">Récepteur Morse réel pour la radio DayZ : la capture son passe par ce navigateur. Les 6 premiers chiffres identifient le bunker ; les 4 suivants ouvrent le cadenas.</p>
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <a className="btn btn-primary" href={SOURCE_URL} target="_blank" rel="noopener noreferrer">Décodeur original DayZAide</a>
-        <a className="btn border border-white/20 bg-white/10" href={MAP_URL} target="_blank" rel="noopener noreferrer">Carte Nasdara</a>
+    <section className="relative overflow-hidden rounded-3xl border border-violet-400/25 bg-gradient-to-br from-[#251832] via-[#161326] to-[#0a111c] p-5 shadow-2xl sm:p-8">
+      <div className="absolute -right-10 -top-20 h-64 w-64 rounded-full bg-violet-600/10 blur-3xl" aria-hidden="true"/>
+      <div className="relative">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-black uppercase tracking-[.22em] text-violet-300">EXTINCTION ++ RSS · DAYZ BADLANDS</p>
+          <span className="rounded-full border border-red-400/25 bg-red-950/35 px-3 py-2 text-xs font-bold text-red-200">📡 Diffusion en jeu : 17h45 → 06h00</span>
+        </div>
+        <h1 className="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">Fréquence des bunkers</h1>
+        <p className="mt-2 text-xl font-semibold text-violet-200">NASDARA · BUNKER NASDAS</p>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-white/75">À la nuit tombée, les tours transmettent en Morse l'emplacement des bunkers et leurs codes. Écoute la radio dans DayZ sur <strong className="text-amber-200">80,0 MHz</strong>, puis utilise le décodeur et le récepteur audio du Dashboard.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-violet-300/15 bg-black/25 p-4"><span className="font-black text-amber-300">01</span><p className="mt-2 text-sm text-white/85">Radio avec pile au sommet d'une tour <b>TC6</b>.</p></div>
+          <div className="rounded-2xl border border-violet-300/15 bg-black/25 p-4"><span className="font-black text-amber-300">02</span><p className="mt-2 text-sm text-white/85">Écoute les bips ou reproduis-les sur le manipulateur.</p></div>
+          <div className="rounded-2xl border border-violet-300/15 bg-black/25 p-4"><span className="font-black text-amber-300">03</span><p className="mt-2 text-sm text-white/85">Repère les <b>6 chiffres</b> du bunker et les <b>4 du cadenas</b>.</p></div>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3 text-sm">
+          <a className="btn btn-primary" href={SOURCE_URL} target="_blank" rel="noopener noreferrer">Voir DayZAide</a>
+          <a className="btn border border-violet-400/25 bg-violet-900/20" href={MAP_URL} target="_blank" rel="noopener noreferrer">🗺️ Carte de Nasdara</a>
+        </div>
       </div>
     </section>
 
-    <NasdasMorseWorkbench/>
+    <NasdasTowerRadio captureActive={listening}/>
 
-    <section className="card space-y-4">
-      <h3 className="text-2xl font-black">📻 Récepteur audio en direct</h3>
-      <p className="text-sm text-white/70">Sur PS5 / Xbox : fais entendre la radio dans le micro de ton téléphone. Sur PC : partage la fenêtre de DayZ et active le partage du son, ou utilise un micro. La radio en jeu doit être allumée sur <b>80,0 MHz</b> pendant la nuit.</p>
+    <section className="space-y-4 rounded-3xl border border-violet-400/20 bg-gradient-to-br from-[#1b1429] to-[#0e1521] p-5 shadow-xl sm:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.2em] text-violet-300">VRAIE RADIO DAYZ · 80,0 MHz</p>
+          <h3 className="mt-2 text-2xl font-black sm:text-3xl">🎙️ Détecteur des transmissions Morse</h3>
+        </div>
+        <span className={'rounded-full border px-3 py-2 text-xs font-extrabold '+(listening?'border-green-400/30 bg-green-900/30 text-green-300':'border-violet-300/20 bg-black/30 text-violet-200')}>{listening?'● SIGNAL EN CAPTURE':'○ CAPTURE ARRÊTÉE'}</span>
+      </div>
+      <p className="text-sm leading-6 text-white/70">Ceci écoute <strong>le son réel du jeu</strong> et non la radio d'ambiance au-dessus. Sur PS5 / Xbox : place le micro de ton téléphone près du haut-parleur. Sur PC : partage la fenêtre de DayZ avec son audio sous Chrome / Edge. Dans DayZ, règle la radio sur <b className="text-amber-200">80,0 MHz</b> pendant la nuit.</p>
       <label className="block text-sm font-semibold">Serveur DayZ à écouter
         <select className="input mt-2" value={serverId} disabled={listening} onChange={event=>setServerId(event.target.value)}>
           <option value="">Choisir un serveur du Discord</option>
@@ -241,9 +260,9 @@ export default function BunkerNasdasReceiver(){
       <p className="text-xs text-amber-200/85">Important : ce n’est pas une connexion directe à l’API Nitrado ou à l’émetteur interne du serveur. Le son doit réellement arriver au navigateur ; vérifie les chiffres entendus avant de tenter le cadenas. L’audio n’est pas envoyé ni sauvegardé sur nos serveurs.</p>
     </section>
 
-    <section className="card">
+    <section className="rounded-3xl border border-violet-400/20 bg-[#15121f] p-5 shadow-xl sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h3 className="text-2xl font-black">📟 Codes captés et transmis au Discord sélectionné</h3>
+        <div><p className="text-xs font-black uppercase tracking-[.18em] text-violet-300">SIGNAUX REÇUS · EN DIRECT</p><h3 className="mt-2 text-2xl font-black">🔐 Les codes de ton serveur</h3>
           <p className="mt-1 text-sm text-white/60">Chaque résultat provient d’une capture audio d’un utilisateur connecté au Dashboard. « Répété » signifie entendu plusieurs fois, pas vérifié par DayZ.</p></div>
         <button type="button" onClick={loadCodes} className="btn border border-white/20 bg-white/10">Actualiser</button>
       </div>
@@ -262,6 +281,8 @@ export default function BunkerNasdasReceiver(){
         {!shared.length&&<p className="text-white/60">Aucune transmission enregistrée : les codes ne peuvent pas être obtenus sans écouter le jeu.</p>}
       </div>
     </section>
+
+    <NasdasMorseWorkbench/>
 
     <details className="card">
       <summary className="cursor-pointer text-xl font-black">🧪 Décodeur manuel de secours (sans publication comme « direct »)</summary>

@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState} from 'react';
 import {BUNKERS,MORSE_DIGITS,decodeTransmission} from '../lib/nasdara-data.cjs';
+import styles from './NasdasTowerRadio.module.css';
 
 const ALPHABET={
   A:'.-', B:'-...', C:'-.-.', D:'-..', E:'.', F:'..-.', G:'--.', H:'....', I:'..',
@@ -177,10 +178,17 @@ export default function NasdasMorseWorkbench(){
         <p className="mt-3 min-h-12 break-all font-mono text-3xl font-bold tracking-widest text-amber-200">{letters||'—'}<span className="text-fuchsia-400">{current&&'['+current+']'}</span></p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onPointerDown={e=>{e.preventDefault();press();}} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}
-          className={'min-w-24 rounded-2xl border px-6 py-5 text-3xl font-black touch-none '+(keyHeld?'border-amber-300 bg-amber-500/40':'border-fuchsia-400/45 bg-fuchsia-600/20')}>
-          {keyHeld?'●':'TAP'}
-        </button>
+        <div className={styles.morseBase}>
+          <span className={styles.morseLabel}>MANIPULATEUR MORSE · TC6</span>
+          <button aria-label="Appui court : point, appui long : trait" type="button" onPointerDown={e=>{e.preventDefault();press();}} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}
+            className={keyHeld?styles.morsePressed:styles.morseKey}>
+            <span aria-hidden="true" className={styles.morseGrip}><span className={styles.morseGripCore}/></span>
+            <span aria-hidden="true" className={styles.morseArm}/>
+            <strong>{keyHeld?'SIGNAL':'APPUYER'}</strong>
+            <small>court = • / long = —</small>
+          </button>
+          <span className={styles.morseLegends}>SOURIS · DOIGT · BARRE ESPACE</span>
+        </div>
         <button className="btn border border-white/20 bg-white/10" type="button" onClick={()=>mark('.')}>• Point</button>
         <button className="btn border border-white/20 bg-white/10" type="button" onClick={()=>mark('-')}>— Trait</button>
         <button className="btn border border-white/20 bg-white/10" type="button" onClick={finishLetter}>Fin de lettre</button>

@@ -8,9 +8,12 @@ on:
       - 'dashboard/app/api/bunker-nasdas/**'
       - 'dashboard/components/BunkerNasdasReceiver.jsx'
       - 'dashboard/components/NasdasMorseWorkbench.jsx'
+      - 'dashboard/components/NasdasTowerRadio.jsx'
+      - 'dashboard/components/NasdasTowerRadio.module.css'
       - 'dashboard/components/Shell.jsx'
       - 'shared/nasdara*.js'
       - 'tests/nasdara.test.js'
+      - 'tests/nasdara-radio-ui.test.js'
       - '.github/workflows/rss-nasdara-check.yml'
   pull_request:
     paths:
@@ -21,6 +24,7 @@ on:
       - 'dashboard/components/Shell.jsx'
       - 'shared/nasdara*.js'
       - 'tests/nasdara.test.js'
+      - 'tests/nasdara-radio-ui.test.js'
       - '.github/workflows/rss-nasdara-check.yml'
 permissions:
   contents: read
@@ -36,7 +40,7 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - name: Verify Nasdara Morse module
-        run: node --test tests/nasdara.test.js
+        run: node --test tests/nasdara.test.js tests/nasdara-radio-ui.test.js
       - name: Verify bot syntax
         run: |
           node --check index.js
