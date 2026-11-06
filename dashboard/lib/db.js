@@ -47,6 +47,7 @@ function defaultDb() {
     notifications: [],
     radioMessages: [],
     radioBroadcasts: [],
+    nasdaraSignals: [],
     premiumSubscriptions: [],
     premiumPaymentRequests: [],
     premiumCodes: [],
