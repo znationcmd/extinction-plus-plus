@@ -3,6 +3,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {BUNKERS, ANTENNAS, SOURCE_URL, MAP_URL, decodeTransmission} from '../../shared/nasdara-data';
 import {createMorseStream} from '../../shared/nasdara-stream';
+import NasdasMorseWorkbench from './NasdasMorseWorkbench';
 
 function bunkerLine(b){
   return b.grid.slice(0,3)+' '+b.grid.slice(3)+' · '+b.type+' · X '+b.x+' / Z '+b.z;
@@ -197,6 +198,8 @@ export default function BunkerNasdasReceiver(){
         <a className="btn border border-white/20 bg-white/10" href={MAP_URL} target="_blank" rel="noopener noreferrer">Carte Nasdara</a>
       </div>
     </section>
+
+    <NasdasMorseWorkbench/>
 
     <section className="card space-y-4">
       <h3 className="text-2xl font-black">📻 Récepteur audio en direct</h3>
