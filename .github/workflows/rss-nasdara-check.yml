@@ -8,6 +8,8 @@ on:
       - 'dashboard/app/api/bunker-nasdas/**'
       - 'dashboard/components/BunkerNasdasReceiver.jsx'
       - 'dashboard/components/NasdasMorseWorkbench.jsx'
+      - 'dashboard/components/NasdasTowerRadio.jsx'
+      - 'dashboard/components/NasdasTowerRadio.module.css'
       - 'dashboard/components/Shell.jsx'
       - 'shared/nasdara*.js'
       - 'tests/nasdara.test.js'
