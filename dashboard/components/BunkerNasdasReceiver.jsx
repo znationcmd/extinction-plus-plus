@@ -13,6 +13,8 @@ function formatTime(value){
 
 export default function BunkerNasdasReceiver(){
   const [source,setSource]=useState('microphone');
+  const [servers,setServers]=useState([]);
+  const [serverId,setServerId]=useState('');
   const [listening,setListening]=useState(false);
   const [status,setStatus]=useState('Récepteur arrêté. Aucune transmission en cours.');
   const [threshold,setThreshold]=useState(-62);
@@ -32,14 +34,29 @@ export default function BunkerNasdasReceiver(){
 
   useEffect(()=>{settings.current.threshold=threshold;},[threshold]);
 
+  useEffect(()=>{
+    let cancelled=false;
+    fetch('/api/servers',{cache:'no-store'}).then(async response=>{
+      if(!response.ok)throw new Error('Serveurs inaccessibles.');
+      return response.json();
+    }).then(body=>{
+      if(cancelled)return;
+      const rows=(body.servers||[]).filter(s=>String(s.game||'').startsWith('dayz'));
+      setServers(rows);
+      const nasdara=rows.find(s=>/nasdara|nasdas/i.test(String(s.map||'')));
+      setServerId(previous=>rows.some(s=>s.id===previous)?previous:(nasdara?.id||rows[0]?.id||''));
+    }).catch(()=>{});
+    return()=>{cancelled=true;};
+  },[]);
+
   const loadCodes=useCallback(async()=>{
     try {
-      const response=await fetch('/api/bunker-nasdas',{cache:'no-store'});
+      const response=await fetch('/api/bunker-nasdas'+(serverId?'?serverId='+encodeURIComponent(serverId):''),{cache:'no-store'});
       if(!response.ok) return;
       const body=await response.json();
       if(Array.isArray(body.signals))setShared(body.signals);
     }catch{}
-  },[]);
+  },[serverId]);
 
   useEffect(()=>{
     loadCodes();
@@ -65,11 +82,12 @@ export default function BunkerNasdasReceiver(){
     // Le son d'un seul passage ne doit pas produire 30 publications.
     if(now-last<10000)return;
     lastPublished.current.set(key,now);
+    if(!serverId){setStatus('Audio décodé localement : choisis un serveur DayZ pour partager son code avec ton Discord.');return;}
     try {
       const response=await fetch('/api/bunker-nasdas',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({digits:message.digits,source:streamSource.current})
+        body:JSON.stringify({digits:message.digits,source:streamSource.current,serverId})
       });
       if(!response.ok)throw new Error((await response.json()).error||'Transmission non enregistrée.');
       loadCodes();
@@ -183,6 +201,13 @@ export default function BunkerNasdasReceiver(){
     <section className="card space-y-4">
       <h3 className="text-2xl font-black">📻 Récepteur audio en direct</h3>
       <p className="text-sm text-white/70">Sur PS5 / Xbox : fais entendre la radio dans le micro de ton téléphone. Sur PC : partage la fenêtre de DayZ et active le partage du son, ou utilise un micro. La radio en jeu doit être allumée sur <b>80,0 MHz</b> pendant la nuit.</p>
+      <label className="block text-sm font-semibold">Serveur DayZ à écouter
+        <select className="input mt-2" value={serverId} disabled={listening} onChange={event=>setServerId(event.target.value)}>
+          <option value="">Choisir un serveur du Discord</option>
+          {servers.map(s=><option key={s.id} value={s.id}>{s.name+' · '+(s.map||'Carte non renseignée')}</option>)}
+        </select>
+      </label>
+      {!servers.length&&<p className="text-sm text-amber-200">Aucun serveur DayZ enregistré : tu peux écouter et décoder, mais les codes ne seront pas publiés sur le bot avant d’avoir ajouté ton serveur dans « Serveurs ».</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-semibold">Entrée audio
           <select className="input mt-2" value={source} disabled={listening} onChange={event=>setSource(event.target.value)}>
@@ -228,7 +253,7 @@ export default function BunkerNasdasReceiver(){
         <h4 className="pt-3 font-bold text-amber-200">Signaux enregistrés pour ce Discord (moins de 2 h)</h4>
         {shared.map(item=><article key={item.id} className="flex flex-wrap justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
           <div><b>{item.position.slice(0,3)+' '+item.position.slice(3)}</b> · Cadenas <b>{item.code}</b>
-            <p className="text-xs text-white/55">{(BUNKERS.find(b=>b.grid===item.position)?.type)||'Bunker'} · {item.count>=2?'Répété '+item.count+' fois':'Capté une fois'} · {formatTime(item.observedAt)}</p></div>
+            <p className="text-xs text-white/55">{(servers.find(s=>s.id===item.serverId)?.name)||'Serveur inconnu'} · {(BUNKERS.find(b=>b.grid===item.position)?.type)||'Bunker'} · {item.count>=2?'Répété '+item.count+' fois':'Capté une fois'} · {formatTime(item.observedAt)}</p></div>
           <span className="text-xs text-white/50">Capture {item.source==='screen_audio'?'PC':'micro'}</span>
         </article>)}
         {!shared.length&&<p className="text-white/60">Aucune transmission enregistrée : les codes ne peuvent pas être obtenus sans écouter le jeu.</p>}
