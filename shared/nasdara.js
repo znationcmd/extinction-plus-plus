@@ -46,7 +46,7 @@ async function handle(interaction, {db}={}) {
       '2. Écoute le Morse et relève **6 chiffres de position + 4 chiffres de cadenas**.\n' +
       '3. Utilise **/nasdara decoder** pour trouver le bunker et afficher le code entendu.\n\n' +
       '🗺️ **23 positions** répertoriées, mais seules certaines sont ouvertes à la fois. Les bunkers actifs changent au fil des cycles du jeu.\n' +
-      '⚠️ Le bot **ne connaît pas les codes actifs en direct** : ils viennent exclusivement de la transmission que tu saisis.\n\n' +
+      '⚠️ Le bot **ne reçoit pas directement le signal par l’API Nitrado** : ouvre **Bunker Nasdas** dans le Dashboard pour capter et décoder le son de la radio. Les codes sont affichés via **/nasdara codes** après détection.\n\n' +
       'Commandes : /nasdara bunkers · /nasdara antennes · /nasdara decoder · /nasdara position · /nasdara codes.'
     );
   } else if (sub === 'bunkers') {
@@ -71,8 +71,8 @@ async function handle(interaction, {db}={}) {
       received.length?received.map(r=>{
         const bunker=data.findBunker(r.position);
         return '🔐 **'+r.position.slice(0,3)+' '+r.position.slice(3)+'** · code **'+r.code+'** · '+(bunker?.type||'Bunker')+
-          '\\n'+(r.count>=2?'Répété '+r.count+' fois':'Capté une fois')+' · '+new Date(r.observedAt).toLocaleString('fr-FR');
-      }).join('\\n\\n')+'\\n\\nCodes signalés par le navigateur audio du Discord ; non certifiés directement par le serveur DayZ.'
+          '\n'+(r.count>=2?'Répété '+r.count+' fois':'Capté une fois')+' · '+new Date(r.observedAt).toLocaleString('fr-FR');
+      }).join('\n\n')+'\n\nCodes signalés par le navigateur audio du Discord ; non certifiés directement par le serveur DayZ.'
         :'Aucune transmission audio complète enregistrée dans les deux dernières heures. Ouvre la rubrique **Bunker Nasdas** du Dashboard et active la capture du son du jeu.'
     );
   } else if (sub === 'position') {
