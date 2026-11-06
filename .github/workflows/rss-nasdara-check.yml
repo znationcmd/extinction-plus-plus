@@ -46,7 +46,10 @@ jobs:
           node --check shared/nasdara-stream.js
       - name: Install Dashboard dependencies
         run: npm ci --prefix dashboard --no-audit --no-fund
-      - name: Build Dashboard and Bunker Nasdas
+      - name: Verify isolated Railway root build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
-        run: npm run build --prefix dashboard
+        run: |
+          mkdir -p /tmp/nasdas-railway
+          cp -a dashboard/. /tmp/nasdas-railway/
+          (cd /tmp/nasdas-railway && npm ci --no-audit --no-fund && npm run build)
