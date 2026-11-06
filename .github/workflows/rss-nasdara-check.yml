@@ -1,0 +1,52 @@
+name: Extinction RSS - Bunker Nasdas
+on:
+  push:
+    branches:
+      - feature/nasdara-bunkers-discord-20261106
+    paths:
+      - 'dashboard/app/bunker-nasdas/**'
+      - 'dashboard/app/api/bunker-nasdas/**'
+      - 'dashboard/components/BunkerNasdasReceiver.jsx'
+      - 'dashboard/components/NasdasMorseWorkbench.jsx'
+      - 'dashboard/components/Shell.jsx'
+      - 'shared/nasdara*.js'
+      - 'tests/nasdara.test.js'
+      - '.github/workflows/rss-nasdara-check.yml'
+  pull_request:
+    paths:
+      - 'dashboard/app/bunker-nasdas/**'
+      - 'dashboard/app/api/bunker-nasdas/**'
+      - 'dashboard/components/BunkerNasdasReceiver.jsx'
+      - 'dashboard/components/NasdasMorseWorkbench.jsx'
+      - 'dashboard/components/Shell.jsx'
+      - 'shared/nasdara*.js'
+      - 'tests/nasdara.test.js'
+      - '.github/workflows/rss-nasdara-check.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Verify Nasdara Morse module
+        run: node --test tests/nasdara.test.js
+      - name: Verify bot syntax
+        run: |
+          node --check index.js
+          node --check deploy-commands.js
+          node --check shared/nasdara.js
+          node --check shared/nasdara-data.js
+          node --check shared/nasdara-stream.js
+      - name: Install Dashboard dependencies
+        run: npm ci --prefix dashboard --no-audit --no-fund
+      - name: Build Dashboard and Bunker Nasdas
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build --prefix dashboard
