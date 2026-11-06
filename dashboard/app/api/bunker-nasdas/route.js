@@ -1,4 +1,5 @@
-import {guarded} from '../../../lib/dashboard-auth';
+import {guarded,activeGuild} from '../../../lib/dashboard-auth';
+import {allServers} from '../../../lib/servers';
 import {readDb, writeDb} from '../../../lib/db';
 import nasdara from '../../../../shared/nasdara-data';
 import crypto from 'node:crypto';
@@ -12,9 +13,13 @@ function recent(list, now=Date.now()) {
     .sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt)).slice(0, MAX_HISTORY);
 }
 
-export const GET=guarded(async () => {
+export const GET=guarded(async req => {
   const db=await readDb();
-  return Response.json({signals:recent(db.nasdaraSignals),source:nasdara.SOURCE_URL,liveFeedConnected:false});
+  const serverId=new URL(req.url).searchParams.get('serverId');
+  const available=allServers(db,await activeGuild()).filter(s=>String(s.game||'').startsWith('dayz'));
+  if(serverId && !available.some(s=>String(s.id)===serverId))return Response.json({error:'Serveur DayZ introuvable.'},{status:404});
+  const signals=recent(db.nasdaraSignals).filter(s=>!serverId||s.serverId===serverId);
+  return Response.json({signals,source:nasdara.SOURCE_URL,liveFeedConnected:false});
 });
 
 export const POST=guarded(async req => {
@@ -27,8 +32,11 @@ export const POST=guarded(async req => {
   // Le signal est une déclaration d'un navigateur connecté à un son de jeu.
   // Il n'est PAS une confirmation officielle par l'API DayZ ou Nitrado.
   const db=await readDb();
+  const serverId=String(input.serverId||'');
+  const server=allServers(db,await activeGuild()).find(s=>String(s.id)===serverId && String(s.game||'').startsWith('dayz'));
+  if(!server)return Response.json({error:'Choisis un serveur DayZ enregistré dans ce Discord avant de publier un code.'},{status:400});
   db.nasdaraSignals=recent(db.nasdaraSignals);
-  const existing=db.nasdaraSignals.find(x=>x.position===code.position&&x.code===code.code);
+  const existing=db.nasdaraSignals.find(x=>x.serverId===serverId&&x.position===code.position&&x.code===code.code);
   const now=new Date().toISOString();
   if(existing){
     existing.observedAt=now;
@@ -37,11 +45,11 @@ export const POST=guarded(async req => {
     existing.status=existing.count>=2?'répété':'observé';
   }else{
     db.nasdaraSignals.unshift({
-      id:crypto.randomUUID(), position:code.position,code:code.code,
+      id:crypto.randomUUID(), serverId, position:code.position,code:code.code,
       observedAt:now,count:1,status:'observé',source:input.source
     });
   }
   db.nasdaraSignals=recent(db.nasdaraSignals);
   await writeDb(db);
-  return Response.json({ok:true, signal:db.nasdaraSignals.find(x=>x.position===code.position&&x.code===code.code)});
+  return Response.json({ok:true, signal:db.nasdaraSignals.find(x=>x.serverId===serverId&&x.position===code.position&&x.code===code.code)});
 });
