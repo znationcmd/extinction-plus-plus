@@ -65,12 +65,14 @@ async function handle(interaction, {db}={}) {
     );
   } else if (sub === 'codes') {
     const received=(Array.isArray(db?.nasdaraSignals)?db.nasdaraSignals:[])
-      .filter(x=>Date.now()-Date.parse(x.observedAt)<2*60*60*1000)
+      .filter(x=>String(x.guildId)===String(interaction.guildId)&&Date.now()-Date.parse(x.observedAt)<2*60*60*1000)
       .sort((a,b)=>Date.parse(b.observedAt)-Date.parse(a.observedAt)).slice(0,8);
     message=embed('📻 Bunker Nasdas · Codes captés',
       received.length?received.map(r=>{
         const bunker=data.findBunker(r.position);
-        return '🔐 **'+r.position.slice(0,3)+' '+r.position.slice(3)+'** · code **'+r.code+'** · '+(bunker?.type||'Bunker')+
+        const guildServers=[...(db.guilds?.[interaction.guildId]?.servers||[]),...(db.connectedServers||[]).filter(s=>String(s.guildId)===String(interaction.guildId))];
+        const server=guildServers.find(s=>String(s.id)===String(r.serverId));
+        return '🔐 **'+r.position.slice(0,3)+' '+r.position.slice(3)+'** · code **'+r.code+'** · '+(bunker?.type||'Bunker')+' · '+(server?.name||'Serveur DayZ')+
           '\n'+(r.count>=2?'Répété '+r.count+' fois':'Capté une fois')+' · '+new Date(r.observedAt).toLocaleString('fr-FR');
       }).join('\n\n')+'\n\nCodes signalés par le navigateur audio du Discord ; non certifiés directement par le serveur DayZ.'
         :'Aucune transmission audio complète enregistrée dans les deux dernières heures. Ouvre la rubrique **Bunker Nasdas** du Dashboard et active la capture du son du jeu.'
