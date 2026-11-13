@@ -10,9 +10,9 @@ from diffusers import ShapEPipeline
 from diffusers.utils import export_to_ply
 
 MODEL_ID = "openai/shap-e"
-pipeline = None
+pipeline = ShapEPipeline.from_pretrained(MODEL_ID, torch_dtype=torch.float16)
 
-@spaces.GPU(duration=180)
+@spaces.GPU(duration=60)
 def generate(prompt):
     global pipeline
     prompt = (prompt or "").strip()
@@ -20,10 +20,7 @@ def generate(prompt):
         raise gr.Error("Décris un objet en 1 à 1200 caractères.")
     if not torch.cuda.is_available():
         raise gr.Error("ZeroGPU indisponible : aucun GPU alloué.")
-    if pipeline is None:
-        pipeline = ShapEPipeline.from_pretrained(
-            MODEL_ID, torch_dtype=torch.float16
-        ).to("cuda")
+    pipeline.to("cuda")
     result = pipeline(
         prompt, guidance_scale=15.0, num_inference_steps=32,
         frame_size=128, output_type="mesh"
