@@ -19,6 +19,7 @@ import { NEURIA_SWIPE_NEW_CHAT_CLIENT } from "./neuria-swipe-new-chat.ts";
 import { NEURIA_PULSE_SIMPLE_UI } from "./neuria-pulse-simple-ui.ts";
 import { NEURIA_ORACLE_AURA_SIMPLE_UI } from "./neuria-oracle-aura-simple-ui.ts";
 import { handleNeuriaHfRequest } from "./neuria-hf-tools.ts";
+import { handleNeuriaPulseSong } from "./neuria-pulse-song-api.ts";
 const NEURIA_OAUTH_KEY=async()=>{const secret=Bun.env.NEURIA_OAUTH_ENCRYPTION_KEY||"";if(secret.length<32)throw Error("NEURIA_OAUTH_ENCRYPTION_KEY missing");const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(secret));return crypto.subtle.importKey("raw",hash,"AES-GCM",false,["encrypt","decrypt"])};
 const NEURIA_OAUTH_SEAL=async(token)=>{const iv=crypto.getRandomValues(new Uint8Array(12));const data=await crypto.subtle.encrypt({name:"AES-GCM",iv},await NEURIA_OAUTH_KEY(),new TextEncoder().encode(token));return Buffer.concat([Buffer.from(iv),Buffer.from(data)]).toString("base64url")};
 const NEURIA_OAUTH_OPEN=async(req)=>{const raw=(req.headers.get("cookie")||"").split(";").map(x=>x.trim()).find(x=>x.startsWith("neuria_github="))?.slice("neuria_github=".length);if(!raw)return "";try{const buf=Buffer.from(raw,"base64url");if(buf.length<29)return "";const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:buf.subarray(0,12)},await NEURIA_OAUTH_KEY(),buf.subarray(12));return new TextDecoder().decode(plain)}catch{return ""}};
@@ -258,6 +259,7 @@ const NEURIA_PROJECT_RATE=new Map<string,number[]>();
 export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch(req,server){
  const u=new URL(req.url),path=u.pathname;
  if(path==="/api/neuria/aura/identify"||path==="/api/neuria/oracle/create")return handleNeuriaHfRequest(req,server,path);
+ if(path==="/api/neuria/pulse/song")return handleNeuriaPulseSong(req,server);
  if(req.method==="GET"&&path==="/cmd-world-language-picker.js")return new Response(Bun.file(new URL("./cmd-world-language-picker.js",import.meta.url)),{headers:{"content-type":"application/javascript; charset=utf-8","cache-control":"public,max-age=3600"}});
  if(req.method==="GET"&&path==="/cmd-world-languages.json"){
   return new Response(Bun.file(new URL("./cmd-world-languages.json",import.meta.url)),{headers:{"content-type":"application/json; charset=utf-8","cache-control":"public,max-age=3600"}});
