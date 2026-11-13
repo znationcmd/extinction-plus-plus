@@ -9,13 +9,15 @@ try {
  const me=await get("/api/whoami-v2");
  if(me.name!=="cmdofficiel")throw Error("HF_TOKEN_WRONG_ACCOUNT");
  log("TOKEN_AUTHENTICATED");
+ log("TOKEN_ROLE "+String(me.auth?.accessToken?.role||me.auth?.type||"unknown"));
+ if(me.auth?.accessToken?.role==="read")throw Error("TOKEN_READ_ONLY_REQUIRES_WRITE");
  const info=await get("/api/spaces/cmdofficiel/NEURIA");
  const hw=info.runtime?.hardware;
  if(hw?.requested!=="zero-a10g" && !String(hw?.requested||"").startsWith("zero-"))throw Error("ZEROGPU_NOT_CONFIGURED");
  if(hw.current && !String(hw.current).startsWith("zero-"))throw Error("REFUSING_PAID_HARDWARE");
  const items=[{key:"header",value:{summary:"Publish Oracle 3D from Railway",description:"Three source files; hardware unchanged.",parentCommit:info.sha}},...Object.entries(files).map(([path,content])=>({key:"file",value:{path,encoding:"base64",content:Buffer.from(content).toString("base64")}}))];
  const r=await fetch(origin+"/api/spaces/cmdofficiel/NEURIA/commit/main",{method:"POST",headers:{...headers,"Content-Type":"application/x-ndjson"},body:items.map(x=>JSON.stringify(x)).join("\n")+"\n",redirect:"error",signal:AbortSignal.timeout(60000)});
- if(!r.ok)throw Error("HF_COMMIT_HTTP_"+r.status);
+ if(!r.ok){let reason="";try{const body=await r.json();reason=String(body.error||"").replaceAll(token,"[REDACTED]").slice(0,250);}catch{} log("COMMIT_REJECTION "+reason);throw Error("HF_COMMIT_HTTP_"+r.status);}
  const commit=await r.json();
  log("COMMIT_SUCCESS "+commit.commitOid);
  const check=await get("/api/spaces/cmdofficiel/NEURIA");
