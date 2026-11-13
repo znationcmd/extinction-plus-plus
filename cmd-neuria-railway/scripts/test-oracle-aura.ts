@@ -61,7 +61,7 @@ function file(result){
 async function oracle(){
   const data=await task("generate",["a simple solid blue cube"],115000);
   const url=file(data);if(!url)throw Error("NO_GLB_OUTPUT");
-  const u=new URL(url);
+  const u=new globalThis.URL(url);
   if(u.origin!==URL)throw Error("CROSS_ORIGIN_FILE");
   const binary=new Uint8Array(await(await call(url,{},35000)).arrayBuffer());
   if(new TextDecoder().decode(binary.slice(0,4))!=="glTF")throw Error("INVALID_GLB");
