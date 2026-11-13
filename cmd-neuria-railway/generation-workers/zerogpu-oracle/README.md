@@ -1,7 +1,7 @@
 ---
 title: CMD NEURIA Oracle 3D
 emoji: 🧊
-colorFrom: orange
+colorFrom: blue
 colorTo: yellow
 sdk: gradio
 sdk_version: 5.49.1
