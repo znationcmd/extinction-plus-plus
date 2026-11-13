@@ -1,0 +1,21 @@
+const token=process.env.HF_TOKEN;
+const base="https://huggingface.co";
+const log=x=>console.log("NEURIA_MUSIC "+x);
+const req=async(path,body)=>{const r=await fetch(base+path,{method:body?"POST":"GET",headers:{Authorization:"Bearer "+token,...(body?{"Content-Type":"application/json"}:{})},...(body?{body:JSON.stringify(body)}:{}),redirect:"error",signal:AbortSignal.timeout(90000)});if(!r.ok){let t=await r.text();throw Error(r.status+" "+t.replaceAll(token,"[REDACTED]").slice(0,450));}return r.json();};
+try{
+if(!token)throw Error("HF_TOKEN_MISSING");
+const me=await req("/api/whoami-v2");if(me.name!=="cmdofficiel")throw Error("WRONG_ACCOUNT");
+try{const i=await req("/api/spaces/cmdofficiel/NEURIA-PULSE");if(!String(i.runtime?.hardware?.requested||"").startsWith("zero-"))throw Error("PULSE_NOT_ZEROGPU");log("PULSE_EXISTS");}
+catch(e){if(!String(e.message).startsWith("404"))throw e;await req("/api/spaces/ACE-Step/Ace-Step-v1.5/duplicate",{repository:"cmdofficiel/NEURIA-PULSE",visibility:"public",hardware:"zero-a10g"});log("PULSE_INSTALLED_ZEROGPU");}
+}catch(e){log("PULSE_FAILED "+e.message);}
+try{
+const me=await req("/api/whoami-v2");if(me.name!=="cmdofficiel")throw Error("WRONG_ACCOUNT");
+try{await req("/api/spaces/cmdofficiel/NEURIA-AURA");}catch(e){if(!String(e.message).startsWith("404"))throw e;await req("/api/repos/create",{name:"NEURIA-AURA",organization:"cmdofficiel",type:"space",sdk:"gradio",hardware:"cpu-basic",visibility:"public"});}
+const files={"app.py":"import asyncio\nimport os\nfrom pathlib import Path\nimport gradio as gr\nfrom shazamio import Shazam\n\nasync def recognize(audio):\n    if not audio:\n        raise gr.Error(\"Choisis un extrait ou enregistre avec le microphone.\")\n    path = Path(audio)\n    if path.stat().st_size > 12_000_000:\n        raise gr.Error(\"Limite : 12 Mo.\")\n    async with Shazam() as engine:\n        result = await asyncio.wait_for(engine.recognize(str(path)), timeout=45)\n    track = result.get(\"track\") or {}\n    if not track:\n        return \"Aucune correspondance trouvée.\", \"\"\n    title = str(track.get(\"title\", \"Titre inconnu\"))\n    artist = str(track.get(\"subtitle\", \"Artiste inconnu\"))\n    return title + \" — \" + artist, str(track.get(\"url\", \"\"))\n\nwith gr.Blocks(title=\"CMD NEURIA — Aura\") as demo:\n    gr.Markdown(\"# Aura — Reconnaissance musicale\\nChoisis un extrait clair de 10 à 12 secondes. En cliquant sur Identifier, son empreinte audio est envoyée au service Shazam via ShazamIO (interface non officielle, disponibilité non garantie). Aucun abonnement payant.\")\n    audio = gr.Audio(sources=[\"upload\", \"microphone\"], type=\"filepath\", label=\"Extrait musical\")\n    button = gr.Button(\"Identifier le titre et l’artiste\", variant=\"primary\")\n    title = gr.Textbox(label=\"Morceau identifié\")\n    link = gr.Textbox(label=\"Lien du morceau\")\n    button.click(recognize, inputs=audio, outputs=[title,link], api_name=\"recognize\", concurrency_limit=1)\ndemo.queue(max_size=4).launch()\n","requirements.txt":"gradio==5.49.1\nshazamio>=0.8,<1\n","packages.txt":"ffmpeg\n","README.md":"---\ntitle: CMD NEURIA Aura\nemoji: 🎵\ncolorFrom: purple\ncolorTo: blue\nsdk: gradio\nsdk_version: 5.49.1\npython_version: '3.11'\napp_file: app.py\nlicense: mit\n---\n\nMusic recognition using ShazamIO. Unofficial Shazam interface; no guaranteed availability. Fingerprints are transmitted only after the visitor starts recognition.\n"};
+const info=await req("/api/spaces/cmdofficiel/NEURIA-AURA");
+if(info.runtime?.hardware?.requested!=="cpu-basic")throw Error("REFUSING_NONFREE_AURA_HARDWARE");
+const items=[{key:"header",value:{summary:"Install Aura music recognition",description:"ShazamIO on free CPU.",parentCommit:info.sha}},...Object.entries(files).map(([path,c])=>({key:"file",value:{path,encoding:"base64",content:Buffer.from(c).toString("base64")}}))];
+const r=await fetch(base+"/api/spaces/cmdofficiel/NEURIA-AURA/commit/main",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/x-ndjson"},body:items.map(x=>JSON.stringify(x)).join("\n")+"\n",redirect:"error",signal:AbortSignal.timeout(90000)});
+if(!r.ok)throw Error("COMMIT "+r.status+" "+(await r.text()).replaceAll(token,"[REDACTED]").slice(0,400));
+log("AURA_INSTALLED "+(await r.json()).commitOid);
+}catch(e){log("AURA_FAILED "+e.message);}
