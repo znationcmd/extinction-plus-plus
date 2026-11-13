@@ -1,0 +1,9 @@
+gradio>=5.0,<6
+spaces>=0.32
+diffusers>=0.31,<1
+transformers>=4.44,<5
+accelerate>=1,<2
+torch>=2.3,<3
+trimesh>=4,<5
+numpy>=1.26,<3
+plyfile>=1.0
