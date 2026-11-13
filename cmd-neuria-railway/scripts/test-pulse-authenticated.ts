@@ -57,3 +57,4 @@ async function start(){
 }
 try{await start()}catch(e){log("FAILED "+String(e?.message||e).slice(0,500))}
 await import("./diagnose-pulse.ts");
+await import("./test-oracle-aura.ts");
