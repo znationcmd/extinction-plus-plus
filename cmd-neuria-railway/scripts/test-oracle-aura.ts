@@ -69,3 +69,19 @@ async function oracle(){
 }
 try{await aura()}catch(e){log("AURA_FAILED "+String(e?.message||e))}
 try{await oracle()}catch(e){log("ORACLE_FAILED "+String(e?.message||e))}
+
+async function pulseBridge(){
+  const {handleNeuriaPulseSong}=await import("../neuria-pulse-song-api.ts");
+  const body={idea:"Une chanson joyeuse sur la liberté",style:"Pop",language:"français",instrumental:false};
+  const req=new Request("http://localhost/api/neuria/pulse/song",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  const server={requestIP:()=>({address:"127.0.0.63"})};
+  const res=await handleNeuriaPulseSong(req,server);
+  if(!res.ok)throw Error("BRIDGE_HTTP_"+res.status+"_"+(await res.text()).slice(0,250));
+  if(!["audio/mpeg","audio/flac"].includes(res.headers.get("content-type")))throw Error("BRIDGE_NOT_AUDIO");
+  const bytes=new Uint8Array(await res.arrayBuffer());
+  if(bytes.length<1000)throw Error("BRIDGE_EMPTY");
+  const magic=new TextDecoder().decode(bytes.slice(0,4));
+  if(magic!=="fLaC"&&!magic.startsWith("ID3")&&!(bytes[0]===255&&(bytes[1]&224)===224))throw Error("BRIDGE_INVALID_AUDIO");
+  log("PULSE_BRIDGE_MP3_OK "+bytes.length+" BYTES");
+}
+try{await pulseBridge()}catch(e){log("PULSE_BRIDGE_FAILED "+String(e?.message||e))}
