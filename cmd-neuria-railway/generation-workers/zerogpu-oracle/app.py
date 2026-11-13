@@ -53,7 +53,21 @@ async def recognize_music(audio):
     return (str(track.get("title", "Aucune correspondance")) + (" — " + str(track.get("subtitle", "")) if track else ""), str(track.get("url", "")))
 
 def select_tool(request: gr.Request):
-    return gr.Tabs(selected="aura" if request.query_params.get("tool") == "aura" else "oracle")
+    return gr.Tabs(selected=request.query_params.get("tool") if request.query_params.get("tool") in ("aura", "images") else "oracle")
+
+from diffusers import DiffusionPipeline
+image_pipeline = DiffusionPipeline.from_pretrained("segmind/tiny-sd", torch_dtype=torch.float16)
+
+@spaces.GPU(duration=60)
+def generate_image(prompt):
+    prompt = (prompt or "").strip()
+    if not prompt or len(prompt) > 1000:
+        raise gr.Error("Description de 1 à 1000 caractères requise.")
+    image_pipeline.to("cuda")
+    image = image_pipeline(prompt, num_inference_steps=20, guidance_scale=7.0, width=512, height=512).images[0]
+    output = Path(tempfile.mkdtemp(prefix="neuria-image-")) / "NEURIA_Image.png"
+    image.save(str(output))
+    return str(output), str(output)
 
 with gr.Blocks(title="CMD NEURIA — Oracle et Aura") as demo:
     with gr.Tabs() as tabs:
@@ -71,6 +85,13 @@ with gr.Blocks(title="CMD NEURIA — Oracle et Aura") as demo:
             track = gr.Textbox(label="Titre et artiste")
             track_link = gr.Textbox(label="Lien du morceau")
             identify.click(recognize_music, inputs=audio, outputs=[track, track_link], api_name="recognize", concurrency_limit=1)
+        with gr.Tab("Images", id="images"):
+            gr.Markdown("# Images — Tiny-SD sur ZeroGPU gratuit\nGénération réelle en 512 × 512 pixels, sans fournisseur payant.")
+            image_prompt = gr.Textbox(label="Décris ton image", lines=3, max_length=1000)
+            image_button = gr.Button("Générer une image", variant="primary")
+            image_preview = gr.Image(label="Image générée")
+            image_file = gr.File(label="Télécharger le PNG")
+            image_button.click(generate_image, inputs=image_prompt, outputs=[image_preview, image_file], api_name="generate_image", concurrency_limit=1)
     demo.load(select_tool, outputs=tabs)
 demo.queue(max_size=4)
 demo.launch()
