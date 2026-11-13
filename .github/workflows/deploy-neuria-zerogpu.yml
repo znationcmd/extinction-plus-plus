@@ -1,0 +1,144 @@
+name: Publish NEURIA ZeroGPU and test GLB
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neuria-zerogpu-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      GRADIO_ANALYTICS_ENABLED: "False"
+    steps:
+      - name: Check required secret
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Add the HF_TOKEN repository Actions secret with write access to cmdofficiel/NEURIA."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: cmd-neuria-railway-backup-20261013
+          persist-credentials: false
+          sparse-checkout: cmd-neuria-railway/generation-workers/zerogpu-oracle
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install deployment and validation clients
+        run: python -m pip install "huggingface_hub>=0.34,<2" "gradio_client>=1.13,<3" "trimesh>=4,<5" "numpy>=1.26,<3"
+      - name: Publish exactly three files, wait for build, generate and validate GLB
+        shell: python
+        run: |
+          import ast
+          import hashlib
+          import inspect
+          import json
+          import os
+          import shutil
+          import struct
+          import time
+          from pathlib import Path
+          from huggingface_hub import HfApi, CommitOperationAdd
+          from gradio_client import Client
+          import trimesh
+
+          repo = "cmdofficiel/NEURIA"
+          source = Path("cmd-neuria-railway/generation-workers/zerogpu-oracle")
+          names = ("app.py", "requirements.txt", "README.md")
+          for name in names:
+              if not (source / name).is_file():
+                  raise RuntimeError(f"Missing source file: {name}")
+          ast.parse((source / "app.py").read_text())
+          api = HfApi(token=os.environ["HF_TOKEN"])
+
+          def require_zero(runtime):
+              for name in ("hardware", "requested_hardware"):
+                  hardware = getattr(runtime, name, None)
+                  value = getattr(hardware, "value", hardware)
+                  if value is not None and not str(value).startswith("zero-"):
+                      raise RuntimeError(f"Refusing non-ZeroGPU hardware: {value}")
+              requested = getattr(runtime, "requested_hardware", None)
+              current = getattr(runtime, "hardware", None)
+              if not requested and not current:
+                  raise RuntimeError("ZeroGPU is not configured; no hardware changes will be made.")
+
+          runtime = api.get_space_runtime(repo)
+          require_zero(runtime)
+          commit = api.create_commit(
+              repo_id=repo,
+              repo_type="space",
+              operations=[CommitOperationAdd(path_in_repo=name, path_or_fileobj=str(source / name)) for name in names],
+              commit_message="Deploy Oracle Shap-E GLB worker from extinction-plus-plus",
+          )
+          print(f"Published Space commit: {commit.oid}", flush=True)
+          deadline = time.monotonic() + 1800
+          last_stage = None
+          while time.monotonic() < deadline:
+              runtime = api.get_space_runtime(repo)
+              require_zero(runtime)
+              stage = getattr(runtime.stage, "value", runtime.stage)
+              if stage != last_stage:
+                  print(f"Space stage: {stage}", flush=True)
+                  last_stage = stage
+              if stage == "RUNNING":
+                  break
+              if stage in ("BUILD_ERROR", "RUNTIME_ERROR", "CONFIG_ERROR", "NO_APP_FILE", "PAUSED"):
+                  raise RuntimeError(f"Space stopped at {stage}; inspect Hugging Face build/runtime logs.")
+              time.sleep(15)
+          else:
+              raise TimeoutError("Space did not reach RUNNING within 30 minutes.")
+          if api.space_info(repo).sha != commit.oid:
+              raise RuntimeError("Space changed during the build; refusing to test a different revision.")
+          auth_key = "token" if "token" in inspect.signature(Client).parameters else "hf_token"
+          client = Client(repo, **{auth_key: os.environ["HF_TOKEN"]}, verbose=False)
+          result = client.submit("A small wooden treasure chest", fn_index=0).result(timeout=300)
+          files = result if isinstance(result, (list, tuple)) else [result]
+          paths = [Path(value) for value in files if isinstance(value, str) and value.lower().endswith(".glb")]
+          if not paths:
+              raise RuntimeError("Generation returned no downloaded GLB file.")
+          glb = paths[0]
+          data = glb.read_bytes()
+          if len(data) < 20:
+              raise RuntimeError("GLB is empty or truncated.")
+          magic, version, length = struct.unpack("<4sII", data[:12])
+          if (magic, version, length) != (b"glTF", 2, len(data)):
+              raise RuntimeError("Invalid GLB header.")
+          scene = trimesh.load(str(glb), force="scene")
+          meshes = list(scene.geometry.values())
+          if not meshes or not any(len(m.vertices) > 0 and len(m.faces) > 0 for m in meshes):
+              raise RuntimeError("Generated GLB has no mesh geometry.")
+          output = Path("neuria-validation")
+          output.mkdir()
+          shutil.copy2(glb, output / "oracle-test.glb")
+          report = {
+              "space": repo, "space_commit": commit.oid,
+              "source_commit": os.environ.get("GITHUB_SHA"),
+              "prompt": "A small wooden treasure chest", "bytes": len(data),
+              "sha256": hashlib.sha256(data).hexdigest(),
+              "vertices": sum(len(m.vertices) for m in meshes),
+              "faces": sum(len(m.faces) for m in meshes),
+              "hardware": str(runtime.hardware),
+          }
+          (output / "validation.json").write_text(json.dumps(report, indent=2))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("# NEURIA published and GLB validated\n\n")
+              summary.write(f"Space commit: {commit.oid}\n\n")
+              summary.write(f"GLB: {len(data)} bytes; {report['vertices']} vertices; {report['faces']} faces.\n")
+              summary.write("No hardware, billing, subscription, or paid endpoint API was called.\n")
+          print(json.dumps(report, indent=2))
+      - name: Preserve generated GLB and validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: neuria-real-glb
+          path: neuria-validation/
+          if-no-files-found: error
+          retention-days: 7
