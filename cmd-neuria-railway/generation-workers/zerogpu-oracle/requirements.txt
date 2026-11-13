@@ -7,3 +7,4 @@ torch>=2.3,<3
 trimesh>=4,<5
 numpy>=1.26,<3
 plyfile>=1.0
+shazamio==0.9.0
