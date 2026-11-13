@@ -14,12 +14,11 @@ try {
  if(hw?.requested!=="zero-a10g" && !String(hw?.requested||"").startsWith("zero-"))throw Error("ZEROGPU_NOT_CONFIGURED");
  if(hw.current && !String(hw.current).startsWith("zero-"))throw Error("REFUSING_PAID_HARDWARE");
  const items=[{key:"header",value:{summary:"Publish Oracle 3D from Railway",description:"Three source files; hardware unchanged.",parentCommit:info.sha}},...Object.entries(files).map(([path,content])=>({key:"file",value:{path,encoding:"base64",content:Buffer.from(content).toString("base64")}}))];
- const r=await fetch(origin+"/api/spaces/cmdofficiel/NEURIA/commit/main?create_pr=1",{method:"POST",headers:{...headers,"Content-Type":"application/x-ndjson"},body:items.map(x=>JSON.stringify(x)).join("\n")+"\n",redirect:"error",signal:AbortSignal.timeout(60000)});
+ const r=await fetch(origin+"/api/spaces/cmdofficiel/NEURIA/commit/main",{method:"POST",headers:{...headers,"Content-Type":"application/x-ndjson"},body:items.map(x=>JSON.stringify(x)).join("\n")+"\n",redirect:"error",signal:AbortSignal.timeout(60000)});
  if(!r.ok)throw Error("HF_COMMIT_HTTP_"+r.status);
  const commit=await r.json();
- log("PULL_REQUEST_CREATED "+commit.pullRequestUrl);
  log("COMMIT_SUCCESS "+commit.commitOid);
  const check=await get("/api/spaces/cmdofficiel/NEURIA");
- if(!commit.pullRequestUrl)throw Error("PULL_REQUEST_URL_MISSING");
+ if(check.sha!==commit.commitOid)throw Error("COMMIT_READBACK_MISMATCH");
  log("VERIFIED "+check.runtime?.stage);
 } catch(e){log("FAILED "+String(e.message).replaceAll(token||"__NO_TOKEN__","[REDACTED]"));process.exit(1);}
