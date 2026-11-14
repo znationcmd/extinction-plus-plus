@@ -19,3 +19,5 @@ for(const item of checks){
   }
 }
 try{await import("./test-neuria-mobile-ui.ts")}catch(error){console.warn("NEURIA_MOBILE_UI FAIL "+String(error?.stack||error).slice(0,900))}
+
+await import("./test-pulse-voice-reference.ts");
