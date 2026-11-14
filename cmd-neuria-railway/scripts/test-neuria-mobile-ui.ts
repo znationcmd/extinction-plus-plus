@@ -14,7 +14,7 @@ const fakeFetch=async (url,options)=>{
 };
 for(const script of [NEURIA_PULSE_SIMPLE_UI,NEURIA_ORACLE_AURA_SIMPLE_UI]){
   new Function("window","document","navigator","URL","Blob","FormData","fetch","MediaRecorder",script)(
-    window,document,window.navigator,URL,Blob,FormData,fakeFetch,class DummyRecorder{}
+    window,document,window.navigator,URL,Blob,FormData,fakeFetch,class DummyRecorder{static isTypeSupported(t){return t==="audio/webm"}constructor(...args){return new window.MediaRecorder(...args)}}
   );
 }
 const open=(title)=>document.querySelector('[data-neuria-panel="'+title+'"]').dispatchEvent(new window.MouseEvent("click",{bubbles:true,cancelable:true}));
