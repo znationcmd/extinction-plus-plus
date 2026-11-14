@@ -31,7 +31,7 @@ export const NEURIA_SWIPE_NEW_CHAT_CLIENT = String.raw`(()=>{
   const trigger=panel.querySelector("#neuria-swipe-new-chat-trigger");
   const dismiss=panel.querySelector(".neuria-swipe-dismiss");
   const bar=panel.querySelector(".neuria-swipe-progress i");
-  let armed=false,active=false,startX=0,startY=0,currentProgress=0;
+  let armed=false,active=false,startX=0,startY=0,currentProgress=0,lastCompletedGesture=0;
   function atBottom(){return feed.scrollHeight-feed.scrollTop-feed.clientHeight<24}
   function position(){const bounds=form.getBoundingClientRect();panel.style.bottom=Math.max(8,window.innerHeight-bounds.top+10)+"px"}
   function hide(){armed=false;active=false;currentProgress=0;panel.hidden=true;panel.style.opacity="0";panel.style.pointerEvents="none";bar.style.width="0%"}
@@ -42,6 +42,7 @@ export const NEURIA_SWIPE_NEW_CHAT_CLIENT = String.raw`(()=>{
     panel.style.opacity=String(settled?1:Math.max(.12,p));
     panel.style.transform="translate(-50%,"+Math.round((1-p)*42)+"px) scale("+(0.94+0.06*p).toFixed(3)+")";
     panel.style.pointerEvents=settled?"auto":"none";
+    if(settled)lastCompletedGesture=Date.now();
     bar.style.width=Math.round(p*100)+"%";
   }
   trigger.addEventListener("click",()=>{hide();newChat.click();document.getElementById("message")?.focus({preventScroll:true})});
@@ -92,7 +93,7 @@ export const NEURIA_SWIPE_NEW_CHAT_CLIENT = String.raw`(()=>{
     if(armed&&touchById(event.changedTouches)){hide();fingerId=null}
   },{passive:true});
   document.addEventListener("click",event=>{
-    if(!panel.hidden&&!panel.contains(event.target))hide();
+    if(!panel.hidden&&!panel.contains(event.target)&&Date.now()-lastCompletedGesture>500)hide();
   });
   const menu=document.getElementById("neuriaMenu");
   if(menu){
