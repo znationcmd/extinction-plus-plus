@@ -32,7 +32,6 @@ export const NEURIA_SWIPE_NEW_CHAT_CLIENT = String.raw`(()=>{
   const dismiss=panel.querySelector(".neuria-swipe-dismiss");
   const bar=panel.querySelector(".neuria-swipe-progress i");
   let armed=false,active=false,startX=0,startY=0,currentProgress=0;
-  function hasMessages(){return !!feed.querySelector(".bubble.me,.bubble.bot")}
   function atBottom(){return feed.scrollHeight-feed.scrollTop-feed.clientHeight<24}
   function position(){const bounds=form.getBoundingClientRect();panel.style.bottom=Math.max(8,window.innerHeight-bounds.top+10)+"px"}
   function hide(){armed=false;active=false;currentProgress=0;panel.hidden=true;panel.style.opacity="0";panel.style.pointerEvents="none";bar.style.width="0%"}
@@ -49,28 +48,52 @@ export const NEURIA_SWIPE_NEW_CHAT_CLIENT = String.raw`(()=>{
   dismiss.addEventListener("click",hide);
   window.addEventListener("resize",()=>{if(!panel.hidden)position()},{passive:true});
   document.addEventListener("neuria:chat-changed",hide);
-  feed.addEventListener("touchstart",e=>{
-    if(e.touches.length!==1||!enabled||!hasMessages()||!atBottom())return;
-    if(e.target?.closest?.("button,a,input,textarea,select,[contenteditable]"))return;
-    const t=e.touches[0],r=feed.getBoundingClientRect();
-    if(r.bottom-t.clientY>180||t.clientY<r.top)return;
-    armed=true;active=false;startY=t.clientY;startX=t.clientX;
+  // Track the gesture on the page, not only on #feed: iPhone swipes often
+  // begin beside or directly above the composer, outside the scrollable feed.
+  // It must also work before the first message has been sent.
+  let fingerId=null;
+  const interactive="button,a,input,textarea,select,[contenteditable],#neuriaPlusMenu,#neuria-swipe-new-chat";
+  function touchById(list){
+    for(const t of Array.from(list||[]))if(t.identifier===fingerId)return t;
+    return null;
+  }
+  document.addEventListener("touchstart",event=>{
+    if(!enabled||!atBottom()||event.touches.length!==1||!panel.hidden)return;
+    if(event.target?.closest?.(interactive))return;
+    const touch=event.touches[0],feedBox=feed.getBoundingClientRect(),formBox=form.getBoundingClientRect();
+    const lowerZone=Math.max(feedBox.top,formBox.top-260);
+    const upperLimit=Math.min(window.innerHeight-12,formBox.bottom+30);
+    if(touch.clientY<lowerZone||touch.clientY>upperLimit)return;
+    armed=true;active=false;fingerId=touch.identifier;startY=touch.clientY;startX=touch.clientX;currentProgress=0;
   },{passive:true});
-  feed.addEventListener("touchmove",e=>{
-    if(!armed||e.touches.length!==1)return;
-    const t=e.touches[0],dy=startY-t.clientY,dx=Math.abs(startX-t.clientX);
-    if(dx>65||dy<0||!atBottom()){hide();return}
-    if(dy<14)return;
-    active=true;reveal((dy-14)/102,false);
-  },{passive:true});
-  feed.addEventListener("touchend",e=>{
-    if(!armed)return;armed=false;
-    const t=e.changedTouches?.[0];
-    const distance=t?startY-t.clientY:0;
-    if(active&&distance>=95&&currentProgress>=.75){reveal(1,true)}
+  document.addEventListener("touchmove",event=>{
+    if(!armed)return;
+    const touch=touchById(event.touches);
+    if(!touch){hide();fingerId=null;return}
+    const dy=startY-touch.clientY,dx=Math.abs(startX-touch.clientX);
+    if(dx>65||dy < -12||!atBottom()){hide();fingerId=null;return}
+    if(dy<12)return;
+    active=true;
+    reveal((dy-12)/100,false);
+    // Only block native scrolling once the user is deliberately pulling up
+    // from the bottom; normal scrolling, typing and tapping remain untouched.
+    if(event.cancelable)event.preventDefault();
+  },{passive:false});
+  document.addEventListener("touchend",event=>{
+    if(!armed)return;
+    const touch=touchById(event.changedTouches);
+    if(!touch)return;
+    armed=false;fingerId=null;
+    const distance=startY-touch.clientY;
+    if(active&&distance>=90&&currentProgress>=.75)reveal(1,true);
     else hide();
   },{passive:true});
-  feed.addEventListener("touchcancel",hide,{passive:true});
+  document.addEventListener("touchcancel",event=>{
+    if(armed&&touchById(event.changedTouches)){hide();fingerId=null}
+  },{passive:true});
+  document.addEventListener("click",event=>{
+    if(!panel.hidden&&!panel.contains(event.target))hide();
+  });
   const menu=document.getElementById("neuriaMenu");
   if(menu){
     const pref=document.createElement("label");pref.id="neuria-swipe-new-chat-settings";
