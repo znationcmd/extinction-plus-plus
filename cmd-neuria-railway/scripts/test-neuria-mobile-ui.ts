@@ -42,6 +42,35 @@ console.log("NEURIA_MOBILE_UI PASS Pulse voice opt-in and submission");
 document.querySelector("#pulseBack").click();
 open("Aura — Reconnaissance musicale");
 check(document.querySelector("#ntRecord")&&document.querySelector("#ntFile"),"Aura microphone or audio import missing");
+// Simulate Safari's microphone grant and MediaRecorder events.
+Object.defineProperty(window,"isSecureContext",{configurable:true,value:true});
+let micRequests=0, micStopped=0;
+Object.defineProperty(window.navigator,"mediaDevices",{configurable:true,value:{
+  getUserMedia:async ()=>{micRequests++;return {getTracks:()=>[{stop(){micStopped++}}]};}
+}});
+window.MediaRecorder=class FakeMediaRecorder{
+  static isTypeSupported(mime){return mime==="audio/webm";}
+  constructor(){this.mimeType="audio/webm";this.state="inactive";this.events={};}
+  addEventListener(type,listener){this.events[type]=listener;}
+  start(){this.state="recording";}
+  stop(){
+    this.state="inactive";
+    this.events.dataavailable?.({data:new Blob([new Uint8Array(2000)],{type:"audio/webm"})});
+    this.events.stop?.();
+  }
+};
+document.querySelector("#ntRecord").click();
+await settle();
+check(micRequests===1,"Aura did not request microphone permission");
+check(document.querySelector("#ntRecord").getAttribute("aria-pressed")==="true","Aura recorder not started");
+document.querySelector("#ntRecord").click();
+await settle();
+check(micStopped>0,"Aura microphone track not stopped");
+check(document.querySelector("#ntPreview audio"),"Aura did not preview recorded microphone audio");
+document.querySelector("#ntGo").click();
+await settle();
+check(submissions.some(s=>s.url==="/api/neuria/aura/identify"&&s.options.body instanceof Blob),"Aura recording not submitted for recognition");
+console.log("NEURIA_MOBILE_UI PASS Aura microphone permission, recording, preview and recognition submission");
 document.querySelector("#ntBack").click();
 open("Oracle — Avatar 3D");
 check(document.querySelector("#ntPrompt")&&document.querySelector("#ntGo"),"Oracle mobile input missing");
