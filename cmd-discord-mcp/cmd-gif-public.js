@@ -20,7 +20,7 @@ export async function handleCmdGifSearch(req,res,url,{auth}={}){
     const file=item?.file||item?.media||{};
     const url=file?.hd?.gif?.url||file?.md?.gif?.url||file?.sm?.gif?.url||item?.url;
     return {name:String(item?.title||"GIF").slice(0,100),url,sourceUrl:item?.url||url,provider:"KLIPY"};
-   }).filter(item=>typeof item.url==="string"&&/^https:\\/\\//.test(item.url));
+   }).filter(item=>typeof item.url==="string"&&item.url.startsWith("https://"));
    json(res,200,{items,source:"KLIPY",external:true});return true;
   }catch(error){
    console.warn("[CMD KLIPY GIF search]",error?.message||error);
