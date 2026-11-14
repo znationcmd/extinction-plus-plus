@@ -8,6 +8,9 @@
   const state = {tab:"emoji",packs:[],selected:"all",items:[],query:"",loading:false,cache:new Map(),recent:[],library:[],libraryGuild:"",libraryRole:null,webGifs:[],webGifLoading:false,mediaCategory:"for-you",favorites:[],gifSearchUnavailable:false};
   let gifSearchSequence=0,gifSearchTimer=null;
   const categories=[{id:"for-you",name:"Pour toi",search:"animated reaction gif"},{id:"trending",name:"Tendances",search:"animated loop gif"},{id:"funny",name:"Drôle",search:"funny animation gif"},{id:"reaction",name:"Réactions",search:"reaction gif"},{id:"love",name:"Amour",search:"love heart gif"},{id:"animals",name:"Animaux",search:"cat dog gif"},{id:"gaming",name:"Jeux",search:"video game gif"}];
+  // Choix permanent ajouté au catalogue, sans remplacer les GIF publics ou personnels.
+  // Média servi directement par KLIPY : pas de copie ni de cache de fichier sur CMD Sphere.
+  const featuredGifs=[{kind:"gif",id:"klipy:kid-looking-at-lights",name:"Enfant émerveillé par les lumières · Kid Looking At Lights",packName:"KLIPY",image:"https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/ee/69/xe42y21ETkCyN.gif",value:"https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/ee/69/xe42y21ETkCyN.gif",sourceUrl:"https://klipy.com/gifs/kid-looking-at-lights",animated:true}];
   try{const a=JSON.parse(localStorage.getItem("cmd-media-favorites-v1")||"[]");if(Array.isArray(a))state.favorites=a.filter(x=>x&&typeof x.id==="string"&&typeof x.image==="string").slice(0,100)}catch{}
   const mediaKey=e=>String(e.kind||"")+":"+String(e.id||"");
   const isFavorite=e=>state.favorites.some(f=>mediaKey(f)===mediaKey(e));
@@ -79,7 +82,7 @@
     return item.kind==="unicode"||item.kind==="cmd"||item.kind==="emoji";
   }
   function listFor(){
-    if(state.selected==="all")return [...(state.tab==="emoji"?fullUnicode:[]),...state.library,...state.items,...(state.tab==="gif"?state.webGifs:[])].filter(tabMatch);
+    if(state.selected==="all")return [...(state.tab==="gif"&&(state.query.trim()||["for-you","trending"].includes(state.mediaCategory))?featuredGifs:[]),...(state.tab==="emoji"?fullUnicode:[]),...state.library,...state.items,...(state.tab==="gif"?state.webGifs:[])].filter(tabMatch);
     if(state.selected==="favorites")return state.favorites.filter(tabMatch);
     if(["mine","community","server"].includes(state.selected))return state.library.filter(e=>e.scope===(state.selected==="mine"?"personal":state.selected)&&tabMatch(e));
     if(state.selected==="unicode")return state.tab==="emoji"?fullUnicode:[];
@@ -132,8 +135,8 @@
         if(state.tab!=="emoji"){
           const wrapper=document.createElement("div");wrapper.className="cmd-media-card";wrapper.appendChild(btn);
           const fave=document.createElement("button");fave.type="button";fave.className="cmd-media-fav";fave.textContent=isFavorite(e)?"♥":"♡";fave.title=isFavorite(e)?"Retirer des favoris":"Ajouter aux favoris";fave.setAttribute("aria-label",fave.title);fave.setAttribute("aria-pressed",String(isFavorite(e)));fave.onclick=()=>toggleFavorite(e);wrapper.appendChild(fave);
-          if(e.kind==="webgif"&&/^https:\/\/commons\.wikimedia\.org\//.test(e.sourceUrl||"")){
-            const credit=document.createElement("a");credit.className="cmd-media-credit";credit.href=e.sourceUrl;credit.target="_blank";credit.rel="noopener noreferrer";credit.textContent="Source / licence";wrapper.appendChild(credit);
+          if((e.kind==="webgif"&&/^https:\/\/commons\.wikimedia\.org\//.test(e.sourceUrl||""))||(e.kind==="gif"&&/^https:\/\/klipy\.com\/gifs\//.test(e.sourceUrl||""))){
+            const credit=document.createElement("a");credit.className="cmd-media-credit";credit.href=e.sourceUrl;credit.target="_blank";credit.rel="noopener noreferrer";credit.textContent=e.kind==="gif"?"Voir sur KLIPY":"Source / licence";wrapper.appendChild(credit);
           }
           fragment.appendChild(wrapper);
         }else fragment.appendChild(btn);
