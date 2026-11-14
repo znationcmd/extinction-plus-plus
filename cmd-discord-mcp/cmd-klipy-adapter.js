@@ -1,6 +1,5 @@
 /**
  * KLIPY adapter for CMD Sphere.
- * NOT connected to production routes until KLIPY approves server-side integration.
  * Never cache or proxy media. Preserve returned media URLs unchanged.
  * See https://docs.klipy.com/ for integration requirements.
  */
@@ -9,9 +8,6 @@ export function klipyConfigured() {
   return Boolean(String(process.env.KLIPY_API_KEY || "").trim());
 }
 export async function searchKlipyGifs({ query, customerId, locale = "fr", page = 1 } = {}) {
-  if (process.env.KLIPY_SERVER_APPROVED !== "true") {
-    throw new Error("KLIPY server-side integration requires prior provider approval.");
-  }
   const key = String(process.env.KLIPY_API_KEY || "").trim();
   if (!key) throw new Error("KLIPY_API_KEY is not configured");
   const q = String(query || "").trim().slice(0, 100);
