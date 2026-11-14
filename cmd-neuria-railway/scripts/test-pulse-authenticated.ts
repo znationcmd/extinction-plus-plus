@@ -18,3 +18,4 @@ for(const item of checks){
     console.warn("NEURIA_PREDEPLOY "+item.name+" check_unavailable "+String(error?.name||"network_error"));
   }
 }
+try{await import("./test-neuria-mobile-ui.ts")}catch(error){console.warn("NEURIA_MOBILE_UI FAIL "+String(error?.stack||error).slice(0,900))}
