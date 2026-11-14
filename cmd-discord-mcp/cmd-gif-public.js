@@ -1,3 +1,4 @@
+import {searchKlipyGifs} from "./cmd-klipy-adapter.js";
 /* CMD Sphere: optional, keyless animated GIF discovery from Wikimedia Commons.
    Each result links to its Wikimedia file page for attribution/licensing. */
 const cache=new Map();
@@ -10,6 +11,22 @@ export async function handleCmdGifSearch(req,res,url,{auth}={}){
  if(!auth?.user?.id){json(res,401,{error:"Connexion CMD Sphere requise."});return true}
  const q=String(url.searchParams.get("q")||"").trim().slice(0,64);
  if(q.length<2){json(res,200,{items:[],source:"Wikimedia Commons"});return true}
+ const provider=String(url.searchParams.get("provider")||"").toLowerCase();
+ if(provider==="klipy"){
+  try{
+   const payload=await searchKlipyGifs({query:q,customerId:String(auth.user.id),locale:"fr"});
+   const raw=Array.isArray(payload?.data?.data)?payload.data.data:Array.isArray(payload?.data)?payload.data:[];
+   const items=raw.slice(0,24).map(item=>{
+    const file=item?.file||item?.media||{};
+    const url=file?.hd?.gif?.url||file?.md?.gif?.url||file?.sm?.gif?.url||item?.url;
+    return {name:String(item?.title||"GIF").slice(0,100),url,sourceUrl:item?.url||url,provider:"KLIPY"};
+   }).filter(item=>typeof item.url==="string"&&/^https:\\/\\//.test(item.url));
+   json(res,200,{items,source:"KLIPY",external:true});return true;
+  }catch(error){
+   console.warn("[CMD KLIPY GIF search]",error?.message||error);
+   json(res,503,{items:[],source:"KLIPY",error:"KLIPY indisponible ou non autorisé."});return true;
+  }
+ }
  const key=q.toLocaleLowerCase("fr");
  const saved=cache.get(key);
  if(saved&&Date.now()-saved.time<120000){json(res,200,saved.data);return true}
