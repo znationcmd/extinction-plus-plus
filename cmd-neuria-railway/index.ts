@@ -4,7 +4,7 @@ import { shouldResearch, normalizeResearch } from "./neuria-research-policy.ts";
 import { RESPONSE_ACTIONS_CLIENT } from "./neuria-response-actions.ts";
 
 import sharp from "sharp";
-import {handleAccountRequest,emailAccountsReady} from "./neuria-accounts.ts";
+import {handleAccountRequest,emailAccountsReady,accountForRequest} from "./neuria-accounts.ts";
 import {accountUiRuntime} from "./neuria-account-ui.ts";
 import { reserveGeneration, refundFailedGeneration, quotaDatabase } from "./neuria-generation-quota.ts";
 import { summarizeText, extractTasks } from "./neuria-text-tools.ts";
@@ -818,17 +818,9 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   const engine=path.endsWith("/oracle")?"oracle":"pulse";
   if(!Bun.env.NEURIA_QUOTA_DB_PATH)return new Response(JSON.stringify({error:"Stockage persistant des quotas non configuré"}),{status:503,headers:{"content-type":"application/json"}});
   if(!Bun.env[engine==="oracle"?"NEURIA_ORACLE_WORKER_URL":"NEURIA_PULSE_WORKER_URL"]||!Bun.env.NEURIA_GENERATION_WORKER_TOKEN)return new Response(JSON.stringify({error:"Moteur "+engine+" non installé : aucune génération facturable lancée"}),{status:503,headers:{"content-type":"application/json"}});
-  const githubToken=await NEURIA_OAUTH_OPEN(req);
-  if(!githubToken)return new Response(JSON.stringify({error:"Connecte ton compte GitHub pour utiliser le quota personnel"}),{status:401,headers:{"content-type":"application/json"}});
-  let accountId;
-  try{
-   const identity=await fetch("https://api.github.com/user",{headers:{"authorization":"Bearer "+githubToken,"accept":"application/vnd.github+json","user-agent":"CMD-NEURIA"},signal:AbortSignal.timeout(8000)});
-   if(!identity.ok)throw Error("invalid identity");
-   const user=await identity.json();
-   if(!Number.isSafeInteger(user.id)||user.id<=0)throw Error("invalid user");
-   accountId="github:"+user.id;
-  }catch{return new Response(JSON.stringify({error:"Identité du compte non vérifiable"}),{status:401,headers:{"content-type":"application/json"}})}
-
+  const account=await accountForRequest(req);
+  if(!account)return new Response(JSON.stringify({error:"Connecte-toi à ton compte CMD NEURIA pour utiliser Oracle ou Pulse",code:"NEURIA_LOGIN_REQUIRED"}),{status:401,headers:{"content-type":"application/json","cache-control":"no-store"}});
+  const accountId="neuria:"+account.id;
 
   const oracle=path.endsWith("/oracle"),worker=Bun.env[oracle?"NEURIA_ORACLE_WORKER_URL":"NEURIA_PULSE_WORKER_URL"],token=Bun.env.NEURIA_GENERATION_WORKER_TOKEN;
   if(!worker||!token)return new Response(JSON.stringify({error:"Moteur IA non raccordé : configurer le worker et son jeton"}),{status:503,headers:{"content-type":"application/json"}});
