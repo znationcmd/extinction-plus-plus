@@ -813,7 +813,7 @@ export const neuriaServer=Bun.serve({port:Number(Bun.env.PORT||3000),async fetch
   return new Response(JSON.stringify({oracle:{configured:oracle,format:"glb",endpoint:"/api/neuria/generation/oracle"},pulse:{configured:pulse,format:"wav",endpoint:"/api/neuria/generation/pulse"},notice:"Requires an external authorized model worker; no simulated generation"}),{headers:{"content-type":"application/json","cache-control":"no-store"}});
  }
  if(req.method==="POST"&&(path==="/api/neuria/generation/oracle"||path==="/api/neuria/generation/pulse")){
-  if(!NEURIA_WORK_AUTH(req))return new Response(JSON.stringify({error:"Accès non autorisé"}),{status:403,headers:{"content-type":"application/json"}});
+  if(!NEURIA_WORK_AUTH(req))return new Response(JSON.stringify({error:"Génération réservée aux sessions administrateur autorisées. Le bouton public ne peut pas encore appeler ce moteur : connexion utilisateur et worker réel nécessaires.",code:"NEURIA_GENERATION_AUTH_REQUIRED"}),{status:403,headers:{"content-type":"application/json","cache-control":"no-store"}});
   // Fail closed without a real worker, verified account, and durable database.
   const engine=path.endsWith("/oracle")?"oracle":"pulse";
   if(!Bun.env.NEURIA_QUOTA_DB_PATH)return new Response(JSON.stringify({error:"Stockage persistant des quotas non configuré"}),{status:503,headers:{"content-type":"application/json"}});
